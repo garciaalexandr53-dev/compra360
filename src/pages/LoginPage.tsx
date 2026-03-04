@@ -1,57 +1,92 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { signIn, signUp, user } = useAuth();
+  const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  if (user) {
+    navigate("/cotacao", { replace: true });
+    return null;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: implement auth
+    setLoading(true);
+    
+    if (isSignUp) {
+      const { error } = await signUp(email, password);
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Conta criada! Verifique seu email para confirmar.");
+      }
+    } else {
+      const { error } = await signIn(email, password);
+      if (error) {
+        toast.error("Email ou senha incorretos");
+      } else {
+        navigate("/cotacao", { replace: true });
+      }
+    }
+    setLoading(false);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-2">
-            <FileText className="h-10 w-10 text-primary" />
+          <div className="flex justify-center mb-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] flex items-center justify-center text-white text-lg font-extrabold shadow-lg">
+              ✦
+            </div>
           </div>
-          <CardTitle className="text-2xl">CotaFácil</CardTitle>
-          <CardDescription>Entre com sua conta para continuar</CardDescription>
+          <CardTitle className="text-2xl font-bold">
+            Cota<span className="text-primary">Fácil</span>
+          </CardTitle>
+          <CardDescription>
+            {isSignUp ? "Crie sua conta" : "Entre com sua conta para continuar"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                id="email" type="email" placeholder="seu@email.com"
+                value={email} onChange={(e) => setEmail(e.target.value)} required
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
               <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                id="password" type="password" placeholder="••••••••"
+                value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
               />
             </div>
-            <Button type="submit" className="w-full">
-              Entrar
+            <Button type="submit" className="w-full bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] hover:opacity-90" disabled={loading}>
+              {loading ? "Aguarde..." : isSignUp ? "Criar Conta" : "Entrar"}
             </Button>
           </form>
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              onClick={() => setIsSignUp(!isSignUp)}
+            >
+              {isSignUp ? "Já tem conta? Entre aqui" : "Não tem conta? Cadastre-se"}
+            </button>
+          </div>
         </CardContent>
       </Card>
     </div>
