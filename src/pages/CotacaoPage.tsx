@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Search, Save, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
@@ -26,27 +27,26 @@ interface Preco {
   preco: number | null;
 }
 
+const VARIATION_THRESHOLD = 0.25;
+
 const CotacaoPage = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [localPrices, setLocalPrices] = useState<Record<string, Record<string, string>>>({});
+  const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);
+  const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "zerar" | null>(null);
+  const [legendVisible, setLegendVisible] = useState(true);
 
   // Fetch active cotação
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("cotacoes")
-        .select("*")
-        .eq("status", "ativa")
-        .limit(1)
-        .maybeSingle();
+      const { data, error } = await supabase.from("cotacoes").select("*").eq("status", "ativa").limit(1).maybeSingle();
       if (error) throw error;
       return data;
     },
   });
 
-  // Fetch fornecedores
   const { data: fornecedores = [] } = useQuery({
     queryKey: ["fornecedores"],
     queryFn: async () => {
@@ -56,7 +56,6 @@ const CotacaoPage = () => {
     },
   });
 
-  // Fetch cotação products
   const { data: cotacaoProdutos = [] } = useQuery({
     queryKey: ["cotacao-produtos", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
@@ -76,23 +75,18 @@ const CotacaoPage = () => {
     },
   });
 
-  // Fetch precos
   const { data: precos = [] } = useQuery({
     queryKey: ["precos", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
     queryFn: async () => {
       const cpIds = cotacaoProdutos.map((cp) => cp.id);
       if (!cpIds.length) return [];
-      const { data, error } = await supabase
-        .from("precos")
-        .select("*")
-        .in("cotacao_produto_id", cpIds);
+      const { data, error } = await supabase.from("precos").select("*").in("cotacao_produto_id", cpIds);
       if (error) throw error;
       return data as Preco[];
     },
   });
 
-  // Price map: cotacao_produto_id -> fornecedor_id -> preco
   const priceMap = useMemo(() => {
     const map: Record<string, Record<string, number | null>> = {};
     precos.forEach((p) => {
@@ -102,7 +96,6 @@ const CotacaoPage = () => {
     return map;
   }, [precos]);
 
-  // Init local prices from DB
   useEffect(() => {
     const lp: Record<string, Record<string, string>> = {};
     cotacaoProdutos.forEach((cp) => {
@@ -115,10 +108,8 @@ const CotacaoPage = () => {
     setLocalPrices(lp);
   }, [cotacaoProdutos, fornecedores, priceMap]);
 
-  // Save price mutation
   const savePriceMutation = useMutation({
     mutationFn: async ({ cpId, fornecedorId, preco }: { cpId: string; fornecedorId: string; preco: number | null }) => {
-      // Upsert
       const existing = precos.find((p) => p.cotacao_produto_id === cpId && p.fornecedor_id === fornecedorId);
       if (existing) {
         const { error } = await supabase.from("precos").update({ preco }).eq("id", existing.id);
@@ -159,8 +150,8 @@ const CotacaoPage = () => {
     toast.success("Preços salvos!");
   };
 
-  // Calculate min prices for highlighting
-  const getMinPrices = (cpId: string) => {
+  // Price analysis for a product
+  const analyzePrices = (cpId: string) => {
     const prices: { fId: string; val: number }[] = [];
     fornecedores.forEach((f) => {
       const rawVal = localPrices[cpId]?.[f.id]?.replace(",", ".").replace(/[^0-9.]/g, "");
@@ -169,31 +160,48 @@ const CotacaoPage = () => {
         if (!isNaN(num) && num > 0) prices.push({ fId: f.id, val: num });
       }
     });
-    if (!prices.length) return { min: null, second: null };
+    if (!prices.length) return { min: null, second: null, minVal: null, tiedCount: 0, allVals: [] };
+
+    const minVal = Math.min(...prices.map((p) => p.val));
+    const tied = prices.filter((p) => p.val === minVal);
+    const tiedCount = tied.length;
+    const allVals = prices.map((p) => p.val);
+
     prices.sort((a, b) => a.val - b.val);
-    return { min: prices[0]?.fId || null, second: prices[1]?.fId || null };
+    return {
+      min: tied.length === 1 ? tied[0].fId : tied[0].fId, // winner (first tied)
+      second: prices.length > 1 ? prices.find((p) => p.val !== minVal)?.fId || null : null,
+      minVal,
+      tiedCount,
+      allVals,
+    };
   };
 
-  // Grand total
+  const isHighVariation = (val: number, allVals: number[]) => {
+    if (allVals.length < 2) return false;
+    const sorted = [...allVals].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    if (median <= 0) return false;
+    return (val - median) / median > VARIATION_THRESHOLD;
+  };
+
   const grandTotal = useMemo(() => {
     let total = 0;
     cotacaoProdutos.forEach((cp) => {
-      const minInfo = getMinPrices(cp.id);
-      if (minInfo.min) {
-        const rawVal = localPrices[cp.id]?.[minInfo.min]?.replace(",", ".").replace(/[^0-9.]/g, "");
-        const price = rawVal ? parseFloat(rawVal) : 0;
-        total += price * (cp.quantidade || 1);
+      const info = analyzePrices(cp.id);
+      if (info.min && info.minVal !== null) {
+        total += info.minVal * (cp.quantidade || 1);
       }
     });
     return total;
   }, [localPrices, cotacaoProdutos, fornecedores]);
 
-  // Filtered items
   const filteredItems = cotacaoProdutos.filter((cp) =>
     !search || cp.produto?.nome.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Subscribe to realtime price updates
+  // Realtime
   useEffect(() => {
     if (!cotacaoAtiva?.id) return;
     const channel = supabase
@@ -204,6 +212,38 @@ const CotacaoPage = () => {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [cotacaoAtiva?.id, queryClient]);
+
+  // Nova cotação handler
+  const handleNovaCotacao = async () => {
+    if (!novaCotacaoOpt || !cotacaoAtiva) return;
+    try {
+      // Finalize current
+      await supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: new Date().toISOString() }).eq("id", cotacaoAtiva.id);
+
+      // Create new
+      const { data: newCot, error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa" }).select().single();
+      if (error) throw error;
+
+      if (novaCotacaoOpt === "manter" && newCot) {
+        // Copy products to new cotação
+        const inserts = cotacaoProdutos.map((cp) => ({
+          cotacao_id: newCot.id,
+          produto_id: cp.produto_id,
+          quantidade: cp.quantidade,
+        }));
+        if (inserts.length) {
+          await supabase.from("cotacao_produtos").insert(inserts);
+        }
+      }
+
+      queryClient.invalidateQueries();
+      setNovaCotacaoOpen(false);
+      setNovaCotacaoOpt(null);
+      toast.success(novaCotacaoOpt === "manter" ? "Nova cotação iniciada — preços limpos!" : "Cotação reiniciada — lista zerada!");
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
 
   if (!cotacaoAtiva) {
     return (
@@ -237,16 +277,33 @@ const CotacaoPage = () => {
         </Button>
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center gap-4 px-4 py-1.5 bg-muted/50 border-b text-[10px] flex-wrap">
-        <span className="font-bold uppercase tracking-wider text-muted-foreground">Legenda:</span>
-        <span className="flex items-center gap-1.5 text-muted-foreground">
-          <span className="bg-green-500 text-white text-[7px] font-extrabold px-1 rounded">MIN</span> Menor preço
-        </span>
-        <span className="flex items-center gap-1.5 text-muted-foreground">
-          <span className="bg-amber-500 text-white text-[7px] font-extrabold px-1 rounded">2º</span> Segundo menor
-        </span>
+      {/* Nova cotação strip */}
+      <div className="px-4 py-2.5 bg-amber-50 border-b border-amber-100 flex items-center gap-3 flex-wrap">
+        <p className="text-xs text-amber-700 flex-1">💡 Inicie uma nova rodada — salva o histórico e limpa os preços.</p>
+        <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs" onClick={() => setNovaCotacaoOpen(true)}>
+          🔄 Nova Cotação
+        </Button>
       </div>
+
+      {/* Legend */}
+      {legendVisible && (
+        <div className="flex items-center gap-4 px-4 py-1.5 bg-muted/50 border-b text-[10px] flex-wrap">
+          <span className="font-bold uppercase tracking-wider text-muted-foreground">Legenda:</span>
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <span className="bg-green-500 text-white text-[7px] font-extrabold px-1 rounded">MIN</span> Menor preço
+          </span>
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <span className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white text-[6.5px] font-extrabold px-1 rounded">≡MIN</span> Empate
+          </span>
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <span className="bg-amber-500 text-white text-[7px] font-extrabold px-1 rounded">2º</span> Segundo menor
+          </span>
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <span className="bg-gradient-to-r from-orange-500 to-red-600 text-white text-[7px] font-extrabold px-1 rounded">▲</span> +25% acima
+          </span>
+          <button onClick={() => setLegendVisible(false)} className="ml-auto text-muted-foreground hover:text-foreground">✕ ocultar</button>
+        </div>
+      )}
 
       {/* Table */}
       <div className="flex-1 overflow-auto">
@@ -256,20 +313,18 @@ const CotacaoPage = () => {
               <th className="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border whitespace-nowrap sticky left-0 bg-muted z-20">
                 Produto
               </th>
-              <th className="px-3 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border w-12">
-                QT
-              </th>
-              {fornecedores.map((f) => (
-                <th key={f.id} className="px-3 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border whitespace-nowrap min-w-[100px]">
-                  {f.nome}
-                </th>
-              ))}
-              <th className="px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-green-700 border-b-2 border-border">
-                MIN
-              </th>
-              <th className="px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-amber-700 border-b-2 border-border">
-                TOTAL
-              </th>
+              <th className="px-3 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border w-12">QT</th>
+              {fornecedores.map((f) => {
+                const hasPrice = precos.some((p) => p.fornecedor_id === f.id && p.preco !== null && p.preco > 0);
+                return (
+                  <th key={f.id} className="px-3 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border whitespace-nowrap min-w-[100px]">
+                    <span className={`inline-block w-2 h-2 rounded-full mr-1 align-middle ${hasPrice ? "bg-green-500 shadow-[0_0_0_2px_rgba(34,197,94,.2)]" : "bg-muted-foreground/30"}`} />
+                    {f.nome}
+                  </th>
+                );
+              })}
+              <th className="px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-green-700 border-b-2 border-border">MIN</th>
+              <th className="px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-amber-700 border-b-2 border-border">TOTAL</th>
             </tr>
           </thead>
           <tbody>
@@ -278,14 +333,8 @@ const CotacaoPage = () => {
                 {cotacaoProdutos.length === 0 ? "Nenhum produto na cotação. Adicione produtos pelo Banco de Produtos." : "Nenhum produto encontrado."}
               </td></tr>
             ) : filteredItems.map((cp) => {
-              const minInfo = getMinPrices(cp.id);
-              // Calculate min price value and total
-              let minPrice: number | null = null;
-              if (minInfo.min) {
-                const raw = localPrices[cp.id]?.[minInfo.min]?.replace(",", ".").replace(/[^0-9.]/g, "");
-                minPrice = raw ? parseFloat(raw) : null;
-              }
-              const totalLine = minPrice !== null ? minPrice * (cp.quantidade || 1) : null;
+              const info = analyzePrices(cp.id);
+              const totalLine = info.minVal !== null ? info.minVal * (cp.quantidade || 1) : null;
 
               return (
                 <tr key={cp.id} className="hover:bg-muted/30 transition-colors">
@@ -297,8 +346,18 @@ const CotacaoPage = () => {
                   </td>
                   <td className="px-3 py-2 border-b text-center text-muted-foreground">{cp.quantidade || 1}</td>
                   {fornecedores.map((f) => {
-                    const isMin = minInfo.min === f.id;
-                    const isSecond = minInfo.second === f.id;
+                    const rawVal = localPrices[cp.id]?.[f.id]?.replace(",", ".").replace(/[^0-9.]/g, "");
+                    const numVal = rawVal ? parseFloat(rawVal) : null;
+                    const isMin = numVal !== null && info.minVal !== null && numVal === info.minVal;
+                    const isTieMin = isMin && info.tiedCount > 1;
+                    const isSecond = info.second === f.id;
+                    const hiVar = numVal !== null && isHighVariation(numVal, info.allVals);
+
+                    let inputClass = "w-20 text-right font-mono text-xs h-8 px-2";
+                    if (isMin) inputClass += " price-best";
+                    else if (isSecond) inputClass += " price-second";
+                    if (hiVar && !isMin) inputClass += " price-high-var";
+
                     return (
                       <td key={f.id} className="px-1 py-1 border-b text-center">
                         <div className="relative inline-flex items-center">
@@ -308,19 +367,18 @@ const CotacaoPage = () => {
                             value={localPrices[cp.id]?.[f.id] || ""}
                             onChange={(e) => handlePriceChange(cp.id, f.id, e.target.value)}
                             onBlur={() => handlePriceBlur(cp.id, f.id)}
-                            className={`w-20 text-right font-mono text-xs h-8 px-2 ${
-                              isMin ? "bg-green-50 border-green-200 text-green-700 font-bold" :
-                              isSecond ? "bg-amber-50 border-amber-100 text-amber-700" : ""
-                            }`}
+                            className={inputClass}
                           />
-                          {isMin && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-green-500 to-green-600 text-white text-[6px] font-extrabold px-1 rounded">MIN</span>}
+                          {isTieMin && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white text-[6.5px] font-extrabold px-1 rounded">≡MIN</span>}
+                          {isMin && !isTieMin && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-green-500 to-green-600 text-white text-[6px] font-extrabold px-1 rounded">MIN</span>}
                           {isSecond && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[6px] font-extrabold px-1 rounded">2º</span>}
+                          {hiVar && !isMin && <span className="absolute -bottom-1.5 -right-1 bg-gradient-to-r from-orange-500 to-red-600 text-white text-[7px] font-extrabold px-1 rounded cursor-help" title="Preço muito acima (+25%)">▲</span>}
                         </div>
                       </td>
                     );
                   })}
                   <td className="px-3 py-2 border-b text-right font-mono text-xs font-bold text-green-700">
-                    {minPrice !== null ? `R$${formatNumber(minPrice)}` : "-"}
+                    {info.minVal !== null ? `R$${formatNumber(info.minVal)}` : "-"}
                   </td>
                   <td className="px-3 py-2 border-b text-right font-mono text-xs font-bold text-amber-700">
                     {totalLine !== null ? formatBRL(totalLine) : "-"}
@@ -337,6 +395,45 @@ const CotacaoPage = () => {
         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total da Compra</span>
         <span className="text-xl font-extrabold text-green-700 font-mono tracking-tight">{formatBRL(grandTotal)}</span>
       </div>
+
+      {/* Nova Cotação Modal */}
+      <Dialog open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>🔄 Nova Cotação</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">Salva o histórico atual e reinicia a cotação</p>
+          <p className="text-sm text-foreground mt-2">O que deseja fazer com a <strong>lista de produtos</strong>?</p>
+          <div className="space-y-3 mt-2">
+            <label
+              className={`flex items-start gap-3 p-3 border-2 rounded-xl cursor-pointer transition-colors ${novaCotacaoOpt === "manter" ? "border-[hsl(var(--brand))] bg-accent/30" : "border-border hover:border-muted-foreground/30"}`}
+              onClick={() => setNovaCotacaoOpt("manter")}
+            >
+              <input type="radio" name="nc" checked={novaCotacaoOpt === "manter"} readOnly className="mt-1 accent-[hsl(var(--brand))]" />
+              <div>
+                <div className="text-sm font-bold">Manter lista de itens</div>
+                <div className="text-xs text-muted-foreground">Apenas limpa os preços. Os produtos permanecem.</div>
+              </div>
+            </label>
+            <label
+              className={`flex items-start gap-3 p-3 border-2 rounded-xl cursor-pointer transition-colors ${novaCotacaoOpt === "zerar" ? "border-destructive bg-red-50" : "border-border hover:border-muted-foreground/30"}`}
+              onClick={() => setNovaCotacaoOpt("zerar")}
+            >
+              <input type="radio" name="nc" checked={novaCotacaoOpt === "zerar"} readOnly className="mt-1 accent-red-600" />
+              <div>
+                <div className="text-sm font-bold">Zerar tudo — lista nova</div>
+                <div className="text-xs text-muted-foreground">Remove todos os produtos e preços. Começa do zero.</div>
+              </div>
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNovaCotacaoOpen(false)}>Cancelar</Button>
+            <Button onClick={handleNovaCotacao} disabled={!novaCotacaoOpt} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

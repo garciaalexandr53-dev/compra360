@@ -1,30 +1,74 @@
-import { ShoppingCart, Package, Users, BarChart3, History, TrendingUp, Link2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
+import { BarChart3, Package, Users, ShoppingCart, TrendingUp, History } from "lucide-react";
 
 const mainMenu = [
-  { title: "Cotação", url: "/cotacao", icon: BarChart3 },
-  { title: "Banco de Produtos", url: "/produtos", icon: Package },
-  { title: "Fornecedores", url: "/fornecedores", icon: Users },
+  { title: "Cotação", url: "/cotacao", icon: BarChart3, emoji: "📊" },
+  { title: "Banco de Produtos", url: "/produtos", icon: Package, emoji: "🗄️" },
+  { title: "Fornecedores", url: "/fornecedores", icon: Users, emoji: "🔗" },
 ];
-
 const analysisMenu = [
-  { title: "Pedidos", url: "/pedidos", icon: ShoppingCart },
-  { title: "Resumo", url: "/resumo", icon: TrendingUp },
+  { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, emoji: "📦" },
+  { title: "Resumo", url: "/resumo", icon: TrendingUp, emoji: "📈" },
 ];
-
 const systemMenu = [
-  { title: "Histórico", url: "/historico", icon: History },
+  { title: "Histórico", url: "/historico", icon: History, emoji: "🕐" },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+
+  const { data: cotacaoAtiva } = useQuery({
+    queryKey: ["cotacao-ativa"],
+    queryFn: async () => {
+      const { data } = await supabase.from("cotacoes").select("id").eq("status", "ativa").limit(1).maybeSingle();
+      return data;
+    },
+  });
+
+  const { data: itemCount = 0 } = useQuery({
+    queryKey: ["cotacao-item-count", cotacaoAtiva?.id],
+    enabled: !!cotacaoAtiva?.id,
+    queryFn: async () => {
+      const { count } = await supabase.from("cotacao_produtos").select("*", { count: "exact", head: true }).eq("cotacao_id", cotacaoAtiva!.id);
+      return count || 0;
+    },
+  });
+
+  const { data: fornecedorCount = 0 } = useQuery({
+    queryKey: ["fornecedor-count"],
+    queryFn: async () => {
+      const { count } = await supabase.from("fornecedores").select("*", { count: "exact", head: true });
+      return count || 0;
+    },
+  });
+
+  const { data: respostaCount = 0 } = useQuery({
+    queryKey: ["resposta-count", cotacaoAtiva?.id],
+    enabled: !!cotacaoAtiva?.id,
+    queryFn: async () => {
+      const cpIds = await supabase.from("cotacao_produtos").select("id").eq("cotacao_id", cotacaoAtiva!.id);
+      if (!cpIds.data?.length) return 0;
+      const ids = cpIds.data.map((cp) => cp.id);
+      const { data } = await supabase.from("precos").select("fornecedor_id").in("cotacao_produto_id", ids).not("preco", "is", null);
+      if (!data) return 0;
+      return new Set(data.map((p) => p.fornecedor_id)).size;
+    },
+  });
+
+  const getBadge = (url: string) => {
+    if (url === "/cotacao" && itemCount > 0) return String(itemCount);
+    if (url === "/fornecedores" && respostaCount > 0) return String(respostaCount);
+    return undefined;
+  };
 
   const renderMenu = (items: typeof mainMenu) => (
     <SidebarMenu>
@@ -36,7 +80,14 @@ export function AppSidebar() {
           >
             <NavLink to={item.url} className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
               <item.icon className="h-4 w-4" />
-              {!collapsed && <span>{item.title}</span>}
+              {!collapsed && <span className="flex-1">{item.title}</span>}
+              {!collapsed && getBadge(item.url) && (
+                <span className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${
+                  item.url === "/fornecedores" ? "bg-green-600 text-white" : "bg-primary text-primary-foreground"
+                }`}>
+                  {getBadge(item.url)}
+                </span>
+              )}
             </NavLink>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -78,9 +129,22 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-3 border-t border-sidebar-border">
         {!collapsed && (
-          <p className="text-xs text-sidebar-foreground/40">CotaFácil v1.0</p>
+          <div className="grid grid-cols-3 gap-1 bg-sidebar-accent/50 border border-sidebar-border rounded-lg p-2.5">
+            <div className="text-center">
+              <span className="block text-[15px] font-bold text-sidebar-foreground">{itemCount}</span>
+              <span className="text-[8.5px] text-sidebar-foreground/35 uppercase tracking-wider">Itens</span>
+            </div>
+            <div className="text-center">
+              <span className="block text-[15px] font-bold text-sidebar-foreground">{fornecedorCount}</span>
+              <span className="text-[8.5px] text-sidebar-foreground/35 uppercase tracking-wider">Forn.</span>
+            </div>
+            <div className="text-center">
+              <span className="block text-[15px] font-bold text-sidebar-foreground">{respostaCount}</span>
+              <span className="text-[8.5px] text-sidebar-foreground/35 uppercase tracking-wider">Resp.</span>
+            </div>
+          </div>
         )}
       </SidebarFooter>
     </Sidebar>
