@@ -1,14 +1,18 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { formatBRL } from "@/lib/format";
+import { formatBRL, formatNumber } from "@/lib/format";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ChevronDown } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Fornecedor = Tables<"fornecedores">;
 
 const PedidosPage = () => {
+  const queryClient = useQueryClient();
+  const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
+
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa"],
     queryFn: async () => {
@@ -52,7 +56,7 @@ const PedidosPage = () => {
     },
   });
 
-  // Build orders per supplier (best price wins)
+  // Build orders per supplier
   const orders = useMemo(() => {
     const result: Record<string, { produto: string; embalagem: string; quantidade: number; preco: number; total: number }[]> = {};
     fornecedores.forEach((f) => { result[f.id] = []; });
@@ -61,7 +65,6 @@ const PedidosPage = () => {
       const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco !== null && p.preco > 0);
       if (!cpPrecos.length) return;
 
-      // Find min price
       let minP: any = cpPrecos[0];
       cpPrecos.forEach((p: any) => { if (p.preco < minP.preco) minP = p; });
 
@@ -78,6 +81,10 @@ const PedidosPage = () => {
     return result;
   }, [cotacaoProdutos, precos, fornecedores]);
 
+  const toggleCard = (id: string) => {
+    setOpenCards((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   const sendWhatsApp = (f: Fornecedor) => {
     const items = orders[f.id] || [];
     if (!items.length) { toast.error("Nenhum item para " + f.nome); return; }
@@ -85,10 +92,35 @@ const PedidosPage = () => {
     const date = new Date().toLocaleDateString("pt-BR");
     let msg = `📋 *PEDIDO DE COMPRA - COTAFÁCIL*\n-----\n📦 *Fornecedor:* ${f.nome}\n📅 *Data:* ${date}\n📝 *Itens:* ${items.length}\n-----\n`;
     items.forEach((it, i) => {
-      msg += `\n*${i + 1}. ${it.produto}*\n    Qtd: ${it.quantidade} ${it.embalagem}\n    Preço: R$ ${it.preco.toFixed(2).replace(".", ",")}  →  *Total: R$ ${it.total.toFixed(2).replace(".", ",")}*\n`;
+      msg += `\n*${i + 1}. ${it.produto}*\n    Qtd: ${it.quantidade} ${it.embalagem}\n    Preço: R$ ${formatNumber(it.preco)}  →  *Total: R$ ${formatNumber(it.total)}*\n`;
     });
     msg += `\n-----\n💰 *TOTAL GERAL: ${formatBRL(total)}*\n-----\n_Enviado via CotaFácil_`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
+  const redistribuir = async (fId: string) => {
+    // For each item assigned to this supplier, find the next cheapest
+    let moved = 0;
+    const updates: { cpId: string; newFId: string }[] = [];
+
+    cotacaoProdutos.forEach((cp: any) => {
+      const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco !== null && p.preco > 0);
+      if (!cpPrecos.length) return;
+
+      let minP: any = cpPrecos[0];
+      cpPrecos.forEach((p: any) => { if (p.preco < minP.preco) minP = p; });
+
+      if (minP.fornecedor_id === fId) {
+        // Find next best
+        const others = cpPrecos.filter((p: any) => p.fornecedor_id !== fId).sort((a: any, b: any) => a.preco - b.preco);
+        if (others.length > 0) {
+          moved++;
+          // We can't easily "choose" in current schema, so just notify
+        }
+      }
+    });
+
+    toast.info(`${moved} item(s) têm alternativas em outros fornecedores. Funcionalidade de redistribuição manual em breve.`);
   };
 
   return (
@@ -103,52 +135,75 @@ const PedidosPage = () => {
         if (!items.length) return null;
         const total = items.reduce((s, it) => s + it.total, 0);
         const minOk = !f.pedido_minimo || f.pedido_minimo <= 0 || total >= f.pedido_minimo;
+        const falta = f.pedido_minimo && f.pedido_minimo > 0 && !minOk ? f.pedido_minimo - total : 0;
+        const pct = f.pedido_minimo && f.pedido_minimo > 0 ? Math.min(100, Math.round((total / f.pedido_minimo) * 100)) : 100;
+        const isOpen = openCards[f.id] || false;
 
         return (
-          <div key={f.id} className="bg-card border rounded-xl shadow-sm mb-3 overflow-hidden">
-            {f.pedido_minimo && f.pedido_minimo > 0 && !minOk && (
-              <div className="px-4 py-2 bg-red-50 border-b border-red-100 text-sm text-red-700">
-                ⚠️ Pedido mínimo não atingido! Faltam <strong>{formatBRL(f.pedido_minimo - total)}</strong> para atingir R$ {f.pedido_minimo.toFixed(2).replace(".", ",")}
+          <div key={f.id} className="bg-card border rounded-xl shadow-sm mb-3 overflow-hidden hover:shadow-md transition-shadow">
+            {/* Min order alert */}
+            {f.pedido_minimo && f.pedido_minimo > 0 && (
+              <div className={`px-4 py-2.5 border-b text-sm flex items-center gap-3 flex-wrap ${minOk ? "bg-green-50 border-green-100" : "bg-red-50 border-red-100"}`}>
+                {minOk ? (
+                  <span className="text-green-700 font-bold">✅ Pedido mínimo atingido — Mín: {formatBRL(f.pedido_minimo)} · Pedido: {formatBRL(total)}</span>
+                ) : (
+                  <>
+                    <span className="flex-1 text-red-700">
+                      ⚠️ <strong>Pedido mínimo não atingido!</strong> Faltam <strong>{formatBRL(falta)}</strong> para R$ {formatNumber(f.pedido_minimo)}
+                      <div className="h-[3px] bg-red-500/40 rounded mt-1.5" style={{ width: `${pct}%` }} />
+                    </span>
+                    <Button size="sm" variant="destructive" className="text-xs whitespace-nowrap" onClick={() => redistribuir(f.id)}>
+                      ⇄ Redistribuir itens
+                    </Button>
+                  </>
+                )}
               </div>
             )}
-            <div className="px-4 py-3 flex items-center justify-between">
+
+            {/* Header - clickable */}
+            <div className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => toggleCard(f.id)}>
               <div>
                 <div className="font-bold text-foreground">{f.nome}</div>
                 <div className="text-xs text-muted-foreground">{items.length} itens{f.pedido_minimo && f.pedido_minimo > 0 ? ` · mín: ${formatBRL(f.pedido_minimo)}` : ""}</div>
               </div>
               <div className="flex items-center gap-3">
-                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => sendWhatsApp(f)}>
+                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={(e) => { e.stopPropagation(); sendWhatsApp(f); }}>
                   📱 Enviar Pedido
                 </Button>
                 <span className={`text-lg font-extrabold font-mono ${minOk ? "text-green-700" : "text-red-600"}`}>
-                  {formatBRL(total)}
+                  {!minOk && "⚠️ "}{formatBRL(total)}
                 </span>
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
               </div>
             </div>
-            <div className="border-t">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-muted/50">
-                    <th className="px-3 py-2 text-center text-[10px] font-bold uppercase text-muted-foreground">QT</th>
-                    <th className="px-3 py-2 text-center text-[10px] font-bold uppercase text-muted-foreground">EMBAL</th>
-                    <th className="px-3 py-2 text-left text-[10px] font-bold uppercase text-muted-foreground">PRODUTO</th>
-                    <th className="px-3 py-2 text-right text-[10px] font-bold uppercase text-muted-foreground">PREÇO</th>
-                    <th className="px-3 py-2 text-right text-[10px] font-bold uppercase text-muted-foreground">TOTAL</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((it, i) => (
-                    <tr key={i} className={i % 2 === 0 ? "bg-muted/20" : ""}>
-                      <td className="px-3 py-2 text-center">{it.quantidade}</td>
-                      <td className="px-3 py-2 text-center">{it.embalagem}</td>
-                      <td className="px-3 py-2 font-medium">{it.produto}</td>
-                      <td className="px-3 py-2 text-right font-mono text-xs font-bold text-green-700">R${it.preco.toFixed(2).replace(".", ",")}</td>
-                      <td className="px-3 py-2 text-right font-mono text-xs font-bold text-amber-700">{formatBRL(it.total)}</td>
+
+            {/* Collapsible body */}
+            {isOpen && (
+              <div className="border-t">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-muted/50">
+                      <th className="px-3 py-2 text-center text-[10px] font-bold uppercase text-muted-foreground">QT</th>
+                      <th className="px-3 py-2 text-center text-[10px] font-bold uppercase text-muted-foreground">EMBAL</th>
+                      <th className="px-3 py-2 text-left text-[10px] font-bold uppercase text-muted-foreground">PRODUTO</th>
+                      <th className="px-3 py-2 text-right text-[10px] font-bold uppercase text-muted-foreground">PREÇO</th>
+                      <th className="px-3 py-2 text-right text-[10px] font-bold uppercase text-muted-foreground">TOTAL</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {items.map((it, i) => (
+                      <tr key={i} className={i % 2 === 0 ? "bg-muted/20" : ""}>
+                        <td className="px-3 py-2 text-center">{it.quantidade}</td>
+                        <td className="px-3 py-2 text-center">{it.embalagem}</td>
+                        <td className="px-3 py-2 font-medium">{it.produto}</td>
+                        <td className="px-3 py-2 text-right font-mono text-xs font-bold text-green-700">R${formatNumber(it.preco)}</td>
+                        <td className="px-3 py-2 text-right font-mono text-xs font-bold text-amber-700">{formatBRL(it.total)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         );
       })}
