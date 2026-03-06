@@ -6,19 +6,23 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, Package, Users, ShoppingCart, TrendingUp, History } from "lucide-react";
+import { BarChart3, Package, Users, ShoppingCart, TrendingUp, History, Link2, UserCheck } from "lucide-react";
 
 const mainMenu = [
   { title: "Cotação", url: "/cotacao", icon: BarChart3, emoji: "📊" },
   { title: "Banco de Produtos", url: "/produtos", icon: Package, emoji: "🗄️" },
-  { title: "Fornecedores", url: "/fornecedores", icon: Users, emoji: "🔗" },
+  { title: "Links", url: "/links", icon: Link2, emoji: "🔗" },
 ];
 const analysisMenu = [
   { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, emoji: "📦" },
   { title: "Resumo", url: "/resumo", icon: TrendingUp, emoji: "📈" },
 ];
+const toolsMenu = [
+  { title: "App Funcionários", url: "/funcionarios", icon: UserCheck, emoji: "👥" },
+];
 const systemMenu = [
   { title: "Histórico", url: "/historico", icon: History, emoji: "🕐" },
+  { title: "Fornecedores", url: "/fornecedores", icon: Users, emoji: "⚙️" },
 ];
 
 export function AppSidebar() {
@@ -122,6 +126,10 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>Análise</SidebarGroupLabel>
           <SidebarGroupContent>{renderMenu(analysisMenu)}</SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Ferramentas</SidebarGroupLabel>
+          <SidebarGroupContent>{renderMenu(toolsMenu)}</SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
           <SidebarGroupLabel>Sistema</SidebarGroupLabel>

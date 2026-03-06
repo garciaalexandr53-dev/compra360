@@ -19,6 +19,7 @@ const emptyForm = {
   telefone: "",
   email: "",
   pedido_minimo: "",
+  prazo_pagamento: "",
   observacoes: "",
 };
 
@@ -51,6 +52,7 @@ const FornecedoresPage = () => {
           telefone: (data as any).telefone || null,
           email: (data as any).email || null,
           pedido_minimo: (data as any).pedido_minimo || 0,
+          prazo_pagamento: (data as any).prazo_pagamento || null,
           observacoes: (data as any).observacoes || null,
         }).eq("id", editingId);
         if (error) throw error;
@@ -61,6 +63,7 @@ const FornecedoresPage = () => {
           telefone: (data as any).telefone || null,
           email: (data as any).email || null,
           pedido_minimo: (data as any).pedido_minimo || 0,
+          prazo_pagamento: (data as any).prazo_pagamento || null,
           observacoes: (data as any).observacoes || null,
         });
         if (error) throw error;
@@ -102,6 +105,7 @@ const FornecedoresPage = () => {
       telefone: f.telefone || "",
       email: f.email || "",
       pedido_minimo: f.pedido_minimo?.toString() || "",
+      prazo_pagamento: (f as any).prazo_pagamento || "",
       observacoes: f.observacoes || "",
     });
     setModalOpen(true);
@@ -115,8 +119,9 @@ const FornecedoresPage = () => {
       telefone: form.telefone.trim() || null,
       email: form.email.trim() || null,
       pedido_minimo: parseFloat(form.pedido_minimo) || 0,
+      prazo_pagamento: form.prazo_pagamento.trim() || null,
       observacoes: form.observacoes.trim() || null,
-    });
+    } as any);
   };
 
   const getLink = (f: Fornecedor) => {
@@ -237,6 +242,10 @@ const FornecedoresPage = () => {
               <Label>Pedido Mínimo (R$)</Label>
               <Input type="number" placeholder="0.00" min="0" step="0.01" value={form.pedido_minimo} onChange={(e) => setForm({ ...form, pedido_minimo: e.target.value })} />
               <p className="text-xs text-muted-foreground mt-1">Deixe 0 ou vazio se não houver mínimo</p>
+            </div>
+            <div>
+              <Label>Prazo de Pagamento</Label>
+              <Input placeholder="Ex: 30 dias, à vista, 7/14/21" value={form.prazo_pagamento} onChange={(e) => setForm({ ...form, prazo_pagamento: e.target.value })} />
             </div>
             <div><Label>Observações</Label><Input placeholder="Ex: entrega 3x por semana" value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} /></div>
           </div>

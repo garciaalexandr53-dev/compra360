@@ -103,6 +103,7 @@ export type Database = {
           nome: string
           observacoes: string | null
           pedido_minimo: number | null
+          prazo_pagamento: string | null
           representante: string | null
           telefone: string | null
           token: string
@@ -115,6 +116,7 @@ export type Database = {
           nome: string
           observacoes?: string | null
           pedido_minimo?: number | null
+          prazo_pagamento?: string | null
           representante?: string | null
           telefone?: string | null
           token?: string
@@ -127,10 +129,41 @@ export type Database = {
           nome?: string
           observacoes?: string | null
           pedido_minimo?: number | null
+          prazo_pagamento?: string | null
           representante?: string | null
           telefone?: string | null
           token?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      itens_faltantes: {
+        Row: {
+          created_at: string
+          id: string
+          importado: boolean
+          nome: string
+          observacao: string | null
+          quantidade: number | null
+          registrado_por: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          importado?: boolean
+          nome: string
+          observacao?: string | null
+          quantidade?: number | null
+          registrado_por?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          importado?: boolean
+          nome?: string
+          observacao?: string | null
+          quantidade?: number | null
+          registrado_por?: string | null
         }
         Relationships: []
       }
