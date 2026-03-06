@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search, Pencil, Trash2, Check } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Check, Upload } from "lucide-react";
 import { toast } from "sonner";
+import ImportProdutosModal from "@/components/ImportProdutosModal";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
@@ -23,6 +24,7 @@ const ProdutosPage = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [editMode, setEditMode] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const { data: categorias = [] } = useQuery({
     queryKey: ["categorias"],
@@ -177,6 +179,9 @@ const ProdutosPage = () => {
           </div>
           <span className="text-sm text-muted-foreground">{filtered.length} produto{filtered.length !== 1 ? "s" : ""}</span>
           <div className="ml-auto flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+              <Upload className="h-4 w-4 mr-1" /> Importar
+            </Button>
             <Button variant={editMode ? "default" : "outline"} size="sm" onClick={() => setEditMode(!editMode)}>
               {editMode ? <><Check className="h-4 w-4 mr-1" /> Concluir</> : <><Pencil className="h-4 w-4 mr-1" /> Editar</>}
             </Button>
@@ -267,6 +272,13 @@ const ProdutosPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Import Modal */}
+      <ImportProdutosModal
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        categorias={categorias}
+      />
     </div>
   );
 };
