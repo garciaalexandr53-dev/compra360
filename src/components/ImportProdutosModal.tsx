@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 
 interface Props {
   open: boolean;
@@ -25,6 +26,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
   const [pasteText, setPasteText] = useState("");
   const [parsedItems, setParsedItems] = useState<ParsedProduct[]>([]);
   const [importing, setImporting] = useState(false);
+  const [dupCount, setDupCount] = useState(0);
 
   const processPaste = () => {
     const lines = pasteText
@@ -35,54 +37,107 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
       toast.error("Cole pelo menos um produto");
       return;
     }
-    const items: ParsedProduct[] = lines.map((line) => ({
-      nome: line,
-      categoria: "Geral",
-      embalagem: "un",
-    }));
+    const items: ParsedProduct[] = lines.map((line) => {
+      // Try to detect "produto - categoria" or "produto;categoria;embalagem" patterns
+      const parts = line.split(/[;\t]/).map(s => s.trim());
+      return {
+        nome: parts[0] || line,
+        categoria: parts[1] || "Geral",
+        embalagem: parts[2] || "un",
+      };
+    });
     setParsedItems(items);
+    setDupCount(0);
     toast.success(`${items.length} produtos detectados!`);
   };
 
   const processFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      if (!text) return;
+    const isExcel = file.name.endsWith(".xlsx") || file.name.endsWith(".xls");
 
-      const lines = text.split(/\r?\n/).filter((l) => l.trim());
-      if (lines.length < 2) {
-        toast.error("Arquivo deve ter cabeçalho e pelo menos 1 produto");
-        return;
-      }
+    if (isExcel) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rows: any[][] = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
-      const separator = lines[0].includes(";") ? ";" : lines[0].includes("\t") ? "\t" : ",";
-      const headers = lines[0].split(separator).map((h) => h.replace(/"/g, "").trim().toLowerCase());
+          if (rows.length < 2) {
+            toast.error("Arquivo deve ter cabeçalho e pelo menos 1 produto");
+            return;
+          }
 
-      const colProd = headers.findIndex((h) =>
-        ["produto", "descricao", "item", "nome", "mercadoria"].some((k) => h.includes(k))
-      );
-      const colCat = headers.findIndex((h) =>
-        ["categoria", "grupo", "secao"].some((k) => h.includes(k))
-      );
-      const colEmbal = headers.findIndex((h) => h.includes("embal") || h.includes("emb"));
+          const headers = rows[0].map((h: any) => String(h || "").trim().toLowerCase());
+          const colProd = headers.findIndex((h) =>
+            ["produto", "descricao", "item", "nome", "mercadoria", "descrição"].some((k) => h.includes(k))
+          );
+          const colCat = headers.findIndex((h) =>
+            ["categoria", "grupo", "secao", "seção"].some((k) => h.includes(k))
+          );
+          const colEmbal = headers.findIndex((h) => h.includes("embal") || h.includes("emb") || h.includes("unidade"));
 
-      const items: ParsedProduct[] = [];
-      lines.slice(1).forEach((line) => {
-        const cols = parseCSVLine(line, separator);
-        const nome = (cols[colProd >= 0 ? colProd : 0] || "").trim();
-        if (!nome) return;
-        items.push({
-          nome,
-          categoria: colCat >= 0 ? (cols[colCat] || "Geral").trim() : "Geral",
-          embalagem: colEmbal >= 0 ? (cols[colEmbal] || "un").trim() : "un",
+          const items: ParsedProduct[] = [];
+          rows.slice(1).forEach((row) => {
+            const nome = String(row[colProd >= 0 ? colProd : 0] || "").trim();
+            if (!nome) return;
+            items.push({
+              nome,
+              categoria: colCat >= 0 ? String(row[colCat] || "Geral").trim() : "Geral",
+              embalagem: colEmbal >= 0 ? String(row[colEmbal] || "un").trim() : "un",
+            });
+          });
+
+          setParsedItems(items);
+          setDupCount(0);
+          toast.success(`${items.length} produtos detectados do arquivo Excel!`);
+        } catch (err: any) {
+          toast.error("Erro ao ler o arquivo Excel: " + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      // CSV/TXT
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        if (!text) return;
+
+        const lines = text.split(/\r?\n/).filter((l) => l.trim());
+        if (lines.length < 2) {
+          toast.error("Arquivo deve ter cabeçalho e pelo menos 1 produto");
+          return;
+        }
+
+        const separator = lines[0].includes(";") ? ";" : lines[0].includes("\t") ? "\t" : ",";
+        const headers = lines[0].split(separator).map((h) => h.replace(/"/g, "").trim().toLowerCase());
+
+        const colProd = headers.findIndex((h) =>
+          ["produto", "descricao", "item", "nome", "mercadoria", "descrição"].some((k) => h.includes(k))
+        );
+        const colCat = headers.findIndex((h) =>
+          ["categoria", "grupo", "secao", "seção"].some((k) => h.includes(k))
+        );
+        const colEmbal = headers.findIndex((h) => h.includes("embal") || h.includes("emb") || h.includes("unidade"));
+
+        const items: ParsedProduct[] = [];
+        lines.slice(1).forEach((line) => {
+          const cols = parseCSVLine(line, separator);
+          const nome = (cols[colProd >= 0 ? colProd : 0] || "").trim();
+          if (!nome) return;
+          items.push({
+            nome,
+            categoria: colCat >= 0 ? (cols[colCat] || "Geral").trim() : "Geral",
+            embalagem: colEmbal >= 0 ? (cols[colEmbal] || "un").trim() : "un",
+          });
         });
-      });
 
-      setParsedItems(items);
-      toast.success(`${items.length} produtos detectados do arquivo!`);
-    };
-    reader.readAsText(file, "utf-8");
+        setParsedItems(items);
+        setDupCount(0);
+        toast.success(`${items.length} produtos detectados do arquivo!`);
+      };
+      reader.readAsText(file, "utf-8");
+    }
   };
 
   const parseCSVLine = (line: string, sep: string): string[] => {
@@ -113,9 +168,24 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
     if (!parsedItems.length) return;
     setImporting(true);
     try {
+      // Get existing products to check duplicates
+      const { data: existingProducts } = await supabase.from("produtos").select("nome");
+      const existingNames = new Set((existingProducts || []).map((p) => p.nome.toLowerCase().trim()));
+
+      // Filter out duplicates
+      const uniqueItems = parsedItems.filter((p) => !existingNames.has(p.nome.toLowerCase().trim()));
+      const dups = parsedItems.length - uniqueItems.length;
+      setDupCount(dups);
+
+      if (!uniqueItems.length) {
+        toast.info(`Todos os ${parsedItems.length} produtos já existem no banco!`);
+        setImporting(false);
+        return;
+      }
+
       // Create categories that don't exist
       const existingCats = new Set(categorias.map((c) => c.nome.toLowerCase()));
-      const newCats = [...new Set(parsedItems.map((p) => p.categoria))].filter(
+      const newCats = [...new Set(uniqueItems.map((p) => p.categoria))].filter(
         (c) => c !== "Geral" && !existingCats.has(c.toLowerCase())
       );
 
@@ -136,8 +206,8 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
       // Insert products in batches
       const batchSize = 50;
       let total = 0;
-      for (let i = 0; i < parsedItems.length; i += batchSize) {
-        const batch = parsedItems.slice(i, i + batchSize).map((p) => ({
+      for (let i = 0; i < uniqueItems.length; i += batchSize) {
+        const batch = uniqueItems.slice(i, i + batchSize).map((p) => ({
           nome: p.nome,
           categoria_id: catMap[p.categoria.toLowerCase()] || null,
           embalagem: p.embalagem || "un",
@@ -150,7 +220,10 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
 
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
       queryClient.invalidateQueries({ queryKey: ["categorias"] });
-      toast.success(`✅ ${total} produtos importados!`);
+      const msg = dups > 0
+        ? `✅ ${total} produtos importados! (${dups} duplicados ignorados)`
+        : `✅ ${total} produtos importados!`;
+      toast.success(msg);
       setParsedItems([]);
       setPasteText("");
       onOpenChange(false);
@@ -185,10 +258,10 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
 
           <TabsContent value="colar" className="space-y-3 mt-3">
             <p className="text-xs text-muted-foreground">
-              Cole uma lista de produtos (um por linha):
+              Cole uma lista de produtos (um por linha). Use <code>;</code> para separar: <code>Produto;Categoria;Embalagem</code>
             </p>
             <Textarea
-              placeholder={"Detergente Ype 500ml\nSabão em Pó Ariel 1kg\nÁgua Mineral 500ml"}
+              placeholder={"Detergente Ype 500ml;Limpeza;cx\nSabão em Pó Ariel 1kg;Limpeza;cx\nÁgua Mineral 500ml"}
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
               rows={6}
@@ -200,7 +273,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
 
           <TabsContent value="arquivo" className="space-y-3 mt-3">
             <p className="text-xs text-muted-foreground">
-              Arraste um arquivo CSV ou Excel com colunas: Produto, Categoria, Embalagem
+              Arraste um arquivo CSV ou Excel (.xlsx, .xls) com colunas: Produto, Categoria, Embalagem
             </p>
             <div
               className="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer hover:border-primary transition-colors"
@@ -210,7 +283,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
               <p className="text-sm font-semibold text-muted-foreground">
                 Clique para selecionar arquivo
               </p>
-              <p className="text-xs text-muted-foreground mt-1">CSV, TXT ou XLS</p>
+              <p className="text-xs text-muted-foreground mt-1">CSV, TXT, XLS ou XLSX</p>
             </div>
             <input
               ref={fileInputRef}
@@ -230,6 +303,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
           <div className="border rounded-lg overflow-hidden mt-3">
             <div className="px-3 py-2 bg-green-50 border-b text-xs font-bold text-green-700">
               ✅ {parsedItems.length} produtos prontos para importar
+              {dupCount > 0 && <span className="text-amber-600 ml-2">({dupCount} duplicados serão ignorados)</span>}
             </div>
             <div className="max-h-[200px] overflow-y-auto">
               <table className="w-full text-xs">

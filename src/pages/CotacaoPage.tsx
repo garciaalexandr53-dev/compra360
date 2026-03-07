@@ -37,7 +37,9 @@ const CotacaoPage = () => {
   const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "zerar" | null>(null);
   const [legendVisible, setLegendVisible] = useState(true);
 
-  // Fetch active cotação
+  // Inline editing for qty/embalagem/nome
+  const [editingField, setEditingField] = useState<Record<string, { quantidade?: string; embalagem?: string; nome?: string }>>({});
+
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa"],
     queryFn: async () => {
@@ -121,6 +123,26 @@ const CotacaoPage = () => {
     },
   });
 
+  const updateCpMutation = useMutation({
+    mutationFn: async ({ cpId, field, value }: { cpId: string; field: string; value: any }) => {
+      if (field === "quantidade") {
+        const { error } = await supabase.from("cotacao_produtos").update({ quantidade: value }).eq("id", cpId);
+        if (error) throw error;
+      } else if (field === "nome" || field === "embalagem") {
+        // Update the underlying produto
+        const cp = cotacaoProdutos.find(c => c.id === cpId);
+        if (cp?.produto_id) {
+          const { error } = await supabase.from("produtos").update({ [field]: value }).eq("id", cp.produto_id);
+          if (error) throw error;
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
+      queryClient.invalidateQueries({ queryKey: ["produtos"] });
+    },
+  });
+
   const handlePriceChange = (cpId: string, fornecedorId: string, value: string) => {
     setLocalPrices((prev) => ({
       ...prev,
@@ -150,7 +172,6 @@ const CotacaoPage = () => {
     toast.success("Preços salvos!");
   };
 
-  // Price analysis for a product
   const analyzePrices = (cpId: string) => {
     const prices: { fId: string; val: number }[] = [];
     fornecedores.forEach((f) => {
@@ -169,7 +190,7 @@ const CotacaoPage = () => {
 
     prices.sort((a, b) => a.val - b.val);
     return {
-      min: tied.length === 1 ? tied[0].fId : tied[0].fId, // winner (first tied)
+      min: tied[0].fId,
       second: prices.length > 1 ? prices.find((p) => p.val !== minVal)?.fId || null : null,
       minVal,
       tiedCount,
@@ -213,19 +234,14 @@ const CotacaoPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [cotacaoAtiva?.id, queryClient]);
 
-  // Nova cotação handler
   const handleNovaCotacao = async () => {
     if (!novaCotacaoOpt || !cotacaoAtiva) return;
     try {
-      // Finalize current
       await supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: new Date().toISOString() }).eq("id", cotacaoAtiva.id);
-
-      // Create new
       const { data: newCot, error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa" }).select().single();
       if (error) throw error;
 
       if (novaCotacaoOpt === "manter" && newCot) {
-        // Copy products to new cotação
         const inserts = cotacaoProdutos.map((cp) => ({
           cotacao_id: newCot.id,
           produto_id: cp.produto_id,
@@ -243,6 +259,24 @@ const CotacaoPage = () => {
     } catch (e: any) {
       toast.error(e.message);
     }
+  };
+
+  const handleFieldBlur = (cpId: string, field: string, value: string, original: string) => {
+    if (value.trim() !== original.trim()) {
+      if (field === "quantidade") {
+        updateCpMutation.mutate({ cpId, field, value: parseFloat(value) || 1 });
+      } else {
+        updateCpMutation.mutate({ cpId, field, value: value.trim() });
+      }
+    }
+    setEditingField((prev) => {
+      const copy = { ...prev };
+      if (copy[cpId]) {
+        delete copy[cpId][field as keyof typeof copy[typeof cpId]];
+        if (!Object.keys(copy[cpId]).length) delete copy[cpId];
+      }
+      return copy;
+    });
   };
 
   if (!cotacaoAtiva) {
@@ -313,7 +347,8 @@ const CotacaoPage = () => {
               <th className="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border whitespace-nowrap sticky left-0 bg-muted z-20">
                 Produto
               </th>
-              <th className="px-3 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border w-12">QT</th>
+              <th className="px-2 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border w-16">Embal</th>
+              <th className="px-2 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border w-14">QT</th>
               {fornecedores.map((f) => {
                 const hasPrice = precos.some((p) => p.fornecedor_id === f.id && p.preco !== null && p.preco > 0);
                 return (
@@ -329,7 +364,7 @@ const CotacaoPage = () => {
           </thead>
           <tbody>
             {filteredItems.length === 0 ? (
-              <tr><td colSpan={fornecedores.length + 4} className="text-center py-10 text-muted-foreground">
+              <tr><td colSpan={fornecedores.length + 5} className="text-center py-10 text-muted-foreground">
                 {cotacaoProdutos.length === 0 ? "Nenhum produto na cotação. Adicione produtos pelo Banco de Produtos." : "Nenhum produto encontrado."}
               </td></tr>
             ) : filteredItems.map((cp) => {
@@ -339,12 +374,27 @@ const CotacaoPage = () => {
               return (
                 <tr key={cp.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-3 py-2 border-b font-medium text-foreground whitespace-nowrap sticky left-0 bg-card z-10">
-                    {cp.produto?.nome}
-                    {cp.produto?.embalagem && (
-                      <span className="text-xs text-muted-foreground ml-2">{cp.produto.embalagem}</span>
-                    )}
+                    <Input
+                      className="h-7 text-sm font-medium border-transparent hover:border-input focus:border-input bg-transparent w-full min-w-[120px]"
+                      defaultValue={cp.produto?.nome || ""}
+                      onBlur={(e) => handleFieldBlur(cp.id, "nome", e.target.value, cp.produto?.nome || "")}
+                    />
                   </td>
-                  <td className="px-3 py-2 border-b text-center text-muted-foreground">{cp.quantidade || 1}</td>
+                  <td className="px-1 py-2 border-b text-center">
+                    <Input
+                      className="h-7 text-xs text-center border-transparent hover:border-input focus:border-input bg-transparent w-16 mx-auto"
+                      defaultValue={cp.produto?.embalagem || "un"}
+                      onBlur={(e) => handleFieldBlur(cp.id, "embalagem", e.target.value, cp.produto?.embalagem || "un")}
+                    />
+                  </td>
+                  <td className="px-1 py-2 border-b text-center">
+                    <Input
+                      className="h-7 text-xs text-center border-transparent hover:border-input focus:border-input bg-transparent w-14 mx-auto"
+                      type="number"
+                      defaultValue={cp.quantidade || 1}
+                      onBlur={(e) => handleFieldBlur(cp.id, "quantidade", e.target.value, String(cp.quantidade || 1))}
+                    />
+                  </td>
                   {fornecedores.map((f) => {
                     const rawVal = localPrices[cp.id]?.[f.id]?.replace(",", ".").replace(/[^0-9.]/g, "");
                     const numVal = rawVal ? parseFloat(rawVal) : null;

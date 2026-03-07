@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import { BarChart3, Package, Users, ShoppingCart, TrendingUp, History, Link2, UserCheck } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const mainMenu = [
   { title: "Cotação", url: "/cotacao", icon: BarChart3, emoji: "📊" },
@@ -26,9 +26,10 @@ const systemMenu = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const isMobile = useIsMobile();
 
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa"],
@@ -74,28 +75,34 @@ export function AppSidebar() {
     return undefined;
   };
 
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   const renderMenu = (items: typeof mainMenu) => (
     <SidebarMenu>
-      {items.map((item) => (
-        <SidebarMenuItem key={item.title}>
-          <SidebarMenuButton
-            asChild
-            isActive={location.pathname === item.url || location.pathname.startsWith(item.url + "/")}
-          >
-            <NavLink to={item.url} className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
-              <item.icon className="h-4 w-4" />
-              {!collapsed && <span className="flex-1">{item.title}</span>}
-              {!collapsed && getBadge(item.url) && (
-                <span className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${
-                  item.url === "/fornecedores" ? "bg-green-600 text-white" : "bg-primary text-primary-foreground"
-                }`}>
-                  {getBadge(item.url)}
-                </span>
-              )}
-            </NavLink>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ))}
+      {items.map((item) => {
+        const isActive = location.pathname === item.url || location.pathname.startsWith(item.url + "/");
+        return (
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton asChild isActive={isActive}>
+              <NavLink to={item.url} onClick={handleNavClick} className="hover:bg-sidebar-accent">
+                <item.icon className="h-4 w-4" />
+                {!collapsed && <span className="flex-1">{item.title}</span>}
+                {!collapsed && getBadge(item.url) && (
+                  <span className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${
+                    item.url === "/fornecedores" ? "bg-green-600 text-white" : "bg-primary text-primary-foreground"
+                  }`}>
+                    {getBadge(item.url)}
+                  </span>
+                )}
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      })}
     </SidebarMenu>
   );
 

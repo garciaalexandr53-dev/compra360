@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Trash2, Download, ExternalLink, Package } from "lucide-react";
 import { toast } from "sonner";
@@ -22,6 +21,14 @@ const FuncionariosPage = () => {
     },
   });
 
+  const { data: cotacaoAtiva } = useQuery({
+    queryKey: ["cotacao-ativa"],
+    queryFn: async () => {
+      const { data } = await supabase.from("cotacoes").select("id").eq("status", "ativa").limit(1).maybeSingle();
+      return data;
+    },
+  });
+
   const pendentes = itens.filter((i: any) => !i.importado);
   const importados = itens.filter((i: any) => i.importado);
 
@@ -30,17 +37,43 @@ const FuncionariosPage = () => {
       const itemsToImport = pendentes.filter((i: any) => !i.importado);
       if (!itemsToImport.length) throw new Error("Nenhum item pendente");
 
-      // Insert each item into produtos as new product
-      for (const item of itemsToImport) {
-        const { error: prodErr } = await supabase.from("produtos").insert({
-          nome: (item as any).nome,
-          embalagem: "un",
-          ativo: false,
-        });
+      // Check for existing products to avoid duplicates
+      const { data: existingProducts } = await supabase.from("produtos").select("nome");
+      const existingNames = new Set((existingProducts || []).map((p) => p.nome.toLowerCase().trim()));
+
+      const newItems = itemsToImport.filter((i: any) => !existingNames.has(i.nome.toLowerCase().trim()));
+      const dupCount = itemsToImport.length - newItems.length;
+
+      // Insert each unique item into produtos
+      const inserts = newItems.map((item: any) => ({
+        nome: item.nome,
+        embalagem: "un",
+        ativo: false,
+      }));
+
+      if (inserts.length) {
+        const { error: prodErr } = await supabase.from("produtos").insert(inserts);
         if (prodErr) throw prodErr;
       }
 
-      // Mark as imported
+      // If there's an active cotação, also add to cotacao_produtos
+      if (cotacaoAtiva && inserts.length) {
+        const { data: newProds } = await supabase
+          .from("produtos")
+          .select("id, nome")
+          .in("nome", newItems.map((i: any) => i.nome));
+        
+        if (newProds?.length) {
+          const cpInserts = newProds.map((p) => ({
+            cotacao_id: cotacaoAtiva.id,
+            produto_id: p.id,
+            quantidade: 1,
+          }));
+          await supabase.from("cotacao_produtos").insert(cpInserts);
+        }
+      }
+
+      // Mark all as imported
       const ids = itemsToImport.map((i: any) => i.id);
       const { error } = await supabase
         .from("itens_faltantes")
@@ -48,12 +81,17 @@ const FuncionariosPage = () => {
         .in("id", ids);
       if (error) throw error;
 
-      return itemsToImport.length;
+      return { total: newItems.length, dups: dupCount };
     },
-    onSuccess: (count) => {
+    onSuccess: ({ total, dups }) => {
       queryClient.invalidateQueries({ queryKey: ["itens-faltantes"] });
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
-      toast.success(`${count} itens importados para o Banco de Produtos!`);
+      queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
+      const msg = dups > 0
+        ? `${total} itens importados! (${dups} duplicados ignorados)`
+        : `${total} itens importados para o Banco de Produtos!`;
+      toast.success(msg);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -119,7 +157,7 @@ const FuncionariosPage = () => {
         <div className="bg-muted rounded-lg p-3 font-mono text-xs break-all mb-3">{appUrl}</div>
         <p className="text-xs text-muted-foreground">
           Compartilhe este link com os funcionários. Eles abrem no celular, digitam os itens faltantes e enviam.
-          Você importa a lista aqui para o Banco de Produtos.
+          Você importa a lista aqui para o Banco de Produtos e monta a cotação.
         </p>
       </div>
 
@@ -159,6 +197,7 @@ const FuncionariosPage = () => {
                   <div className="text-xs text-muted-foreground">
                     {item.registrado_por && `Por: ${item.registrado_por} · `}
                     {item.quantidade > 1 && `Qtd: ${item.quantidade} · `}
+                    {item.observacao && `${item.observacao} · `}
                     {new Date(item.created_at).toLocaleString("pt-BR")}
                   </div>
                 </div>
