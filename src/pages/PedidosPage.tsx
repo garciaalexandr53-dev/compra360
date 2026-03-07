@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL, formatNumber } from "@/lib/format";
 import { toast } from "sonner";
@@ -10,7 +10,6 @@ import type { Tables } from "@/integrations/supabase/types";
 type Fornecedor = Tables<"fornecedores">;
 
 const PedidosPage = () => {
-  const queryClient = useQueryClient();
   const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
 
   const { data: cotacaoAtiva } = useQuery({
@@ -56,7 +55,7 @@ const PedidosPage = () => {
     },
   });
 
-  // Build orders per supplier
+  // Build orders per supplier with full details
   const orders = useMemo(() => {
     const result: Record<string, { produto: string; embalagem: string; quantidade: number; preco: number; total: number }[]> = {};
     fornecedores.forEach((f) => { result[f.id] = []; });
@@ -92,42 +91,17 @@ const PedidosPage = () => {
     const date = new Date().toLocaleDateString("pt-BR");
     let msg = `📋 *PEDIDO DE COMPRA - COTAFÁCIL*\n-----\n📦 *Fornecedor:* ${f.nome}\n📅 *Data:* ${date}\n📝 *Itens:* ${items.length}\n-----\n`;
     items.forEach((it, i) => {
-      msg += `\n*${i + 1}. ${it.produto}*\n    Qtd: ${it.quantidade} ${it.embalagem}\n    Preço: R$ ${formatNumber(it.preco)}  →  *Total: R$ ${formatNumber(it.total)}*\n`;
+      msg += `\n*${i + 1}. ${it.produto}*\n    Embalagem: ${it.embalagem}\n    Qtd: ${it.quantidade}\n    Preço unit.: R$ ${formatNumber(it.preco)}\n    *Subtotal: R$ ${formatNumber(it.total)}*\n`;
     });
     msg += `\n-----\n💰 *TOTAL GERAL: ${formatBRL(total)}*\n-----\n_Enviado via CotaFácil_`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, "_blank");
-  };
-
-  const redistribuir = async (fId: string) => {
-    // For each item assigned to this supplier, find the next cheapest
-    let moved = 0;
-    const updates: { cpId: string; newFId: string }[] = [];
-
-    cotacaoProdutos.forEach((cp: any) => {
-      const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco !== null && p.preco > 0);
-      if (!cpPrecos.length) return;
-
-      let minP: any = cpPrecos[0];
-      cpPrecos.forEach((p: any) => { if (p.preco < minP.preco) minP = p; });
-
-      if (minP.fornecedor_id === fId) {
-        // Find next best
-        const others = cpPrecos.filter((p: any) => p.fornecedor_id !== fId).sort((a: any, b: any) => a.preco - b.preco);
-        if (others.length > 0) {
-          moved++;
-          // We can't easily "choose" in current schema, so just notify
-        }
-      }
-    });
-
-    toast.info(`${moved} item(s) têm alternativas em outros fornecedores. Funcionalidade de redistribuição manual em breve.`);
   };
 
   return (
     <div className="p-5 pb-20">
       <h1 className="text-xl font-bold mb-1">Pedidos por Fornecedor</h1>
       <p className="text-sm text-muted-foreground mb-5">
-        Clique em <strong className="text-green-700">Enviar Pedido</strong> para enviar via WhatsApp.
+        Clique em <strong className="text-green-700">Enviar Pedido</strong> para enviar via WhatsApp com todos os detalhes.
       </p>
 
       {fornecedores.map((f) => {
@@ -147,24 +121,23 @@ const PedidosPage = () => {
                 {minOk ? (
                   <span className="text-green-700 font-bold">✅ Pedido mínimo atingido — Mín: {formatBRL(f.pedido_minimo)} · Pedido: {formatBRL(total)}</span>
                 ) : (
-                  <>
-                    <span className="flex-1 text-red-700">
-                      ⚠️ <strong>Pedido mínimo não atingido!</strong> Faltam <strong>{formatBRL(falta)}</strong> para R$ {formatNumber(f.pedido_minimo)}
-                      <div className="h-[3px] bg-red-500/40 rounded mt-1.5" style={{ width: `${pct}%` }} />
-                    </span>
-                    <Button size="sm" variant="destructive" className="text-xs whitespace-nowrap" onClick={() => redistribuir(f.id)}>
-                      ⇄ Redistribuir itens
-                    </Button>
-                  </>
+                  <span className="flex-1 text-red-700">
+                    ⚠️ <strong>Pedido mínimo não atingido!</strong> Faltam <strong>{formatBRL(falta)}</strong> para R$ {formatNumber(f.pedido_minimo)}
+                    <div className="h-[3px] bg-red-500/40 rounded mt-1.5" style={{ width: `${pct}%` }} />
+                  </span>
                 )}
               </div>
             )}
 
-            {/* Header - clickable */}
+            {/* Header */}
             <div className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => toggleCard(f.id)}>
               <div>
                 <div className="font-bold text-foreground">{f.nome}</div>
-                <div className="text-xs text-muted-foreground">{items.length} itens{f.pedido_minimo && f.pedido_minimo > 0 ? ` · mín: ${formatBRL(f.pedido_minimo)}` : ""}</div>
+                <div className="text-xs text-muted-foreground">
+                  {items.length} itens
+                  {f.pedido_minimo && f.pedido_minimo > 0 ? ` · mín: ${formatBRL(f.pedido_minimo)}` : ""}
+                  {f.prazo_pagamento ? ` · prazo: ${f.prazo_pagamento}` : ""}
+                </div>
               </div>
               <div className="flex items-center gap-3">
                 <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={(e) => { e.stopPropagation(); sendWhatsApp(f); }}>
@@ -183,23 +156,27 @@ const PedidosPage = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-muted/50">
-                      <th className="px-3 py-2 text-center text-[10px] font-bold uppercase text-muted-foreground">QT</th>
-                      <th className="px-3 py-2 text-center text-[10px] font-bold uppercase text-muted-foreground">EMBAL</th>
                       <th className="px-3 py-2 text-left text-[10px] font-bold uppercase text-muted-foreground">PRODUTO</th>
-                      <th className="px-3 py-2 text-right text-[10px] font-bold uppercase text-muted-foreground">PREÇO</th>
-                      <th className="px-3 py-2 text-right text-[10px] font-bold uppercase text-muted-foreground">TOTAL</th>
+                      <th className="px-3 py-2 text-center text-[10px] font-bold uppercase text-muted-foreground">EMBAL</th>
+                      <th className="px-3 py-2 text-center text-[10px] font-bold uppercase text-muted-foreground">QT</th>
+                      <th className="px-3 py-2 text-right text-[10px] font-bold uppercase text-muted-foreground">PREÇO UN.</th>
+                      <th className="px-3 py-2 text-right text-[10px] font-bold uppercase text-muted-foreground">SUBTOTAL</th>
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((it, i) => (
                       <tr key={i} className={i % 2 === 0 ? "bg-muted/20" : ""}>
-                        <td className="px-3 py-2 text-center">{it.quantidade}</td>
-                        <td className="px-3 py-2 text-center">{it.embalagem}</td>
                         <td className="px-3 py-2 font-medium">{it.produto}</td>
+                        <td className="px-3 py-2 text-center text-muted-foreground">{it.embalagem}</td>
+                        <td className="px-3 py-2 text-center">{it.quantidade}</td>
                         <td className="px-3 py-2 text-right font-mono text-xs font-bold text-green-700">R${formatNumber(it.preco)}</td>
                         <td className="px-3 py-2 text-right font-mono text-xs font-bold text-amber-700">{formatBRL(it.total)}</td>
                       </tr>
                     ))}
+                    <tr className="bg-muted border-t-2 border-border">
+                      <td colSpan={4} className="px-3 py-2 text-right font-bold text-sm">TOTAL DO PEDIDO:</td>
+                      <td className="px-3 py-2 text-right font-mono font-extrabold text-green-700 text-sm">{formatBRL(total)}</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>

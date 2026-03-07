@@ -1,9 +1,19 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { formatBRL, formatDateTime } from "@/lib/format";
+import { formatBRL, formatDateTime, formatNumber } from "@/lib/format";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, ChevronDown, ChevronUp } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 const HistoricoPage = () => {
+  const [searchItem, setSearchItem] = useState("");
+  const [searchCotacao, setSearchCotacao] = useState("");
+  const [expandedCotacao, setExpandedCotacao] = useState<string | null>(null);
+
   const { data: cotacoes = [], isLoading } = useQuery({
     queryKey: ["cotacoes-historico"],
     queryFn: async () => {
@@ -17,32 +27,239 @@ const HistoricoPage = () => {
     },
   });
 
+  // Load cotacao details when expanded
+  const { data: cotacaoDetails = {} } = useQuery({
+    queryKey: ["cotacao-details", expandedCotacao],
+    enabled: !!expandedCotacao,
+    queryFn: async () => {
+      const { data: cps, error: cpErr } = await supabase
+        .from("cotacao_produtos")
+        .select("*, produtos(nome, embalagem)")
+        .eq("cotacao_id", expandedCotacao!);
+      if (cpErr) throw cpErr;
+
+      const cpIds = (cps || []).map((cp: any) => cp.id);
+      let precos: any[] = [];
+      if (cpIds.length) {
+        const { data: p } = await supabase.from("precos").select("*, fornecedores(nome)").in("cotacao_produto_id", cpIds);
+        precos = p || [];
+      }
+
+      return { produtos: cps || [], precos };
+    },
+  });
+
+  // Search items across all cotacoes
+  const { data: itemSearchResults = [] } = useQuery({
+    queryKey: ["item-search", searchItem],
+    enabled: searchItem.length >= 2,
+    queryFn: async () => {
+      // Find products matching search
+      const { data: prods } = await supabase
+        .from("produtos")
+        .select("id, nome")
+        .ilike("nome", `%${searchItem}%`)
+        .limit(20);
+      if (!prods?.length) return [];
+
+      const prodIds = prods.map((p) => p.id);
+
+      // Find cotacao_produtos for these products
+      const { data: cps } = await supabase
+        .from("cotacao_produtos")
+        .select("*, cotacoes(nome, created_at, status), produtos(nome, embalagem)")
+        .in("produto_id", prodIds)
+        .order("cotacao_id");
+      if (!cps?.length) return [];
+
+      // Get prices
+      const cpIds = cps.map((cp: any) => cp.id);
+      const { data: precos } = await supabase
+        .from("precos")
+        .select("*, fornecedores(nome)")
+        .in("cotacao_produto_id", cpIds)
+        .not("preco", "is", null);
+
+      return cps.map((cp: any) => ({
+        ...cp,
+        precos: (precos || []).filter((p: any) => p.cotacao_produto_id === cp.id),
+      }));
+    },
+  });
+
+  const filteredCotacoes = cotacoes.filter((c) =>
+    !searchCotacao || c.nome.toLowerCase().includes(searchCotacao.toLowerCase())
+  );
+
+  const toggleExpand = (id: string) => {
+    setExpandedCotacao(expandedCotacao === id ? null : id);
+  };
+
   return (
     <div className="p-5">
-      <h1 className="text-xl font-bold mb-5">Histórico de Cotações</h1>
-      
-      {isLoading ? (
-        <div className="text-center py-10 text-muted-foreground">Carregando...</div>
-      ) : cotacoes.length === 0 ? (
-        <div className="text-center py-10 text-muted-foreground">Nenhuma cotação finalizada ainda.</div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {cotacoes.map((c) => (
-            <div key={c.id} className="bg-card border rounded-xl shadow-sm p-4">
-              <div className="text-sm font-bold text-primary mb-2">{formatDateTime(c.created_at)}</div>
-              <div className="text-xs text-muted-foreground">{c.nome}</div>
-              <div className="flex items-center justify-between mt-2">
-                <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                  c.status === "finalizada" ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
-                }`}>
-                  {c.status}
-                </span>
-                {c.finalizada_at && <span className="text-xs text-muted-foreground">{formatDateTime(c.finalizada_at)}</span>}
+      <h1 className="text-xl font-bold mb-5">🕐 Histórico de Cotações</h1>
+
+      <Tabs defaultValue="cotacoes">
+        <TabsList className="w-full mb-4">
+          <TabsTrigger value="cotacoes" className="flex-1">📋 Por Cotação</TabsTrigger>
+          <TabsTrigger value="itens" className="flex-1">🔍 Buscar por Item</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="cotacoes" className="space-y-3">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar cotação..."
+              value={searchCotacao}
+              onChange={(e) => setSearchCotacao(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          {isLoading ? (
+            <div className="text-center py-10 text-muted-foreground">Carregando...</div>
+          ) : filteredCotacoes.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground">Nenhuma cotação finalizada ainda.</div>
+          ) : (
+            filteredCotacoes.map((c) => (
+              <div key={c.id} className="bg-card border rounded-xl shadow-sm overflow-hidden">
+                <div
+                  className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-muted/30 transition-colors"
+                  onClick={() => toggleExpand(c.id)}
+                >
+                  <div>
+                    <div className="text-sm font-bold text-foreground">{c.nome}</div>
+                    <div className="text-xs text-muted-foreground">{formatDateTime(c.created_at)}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                      c.status === "finalizada" ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+                    }`}>
+                      {c.status}
+                    </span>
+                    {expandedCotacao === c.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </div>
+                </div>
+
+                {expandedCotacao === c.id && cotacaoDetails.produtos && (
+                  <div className="border-t">
+                    <ScrollArea className="max-h-[400px]">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="bg-muted/50">
+                            <th className="px-3 py-2 text-left font-bold">Produto</th>
+                            <th className="px-3 py-2 text-center font-bold">Embal</th>
+                            <th className="px-3 py-2 text-center font-bold">Qtd</th>
+                            <th className="px-3 py-2 text-left font-bold">Preços</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {cotacaoDetails.produtos.map((cp: any) => {
+                            const cpPrecos = cotacaoDetails.precos.filter((p: any) => p.cotacao_produto_id === cp.id);
+                            const minPreco = cpPrecos.length ? Math.min(...cpPrecos.map((p: any) => p.preco)) : null;
+                            return (
+                              <tr key={cp.id} className="border-t hover:bg-muted/20">
+                                <td className="px-3 py-2 font-medium">{cp.produtos?.nome}</td>
+                                <td className="px-3 py-2 text-center text-muted-foreground">{cp.produtos?.embalagem || "un"}</td>
+                                <td className="px-3 py-2 text-center">{cp.quantidade || 1}</td>
+                                <td className="px-3 py-2">
+                                  {cpPrecos.length === 0 ? (
+                                    <span className="text-muted-foreground">—</span>
+                                  ) : (
+                                    <div className="flex flex-wrap gap-1">
+                                      {cpPrecos.sort((a: any, b: any) => a.preco - b.preco).map((p: any) => (
+                                        <span
+                                          key={p.id}
+                                          className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+                                            p.preco === minPreco ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+                                          }`}
+                                        >
+                                          {p.fornecedores?.nome}: R${formatNumber(p.preco)}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </ScrollArea>
+                  </div>
+                )}
               </div>
+            ))
+          )}
+        </TabsContent>
+
+        <TabsContent value="itens" className="space-y-3">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar produto (ex: Detergente)..."
+              value={searchItem}
+              onChange={(e) => setSearchItem(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          {searchItem.length < 2 ? (
+            <div className="text-center py-10 text-muted-foreground text-sm">
+              Digite pelo menos 2 caracteres para buscar.
             </div>
-          ))}
-        </div>
-      )}
+          ) : itemSearchResults.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground text-sm">
+              Nenhum resultado encontrado para "{searchItem}".
+            </div>
+          ) : (
+            <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
+              <ScrollArea className="max-h-[500px]">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-muted/50">
+                      <th className="px-3 py-2 text-left font-bold">Produto</th>
+                      <th className="px-3 py-2 text-left font-bold">Cotação</th>
+                      <th className="px-3 py-2 text-left font-bold">Data</th>
+                      <th className="px-3 py-2 text-left font-bold">Preços</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {itemSearchResults.map((item: any) => {
+                      const minPreco = item.precos.length ? Math.min(...item.precos.map((p: any) => p.preco)) : null;
+                      return (
+                        <tr key={item.id} className="border-t hover:bg-muted/20">
+                          <td className="px-3 py-2 font-medium">{item.produtos?.nome}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{item.cotacoes?.nome}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{item.cotacoes?.created_at ? formatDateTime(item.cotacoes.created_at) : ""}</td>
+                          <td className="px-3 py-2">
+                            {item.precos.length === 0 ? (
+                              <span className="text-muted-foreground">—</span>
+                            ) : (
+                              <div className="flex flex-wrap gap-1">
+                                {item.precos.sort((a: any, b: any) => a.preco - b.preco).map((p: any) => (
+                                  <span
+                                    key={p.id}
+                                    className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+                                      p.preco === minPreco ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+                                    }`}
+                                  >
+                                    {p.fornecedores?.nome}: R${formatNumber(p.preco)}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </ScrollArea>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search, Pencil, Trash2, Check, Upload } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
 import type { Tables } from "@/integrations/supabase/types";
@@ -25,6 +25,10 @@ const ProdutosPage = () => {
   const [form, setForm] = useState(emptyForm);
   const [editMode, setEditMode] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [catSidebarOpen, setCatSidebarOpen] = useState(false);
+
+  // Inline editing state
+  const [inlineEditing, setInlineEditing] = useState<Record<string, { nome?: string; embalagem?: string }>>({});
 
   const { data: categorias = [] } = useQuery({
     queryKey: ["categorias"],
@@ -44,6 +48,14 @@ const ProdutosPage = () => {
         .order("nome");
       if (error) throw error;
       return data as Produto[];
+    },
+  });
+
+  const { data: cotacaoAtiva } = useQuery({
+    queryKey: ["cotacao-ativa"],
+    queryFn: async () => {
+      const { data } = await supabase.from("cotacoes").select("id").eq("status", "ativa").limit(1).maybeSingle();
+      return data;
     },
   });
 
@@ -84,9 +96,9 @@ const ProdutosPage = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const toggleAtivoMutation = useMutation({
-    mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
-      const { error } = await supabase.from("produtos").update({ ativo }).eq("id", id);
+  const inlineUpdateMutation = useMutation({
+    mutationFn: async ({ id, field, value }: { id: string; field: string; value: string }) => {
+      const { error } = await supabase.from("produtos").update({ [field]: value.trim() || null }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -94,7 +106,37 @@ const ProdutosPage = () => {
     },
   });
 
-  // Group products by category
+  // Toggle product in cotação - adds/removes from cotacao_produtos
+  const toggleCotacaoMutation = useMutation({
+    mutationFn: async ({ id, ativo, produtoId }: { id: string; ativo: boolean; produtoId: string }) => {
+      // Toggle ativo
+      const { error: updateErr } = await supabase.from("produtos").update({ ativo }).eq("id", id);
+      if (updateErr) throw updateErr;
+
+      if (ativo && cotacaoAtiva) {
+        // Add to cotacao_produtos
+        const { error: insertErr } = await supabase.from("cotacao_produtos").insert({
+          cotacao_id: cotacaoAtiva.id,
+          produto_id: produtoId,
+          quantidade: 1,
+        });
+        if (insertErr) throw insertErr;
+      } else if (!ativo && cotacaoAtiva) {
+        // Remove from cotacao_produtos
+        const { error: deleteErr } = await supabase.from("cotacao_produtos")
+          .delete()
+          .eq("cotacao_id", cotacaoAtiva.id)
+          .eq("produto_id", produtoId);
+        if (deleteErr) throw deleteErr;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["produtos"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
+    },
+  });
+
   const filtered = produtos.filter((p) => {
     const matchCat = selectedCat === "Todos" || p.categorias?.nome === selectedCat;
     const matchSearch = !search || p.nome.toLowerCase().includes(search.toLowerCase());
@@ -108,7 +150,6 @@ const ProdutosPage = () => {
     return acc;
   }, {});
 
-  // Category counts
   const catCounts = produtos.reduce<Record<string, number>>((acc, p) => {
     const cat = p.categorias?.nome || "Sem Categoria";
     acc[cat] = (acc[cat] || 0) + 1;
@@ -131,43 +172,64 @@ const ProdutosPage = () => {
     setModalOpen(true);
   };
 
+  const handleInlineBlur = (id: string, field: string, value: string, original: string) => {
+    if (value.trim() !== original.trim()) {
+      inlineUpdateMutation.mutate({ id, field, value });
+    }
+    setInlineEditing((prev) => {
+      const copy = { ...prev };
+      delete copy[id];
+      return copy;
+    });
+  };
+
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
-      {/* Category sidebar */}
-      <div className="w-56 flex-shrink-0 bg-card border-r flex flex-col">
-        <div className="p-3 border-b">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Categorias</span>
-        </div>
-        <ScrollArea className="flex-1">
-          <div className="p-1">
-            <button
-              onClick={() => setSelectedCat("Todos")}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
-                selectedCat === "Todos" ? "bg-accent text-accent-foreground font-semibold" : "text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              <span className="truncate">Todos</span>
-              <span className="text-[10px] font-bold bg-muted px-1.5 py-0.5 rounded-full">{produtos.length}</span>
+      {/* Category sidebar - collapsible */}
+      {catSidebarOpen && (
+        <div className="w-56 flex-shrink-0 bg-card border-r flex flex-col">
+          <div className="p-3 border-b flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Categorias</span>
+            <button onClick={() => setCatSidebarOpen(false)} className="text-muted-foreground hover:text-foreground">
+              <ChevronLeft className="h-4 w-4" />
             </button>
-            {categorias.map((cat) => (
+          </div>
+          <ScrollArea className="flex-1">
+            <div className="p-1">
               <button
-                key={cat.id}
-                onClick={() => setSelectedCat(cat.nome)}
+                onClick={() => setSelectedCat("Todos")}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
-                  selectedCat === cat.nome ? "bg-accent text-accent-foreground font-semibold" : "text-muted-foreground hover:bg-muted"
+                  selectedCat === "Todos" ? "bg-accent text-accent-foreground font-semibold" : "text-muted-foreground hover:bg-muted"
                 }`}
               >
-                <span className="truncate">{cat.nome}</span>
-                <span className="text-[10px] font-bold bg-muted px-1.5 py-0.5 rounded-full">{catCounts[cat.nome] || 0}</span>
+                <span className="truncate">Todos</span>
+                <span className="text-[10px] font-bold bg-muted px-1.5 py-0.5 rounded-full">{produtos.length}</span>
               </button>
-            ))}
-          </div>
-        </ScrollArea>
-      </div>
+              {categorias.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCat(cat.nome)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
+                    selectedCat === cat.nome ? "bg-accent text-accent-foreground font-semibold" : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  <span className="truncate">{cat.nome}</span>
+                  <span className="text-[10px] font-bold bg-muted px-1.5 py-0.5 rounded-full">{catCounts[cat.nome] || 0}</span>
+                </button>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+      )}
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <div className="p-3 border-b bg-card flex items-center gap-3">
+          {!catSidebarOpen && (
+            <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0" onClick={() => setCatSidebarOpen(true)} title="Mostrar categorias">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -209,10 +271,28 @@ const ProdutosPage = () => {
                 {prods.map((p) => (
                   <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted/30 transition-colors">
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-foreground">{p.nome}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {p.categorias?.nome || "Sem Categoria"} · {p.embalagem || "un"}
-                      </div>
+                      {editMode ? (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Input
+                            className="h-7 text-sm font-medium w-auto flex-1 min-w-[150px]"
+                            defaultValue={p.nome}
+                            onBlur={(e) => handleInlineBlur(p.id, "nome", e.target.value, p.nome)}
+                          />
+                          <Input
+                            className="h-7 text-xs w-20"
+                            defaultValue={p.embalagem || ""}
+                            placeholder="embal."
+                            onBlur={(e) => handleInlineBlur(p.id, "embalagem", e.target.value, p.embalagem || "")}
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <div className="text-sm font-medium text-foreground">{p.nome}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {p.categorias?.nome || "Sem Categoria"} · {p.embalagem || "un"}
+                          </div>
+                        </>
+                      )}
                     </div>
                     {editMode ? (
                       <div className="flex gap-1">
@@ -230,7 +310,7 @@ const ProdutosPage = () => {
                         size="sm"
                         variant={p.ativo ? "outline" : "default"}
                         className={p.ativo ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100" : "bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"}
-                        onClick={() => toggleAtivoMutation.mutate({ id: p.id, ativo: !p.ativo })}
+                        onClick={() => toggleCotacaoMutation.mutate({ id: p.id, ativo: !p.ativo, produtoId: p.id })}
                       >
                         {p.ativo ? "✓ Na cotação" : "+ Adicionar"}
                       </Button>
