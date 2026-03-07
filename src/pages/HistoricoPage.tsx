@@ -28,7 +28,7 @@ const HistoricoPage = () => {
   });
 
   // Load cotacao details when expanded
-  const { data: cotacaoDetails = {} } = useQuery({
+  const { data: cotacaoDetails = { produtos: [], precos: [] } as { produtos: any[]; precos: any[] } } = useQuery<{ produtos: any[]; precos: any[] }>({
     queryKey: ["cotacao-details", expandedCotacao],
     enabled: !!expandedCotacao,
     queryFn: async () => {
