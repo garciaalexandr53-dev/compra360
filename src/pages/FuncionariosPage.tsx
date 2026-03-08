@@ -44,11 +44,11 @@ const FuncionariosPage = () => {
       const newItems = itemsToImport.filter((i: any) => !existingNames.has(i.nome.toLowerCase().trim()));
       const dupCount = itemsToImport.length - newItems.length;
 
-      // Insert each unique item into produtos
+      // Insert each unique item into produtos with ativo=true so they appear in cotação
       const inserts = newItems.map((item: any) => ({
         nome: item.nome,
-        embalagem: "un",
-        ativo: false,
+        embalagem: item.observacao?.replace("Embalagem: ", "") || "un",
+        ativo: true,
       }));
 
       if (inserts.length) {
@@ -56,20 +56,36 @@ const FuncionariosPage = () => {
         if (prodErr) throw prodErr;
       }
 
-      // If there's an active cotação, also add to cotacao_produtos
-      if (cotacaoAtiva && inserts.length) {
-        const { data: newProds } = await supabase
+      // If there's an active cotação, also add to cotacao_produtos with correct quantities
+      if (cotacaoAtiva) {
+        // Get all products that match imported names (includes previously existing ones)
+        const allNames = itemsToImport.map((i: any) => i.nome);
+        const { data: matchedProds } = await supabase
           .from("produtos")
           .select("id, nome")
-          .in("nome", newItems.map((i: any) => i.nome));
-        
-        if (newProds?.length) {
-          const cpInserts = newProds.map((p) => ({
-            cotacao_id: cotacaoAtiva.id,
-            produto_id: p.id,
-            quantidade: 1,
-          }));
-          await supabase.from("cotacao_produtos").insert(cpInserts);
+          .in("nome", allNames);
+
+        if (matchedProds?.length) {
+          // Check which are already in cotacao_produtos
+          const { data: existingCp } = await supabase
+            .from("cotacao_produtos")
+            .select("produto_id")
+            .eq("cotacao_id", cotacaoAtiva.id);
+          const existingProdIds = new Set((existingCp || []).map((cp) => cp.produto_id));
+
+          const cpInserts = matchedProds
+            .filter((p) => !existingProdIds.has(p.id))
+            .map((p) => {
+              const item = itemsToImport.find((i: any) => i.nome.toLowerCase().trim() === p.nome.toLowerCase().trim());
+              return {
+                cotacao_id: cotacaoAtiva.id,
+                produto_id: p.id,
+                quantidade: item?.quantidade || 1,
+              };
+            });
+          if (cpInserts.length) {
+            await supabase.from("cotacao_produtos").insert(cpInserts);
+          }
         }
       }
 
