@@ -27,6 +27,7 @@ const AppFuncionariosPublic = () => {
   const [productSearch, setProductSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState("Todos");
   const [showProductList, setShowProductList] = useState(false);
+  const [productQtds, setProductQtds] = useState<Record<number, string>>({});
 
   const { data: produtos = [] } = useQuery({
     queryKey: ["produtos-public"],
@@ -49,9 +50,13 @@ const AppFuncionariosPublic = () => {
     },
   });
 
+  // Generic search: split terms and match all
   const filteredProducts = produtos.filter((p) => {
     const matchCat = selectedCat === "Todos" || p.categorias?.nome === selectedCat;
-    const matchSearch = !productSearch || p.nome.toLowerCase().includes(productSearch.toLowerCase());
+    if (!productSearch.trim()) return matchCat;
+    const terms = productSearch.toLowerCase().trim().split(/\s+/);
+    const name = p.nome.toLowerCase();
+    const matchSearch = terms.every((t) => name.includes(t));
     return matchCat && matchSearch;
   });
 
@@ -64,13 +69,19 @@ const AppFuncionariosPublic = () => {
     setCurrentEmbal("un");
   };
 
-  const addFromProduct = (p: any) => {
-    setItems([...items, { nome: p.nome, quantidade: 1, embalagem: p.embalagem || "un" }]);
-    toast.success(`${p.nome} adicionado!`);
+  const addFromProduct = (p: any, index: number) => {
+    const qty = parseInt(productQtds[index] || "1") || 1;
+    setItems([...items, { nome: p.nome, quantidade: qty, embalagem: p.embalagem || "un" }]);
+    setProductQtds((prev) => { const c = { ...prev }; delete c[index]; return c; });
+    toast.success(`${p.nome} (${qty}x) adicionado!`);
   };
 
   const removeItem = (index: number) => {
     setItems(items.filter((_, i) => i !== index));
+  };
+
+  const updateItemQtd = (index: number, val: string) => {
+    setItems(items.map((item, i) => i === index ? { ...item, quantidade: parseInt(val) || 1 } : item));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -226,7 +237,7 @@ const AppFuncionariosPublic = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar produto..."
+                placeholder="Buscar produto... (ex: det ype)"
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
                 className="pl-9"
@@ -261,14 +272,29 @@ const AppFuncionariosPublic = () => {
                 filteredProducts.map((p, i) => (
                   <div
                     key={i}
-                    className="flex items-center justify-between px-4 py-3 border-b hover:bg-muted/30 cursor-pointer transition-colors"
-                    onClick={() => addFromProduct(p)}
+                    className="flex items-center justify-between px-4 py-3 border-b hover:bg-muted/30 transition-colors"
                   >
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium">{p.nome}</div>
                       <div className="text-xs text-muted-foreground">{p.categorias?.nome || "Sem categoria"} · {p.embalagem || "un"}</div>
                     </div>
-                    <span className="text-primary text-lg">+</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Input
+                        type="number"
+                        min="1"
+                        value={productQtds[i] || "1"}
+                        onChange={(e) => setProductQtds((prev) => ({ ...prev, [i]: e.target.value }))}
+                        className="h-8 w-14 text-xs text-center"
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-2 text-primary font-bold text-lg"
+                        onClick={() => addFromProduct(p, i)}
+                      >
+                        +
+                      </Button>
+                    </div>
                   </div>
                 ))
               )}
@@ -292,8 +318,15 @@ const AppFuncionariosPublic = () => {
                 <span className="text-xs text-muted-foreground">{i + 1}.</span>
                 <div className="flex-1 min-w-0">
                   <span className="text-sm font-medium block">{item.nome}</span>
-                  <span className="text-xs text-muted-foreground">Qtd: {item.quantidade} · {item.embalagem}</span>
+                  <span className="text-xs text-muted-foreground">{item.embalagem}</span>
                 </div>
+                <Input
+                  type="number"
+                  min="1"
+                  value={item.quantidade}
+                  onChange={(e) => updateItemQtd(i, e.target.value)}
+                  className="h-7 w-14 text-xs text-center"
+                />
                 <button
                   onClick={() => removeItem(i)}
                   className="text-destructive text-sm hover:bg-destructive/10 rounded-full w-7 h-7 flex items-center justify-center"

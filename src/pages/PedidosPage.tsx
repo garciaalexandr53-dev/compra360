@@ -89,11 +89,11 @@ const PedidosPage = () => {
     if (!items.length) { toast.error("Nenhum item para " + f.nome); return; }
     const total = items.reduce((s, it) => s + it.total, 0);
     const date = new Date().toLocaleDateString("pt-BR");
-    let msg = `📋 *PEDIDO DE COMPRA - COTAFÁCIL*\n-----\n📦 *Fornecedor:* ${f.nome}\n📅 *Data:* ${date}\n📝 *Itens:* ${items.length}\n-----\n`;
+    let msg = `📋 *PEDIDO DE COMPRA - COTAFÁCIL*\n-----\n📦 *Fornecedor:* ${f.nome}\n📅 *Data:* ${date}\n📝 *Itens:* ${items.length}${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}\n-----\n`;
     items.forEach((it, i) => {
       msg += `\n*${i + 1}. ${it.produto}*\n    Embalagem: ${it.embalagem}\n    Qtd: ${it.quantidade}\n    Preço unit.: R$ ${formatNumber(it.preco)}\n    *Subtotal: R$ ${formatNumber(it.total)}*\n`;
     });
-    msg += `\n-----\n💰 *TOTAL GERAL: ${formatBRL(total)}*\n-----\n_Enviado via CotaFácil_`;
+    msg += `\n-----\n💰 *TOTAL GERAL: ${formatBRL(total)}*${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}\n-----\n_Enviado via CotaFácil_`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
