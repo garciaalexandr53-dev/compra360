@@ -128,4 +128,7 @@
   .price-high-var {
     @apply border-orange-400/40 bg-orange-50/80 text-orange-700;
   }
+  .price-low-var {
+    @apply border-blue-400/40 bg-blue-50/80 text-blue-700;
+  }
 }

@@ -207,6 +207,13 @@ const CotacaoPage = () => {
     return (val - median) / median > VARIATION_THRESHOLD;
   };
 
+  const isLowVariation = (val: number, allVals: number[]) => {
+    if (allVals.length < 2) return false;
+    const avg = allVals.reduce((a, b) => a + b, 0) / allVals.length;
+    if (avg <= 0) return false;
+    return (avg - val) / avg >= VARIATION_THRESHOLD;
+  };
+
   const grandTotal = useMemo(() => {
     let total = 0;
     cotacaoProdutos.forEach((cp) => {
@@ -332,8 +339,11 @@ const CotacaoPage = () => {
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <span className="bg-amber-500 text-white text-[7px] font-extrabold px-1 rounded">2º</span> Segundo menor
           </span>
-          <span className="flex items-center gap-1.5 text-muted-foreground">
+           <span className="flex items-center gap-1.5 text-muted-foreground">
             <span className="bg-gradient-to-r from-orange-500 to-red-600 text-white text-[7px] font-extrabold px-1 rounded">▲</span> +25% acima
+          </span>
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <span className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-[7px] font-extrabold px-1 rounded">▼</span> -25% abaixo (possível erro)
           </span>
           <button onClick={() => setLegendVisible(false)} className="ml-auto text-muted-foreground hover:text-foreground">✕ ocultar</button>
         </div>
@@ -402,11 +412,13 @@ const CotacaoPage = () => {
                     const isTieMin = isMin && info.tiedCount > 1;
                     const isSecond = info.second === f.id;
                     const hiVar = numVal !== null && isHighVariation(numVal, info.allVals);
+                    const loVar = numVal !== null && isLowVariation(numVal, info.allVals);
 
                     let inputClass = "w-20 text-right font-mono text-xs h-8 px-2";
                     if (isMin) inputClass += " price-best";
                     else if (isSecond) inputClass += " price-second";
                     if (hiVar && !isMin) inputClass += " price-high-var";
+                    if (loVar) inputClass += " price-low-var";
 
                     return (
                       <td key={f.id} className="px-1 py-1 border-b text-center">
@@ -423,6 +435,7 @@ const CotacaoPage = () => {
                           {isMin && !isTieMin && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-green-500 to-green-600 text-white text-[6px] font-extrabold px-1 rounded">MIN</span>}
                           {isSecond && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[6px] font-extrabold px-1 rounded">2º</span>}
                           {hiVar && !isMin && <span className="absolute -bottom-1.5 -right-1 bg-gradient-to-r from-orange-500 to-red-600 text-white text-[7px] font-extrabold px-1 rounded cursor-help" title="Preço muito acima (+25%)">▲</span>}
+                          {loVar && <span className="absolute -bottom-1.5 -left-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-[7px] font-extrabold px-1 rounded cursor-help" title="Preço muito abaixo (-25%) — possível erro de digitação ou unidade">▼</span>}
                         </div>
                       </td>
                     );

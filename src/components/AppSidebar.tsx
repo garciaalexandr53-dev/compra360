@@ -5,24 +5,26 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, Package, Users, ShoppingCart, TrendingUp, History, Link2, UserCheck } from "lucide-react";
+import { BarChart3, Package, Users, ShoppingCart, TrendingUp, History, Link2, UserCheck, BookOpen } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-const mainMenu = [
-  { title: "Cotação", url: "/cotacao", icon: BarChart3, emoji: "📊" },
+// Fluxo natural: Preparar → Cotar → Analisar → Pedir
+const prepararMenu = [
   { title: "Banco de Produtos", url: "/produtos", icon: Package, emoji: "🗄️" },
-  { title: "Links", url: "/links", icon: Link2, emoji: "🔗" },
-];
-const analysisMenu = [
-  { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, emoji: "📦" },
-  { title: "Resumo", url: "/resumo", icon: TrendingUp, emoji: "📈" },
-];
-const toolsMenu = [
+  { title: "Fornecedores", url: "/fornecedores", icon: Users, emoji: "⚙️" },
   { title: "App Funcionários", url: "/funcionarios", icon: UserCheck, emoji: "👥" },
 ];
-const systemMenu = [
+const cotarMenu = [
+  { title: "Cotação", url: "/cotacao", icon: BarChart3, emoji: "📊" },
+  { title: "Links p/ Fornecedores", url: "/links", icon: Link2, emoji: "🔗" },
+];
+const analisarMenu = [
+  { title: "Resumo", url: "/resumo", icon: TrendingUp, emoji: "📈" },
+  { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, emoji: "📦" },
+];
+const sistemaMenu = [
   { title: "Histórico", url: "/historico", icon: History, emoji: "🕐" },
-  { title: "Fornecedores", url: "/fornecedores", icon: Users, emoji: "⚙️" },
+  { title: "Como Usar", url: "/guia", icon: BookOpen, emoji: "📖" },
 ];
 
 export function AppSidebar() {
@@ -81,7 +83,7 @@ export function AppSidebar() {
     }
   };
 
-  const renderMenu = (items: typeof mainMenu) => (
+  const renderMenu = (items: typeof prepararMenu) => (
     <SidebarMenu>
       {items.map((item) => {
         const isActive = location.pathname === item.url || location.pathname.startsWith(item.url + "/");
@@ -127,20 +129,20 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Principal</SidebarGroupLabel>
-          <SidebarGroupContent>{renderMenu(mainMenu)}</SidebarGroupContent>
+          <SidebarGroupLabel>1. Preparar</SidebarGroupLabel>
+          <SidebarGroupContent>{renderMenu(prepararMenu)}</SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Análise</SidebarGroupLabel>
-          <SidebarGroupContent>{renderMenu(analysisMenu)}</SidebarGroupContent>
+          <SidebarGroupLabel>2. Cotar</SidebarGroupLabel>
+          <SidebarGroupContent>{renderMenu(cotarMenu)}</SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Ferramentas</SidebarGroupLabel>
-          <SidebarGroupContent>{renderMenu(toolsMenu)}</SidebarGroupContent>
+          <SidebarGroupLabel>3. Analisar</SidebarGroupLabel>
+          <SidebarGroupContent>{renderMenu(analisarMenu)}</SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
           <SidebarGroupLabel>Sistema</SidebarGroupLabel>
-          <SidebarGroupContent>{renderMenu(systemMenu)}</SidebarGroupContent>
+          <SidebarGroupContent>{renderMenu(sistemaMenu)}</SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
