@@ -245,9 +245,61 @@ const CotacaoPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [cotacaoAtiva?.id, queryClient]);
 
+  const buildSuspiciousReport = () => {
+    const rows: { Produto: string; Embalagem: string; Fornecedor: string; Preço: number; Média: string; Desvio: string; Tipo: string }[] = [];
+    cotacaoProdutos.forEach((cp) => {
+      const info = analyzePrices(cp.id);
+      if (info.allVals.length < MIN_SUPPLIERS_FOR_ANALYSIS) return;
+      const avg = info.allVals.reduce((a, b) => a + b, 0) / info.allVals.length;
+      fornecedores.forEach((f) => {
+        const rawVal = localPrices[cp.id]?.[f.id]?.replace(",", ".").replace(/[^0-9.]/g, "");
+        if (!rawVal) return;
+        const num = parseFloat(rawVal);
+        if (isNaN(num) || num <= 0) return;
+        const hi = isHighVariation(num, info.allVals);
+        const lo = isLowVariation(num, info.allVals);
+        if (!hi && !lo) return;
+        const desvPct = ((num - avg) / avg * 100).toFixed(1);
+        rows.push({
+          Produto: cp.produto?.nome || "",
+          Embalagem: cp.produto?.embalagem || "un",
+          Fornecedor: f.nome,
+          Preço: num,
+          Média: formatNumber(avg),
+          Desvio: `${desvPct}%`,
+          Tipo: hi ? "⚠️ Acima (+25%)" : "⚠️ Abaixo (-15%)",
+        });
+      });
+    });
+    return rows;
+  };
+
+  const exportSuspiciousReport = () => {
+    const rows = buildSuspiciousReport();
+    if (!rows.length) {
+      toast.info("Nenhum preço suspeito detectado nesta cotação.");
+      return;
+    }
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Preços Suspeitos");
+    XLSX.writeFile(wb, `precos-suspeitos-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success(`Relatório exportado com ${rows.length} preço(s) suspeito(s).`);
+  };
+
   const handleNovaCotacao = async () => {
     if (!novaCotacaoOpt || !cotacaoAtiva) return;
     try {
+      // Export suspicious report before finalizing
+      const suspiciousRows = buildSuspiciousReport();
+      if (suspiciousRows.length > 0) {
+        const ws = XLSX.utils.json_to_sheet(suspiciousRows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Preços Suspeitos");
+        XLSX.writeFile(wb, `precos-suspeitos-${cotacaoAtiva.nome.replace(/\s+/g, "-")}.xlsx`);
+        toast.info(`${suspiciousRows.length} preço(s) suspeito(s) exportado(s) automaticamente.`);
+      }
+
       await supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: new Date().toISOString() }).eq("id", cotacaoAtiva.id);
       const { data: newCot, error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa" }).select().single();
       if (error) throw error;
