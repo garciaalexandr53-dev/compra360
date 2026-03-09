@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Search, Save, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
@@ -303,6 +304,7 @@ const CotacaoPage = () => {
   }
 
   return (
+    <TooltipProvider>
     <div className="flex flex-col h-[calc(100vh-3.5rem)]">
       {/* Toolbar */}
       <div className="p-3 border-b bg-card flex items-center gap-3 flex-wrap">
@@ -430,12 +432,37 @@ const CotacaoPage = () => {
                             onChange={(e) => handlePriceChange(cp.id, f.id, e.target.value)}
                             onBlur={() => handlePriceBlur(cp.id, f.id)}
                             className={inputClass}
-                          />
-                          {isTieMin && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white text-[6.5px] font-extrabold px-1 rounded">≡MIN</span>}
-                          {isMin && !isTieMin && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-green-500 to-green-600 text-white text-[6px] font-extrabold px-1 rounded">MIN</span>}
-                          {isSecond && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[6px] font-extrabold px-1 rounded">2º</span>}
-                          {hiVar && !isMin && <span className="absolute -bottom-1.5 -right-1 bg-gradient-to-r from-orange-500 to-red-600 text-white text-[7px] font-extrabold px-1 rounded cursor-help" title="Preço muito acima (+25%)">▲</span>}
-                          {loVar && <span className="absolute -bottom-1.5 -left-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-[7px] font-extrabold px-1 rounded cursor-help" title="Preço muito abaixo (-25%) — possível erro de digitação ou unidade">▼</span>}
+                           />
+                           {isTieMin && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white text-[6.5px] font-extrabold px-1 rounded">≡MIN</span>}
+                           {isMin && !isTieMin && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-green-500 to-green-600 text-white text-[6px] font-extrabold px-1 rounded">MIN</span>}
+                           {isSecond && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[6px] font-extrabold px-1 rounded">2º</span>}
+                           {hiVar && !isMin && (
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <span className="absolute -bottom-1.5 -right-1 bg-gradient-to-r from-orange-500 to-red-600 text-white text-[7px] font-extrabold px-1 rounded cursor-help">▲</span>
+                               </TooltipTrigger>
+                               <TooltipContent side="top" className="max-w-xs text-xs">
+                                 <p className="font-bold">⚠️ Preço muito acima da média</p>
+                                 <p className="text-[11px] mt-1">+25% acima dos demais fornecedores. Verifique se há erro de digitação.</p>
+                               </TooltipContent>
+                             </Tooltip>
+                           )}
+                           {loVar && (
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <span className="absolute -bottom-1.5 -left-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-[7px] font-extrabold px-1 rounded cursor-help">▼</span>
+                               </TooltipTrigger>
+                               <TooltipContent side="top" className="max-w-xs text-xs">
+                                 <p className="font-bold">⚠️ Preço muito abaixo da média</p>
+                                 <p className="text-[11px] mt-1">-25% abaixo dos demais fornecedores. Verifique possível:</p>
+                                 <ul className="text-[11px] mt-1 space-y-0.5 list-disc list-inside">
+                                   <li>Erro de digitação</li>
+                                   <li>Erro de unidade</li>
+                                   <li>Cotação incorreta</li>
+                                 </ul>
+                               </TooltipContent>
+                             </Tooltip>
+                           )}
                         </div>
                       </td>
                     );
@@ -496,8 +523,9 @@ const CotacaoPage = () => {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+       </Dialog>
     </div>
+    </TooltipProvider>
   );
 };
 
