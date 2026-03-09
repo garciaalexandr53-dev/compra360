@@ -28,7 +28,9 @@ interface Preco {
   preco: number | null;
 }
 
-const VARIATION_THRESHOLD = 0.25;
+const HIGH_THRESHOLD = 0.25;
+const LOW_THRESHOLD = 0.15;
+const MIN_SUPPLIERS_FOR_ANALYSIS = 3;
 
 const CotacaoPage = () => {
   const queryClient = useQueryClient();
