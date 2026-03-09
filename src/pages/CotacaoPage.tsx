@@ -28,7 +28,9 @@ interface Preco {
   preco: number | null;
 }
 
-const VARIATION_THRESHOLD = 0.25;
+const HIGH_THRESHOLD = 0.25;
+const LOW_THRESHOLD = 0.15;
+const MIN_SUPPLIERS_FOR_ANALYSIS = 3;
 
 const CotacaoPage = () => {
   const queryClient = useQueryClient();
@@ -200,19 +202,19 @@ const CotacaoPage = () => {
   };
 
   const isHighVariation = (val: number, allVals: number[]) => {
-    if (allVals.length < 2) return false;
+    if (allVals.length < MIN_SUPPLIERS_FOR_ANALYSIS) return false;
     const sorted = [...allVals].sort((a, b) => a - b);
     const mid = Math.floor(sorted.length / 2);
     const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
     if (median <= 0) return false;
-    return (val - median) / median > VARIATION_THRESHOLD;
+    return (val - median) / median > HIGH_THRESHOLD;
   };
 
   const isLowVariation = (val: number, allVals: number[]) => {
-    if (allVals.length < 2) return false;
+    if (allVals.length < MIN_SUPPLIERS_FOR_ANALYSIS) return false;
     const avg = allVals.reduce((a, b) => a + b, 0) / allVals.length;
     if (avg <= 0) return false;
-    return (avg - val) / avg >= VARIATION_THRESHOLD;
+    return (avg - val) / avg >= LOW_THRESHOLD;
   };
 
   const grandTotal = useMemo(() => {
