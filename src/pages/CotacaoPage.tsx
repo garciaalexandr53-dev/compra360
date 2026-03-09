@@ -304,6 +304,7 @@ const CotacaoPage = () => {
   }
 
   return (
+    <TooltipProvider>
     <div className="flex flex-col h-[calc(100vh-3.5rem)]">
       {/* Toolbar */}
       <div className="p-3 border-b bg-card flex items-center gap-3 flex-wrap">
