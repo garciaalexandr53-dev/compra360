@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Search, Save, RefreshCw } from "lucide-react";
+import { Search, Save, RefreshCw, FileWarning } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
+import * as XLSX from "xlsx";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Fornecedor = Tables<"fornecedores">;
