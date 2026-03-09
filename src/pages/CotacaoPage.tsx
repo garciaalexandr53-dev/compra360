@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Search, Save, RefreshCw, FileWarning, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
+import { Search, Save, RefreshCw, FileWarning } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
 import * as XLSX from "xlsx";
@@ -133,7 +133,6 @@ const CotacaoPage = () => {
         const { error } = await supabase.from("cotacao_produtos").update({ quantidade: value }).eq("id", cpId);
         if (error) throw error;
       } else if (field === "nome" || field === "embalagem") {
-        // Update the underlying produto
         const cp = cotacaoProdutos.find(c => c.id === cpId);
         if (cp?.produto_id) {
           const { error } = await supabase.from("produtos").update({ [field]: value }).eq("id", cp.produto_id);
@@ -290,7 +289,6 @@ const CotacaoPage = () => {
   const handleNovaCotacao = async () => {
     if (!novaCotacaoOpt || !cotacaoAtiva) return;
     try {
-      // Export suspicious report before finalizing
       const suspiciousRows = buildSuspiciousReport();
       if (suspiciousRows.length > 0) {
         const ws = XLSX.utils.json_to_sheet(suspiciousRows);
@@ -391,29 +389,19 @@ const CotacaoPage = () => {
         <div className="flex items-center gap-4 px-4 py-1.5 bg-muted/50 border-b text-[10px] flex-wrap">
           <span className="font-bold uppercase tracking-wider text-muted-foreground">Legenda:</span>
           <span className="flex items-center gap-1.5 text-muted-foreground">
-            <span className="bg-green-500 text-white text-[7px] font-extrabold px-1 rounded">MIN</span> Menor preço
+            <span className="text-blue-600 font-extrabold text-[10px]">R$0,00</span> Menor preço
           </span>
           <span className="flex items-center gap-1.5 text-muted-foreground">
-            <span className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white text-[6.5px] font-extrabold px-1 rounded">≡MIN</span> Empate
+            <span className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white text-[6.5px] font-extrabold px-1 rounded">EMP</span> Empate
           </span>
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <span className="bg-amber-500 text-white text-[7px] font-extrabold px-1 rounded">2º</span> Segundo menor
           </span>
-           <span className="flex items-center gap-1.5 text-muted-foreground">
+          <span className="flex items-center gap-1.5 text-muted-foreground">
             <span className="bg-gradient-to-r from-orange-500 to-red-600 text-white text-[7px] font-extrabold px-1 rounded">▲</span> +25% acima
           </span>
           <span className="flex items-center gap-1.5 text-muted-foreground">
-            <span className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-[7px] font-extrabold px-1 rounded">▼</span> -15% abaixo (possível erro)
-          </span>
-          <span className="text-muted-foreground">|</span>
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            <CheckCircle2 className="h-3 w-3 text-green-600" /> OK
-          </span>
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            <AlertTriangle className="h-3 w-3 text-amber-600" /> Verificar
-          </span>
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            <XCircle className="h-3 w-3 text-muted-foreground/60" /> Erro
+            <span className="bg-gradient-to-r from-red-500 to-red-700 text-white text-[7px] font-extrabold px-1 rounded">▼</span> -15% abaixo (discrepância)
           </span>
           <button onClick={() => setLegendVisible(false)} className="ml-auto text-muted-foreground hover:text-foreground">✕ ocultar</button>
         </div>
@@ -427,7 +415,6 @@ const CotacaoPage = () => {
               <th className="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border whitespace-nowrap sticky left-0 bg-muted z-20">
                 Produto
               </th>
-              <th className="px-2 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border w-20">Status</th>
               <th className="px-2 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border w-16">Embal</th>
               <th className="px-2 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border w-14">QT</th>
               {fornecedores.map((f) => {
@@ -439,13 +426,13 @@ const CotacaoPage = () => {
                   </th>
                 );
               })}
-              <th className="px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-green-700 border-b-2 border-border">MIN</th>
+              <th className="px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-blue-600 border-b-2 border-border">MIN</th>
               <th className="px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-amber-700 border-b-2 border-border">TOTAL</th>
             </tr>
           </thead>
           <tbody>
             {filteredItems.length === 0 ? (
-              <tr><td colSpan={fornecedores.length + 6} className="text-center py-10 text-muted-foreground">
+              <tr><td colSpan={fornecedores.length + 5} className="text-center py-10 text-muted-foreground">
                 {cotacaoProdutos.length === 0 ? "Nenhum produto na cotação. Adicione produtos pelo Banco de Produtos." : "Nenhum produto encontrado."}
               </td></tr>
             ) : filteredItems.map((cp) => {
@@ -460,50 +447,6 @@ const CotacaoPage = () => {
                       defaultValue={cp.produto?.nome || ""}
                       onBlur={(e) => handleFieldBlur(cp.id, "nome", e.target.value, cp.produto?.nome || "")}
                     />
-                  </td>
-                  <td className="px-1 py-2 border-b text-center">
-                    {(() => {
-                      const hasAnyPrice = info.allVals.length > 0;
-                      const hasAnomaly = hasAnyPrice && info.allVals.length >= MIN_SUPPLIERS_FOR_ANALYSIS && info.allVals.some(v => isHighVariation(v, info.allVals) || isLowVariation(v, info.allVals));
-                      const missingSuppliers = hasAnyPrice && info.allVals.length < MIN_SUPPLIERS_FOR_ANALYSIS;
-                      const noPrices = !hasAnyPrice;
-
-                      if (noPrices) return (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-muted-foreground/60 cursor-help">
-                              <XCircle className="h-3.5 w-3.5" /> Erro
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="right" className="text-xs">Nenhum preço informado para este item.</TooltipContent>
-                        </Tooltip>
-                      );
-                      if (hasAnomaly) return (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 cursor-help">
-                              <AlertTriangle className="h-3.5 w-3.5" /> Verificar
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="right" className="text-xs">Preço(s) com variação suspeita detectada.</TooltipContent>
-                        </Tooltip>
-                      );
-                      if (missingSuppliers) return (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-500 cursor-help">
-                              <AlertTriangle className="h-3.5 w-3.5" /> Verificar
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="right" className="text-xs">Menos de {MIN_SUPPLIERS_FOR_ANALYSIS} fornecedores. Análise incompleta.</TooltipContent>
-                        </Tooltip>
-                      );
-                      return (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-600">
-                          <CheckCircle2 className="h-3.5 w-3.5" /> OK
-                        </span>
-                      );
-                    })()}
                   </td>
                   <td className="px-1 py-2 border-b text-center">
                     <Input
@@ -530,10 +473,10 @@ const CotacaoPage = () => {
                     const loVar = numVal !== null && isLowVariation(numVal, info.allVals);
 
                     let inputClass = "w-20 text-right font-mono text-xs h-8 px-2";
-                    if (isMin) inputClass += " price-best";
+                    if (isMin) inputClass += " font-bold text-blue-600 border-blue-200 bg-blue-50/50";
                     else if (isSecond) inputClass += " price-second";
                     if (hiVar && !isMin) inputClass += " price-high-var";
-                    if (loVar) inputClass += " price-low-var";
+                    if (loVar && !isMin) inputClass += " price-low-var";
 
                     return (
                       <td key={f.id} className="px-1 py-1 border-b text-center">
@@ -546,8 +489,7 @@ const CotacaoPage = () => {
                             onBlur={() => handlePriceBlur(cp.id, f.id)}
                             className={inputClass}
                            />
-                           {isTieMin && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white text-[6.5px] font-extrabold px-1 rounded">≡MIN</span>}
-                           {isMin && !isTieMin && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-green-500 to-green-600 text-white text-[6px] font-extrabold px-1 rounded">MIN</span>}
+                           {isTieMin && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white text-[6.5px] font-extrabold px-1 rounded">EMP</span>}
                            {isSecond && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[6px] font-extrabold px-1 rounded">2º</span>}
                            {hiVar && !isMin && (
                              <Tooltip>
@@ -560,19 +502,14 @@ const CotacaoPage = () => {
                                </TooltipContent>
                              </Tooltip>
                            )}
-                           {loVar && (
+                           {loVar && !isMin && (
                              <Tooltip>
                                <TooltipTrigger asChild>
-                                 <span className="absolute -bottom-1.5 -left-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-[7px] font-extrabold px-1 rounded cursor-help">▼</span>
+                                 <span className="absolute -bottom-1.5 -left-1 bg-gradient-to-r from-red-500 to-red-700 text-white text-[7px] font-extrabold px-1 rounded cursor-help">▼</span>
                                </TooltipTrigger>
                                <TooltipContent side="top" className="max-w-xs text-xs">
-                                 <p className="font-bold">⚠️ Preço muito abaixo da média</p>
-                                 <p className="text-[11px] mt-1">-25% abaixo dos demais fornecedores. Verifique possível:</p>
-                                 <ul className="text-[11px] mt-1 space-y-0.5 list-disc list-inside">
-                                   <li>Erro de digitação</li>
-                                   <li>Erro de unidade</li>
-                                   <li>Cotação incorreta</li>
-                                 </ul>
+                                 <p className="font-bold">⚠️ Discrepância de preço</p>
+                                 <p className="text-[11px] mt-1">-15% abaixo da média. Verifique possível erro de digitação ou unidade.</p>
                                </TooltipContent>
                              </Tooltip>
                            )}
@@ -580,7 +517,7 @@ const CotacaoPage = () => {
                       </td>
                     );
                   })}
-                  <td className="px-3 py-2 border-b text-right font-mono text-xs font-bold text-green-700">
+                  <td className="px-3 py-2 border-b text-right font-mono text-xs font-bold text-blue-600">
                     {info.minVal !== null ? `R$${formatNumber(info.minVal)}` : "-"}
                   </td>
                   <td className="px-3 py-2 border-b text-right font-mono text-xs font-bold text-amber-700">
@@ -596,7 +533,7 @@ const CotacaoPage = () => {
       {/* Total bar */}
       <div className="border-t bg-card px-5 py-3 flex items-center justify-end gap-4 shadow-[0_-4px_20px_rgba(15,20,34,.08)]">
         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total da Compra</span>
-        <span className="text-xl font-extrabold text-green-700 font-mono tracking-tight">{formatBRL(grandTotal)}</span>
+        <span className="text-xl font-extrabold text-blue-600 font-mono tracking-tight">{formatBRL(grandTotal)}</span>
       </div>
 
       {/* Nova Cotação Modal */}
