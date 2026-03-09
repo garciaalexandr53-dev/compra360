@@ -435,6 +435,7 @@ const CotacaoPage = () => {
                           {isMin && !isTieMin && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-green-500 to-green-600 text-white text-[6px] font-extrabold px-1 rounded">MIN</span>}
                           {isSecond && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[6px] font-extrabold px-1 rounded">2º</span>}
                           {hiVar && !isMin && <span className="absolute -bottom-1.5 -right-1 bg-gradient-to-r from-orange-500 to-red-600 text-white text-[7px] font-extrabold px-1 rounded cursor-help" title="Preço muito acima (+25%)">▲</span>}
+                          {loVar && <span className="absolute -bottom-1.5 -left-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-[7px] font-extrabold px-1 rounded cursor-help" title="Preço muito abaixo (-25%) — possível erro de digitação ou unidade">▼</span>}
                         </div>
                       </td>
                     );

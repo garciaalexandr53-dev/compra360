@@ -129,20 +129,20 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Principal</SidebarGroupLabel>
-          <SidebarGroupContent>{renderMenu(mainMenu)}</SidebarGroupContent>
+          <SidebarGroupLabel>1. Preparar</SidebarGroupLabel>
+          <SidebarGroupContent>{renderMenu(prepararMenu)}</SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Análise</SidebarGroupLabel>
-          <SidebarGroupContent>{renderMenu(analysisMenu)}</SidebarGroupContent>
+          <SidebarGroupLabel>2. Cotar</SidebarGroupLabel>
+          <SidebarGroupContent>{renderMenu(cotarMenu)}</SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Ferramentas</SidebarGroupLabel>
-          <SidebarGroupContent>{renderMenu(toolsMenu)}</SidebarGroupContent>
+          <SidebarGroupLabel>3. Analisar</SidebarGroupLabel>
+          <SidebarGroupContent>{renderMenu(analisarMenu)}</SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
           <SidebarGroupLabel>Sistema</SidebarGroupLabel>
-          <SidebarGroupContent>{renderMenu(systemMenu)}</SidebarGroupContent>
+          <SidebarGroupContent>{renderMenu(sistemaMenu)}</SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
