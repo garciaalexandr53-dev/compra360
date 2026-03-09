@@ -207,6 +207,13 @@ const CotacaoPage = () => {
     return (val - median) / median > VARIATION_THRESHOLD;
   };
 
+  const isLowVariation = (val: number, allVals: number[]) => {
+    if (allVals.length < 2) return false;
+    const avg = allVals.reduce((a, b) => a + b, 0) / allVals.length;
+    if (avg <= 0) return false;
+    return (avg - val) / avg >= VARIATION_THRESHOLD;
+  };
+
   const grandTotal = useMemo(() => {
     let total = 0;
     cotacaoProdutos.forEach((cp) => {
