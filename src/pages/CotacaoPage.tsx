@@ -435,7 +435,7 @@ const CotacaoPage = () => {
           </thead>
           <tbody>
             {filteredItems.length === 0 ? (
-              <tr><td colSpan={fornecedores.length + 5} className="text-center py-10 text-muted-foreground">
+              <tr><td colSpan={fornecedores.length + 6} className="text-center py-10 text-muted-foreground">
                 {cotacaoProdutos.length === 0 ? "Nenhum produto na cotação. Adicione produtos pelo Banco de Produtos." : "Nenhum produto encontrado."}
               </td></tr>
             ) : filteredItems.map((cp) => {
