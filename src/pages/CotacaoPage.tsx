@@ -498,8 +498,9 @@ const CotacaoPage = () => {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+       </Dialog>
     </div>
+    </TooltipProvider>
   );
 };
 
