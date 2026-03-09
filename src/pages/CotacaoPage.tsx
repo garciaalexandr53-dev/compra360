@@ -370,6 +370,9 @@ const CotacaoPage = () => {
         <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries()}>
           <RefreshCw className="h-4 w-4 mr-1" /> Atualizar
         </Button>
+        <Button variant="outline" size="sm" onClick={exportSuspiciousReport}>
+          <FileWarning className="h-4 w-4 mr-1" /> Suspeitos
+        </Button>
         <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
           <Save className="h-4 w-4 mr-1" /> Salvar
         </Button>
