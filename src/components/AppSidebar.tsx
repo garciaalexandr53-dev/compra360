@@ -83,7 +83,7 @@ export function AppSidebar() {
     }
   };
 
-  const renderMenu = (items: typeof mainMenu) => (
+  const renderMenu = (items: typeof prepararMenu) => (
     <SidebarMenu>
       {items.map((item) => {
         const isActive = location.pathname === item.url || location.pathname.startsWith(item.url + "/");
