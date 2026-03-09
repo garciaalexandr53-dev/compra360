@@ -339,8 +339,11 @@ const CotacaoPage = () => {
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <span className="bg-amber-500 text-white text-[7px] font-extrabold px-1 rounded">2º</span> Segundo menor
           </span>
-          <span className="flex items-center gap-1.5 text-muted-foreground">
+           <span className="flex items-center gap-1.5 text-muted-foreground">
             <span className="bg-gradient-to-r from-orange-500 to-red-600 text-white text-[7px] font-extrabold px-1 rounded">▲</span> +25% acima
+          </span>
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <span className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-[7px] font-extrabold px-1 rounded">▼</span> -25% abaixo (possível erro)
           </span>
           <button onClick={() => setLegendVisible(false)} className="ml-auto text-muted-foreground hover:text-foreground">✕ ocultar</button>
         </div>
