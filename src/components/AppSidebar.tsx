@@ -5,24 +5,26 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, Package, Users, ShoppingCart, TrendingUp, History, Link2, UserCheck } from "lucide-react";
+import { BarChart3, Package, Users, ShoppingCart, TrendingUp, History, Link2, UserCheck, BookOpen } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-const mainMenu = [
-  { title: "Cotação", url: "/cotacao", icon: BarChart3, emoji: "📊" },
+// Fluxo natural: Preparar → Cotar → Analisar → Pedir
+const prepararMenu = [
   { title: "Banco de Produtos", url: "/produtos", icon: Package, emoji: "🗄️" },
-  { title: "Links", url: "/links", icon: Link2, emoji: "🔗" },
-];
-const analysisMenu = [
-  { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, emoji: "📦" },
-  { title: "Resumo", url: "/resumo", icon: TrendingUp, emoji: "📈" },
-];
-const toolsMenu = [
+  { title: "Fornecedores", url: "/fornecedores", icon: Users, emoji: "⚙️" },
   { title: "App Funcionários", url: "/funcionarios", icon: UserCheck, emoji: "👥" },
 ];
-const systemMenu = [
+const cotarMenu = [
+  { title: "Cotação", url: "/cotacao", icon: BarChart3, emoji: "📊" },
+  { title: "Links p/ Fornecedores", url: "/links", icon: Link2, emoji: "🔗" },
+];
+const analisarMenu = [
+  { title: "Resumo", url: "/resumo", icon: TrendingUp, emoji: "📈" },
+  { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, emoji: "📦" },
+];
+const sistemaMenu = [
   { title: "Histórico", url: "/historico", icon: History, emoji: "🕐" },
-  { title: "Fornecedores", url: "/fornecedores", icon: Users, emoji: "⚙️" },
+  { title: "Como Usar", url: "/guia", icon: BookOpen, emoji: "📖" },
 ];
 
 export function AppSidebar() {
