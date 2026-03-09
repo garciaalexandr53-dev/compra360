@@ -16,6 +16,7 @@ import FornecedorCotacaoPage from "./pages/FornecedorCotacaoPage";
 import LinksPage from "./pages/LinksPage";
 import FuncionariosPage from "./pages/FuncionariosPage";
 import AppFuncionariosPublic from "./pages/AppFuncionariosPublic";
+import GuiaPage from "./pages/GuiaPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
