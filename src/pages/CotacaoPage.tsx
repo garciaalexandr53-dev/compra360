@@ -403,7 +403,17 @@ const CotacaoPage = () => {
             <span className="bg-gradient-to-r from-orange-500 to-red-600 text-white text-[7px] font-extrabold px-1 rounded">▲</span> +25% acima
           </span>
           <span className="flex items-center gap-1.5 text-muted-foreground">
-            <span className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-[7px] font-extrabold px-1 rounded">▼</span> -25% abaixo (possível erro)
+            <span className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-[7px] font-extrabold px-1 rounded">▼</span> -15% abaixo (possível erro)
+          </span>
+          <span className="text-muted-foreground">|</span>
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <CheckCircle2 className="h-3 w-3 text-green-600" /> OK
+          </span>
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <AlertTriangle className="h-3 w-3 text-amber-600" /> Verificar
+          </span>
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <XCircle className="h-3 w-3 text-muted-foreground/60" /> Erro
           </span>
           <button onClick={() => setLegendVisible(false)} className="ml-auto text-muted-foreground hover:text-foreground">✕ ocultar</button>
         </div>
