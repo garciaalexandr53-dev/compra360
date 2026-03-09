@@ -452,6 +452,50 @@ const CotacaoPage = () => {
                     />
                   </td>
                   <td className="px-1 py-2 border-b text-center">
+                    {(() => {
+                      const hasAnyPrice = info.allVals.length > 0;
+                      const hasAnomaly = hasAnyPrice && info.allVals.length >= MIN_SUPPLIERS_FOR_ANALYSIS && info.allVals.some(v => isHighVariation(v, info.allVals) || isLowVariation(v, info.allVals));
+                      const missingSuppliers = hasAnyPrice && info.allVals.length < MIN_SUPPLIERS_FOR_ANALYSIS;
+                      const noPrices = !hasAnyPrice;
+
+                      if (noPrices) return (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-muted-foreground/60 cursor-help">
+                              <XCircle className="h-3.5 w-3.5" /> Erro
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="text-xs">Nenhum preço informado para este item.</TooltipContent>
+                        </Tooltip>
+                      );
+                      if (hasAnomaly) return (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 cursor-help">
+                              <AlertTriangle className="h-3.5 w-3.5" /> Verificar
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="text-xs">Preço(s) com variação suspeita detectada.</TooltipContent>
+                        </Tooltip>
+                      );
+                      if (missingSuppliers) return (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-500 cursor-help">
+                              <AlertTriangle className="h-3.5 w-3.5" /> Verificar
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="text-xs">Menos de {MIN_SUPPLIERS_FOR_ANALYSIS} fornecedores. Análise incompleta.</TooltipContent>
+                        </Tooltip>
+                      );
+                      return (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-600">
+                          <CheckCircle2 className="h-3.5 w-3.5" /> OK
+                        </span>
+                      );
+                    })()}
+                  </td>
+                  <td className="px-1 py-2 border-b text-center">
                     <Input
                       className="h-7 text-xs text-center border-transparent hover:border-input focus:border-input bg-transparent w-16 mx-auto"
                       defaultValue={cp.produto?.embalagem || "un"}
