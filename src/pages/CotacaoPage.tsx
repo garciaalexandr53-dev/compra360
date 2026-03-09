@@ -412,11 +412,13 @@ const CotacaoPage = () => {
                     const isTieMin = isMin && info.tiedCount > 1;
                     const isSecond = info.second === f.id;
                     const hiVar = numVal !== null && isHighVariation(numVal, info.allVals);
+                    const loVar = numVal !== null && isLowVariation(numVal, info.allVals);
 
                     let inputClass = "w-20 text-right font-mono text-xs h-8 px-2";
                     if (isMin) inputClass += " price-best";
                     else if (isSecond) inputClass += " price-second";
                     if (hiVar && !isMin) inputClass += " price-high-var";
+                    if (loVar) inputClass += " price-low-var";
 
                     return (
                       <td key={f.id} className="px-1 py-1 border-b text-center">
