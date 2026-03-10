@@ -213,50 +213,61 @@ const HistoricoPage = () => {
               Nenhum resultado encontrado para "{searchItem}".
             </div>
           ) : (
-            <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
-              <ScrollArea className="max-h-[500px]">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-muted/50">
-                      <th className="px-3 py-2 text-left font-bold">Produto</th>
-                      <th className="px-3 py-2 text-left font-bold">Cotação</th>
-                      <th className="px-3 py-2 text-left font-bold">Data</th>
-                      <th className="px-3 py-2 text-left font-bold">Preços</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {itemSearchResults.map((item: any) => {
-                      const minPreco = item.precos.length ? Math.min(...item.precos.map((p: any) => p.preco)) : null;
-                      return (
-                        <tr key={item.id} className="border-t hover:bg-muted/20">
-                          <td className="px-3 py-2 font-medium">{item.produtos?.nome}</td>
-                          <td className="px-3 py-2 text-muted-foreground">{item.cotacoes?.nome}</td>
-                          <td className="px-3 py-2 text-muted-foreground">{item.cotacoes?.created_at ? formatDateTime(item.cotacoes.created_at) : ""}</td>
-                          <td className="px-3 py-2">
-                            {item.precos.length === 0 ? (
-                              <span className="text-muted-foreground">—</span>
-                            ) : (
-                              <div className="flex flex-wrap gap-1">
-                                {item.precos.sort((a: any, b: any) => a.preco - b.preco).map((p: any) => (
+            (() => {
+              // Group by product name
+              const grouped: Record<string, { nome: string; embalagem: string; entries: typeof itemSearchResults }> = {};
+              itemSearchResults.forEach((item: any) => {
+                const key = item.produtos?.nome || "?";
+                if (!grouped[key]) grouped[key] = { nome: key, embalagem: item.produtos?.embalagem || "un", entries: [] };
+                grouped[key].entries.push(item);
+              });
+
+              return Object.values(grouped).map((group) => (
+                <div key={group.nome} className="bg-card border rounded-xl shadow-sm overflow-hidden mb-3">
+                  <div className="px-4 py-3 bg-muted/30 border-b">
+                    <span className="font-bold text-sm text-foreground">{group.nome}</span>
+                    <span className="text-xs text-muted-foreground ml-2">({group.embalagem})</span>
+                  </div>
+                  <div className="divide-y">
+                    {group.entries
+                      .sort((a: any, b: any) => {
+                        const da = a.cotacoes?.created_at || "";
+                        const db = b.cotacoes?.created_at || "";
+                        return db.localeCompare(da);
+                      })
+                      .map((item: any) => {
+                        const minPreco = item.precos.length ? Math.min(...item.precos.map((p: any) => p.preco)) : null;
+                        return (
+                          <div key={item.id} className="px-4 py-2.5 flex items-start gap-4">
+                            <div className="min-w-[140px]">
+                              <div className="text-xs font-medium text-muted-foreground">
+                                {item.cotacoes?.created_at ? formatDateTime(item.cotacoes.created_at) : "—"}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground/70">{item.cotacoes?.nome}</div>
+                            </div>
+                            <div className="flex flex-wrap gap-1 flex-1">
+                              {item.precos.length === 0 ? (
+                                <span className="text-muted-foreground text-xs">—</span>
+                              ) : (
+                                item.precos.sort((a: any, b: any) => a.preco - b.preco).map((p: any) => (
                                   <span
                                     key={p.id}
                                     className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
-                                      p.preco === minPreco ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+                                      p.preco === minPreco ? "bg-blue-50 text-blue-600" : "bg-muted text-muted-foreground"
                                     }`}
                                   >
                                     {p.fornecedores?.nome}: R${formatNumber(p.preco)}
                                   </span>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </ScrollArea>
-            </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              ));
+            })()
           )}
         </TabsContent>
       </Tabs>
