@@ -94,14 +94,20 @@ const PedidosPage = () => {
       msg += `\n*${i + 1}. ${it.produto}*\n    Embalagem: ${it.embalagem}\n    Qtd: ${it.quantidade}\n    Preço unit.: R$ ${formatNumber(it.preco)}\n    *Subtotal: R$ ${formatNumber(it.total)}*\n`;
     });
     msg += `\n-----\n💰 *TOTAL GERAL: ${formatBRL(total)}*${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}\n-----\n_Enviado via CotaFácil_`;
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, "_blank");
+
+    // If supplier has phone number, send directly to them
+    const phone = f.telefone?.replace(/\D/g, "");
+    const url = phone
+      ? `https://api.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(msg)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
   };
 
   return (
     <div className="p-5 pb-20">
       <h1 className="text-xl font-bold mb-1">Pedidos por Fornecedor</h1>
       <p className="text-sm text-muted-foreground mb-5">
-        Clique em <strong className="text-green-700">Enviar Pedido</strong> para enviar via WhatsApp com todos os detalhes.
+        Clique em <strong className="text-green-700">Enviar Pedido</strong> para enviar via WhatsApp diretamente para o fornecedor.
       </p>
 
       {fornecedores.map((f) => {
@@ -135,6 +141,7 @@ const PedidosPage = () => {
                 <div className="font-bold text-foreground">{f.nome}</div>
                 <div className="text-xs text-muted-foreground">
                   {items.length} itens
+                  {f.telefone && ` · 📞 ${f.telefone}`}
                   {f.pedido_minimo && f.pedido_minimo > 0 ? ` · mín: ${formatBRL(f.pedido_minimo)}` : ""}
                   {f.prazo_pagamento ? ` · prazo: ${f.prazo_pagamento}` : ""}
                 </div>

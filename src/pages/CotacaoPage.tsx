@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Search, Save, RefreshCw, FileWarning } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Search, Save, RefreshCw, FileWarning, Filter, Users } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
 import * as XLSX from "xlsx";
@@ -40,8 +41,10 @@ const CotacaoPage = () => {
   const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);
   const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "zerar" | null>(null);
   const [legendVisible, setLegendVisible] = useState(true);
+  const [filterAnomalies, setFilterAnomalies] = useState(false);
+  const [supplierModalOpen, setSupplierModalOpen] = useState(false);
+  const [selectedSuppliers, setSelectedSuppliers] = useState<Record<string, boolean>>({});
 
-  // Inline editing for qty/embalagem/nome
   const [editingField, setEditingField] = useState<Record<string, { quantidade?: string; embalagem?: string; nome?: string }>>({});
 
   const { data: cotacaoAtiva } = useQuery({
@@ -53,7 +56,7 @@ const CotacaoPage = () => {
     },
   });
 
-  const { data: fornecedores = [] } = useQuery({
+  const { data: allFornecedores = [] } = useQuery({
     queryKey: ["fornecedores"],
     queryFn: async () => {
       const { data, error } = await supabase.from("fornecedores").select("*").order("nome");
@@ -61,6 +64,21 @@ const CotacaoPage = () => {
       return data as Fornecedor[];
     },
   });
+
+  // Initialize selected suppliers when loaded
+  useEffect(() => {
+    if (allFornecedores.length > 0 && Object.keys(selectedSuppliers).length === 0) {
+      const initial: Record<string, boolean> = {};
+      allFornecedores.forEach((f) => { initial[f.id] = true; });
+      setSelectedSuppliers(initial);
+    }
+  }, [allFornecedores]);
+
+  // Only selected suppliers participate
+  const fornecedores = useMemo(() =>
+    allFornecedores.filter((f) => selectedSuppliers[f.id] !== false),
+    [allFornecedores, selectedSuppliers]
+  );
 
   const { data: cotacaoProdutos = [] } = useQuery({
     queryKey: ["cotacao-produtos", cotacaoAtiva?.id],
@@ -92,6 +110,53 @@ const CotacaoPage = () => {
       return data as Preco[];
     },
   });
+
+  // Fetch historical prices from finalized cotações
+  const { data: historicalPrices = [] } = useQuery({
+    queryKey: ["historical-prices", cotacaoAtiva?.id],
+    enabled: !!cotacaoAtiva?.id && cotacaoProdutos.length > 0,
+    queryFn: async () => {
+      const produtoIds = cotacaoProdutos.map((cp) => cp.produto_id);
+      if (!produtoIds.length) return [];
+      // Get last finalized cotação
+      const { data: lastCot } = await supabase
+        .from("cotacoes")
+        .select("id")
+        .eq("status", "finalizada")
+        .order("finalizada_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!lastCot) return [];
+      // Get cotacao_produtos from that cotação for same products
+      const { data: oldCps } = await supabase
+        .from("cotacao_produtos")
+        .select("id, produto_id")
+        .eq("cotacao_id", lastCot.id)
+        .in("produto_id", produtoIds);
+      if (!oldCps?.length) return [];
+      const oldCpIds = oldCps.map((cp: any) => cp.id);
+      const { data: oldPrecos } = await supabase
+        .from("precos")
+        .select("*")
+        .in("cotacao_produto_id", oldCpIds);
+      // Map: produto_id -> { fornecedor_id -> preco }
+      return (oldPrecos || []).map((p: any) => {
+        const cp = oldCps.find((c: any) => c.id === p.cotacao_produto_id);
+        return { ...p, produto_id: cp?.produto_id };
+      });
+    },
+  });
+
+  const historicalMap = useMemo(() => {
+    const map: Record<string, Record<string, number>> = {};
+    historicalPrices.forEach((p: any) => {
+      if (p.produto_id && p.preco !== null && p.preco > 0) {
+        if (!map[p.produto_id]) map[p.produto_id] = {};
+        map[p.produto_id][p.fornecedor_id] = p.preco;
+      }
+    });
+    return map;
+  }, [historicalPrices]);
 
   const priceMap = useMemo(() => {
     const map: Record<string, Record<string, number | null>> = {};
@@ -217,6 +282,19 @@ const CotacaoPage = () => {
     return (avg - val) / avg >= LOW_THRESHOLD;
   };
 
+  // Check if a product row has any anomaly
+  const hasAnomaly = (cpId: string) => {
+    const info = analyzePrices(cpId);
+    if (info.allVals.length < MIN_SUPPLIERS_FOR_ANALYSIS) return false;
+    return fornecedores.some((f) => {
+      const rawVal = localPrices[cpId]?.[f.id]?.replace(",", ".").replace(/[^0-9.]/g, "");
+      if (!rawVal) return false;
+      const num = parseFloat(rawVal);
+      if (isNaN(num) || num <= 0) return false;
+      return isHighVariation(num, info.allVals) || isLowVariation(num, info.allVals);
+    });
+  };
+
   const grandTotal = useMemo(() => {
     let total = 0;
     cotacaoProdutos.forEach((cp) => {
@@ -228,9 +306,16 @@ const CotacaoPage = () => {
     return total;
   }, [localPrices, cotacaoProdutos, fornecedores]);
 
-  const filteredItems = cotacaoProdutos.filter((cp) =>
-    !search || cp.produto?.nome.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredItems = useMemo(() => {
+    let items = cotacaoProdutos;
+    if (search) {
+      items = items.filter((cp) => cp.produto?.nome.toLowerCase().includes(search.toLowerCase()));
+    }
+    if (filterAnomalies) {
+      items = items.filter((cp) => hasAnomaly(cp.id));
+    }
+    return items;
+  }, [cotacaoProdutos, search, filterAnomalies, localPrices, fornecedores]);
 
   // Realtime
   useEffect(() => {
@@ -245,7 +330,7 @@ const CotacaoPage = () => {
   }, [cotacaoAtiva?.id, queryClient]);
 
   const buildSuspiciousReport = () => {
-    const rows: { Produto: string; Embalagem: string; Fornecedor: string; Preço: number; Média: string; Desvio: string; Tipo: string }[] = [];
+    const rows: { Produto: string; Embalagem: string; Fornecedor: string; Preço: number; Média: string; Desvio: string; Tipo: string; "Preço Anterior": string; "Variação Histórica": string }[] = [];
     cotacaoProdutos.forEach((cp) => {
       const info = analyzePrices(cp.id);
       if (info.allVals.length < MIN_SUPPLIERS_FOR_ANALYSIS) return;
@@ -259,6 +344,17 @@ const CotacaoPage = () => {
         const lo = isLowVariation(num, info.allVals);
         if (!hi && !lo) return;
         const desvPct = ((num - avg) / avg * 100).toFixed(1);
+
+        // Historical comparison
+        const histPrice = historicalMap[cp.produto_id]?.[f.id];
+        let precoAnterior = "—";
+        let variacaoHist = "—";
+        if (histPrice !== undefined) {
+          precoAnterior = `R$ ${formatNumber(histPrice)}`;
+          const histVar = ((num - histPrice) / histPrice * 100).toFixed(1);
+          variacaoHist = `${Number(histVar) > 0 ? "+" : ""}${histVar}%`;
+        }
+
         rows.push({
           Produto: cp.produto?.nome || "",
           Embalagem: cp.produto?.embalagem || "un",
@@ -267,6 +363,8 @@ const CotacaoPage = () => {
           Média: formatNumber(avg),
           Desvio: `${desvPct}%`,
           Tipo: hi ? "⚠️ Acima (+25%)" : "⚠️ Abaixo (-15%)",
+          "Preço Anterior": precoAnterior,
+          "Variação Histórica": variacaoHist,
         });
       });
     });
@@ -340,6 +438,16 @@ const CotacaoPage = () => {
     });
   };
 
+  const toggleSupplier = (id: string) => {
+    setSelectedSuppliers((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const selectAllSuppliers = (val: boolean) => {
+    const updated: Record<string, boolean> = {};
+    allFornecedores.forEach((f) => { updated[f.id] = val; });
+    setSelectedSuppliers(updated);
+  };
+
   if (!cotacaoAtiva) {
     return (
       <div className="p-10 text-center text-muted-foreground">
@@ -365,6 +473,17 @@ const CotacaoPage = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar produto..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
+        <Button
+          variant={filterAnomalies ? "default" : "outline"}
+          size="sm"
+          onClick={() => setFilterAnomalies(!filterAnomalies)}
+          className={filterAnomalies ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : ""}
+        >
+          <Filter className="h-4 w-4 mr-1" /> {filterAnomalies ? "Anomalias" : "Filtrar ▲▼"}
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setSupplierModalOpen(true)}>
+          <Users className="h-4 w-4 mr-1" /> Fornecedores ({fornecedores.length})
+        </Button>
         <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries()}>
           <RefreshCw className="h-4 w-4 mr-1" /> Atualizar
         </Button>
@@ -433,7 +552,7 @@ const CotacaoPage = () => {
           <tbody>
             {filteredItems.length === 0 ? (
               <tr><td colSpan={fornecedores.length + 5} className="text-center py-10 text-muted-foreground">
-                {cotacaoProdutos.length === 0 ? "Nenhum produto na cotação. Adicione produtos pelo Banco de Produtos." : "Nenhum produto encontrado."}
+                {filterAnomalies ? "Nenhum item com anomalia de preço detectada." : cotacaoProdutos.length === 0 ? "Nenhum produto na cotação. Adicione produtos pelo Banco de Produtos." : "Nenhum produto encontrado."}
               </td></tr>
             ) : filteredItems.map((cp) => {
               const info = analyzePrices(cp.id);
@@ -535,6 +654,47 @@ const CotacaoPage = () => {
         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total da Compra</span>
         <span className="text-xl font-extrabold text-blue-600 font-mono tracking-tight">{formatBRL(grandTotal)}</span>
       </div>
+
+      {/* Supplier Selection Modal */}
+      <Dialog open={supplierModalOpen} onOpenChange={setSupplierModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>👥 Fornecedores da Cotação</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">Selecione quais fornecedores participam desta cotação. Apenas os selecionados aparecem na tabela e nos cálculos.</p>
+          <div className="flex items-center gap-3 mt-2 mb-1">
+            <Button variant="outline" size="sm" onClick={() => selectAllSuppliers(true)}>Selecionar todos</Button>
+            <Button variant="outline" size="sm" onClick={() => selectAllSuppliers(false)}>Desmarcar todos</Button>
+          </div>
+          <div className="space-y-2 max-h-[350px] overflow-y-auto mt-2">
+            {allFornecedores.map((f) => (
+              <label
+                key={f.id}
+                className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${selectedSuppliers[f.id] !== false ? "border-primary/30 bg-primary/5" : "border-border hover:border-muted-foreground/30 opacity-60"}`}
+                onClick={() => toggleSupplier(f.id)}
+              >
+                <Checkbox
+                  checked={selectedSuppliers[f.id] !== false}
+                  onCheckedChange={() => toggleSupplier(f.id)}
+                />
+                <div className="flex-1">
+                  <div className="text-sm font-bold">{f.nome}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {f.representante && `${f.representante}`}
+                    {f.telefone && ` · ${f.telefone}`}
+                    {f.pedido_minimo && f.pedido_minimo > 0 ? ` · mín: ${formatBRL(f.pedido_minimo)}` : ""}
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setSupplierModalOpen(false)} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Nova Cotação Modal */}
       <Dialog open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen}>
