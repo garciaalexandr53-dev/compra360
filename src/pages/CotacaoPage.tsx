@@ -65,14 +65,34 @@ const CotacaoPage = () => {
     },
   });
 
-  // Initialize selected suppliers when loaded
+  // Load persisted supplier selection from DB
+  const { data: cotacaoFornecedores = [] } = useQuery({
+    queryKey: ["cotacao-fornecedores", cotacaoAtiva?.id],
+    enabled: !!cotacaoAtiva?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cotacao_fornecedores")
+        .select("fornecedor_id")
+        .eq("cotacao_id", cotacaoAtiva!.id);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Initialize selected suppliers from DB or default all
   useEffect(() => {
-    if (allFornecedores.length > 0 && Object.keys(selectedSuppliers).length === 0) {
+    if (!allFornecedores.length || !cotacaoAtiva?.id) return;
+    if (cotacaoFornecedores.length > 0) {
+      const sel: Record<string, boolean> = {};
+      allFornecedores.forEach((f) => { sel[f.id] = false; });
+      cotacaoFornecedores.forEach((cf: any) => { sel[cf.fornecedor_id] = true; });
+      setSelectedSuppliers(sel);
+    } else if (Object.keys(selectedSuppliers).length === 0) {
       const initial: Record<string, boolean> = {};
       allFornecedores.forEach((f) => { initial[f.id] = true; });
       setSelectedSuppliers(initial);
     }
-  }, [allFornecedores]);
+  }, [allFornecedores, cotacaoFornecedores, cotacaoAtiva?.id]);
 
   // Only selected suppliers participate
   const fornecedores = useMemo(() =>
