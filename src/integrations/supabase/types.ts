@@ -32,6 +32,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cotacao_fornecedores: {
+        Row: {
+          cotacao_id: string
+          created_at: string
+          fornecedor_id: string
+          id: string
+        }
+        Insert: {
+          cotacao_id: string
+          created_at?: string
+          fornecedor_id: string
+          id?: string
+        }
+        Update: {
+          cotacao_id?: string
+          created_at?: string
+          fornecedor_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cotacao_fornecedores_cotacao_id_fkey"
+            columns: ["cotacao_id"]
+            isOneToOne: false
+            referencedRelation: "cotacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cotacao_fornecedores_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cotacao_produtos: {
         Row: {
           cotacao_id: string
