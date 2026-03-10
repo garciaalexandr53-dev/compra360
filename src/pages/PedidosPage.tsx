@@ -21,7 +21,7 @@ const PedidosPage = () => {
     },
   });
 
-  const { data: fornecedores = [] } = useQuery({
+  const { data: allFornecedores = [] } = useQuery({
     queryKey: ["fornecedores"],
     queryFn: async () => {
       const { data, error } = await supabase.from("fornecedores").select("*").order("nome");
@@ -29,6 +29,26 @@ const PedidosPage = () => {
       return data as Fornecedor[];
     },
   });
+
+  // Load selected suppliers for this cotação
+  const { data: cotacaoFornecedores = [] } = useQuery({
+    queryKey: ["cotacao-fornecedores", cotacaoAtiva?.id],
+    enabled: !!cotacaoAtiva?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cotacao_fornecedores")
+        .select("fornecedor_id")
+        .eq("cotacao_id", cotacaoAtiva!.id);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const fornecedores = useMemo(() => {
+    if (!cotacaoFornecedores.length) return allFornecedores;
+    const selectedIds = new Set(cotacaoFornecedores.map((cf: any) => cf.fornecedor_id));
+    return allFornecedores.filter((f) => selectedIds.has(f.id));
+  }, [allFornecedores, cotacaoFornecedores]);
 
   const { data: cotacaoProdutos = [] } = useQuery({
     queryKey: ["cotacao-produtos", cotacaoAtiva?.id],
