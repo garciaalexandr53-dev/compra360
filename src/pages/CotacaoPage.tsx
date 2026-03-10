@@ -724,8 +724,9 @@ const CotacaoPage = () => {
             ))}
           </div>
           <DialogFooter>
-            <Button onClick={() => setSupplierModalOpen(false)} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
-              Confirmar
+            <Button variant="outline" onClick={() => setSupplierModalOpen(false)}>Cancelar</Button>
+            <Button onClick={saveSupplierSelection} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
+              Salvar Seleção
             </Button>
           </DialogFooter>
         </DialogContent>
