@@ -468,6 +468,21 @@ const CotacaoPage = () => {
     setSelectedSuppliers(updated);
   };
 
+  const saveSupplierSelection = async () => {
+    if (!cotacaoAtiva?.id) return;
+    const selectedIds = Object.entries(selectedSuppliers).filter(([, v]) => v).map(([id]) => id);
+    // Delete existing and re-insert
+    await supabase.from("cotacao_fornecedores").delete().eq("cotacao_id", cotacaoAtiva.id);
+    if (selectedIds.length) {
+      await supabase.from("cotacao_fornecedores").insert(
+        selectedIds.map((fid) => ({ cotacao_id: cotacaoAtiva.id, fornecedor_id: fid }))
+      );
+    }
+    queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
+    setSupplierModalOpen(false);
+    toast.success("Seleção de fornecedores salva!");
+  };
+
   if (!cotacaoAtiva) {
     return (
       <div className="p-10 text-center text-muted-foreground">
