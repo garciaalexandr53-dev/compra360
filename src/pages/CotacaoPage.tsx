@@ -65,14 +65,34 @@ const CotacaoPage = () => {
     },
   });
 
-  // Initialize selected suppliers when loaded
+  // Load persisted supplier selection from DB
+  const { data: cotacaoFornecedores = [] } = useQuery({
+    queryKey: ["cotacao-fornecedores", cotacaoAtiva?.id],
+    enabled: !!cotacaoAtiva?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cotacao_fornecedores")
+        .select("fornecedor_id")
+        .eq("cotacao_id", cotacaoAtiva!.id);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Initialize selected suppliers from DB or default all
   useEffect(() => {
-    if (allFornecedores.length > 0 && Object.keys(selectedSuppliers).length === 0) {
+    if (!allFornecedores.length || !cotacaoAtiva?.id) return;
+    if (cotacaoFornecedores.length > 0) {
+      const sel: Record<string, boolean> = {};
+      allFornecedores.forEach((f) => { sel[f.id] = false; });
+      cotacaoFornecedores.forEach((cf: any) => { sel[cf.fornecedor_id] = true; });
+      setSelectedSuppliers(sel);
+    } else if (Object.keys(selectedSuppliers).length === 0) {
       const initial: Record<string, boolean> = {};
       allFornecedores.forEach((f) => { initial[f.id] = true; });
       setSelectedSuppliers(initial);
     }
-  }, [allFornecedores]);
+  }, [allFornecedores, cotacaoFornecedores, cotacaoAtiva?.id]);
 
   // Only selected suppliers participate
   const fornecedores = useMemo(() =>
@@ -448,6 +468,21 @@ const CotacaoPage = () => {
     setSelectedSuppliers(updated);
   };
 
+  const saveSupplierSelection = async () => {
+    if (!cotacaoAtiva?.id) return;
+    const selectedIds = Object.entries(selectedSuppliers).filter(([, v]) => v).map(([id]) => id);
+    // Delete existing and re-insert
+    await supabase.from("cotacao_fornecedores").delete().eq("cotacao_id", cotacaoAtiva.id);
+    if (selectedIds.length) {
+      await supabase.from("cotacao_fornecedores").insert(
+        selectedIds.map((fid) => ({ cotacao_id: cotacaoAtiva.id, fornecedor_id: fid }))
+      );
+    }
+    queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
+    setSupplierModalOpen(false);
+    toast.success("Seleção de fornecedores salva!");
+  };
+
   if (!cotacaoAtiva) {
     return (
       <div className="p-10 text-center text-muted-foreground">
@@ -689,8 +724,9 @@ const CotacaoPage = () => {
             ))}
           </div>
           <DialogFooter>
-            <Button onClick={() => setSupplierModalOpen(false)} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
-              Confirmar
+            <Button variant="outline" onClick={() => setSupplierModalOpen(false)}>Cancelar</Button>
+            <Button onClick={saveSupplierSelection} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
+              Salvar Seleção
             </Button>
           </DialogFooter>
         </DialogContent>
