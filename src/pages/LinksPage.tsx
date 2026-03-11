@@ -83,8 +83,12 @@ const LinksPage = () => {
 
   const openWhatsApp = (f: Fornecedor) => {
     const link = getLink(f);
-    const msg = `Olá ${f.nome}! Segue o link para cotação:\n\n${link}\n\nPreencha os preços e envie. Obrigado!`;
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, "_blank");
+    const msg = `Olá ${f.nome}! Segue o link para cotação de preços:\n\n${link}\n\nPreencha os preços e envie. Obrigado!`;
+    const phone = f.telefone?.replace(/\D/g, "");
+    const url = phone
+      ? `https://api.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(msg)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
   };
 
   const showLink = (f: Fornecedor) => {
