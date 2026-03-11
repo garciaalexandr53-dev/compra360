@@ -236,23 +236,25 @@ const ProdutosPage = () => {
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <div className="p-3 border-b bg-card flex items-center gap-3">
-          {!catSidebarOpen && (
-            <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0" onClick={() => setCatSidebarOpen(true)} title="Mostrar categorias">
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          )}
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar produto..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
+        <div className="p-3 border-b bg-card space-y-2">
+          <div className="flex items-center gap-3">
+            {!catSidebarOpen && (
+              <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0" onClick={() => setCatSidebarOpen(true)} title="Mostrar categorias">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar produto..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <span className="text-sm text-muted-foreground whitespace-nowrap">{filtered.length}</span>
           </div>
-          <span className="text-sm text-muted-foreground">{filtered.length} produto{filtered.length !== 1 ? "s" : ""}</span>
-          <div className="ml-auto flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
               <Upload className="h-4 w-4 mr-1" /> Importar
             </Button>
