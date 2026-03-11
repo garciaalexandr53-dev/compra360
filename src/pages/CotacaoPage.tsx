@@ -575,8 +575,15 @@ const CotacaoPage = () => {
                 const hasPrice = precos.some((p) => p.fornecedor_id === f.id && p.preco !== null && p.preco > 0);
                 return (
                   <th key={f.id} className="px-3 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border whitespace-nowrap min-w-[100px]">
-                    <span className={`inline-block w-2 h-2 rounded-full mr-1 align-middle ${hasPrice ? "bg-green-500 shadow-[0_0_0_2px_rgba(34,197,94,.2)]" : "bg-muted-foreground/30"}`} />
-                    {f.nome}
+                    <div className="flex items-center justify-center gap-1">
+                      <span className={`inline-block w-2 h-2 rounded-full ${hasPrice ? "bg-green-500 shadow-[0_0_0_2px_rgba(34,197,94,.2)]" : "bg-muted-foreground/30"}`} />
+                      <span>{f.nome}</span>
+                      <button
+                        title={`Enviar lista de preços via WhatsApp para ${f.nome}`}
+                        className="ml-0.5 text-green-600 hover:text-green-800 text-[11px] leading-none"
+                        onClick={(e) => { e.stopPropagation(); sendPriceListWhatsApp(f); }}
+                      >📱</button>
+                    </div>
                   </th>
                 );
               })}
