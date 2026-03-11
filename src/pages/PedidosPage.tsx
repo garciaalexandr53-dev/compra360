@@ -76,25 +76,46 @@ const PedidosPage = () => {
     },
   });
 
-  // Build orders per supplier with full details
+  // Build orders per supplier with tiebreaker: supplier with most wins gets tied items
   const orders = useMemo(() => {
     const result: Record<string, { produto: string; embalagem: string; quantidade: number; preco: number; total: number }[]> = {};
     fornecedores.forEach((f) => { result[f.id] = []; });
 
+    // First pass: count wins per supplier (no tiebreaker yet)
+    const winCount: Record<string, number> = {};
+    fornecedores.forEach((f) => { winCount[f.id] = 0; });
+    cotacaoProdutos.forEach((cp: any) => {
+      const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco !== null && p.preco > 0);
+      if (!cpPrecos.length) return;
+      const minPrice = Math.min(...cpPrecos.map((p: any) => p.preco));
+      const winners = cpPrecos.filter((p: any) => p.preco === minPrice);
+      if (winners.length === 1) {
+        winCount[winners[0].fornecedor_id] = (winCount[winners[0].fornecedor_id] || 0) + 1;
+      }
+    });
+
+    // Second pass: assign items, using winCount to break ties
     cotacaoProdutos.forEach((cp: any) => {
       const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco !== null && p.preco > 0);
       if (!cpPrecos.length) return;
 
-      let minP: any = cpPrecos[0];
-      cpPrecos.forEach((p: any) => { if (p.preco < minP.preco) minP = p; });
+      const minPrice = Math.min(...cpPrecos.map((p: any) => p.preco));
+      const winners = cpPrecos.filter((p: any) => p.preco === minPrice);
+
+      // Tiebreaker: pick supplier with most wins
+      let best = winners[0];
+      if (winners.length > 1) {
+        winners.sort((a: any, b: any) => (winCount[b.fornecedor_id] || 0) - (winCount[a.fornecedor_id] || 0));
+        best = winners[0];
+      }
 
       const qt = cp.quantidade || 1;
-      const total = minP.preco * qt;
-      result[minP.fornecedor_id]?.push({
+      const total = best.preco * qt;
+      result[best.fornecedor_id]?.push({
         produto: cp.produtos?.nome || "?",
         embalagem: cp.produtos?.embalagem || "un",
         quantidade: qt,
-        preco: minP.preco,
+        preco: best.preco,
         total,
       });
     });
