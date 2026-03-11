@@ -483,6 +483,22 @@ const CotacaoPage = () => {
     toast.success("Seleção de fornecedores salva!");
   };
 
+  const sendPriceListWhatsApp = (f: Fornecedor) => {
+    const items = cotacaoProdutos.map((cp, i) => {
+      return `*${i + 1}. ${cp.produto?.nome || "?"}*\n    Embalagem: ${cp.produto?.embalagem || "un"}\n    Qtd: ${cp.quantidade || 1}`;
+    });
+    if (!items.length) { toast.error("Nenhum produto na cotação."); return; }
+    const date = new Date().toLocaleDateString("pt-BR");
+    let msg = `📋 *LISTA DE PREÇOS - COTAFÁCIL*\n-----\n📦 *Fornecedor:* ${f.nome}\n📅 *Data:* ${date}\n📝 *Itens:* ${items.length}\n-----\n\n`;
+    msg += items.join("\n\n");
+    msg += `\n\n-----\n📌 *Por favor, informe os preços para os itens acima.*\n_Enviado via CotaFácil_`;
+    const phone = f.telefone?.replace(/\D/g, "");
+    const url = phone
+      ? `https://api.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(msg)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
+  };
+
   if (!cotacaoAtiva) {
     return (
       <div className="p-10 text-center text-muted-foreground">
@@ -575,8 +591,15 @@ const CotacaoPage = () => {
                 const hasPrice = precos.some((p) => p.fornecedor_id === f.id && p.preco !== null && p.preco > 0);
                 return (
                   <th key={f.id} className="px-3 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border whitespace-nowrap min-w-[100px]">
-                    <span className={`inline-block w-2 h-2 rounded-full mr-1 align-middle ${hasPrice ? "bg-green-500 shadow-[0_0_0_2px_rgba(34,197,94,.2)]" : "bg-muted-foreground/30"}`} />
-                    {f.nome}
+                    <div className="flex items-center justify-center gap-1">
+                      <span className={`inline-block w-2 h-2 rounded-full ${hasPrice ? "bg-green-500 shadow-[0_0_0_2px_rgba(34,197,94,.2)]" : "bg-muted-foreground/30"}`} />
+                      <span>{f.nome}</span>
+                      <button
+                        title={`Enviar lista de preços via WhatsApp para ${f.nome}`}
+                        className="ml-0.5 text-green-600 hover:text-green-800 text-[11px] leading-none"
+                        onClick={(e) => { e.stopPropagation(); sendPriceListWhatsApp(f); }}
+                      >📱</button>
+                    </div>
                   </th>
                 );
               })}

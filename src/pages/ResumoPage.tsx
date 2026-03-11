@@ -75,15 +75,26 @@ const ResumoPage = () => {
   const stats = useMemo(() => {
     const totalItems = cotacaoProdutos.length;
     
-    // Fornecedores that have at least one price
     const fornecedoresComPreco = new Set(precos.filter((p: any) => p.preco !== null && p.preco > 0).map((p: any) => p.fornecedor_id));
     const responderam = fornecedoresComPreco.size;
 
-    // Items with at least one price
     const itensCotados = new Set(precos.filter((p: any) => p.preco !== null && p.preco > 0).map((p: any) => p.cotacao_produto_id)).size;
     const cobertura = totalItems > 0 ? Math.round((itensCotados / totalItems) * 100) : 0;
 
-    // Calculate per-supplier stats
+    // First pass: count clear wins per supplier (for tiebreaking)
+    const winCount: Record<string, number> = {};
+    fornecedores.forEach((f) => { winCount[f.id] = 0; });
+    cotacaoProdutos.forEach((cp: any) => {
+      const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco !== null && p.preco > 0);
+      if (!cpPrecos.length) return;
+      const minPrice = Math.min(...cpPrecos.map((p: any) => p.preco));
+      const winners = cpPrecos.filter((p: any) => p.preco === minPrice);
+      if (winners.length === 1) {
+        winCount[winners[0].fornecedor_id] = (winCount[winners[0].fornecedor_id] || 0) + 1;
+      }
+    });
+
+    // Calculate per-supplier stats with tiebreaker
     const supplierStats = fornecedores.map((f) => {
       let quotedCount = 0;
       let winsCount = 0;
@@ -96,9 +107,15 @@ const ResumoPage = () => {
 
         if (cpPrecos.length > 0) {
           const minPrice = Math.min(...cpPrecos.map((p: any) => p.preco));
+          const winners = cpPrecos.filter((p: any) => p.preco === minPrice);
+          
           if (myPrice && myPrice.preco === minPrice) {
-            winsCount++;
-            totalPedido += myPrice.preco * (cp.quantidade || 1);
+            // Tiebreaker: supplier with most wins gets it
+            if (winners.length === 1 || 
+                winners.sort((a: any, b: any) => (winCount[b.fornecedor_id] || 0) - (winCount[a.fornecedor_id] || 0))[0].fornecedor_id === f.id) {
+              winsCount++;
+              totalPedido += myPrice.preco * (cp.quantidade || 1);
+            }
           }
         }
       });
@@ -107,7 +124,7 @@ const ResumoPage = () => {
       return { fornecedor: f, quotedCount, winsCount, pct, totalPedido, recv: fornecedoresComPreco.has(f.id) };
     });
 
-    // Grand total (sum of best prices * quantities)
+    // Grand total with tiebreaker
     let grandTotal = 0;
     cotacaoProdutos.forEach((cp: any) => {
       const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco !== null && p.preco > 0);
