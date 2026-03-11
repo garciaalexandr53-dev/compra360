@@ -579,11 +579,6 @@ const CotacaoPage = () => {
                     <div className="flex items-center justify-center gap-1">
                       <span className={`inline-block w-2 h-2 rounded-full ${hasPrice ? "bg-green-500 shadow-[0_0_0_2px_rgba(34,197,94,.2)]" : "bg-muted-foreground/30"}`} />
                       <span>{f.nome}</span>
-                      <button
-                        title={`Enviar lista de preços via WhatsApp para ${f.nome}`}
-                        className="ml-0.5 text-green-600 hover:text-green-800 text-[11px] leading-none"
-                        onClick={(e) => { e.stopPropagation(); sendPriceListWhatsApp(f); }}
-                      >📱</button>
                     </div>
                   </th>
                 );
