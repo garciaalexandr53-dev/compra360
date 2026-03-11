@@ -96,6 +96,18 @@ const ProdutosPage = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const deleteAllMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("produtos").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["produtos"] });
+      toast.success("Todos os produtos foram removidos!");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const inlineUpdateMutation = useMutation({
     mutationFn: async ({ id, field, value }: { id: string; field: string; value: string }) => {
       const { error } = await supabase.from("produtos").update({ [field]: value.trim() || null }).eq("id", id);
