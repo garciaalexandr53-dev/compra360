@@ -483,21 +483,6 @@ const CotacaoPage = () => {
     toast.success("Seleção de fornecedores salva!");
   };
 
-  const sendPriceListWhatsApp = (f: Fornecedor) => {
-    const items = cotacaoProdutos.map((cp, i) => {
-      return `*${i + 1}. ${cp.produto?.nome || "?"}*\n    Embalagem: ${cp.produto?.embalagem || "un"}\n    Qtd: ${cp.quantidade || 1}`;
-    });
-    if (!items.length) { toast.error("Nenhum produto na cotação."); return; }
-    const date = new Date().toLocaleDateString("pt-BR");
-    let msg = `📋 *LISTA DE PREÇOS - COTAFÁCIL*\n-----\n📦 *Fornecedor:* ${f.nome}\n📅 *Data:* ${date}\n📝 *Itens:* ${items.length}\n-----\n\n`;
-    msg += items.join("\n\n");
-    msg += `\n\n-----\n📌 *Por favor, informe os preços para os itens acima.*\n_Enviado via CotaFácil_`;
-    const phone = f.telefone?.replace(/\D/g, "");
-    const url = phone
-      ? `https://api.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(msg)}`
-      : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-    window.open(url, "_blank");
-  };
 
   if (!cotacaoAtiva) {
     return (
