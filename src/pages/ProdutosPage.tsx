@@ -96,6 +96,18 @@ const ProdutosPage = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const deleteAllMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("produtos").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["produtos"] });
+      toast.success("Todos os produtos foram removidos!");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const inlineUpdateMutation = useMutation({
     mutationFn: async ({ id, field, value }: { id: string; field: string; value: string }) => {
       const { error } = await supabase.from("produtos").update({ [field]: value.trim() || null }).eq("id", id);
@@ -248,9 +260,17 @@ const ProdutosPage = () => {
               {editMode ? <><Check className="h-4 w-4 mr-1" /> Concluir</> : <><Pencil className="h-4 w-4 mr-1" /> Editar</>}
             </Button>
             {editMode && (
-              <Button size="sm" onClick={openAdd} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
-                <Plus className="h-4 w-4 mr-1" /> Novo
-              </Button>
+              <>
+                <Button size="sm" variant="destructive" onClick={() => {
+                  if (confirm(`Tem certeza que deseja excluir TODOS os ${produtos.length} produtos? Esta ação não pode ser desfeita.`))
+                    deleteAllMutation.mutate();
+                }} disabled={deleteAllMutation.isPending || produtos.length === 0}>
+                  <Trash2 className="h-4 w-4 mr-1" /> Excluir Todos
+                </Button>
+                <Button size="sm" onClick={openAdd} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
+                  <Plus className="h-4 w-4 mr-1" /> Novo
+                </Button>
+              </>
             )}
           </div>
         </div>
