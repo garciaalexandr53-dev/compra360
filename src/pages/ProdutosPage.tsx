@@ -260,9 +260,17 @@ const ProdutosPage = () => {
               {editMode ? <><Check className="h-4 w-4 mr-1" /> Concluir</> : <><Pencil className="h-4 w-4 mr-1" /> Editar</>}
             </Button>
             {editMode && (
-              <Button size="sm" onClick={openAdd} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
-                <Plus className="h-4 w-4 mr-1" /> Novo
-              </Button>
+              <>
+                <Button size="sm" variant="destructive" onClick={() => {
+                  if (confirm(`Tem certeza que deseja excluir TODOS os ${produtos.length} produtos? Esta ação não pode ser desfeita.`))
+                    deleteAllMutation.mutate();
+                }} disabled={deleteAllMutation.isPending || produtos.length === 0}>
+                  <Trash2 className="h-4 w-4 mr-1" /> Excluir Todos
+                </Button>
+                <Button size="sm" onClick={openAdd} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
+                  <Plus className="h-4 w-4 mr-1" /> Novo
+                </Button>
+              </>
             )}
           </div>
         </div>
