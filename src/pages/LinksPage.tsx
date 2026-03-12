@@ -230,6 +230,17 @@ const LinksPage = () => {
                 </Button>
               </div>
 
+              <Button
+                variant="outline"
+                className="w-full text-orange-600 border-orange-300 hover:bg-orange-50"
+                onClick={() => {
+                  regenerateTokenMutation.mutate(selectedFornecedor.id);
+                  setLinkModalOpen(false);
+                }}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" /> Gerar novo link
+              </Button>
+
               <div className="bg-muted/50 border rounded-lg p-3 text-xs text-muted-foreground leading-relaxed">
                 💡 <strong>Dica:</strong> O fornecedor toca no link e abre direto no navegador — sem instalar nada.
                 Os preços são importados automaticamente na sua cotação.
