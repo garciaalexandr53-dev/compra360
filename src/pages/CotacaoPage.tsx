@@ -438,21 +438,44 @@ const CotacaoPage = () => {
       const { data: newCot, error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa" }).select().single();
       if (error) throw error;
 
-      if (novaCotacaoOpt === "manter" && newCot) {
-        const inserts = cotacaoProdutos.map((cp) => ({
-          cotacao_id: newCot.id,
-          produto_id: cp.produto_id,
-          quantidade: cp.quantidade,
-        }));
-        if (inserts.length) {
-          await supabase.from("cotacao_produtos").insert(inserts);
+      if ((novaCotacaoOpt === "manter" || novaCotacaoOpt === "manter_precos") && newCot) {
+        const { data: newCps } = await supabase.from("cotacao_produtos").insert(
+          cotacaoProdutos.map((cp) => ({
+            cotacao_id: newCot.id,
+            produto_id: cp.produto_id,
+            quantidade: cp.quantidade,
+          }))
+        ).select();
+
+        // Import prices from previous cotação
+        if (novaCotacaoOpt === "manter_precos" && newCps?.length) {
+          const priceInserts: { cotacao_produto_id: string; fornecedor_id: string; preco: number }[] = [];
+          for (const newCp of newCps) {
+            const oldCp = cotacaoProdutos.find((cp) => cp.produto_id === newCp.produto_id);
+            if (!oldCp) continue;
+            const oldPrices = precos.filter((p) => p.cotacao_produto_id === oldCp.id && p.preco !== null);
+            for (const op of oldPrices) {
+              priceInserts.push({
+                cotacao_produto_id: newCp.id,
+                fornecedor_id: op.fornecedor_id,
+                preco: op.preco!,
+              });
+            }
+          }
+          if (priceInserts.length) {
+            await supabase.from("precos").insert(priceInserts);
+          }
+          toast.success("Nova cotação com preços importados!");
+        } else {
+          toast.success("Nova cotação iniciada — preços limpos!");
         }
+      } else {
+        toast.success("Cotação reiniciada — lista zerada!");
       }
 
       queryClient.invalidateQueries();
       setNovaCotacaoOpen(false);
       setNovaCotacaoOpt(null);
-      toast.success(novaCotacaoOpt === "manter" ? "Nova cotação iniciada — preços limpos!" : "Cotação reiniciada — lista zerada!");
     } catch (e: any) {
       toast.error(e.message);
     }
