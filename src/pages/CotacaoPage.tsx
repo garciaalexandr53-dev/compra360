@@ -187,6 +187,23 @@ const CotacaoPage = () => {
     return map;
   }, [precos]);
 
+  // Realtime subscription for price updates from suppliers
+  useEffect(() => {
+    if (!cotacaoAtiva?.id) return;
+    const channel = supabase
+      .channel('precos-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'precos' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["precos", cotacaoAtiva.id] });
+          toast.info("📬 Preços atualizados por um fornecedor!", { duration: 4000 });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [cotacaoAtiva?.id]);
+
   useEffect(() => {
     const lp: Record<string, Record<string, string>> = {};
     cotacaoProdutos.forEach((cp) => {
