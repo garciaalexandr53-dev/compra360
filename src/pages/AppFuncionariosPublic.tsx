@@ -26,7 +26,7 @@ const AppFuncionariosPublic = () => {
   // Product search from database
   const [productSearch, setProductSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState("Todos");
-  const [showProductList, setShowProductList] = useState(false);
+  const [showProductList, setShowProductList] = useState(true);
   const [productQtds, setProductQtds] = useState<Record<number, string>>({});
 
   const { data: produtos = [] } = useQuery({
