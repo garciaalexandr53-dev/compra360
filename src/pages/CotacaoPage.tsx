@@ -786,6 +786,16 @@ const CotacaoPage = () => {
           <p className="text-sm text-foreground mt-2">O que deseja fazer com a <strong>lista de produtos</strong>?</p>
           <div className="space-y-3 mt-2">
             <label
+              className={`flex items-start gap-3 p-3 border-2 rounded-xl cursor-pointer transition-colors ${novaCotacaoOpt === "manter_precos" ? "border-[hsl(var(--brand))] bg-accent/30" : "border-border hover:border-muted-foreground/30"}`}
+              onClick={() => setNovaCotacaoOpt("manter_precos")}
+            >
+              <input type="radio" name="nc" checked={novaCotacaoOpt === "manter_precos"} readOnly className="mt-1 accent-[hsl(var(--brand))]" />
+              <div>
+                <div className="text-sm font-bold">Manter itens + importar preços</div>
+                <div className="text-xs text-muted-foreground">Copia os produtos e os preços atuais para a nova cotação.</div>
+              </div>
+            </label>
+            <label
               className={`flex items-start gap-3 p-3 border-2 rounded-xl cursor-pointer transition-colors ${novaCotacaoOpt === "manter" ? "border-[hsl(var(--brand))] bg-accent/30" : "border-border hover:border-muted-foreground/30"}`}
               onClick={() => setNovaCotacaoOpt("manter")}
             >
