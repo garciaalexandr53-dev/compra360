@@ -39,7 +39,7 @@ const CotacaoPage = () => {
   const [search, setSearch] = useState("");
   const [localPrices, setLocalPrices] = useState<Record<string, Record<string, string>>>({});
   const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);
-  const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "zerar" | null>(null);
+  const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "manter_precos" | "zerar" | null>(null);
   const [legendVisible, setLegendVisible] = useState(true);
   const [filterAnomalies, setFilterAnomalies] = useState(false);
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
