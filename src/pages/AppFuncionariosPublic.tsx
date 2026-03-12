@@ -26,7 +26,7 @@ const AppFuncionariosPublic = () => {
   // Product search from database
   const [productSearch, setProductSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState("Todos");
-  const [showProductList, setShowProductList] = useState(false);
+  const [showProductList, setShowProductList] = useState(true);
   const [productQtds, setProductQtds] = useState<Record<number, string>>({});
 
   const { data: produtos = [] } = useQuery({
@@ -160,16 +160,8 @@ const AppFuncionariosPublic = () => {
           />
         </div>
 
-        {/* Toggle: manual vs search */}
+        {/* Toggle: search vs manual */}
         <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant={!showProductList ? "default" : "outline"}
-            onClick={() => setShowProductList(false)}
-            className="flex-1 text-xs"
-          >
-            ✏️ Digitar item
-          </Button>
           <Button
             size="sm"
             variant={showProductList ? "default" : "outline"}
@@ -177,6 +169,14 @@ const AppFuncionariosPublic = () => {
             className="flex-1 text-xs"
           >
             🔍 Buscar no banco
+          </Button>
+          <Button
+            size="sm"
+            variant={!showProductList ? "default" : "outline"}
+            onClick={() => setShowProductList(false)}
+            className="flex-1 text-xs"
+          >
+            ✏️ Produto novo
           </Button>
         </div>
 

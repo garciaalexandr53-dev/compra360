@@ -327,13 +327,14 @@ const CotacaoPage = () => {
   }, [localPrices, cotacaoProdutos, fornecedores]);
 
   const filteredItems = useMemo(() => {
-    let items = cotacaoProdutos;
+    let items = [...cotacaoProdutos];
     if (search) {
       items = items.filter((cp) => cp.produto?.nome.toLowerCase().includes(search.toLowerCase()));
     }
     if (filterAnomalies) {
       items = items.filter((cp) => hasAnomaly(cp.id));
     }
+    items.sort((a, b) => (a.produto?.nome || "").localeCompare(b.produto?.nome || "", "pt-BR"));
     return items;
   }, [cotacaoProdutos, search, filterAnomalies, localPrices, fornecedores]);
 
