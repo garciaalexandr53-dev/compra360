@@ -74,6 +74,23 @@ const LinksPage = () => {
     },
   });
 
+  const queryClient = useQueryClient();
+
+  const regenerateTokenMutation = useMutation({
+    mutationFn: async (fornecedorId: string) => {
+      const newToken = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+      const { error } = await supabase.from("fornecedores").update({ token: newToken }).eq("id", fornecedorId);
+      if (error) throw error;
+      return newToken;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fornecedores"] });
+      toast.success("Novo link gerado!");
+    },
+  });
+
   const getLink = (f: Fornecedor) => `${window.location.origin}/fornecedor/${f.token}`;
 
   const copyLink = (f: Fornecedor) => {
