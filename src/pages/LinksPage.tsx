@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Copy, ExternalLink } from "lucide-react";
+import { Copy, ExternalLink, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -71,6 +71,23 @@ const LinksPage = () => {
         counts[p.fornecedor_id] = (counts[p.fornecedor_id] || 0) + 1;
       });
       return counts;
+    },
+  });
+
+  const queryClient = useQueryClient();
+
+  const regenerateTokenMutation = useMutation({
+    mutationFn: async (fornecedorId: string) => {
+      const newToken = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+      const { error } = await supabase.from("fornecedores").update({ token: newToken }).eq("id", fornecedorId);
+      if (error) throw error;
+      return newToken;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fornecedores"] });
+      toast.success("Novo link gerado!");
     },
   });
 
@@ -212,6 +229,17 @@ const LinksPage = () => {
                   📱 WhatsApp
                 </Button>
               </div>
+
+              <Button
+                variant="outline"
+                className="w-full text-orange-600 border-orange-300 hover:bg-orange-50"
+                onClick={() => {
+                  regenerateTokenMutation.mutate(selectedFornecedor.id);
+                  setLinkModalOpen(false);
+                }}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" /> Gerar novo link
+              </Button>
 
               <div className="bg-muted/50 border rounded-lg p-3 text-xs text-muted-foreground leading-relaxed">
                 💡 <strong>Dica:</strong> O fornecedor toca no link e abre direto no navegador — sem instalar nada.

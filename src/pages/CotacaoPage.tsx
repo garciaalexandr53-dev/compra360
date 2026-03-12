@@ -39,7 +39,7 @@ const CotacaoPage = () => {
   const [search, setSearch] = useState("");
   const [localPrices, setLocalPrices] = useState<Record<string, Record<string, string>>>({});
   const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);
-  const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "zerar" | null>(null);
+  const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "manter_precos" | "zerar" | null>(null);
   const [legendVisible, setLegendVisible] = useState(true);
   const [filterAnomalies, setFilterAnomalies] = useState(false);
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
@@ -186,6 +186,23 @@ const CotacaoPage = () => {
     });
     return map;
   }, [precos]);
+
+  // Realtime subscription for price updates from suppliers
+  useEffect(() => {
+    if (!cotacaoAtiva?.id) return;
+    const channel = supabase
+      .channel('precos-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'precos' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["precos", cotacaoAtiva.id] });
+          toast.info("📬 Preços atualizados por um fornecedor!", { duration: 4000 });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [cotacaoAtiva?.id]);
 
   useEffect(() => {
     const lp: Record<string, Record<string, string>> = {};
@@ -421,21 +438,44 @@ const CotacaoPage = () => {
       const { data: newCot, error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa" }).select().single();
       if (error) throw error;
 
-      if (novaCotacaoOpt === "manter" && newCot) {
-        const inserts = cotacaoProdutos.map((cp) => ({
-          cotacao_id: newCot.id,
-          produto_id: cp.produto_id,
-          quantidade: cp.quantidade,
-        }));
-        if (inserts.length) {
-          await supabase.from("cotacao_produtos").insert(inserts);
+      if ((novaCotacaoOpt === "manter" || novaCotacaoOpt === "manter_precos") && newCot) {
+        const { data: newCps } = await supabase.from("cotacao_produtos").insert(
+          cotacaoProdutos.map((cp) => ({
+            cotacao_id: newCot.id,
+            produto_id: cp.produto_id,
+            quantidade: cp.quantidade,
+          }))
+        ).select();
+
+        // Import prices from previous cotação
+        if (novaCotacaoOpt === "manter_precos" && newCps?.length) {
+          const priceInserts: { cotacao_produto_id: string; fornecedor_id: string; preco: number }[] = [];
+          for (const newCp of newCps) {
+            const oldCp = cotacaoProdutos.find((cp) => cp.produto_id === newCp.produto_id);
+            if (!oldCp) continue;
+            const oldPrices = precos.filter((p) => p.cotacao_produto_id === oldCp.id && p.preco !== null);
+            for (const op of oldPrices) {
+              priceInserts.push({
+                cotacao_produto_id: newCp.id,
+                fornecedor_id: op.fornecedor_id,
+                preco: op.preco!,
+              });
+            }
+          }
+          if (priceInserts.length) {
+            await supabase.from("precos").insert(priceInserts);
+          }
+          toast.success("Nova cotação com preços importados!");
+        } else {
+          toast.success("Nova cotação iniciada — preços limpos!");
         }
+      } else {
+        toast.success("Cotação reiniciada — lista zerada!");
       }
 
       queryClient.invalidateQueries();
       setNovaCotacaoOpen(false);
       setNovaCotacaoOpt(null);
-      toast.success(novaCotacaoOpt === "manter" ? "Nova cotação iniciada — preços limpos!" : "Cotação reiniciada — lista zerada!");
     } catch (e: any) {
       toast.error(e.message);
     }
@@ -745,6 +785,16 @@ const CotacaoPage = () => {
           <p className="text-sm text-muted-foreground">Salva o histórico atual e reinicia a cotação</p>
           <p className="text-sm text-foreground mt-2">O que deseja fazer com a <strong>lista de produtos</strong>?</p>
           <div className="space-y-3 mt-2">
+            <label
+              className={`flex items-start gap-3 p-3 border-2 rounded-xl cursor-pointer transition-colors ${novaCotacaoOpt === "manter_precos" ? "border-[hsl(var(--brand))] bg-accent/30" : "border-border hover:border-muted-foreground/30"}`}
+              onClick={() => setNovaCotacaoOpt("manter_precos")}
+            >
+              <input type="radio" name="nc" checked={novaCotacaoOpt === "manter_precos"} readOnly className="mt-1 accent-[hsl(var(--brand))]" />
+              <div>
+                <div className="text-sm font-bold">Manter itens + importar preços</div>
+                <div className="text-xs text-muted-foreground">Copia os produtos e os preços atuais para a nova cotação.</div>
+              </div>
+            </label>
             <label
               className={`flex items-start gap-3 p-3 border-2 rounded-xl cursor-pointer transition-colors ${novaCotacaoOpt === "manter" ? "border-[hsl(var(--brand))] bg-accent/30" : "border-border hover:border-muted-foreground/30"}`}
               onClick={() => setNovaCotacaoOpt("manter")}
