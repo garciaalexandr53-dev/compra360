@@ -160,16 +160,8 @@ const AppFuncionariosPublic = () => {
           />
         </div>
 
-        {/* Toggle: manual vs search */}
+        {/* Toggle: search vs manual */}
         <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant={!showProductList ? "default" : "outline"}
-            onClick={() => setShowProductList(false)}
-            className="flex-1 text-xs"
-          >
-            ✏️ Digitar item
-          </Button>
           <Button
             size="sm"
             variant={showProductList ? "default" : "outline"}
@@ -177,6 +169,14 @@ const AppFuncionariosPublic = () => {
             className="flex-1 text-xs"
           >
             🔍 Buscar no banco
+          </Button>
+          <Button
+            size="sm"
+            variant={!showProductList ? "default" : "outline"}
+            onClick={() => setShowProductList(false)}
+            className="flex-1 text-xs"
+          >
+            ✏️ Produto novo
           </Button>
         </div>
 
