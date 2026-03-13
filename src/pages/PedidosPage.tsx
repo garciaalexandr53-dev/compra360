@@ -1,17 +1,30 @@
 import { useState, useMemo } from "react";
-
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { formatBRL, formatNumber } from "@/lib/format";
+import { formatBRL, formatNumber, formatDate } from "@/lib/format";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Printer, FileText } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Fornecedor = Tables<"fornecedores">;
 
+interface OrderItem {
+  produto: string;
+  embalagem: string;
+  quantidade: number;
+  preco: number;
+  total: number;
+}
+
 const PedidosPage = () => {
+  const queryClient = useQueryClient();
   const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [receiptFornecedor, setReceiptFornecedor] = useState<Fornecedor | null>(null);
+  const [receiptItems, setReceiptItems] = useState<OrderItem[]>([]);
+  const [receiptNumero, setReceiptNumero] = useState<number | null>(null);
 
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa"],
@@ -31,7 +44,6 @@ const PedidosPage = () => {
     },
   });
 
-  // Load selected suppliers for this cotação
   const { data: cotacaoFornecedores = [] } = useQuery({
     queryKey: ["cotacao-fornecedores", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
@@ -76,12 +88,11 @@ const PedidosPage = () => {
     },
   });
 
-  // Build orders per supplier with tiebreaker: supplier with most wins gets tied items
+  // Build orders per supplier with tiebreaker
   const orders = useMemo(() => {
-    const result: Record<string, { produto: string; embalagem: string; quantidade: number; preco: number; total: number }[]> = {};
+    const result: Record<string, OrderItem[]> = {};
     fornecedores.forEach((f) => { result[f.id] = []; });
 
-    // First pass: count wins per supplier (no tiebreaker yet)
     const winCount: Record<string, number> = {};
     fornecedores.forEach((f) => { winCount[f.id] = 0; });
     cotacaoProdutos.forEach((cp: any) => {
@@ -94,7 +105,6 @@ const PedidosPage = () => {
       }
     });
 
-    // Second pass: assign items, using winCount to break ties
     cotacaoProdutos.forEach((cp: any) => {
       const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco !== null && p.preco > 0);
       if (!cpPrecos.length) return;
@@ -102,7 +112,6 @@ const PedidosPage = () => {
       const minPrice = Math.min(...cpPrecos.map((p: any) => p.preco));
       const winners = cpPrecos.filter((p: any) => p.preco === minPrice);
 
-      // Tiebreaker: pick supplier with most wins
       let best = winners[0];
       if (winners.length > 1) {
         winners.sort((a: any, b: any) => (winCount[b.fornecedor_id] || 0) - (winCount[a.fornecedor_id] || 0));
@@ -126,18 +135,43 @@ const PedidosPage = () => {
     setOpenCards((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const sendWhatsApp = (f: Fornecedor) => {
+  const createPedidoMutation = useMutation({
+    mutationFn: async ({ fornecedorId, total }: { fornecedorId: string; total: number }) => {
+      if (!cotacaoAtiva) throw new Error("Sem cotação ativa");
+      const { data, error } = await supabase.from("pedidos").insert({
+        cotacao_id: cotacaoAtiva.id,
+        fornecedor_id: fornecedorId,
+        status: "enviado",
+        total,
+        enviado_at: new Date().toISOString(),
+      }).select().single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const sendWhatsApp = async (f: Fornecedor) => {
     const items = orders[f.id] || [];
     if (!items.length) { toast.error("Nenhum item para " + f.nome); return; }
     const total = items.reduce((s, it) => s + it.total, 0);
+    
+    // Create pedido record
+    let pedidoNumero: number | null = null;
+    try {
+      const pedido = await createPedidoMutation.mutateAsync({ fornecedorId: f.id, total });
+      pedidoNumero = (pedido as any).numero || null;
+      queryClient.invalidateQueries({ queryKey: ["pedidos"] });
+    } catch (e) {
+      console.error("Failed to create pedido record", e);
+    }
+
     const date = new Date().toLocaleDateString("pt-BR");
-    let msg = `📋 *PEDIDO DE COMPRA - COTAFÁCIL*\n-----\n📦 *Fornecedor:* ${f.nome}\n📅 *Data:* ${date}\n📝 *Itens:* ${items.length}${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}\n-----\n`;
+    let msg = `📋 *PEDIDO DE COMPRA - COTAFÁCIL*${pedidoNumero ? ` #${pedidoNumero}` : ""}\n-----\n📦 *Fornecedor:* ${f.nome}\n📅 *Data:* ${date}\n📝 *Itens:* ${items.length}${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}\n-----\n`;
     items.forEach((it, i) => {
       msg += `\n*${i + 1}. ${it.produto}*\n    Embalagem: ${it.embalagem}\n    Qtd: ${it.quantidade}\n    Preço unit.: R$ ${formatNumber(it.preco)}\n    *Subtotal: R$ ${formatNumber(it.total)}*\n`;
     });
     msg += `\n-----\n💰 *TOTAL GERAL: ${formatBRL(total)}*${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}\n-----\n_Enviado via CotaFácil_`;
 
-    // If supplier has phone number, send directly to them
     const phone = f.telefone?.replace(/\D/g, "");
     const url = phone
       ? `https://api.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(msg)}`
@@ -145,11 +179,39 @@ const PedidosPage = () => {
     window.open(url, "_blank");
   };
 
+  const openReceipt = async (f: Fornecedor) => {
+    const items = orders[f.id] || [];
+    if (!items.length) { toast.error("Nenhum item para " + f.nome); return; }
+
+    // Check for existing pedido or use next number
+    let numero: number | null = null;
+    if (cotacaoAtiva) {
+      const { data } = await supabase
+        .from("pedidos")
+        .select("numero")
+        .eq("cotacao_id", cotacaoAtiva.id)
+        .eq("fornecedor_id", f.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      numero = (data as any)?.numero || null;
+    }
+
+    setReceiptFornecedor(f);
+    setReceiptItems(items);
+    setReceiptNumero(numero);
+    setReceiptOpen(true);
+  };
+
+  const printReceipt = () => {
+    window.print();
+  };
+
   return (
     <div className="p-5 pb-20">
       <h1 className="text-xl font-bold mb-1">Pedidos por Fornecedor</h1>
       <p className="text-sm text-muted-foreground mb-5">
-        Clique em <strong className="text-green-700">Enviar Pedido</strong> para enviar via WhatsApp diretamente para o fornecedor.
+        Clique em <strong className="text-green-700">Enviar Pedido</strong> para enviar via WhatsApp. Use <strong className="text-blue-600">📋 Conferência</strong> para gerar ficha de recebimento.
       </p>
 
       {fornecedores.map((f) => {
@@ -188,7 +250,15 @@ const PedidosPage = () => {
                   {f.prazo_pagamento ? ` · prazo: ${f.prazo_pagamento}` : ""}
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                  onClick={(e) => { e.stopPropagation(); openReceipt(f); }}
+                >
+                  <FileText className="h-3.5 w-3.5 mr-1" /> Conferência
+                </Button>
                 <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={(e) => { e.stopPropagation(); sendWhatsApp(f); }}>
                   📱 Enviar Pedido
                 </Button>
@@ -237,6 +307,98 @@ const PedidosPage = () => {
       {fornecedores.every((f) => !(orders[f.id] || []).length) && (
         <div className="text-center py-10 text-muted-foreground">Nenhum item com preço ainda.</div>
       )}
+
+      {/* Receipt Dialog */}
+      <Dialog open={receiptOpen} onOpenChange={setReceiptOpen}>
+        <DialogContent className="max-w-lg print:max-w-full print:shadow-none print:border-none">
+          <DialogHeader className="print:hidden">
+            <DialogTitle>📋 Ficha de Conferência</DialogTitle>
+          </DialogHeader>
+          {receiptFornecedor && (
+            <div className="space-y-4" id="receipt-content">
+              {/* Receipt header */}
+              <div className="border-b pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-bold">FICHA DE CONFERÊNCIA</h2>
+                    <p className="text-sm text-muted-foreground">CotaFácil</p>
+                  </div>
+                  {receiptNumero && (
+                    <div className="text-right">
+                      <span className="text-xs text-muted-foreground">Pedido Nº</span>
+                      <div className="text-2xl font-extrabold font-mono text-primary">#{receiptNumero}</div>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                  <div><span className="text-muted-foreground">Fornecedor:</span> <strong>{receiptFornecedor.nome}</strong></div>
+                  <div><span className="text-muted-foreground">Data:</span> <strong>{new Date().toLocaleDateString("pt-BR")}</strong></div>
+                  {receiptFornecedor.representante && (
+                    <div><span className="text-muted-foreground">Representante:</span> {receiptFornecedor.representante}</div>
+                  )}
+                  {receiptFornecedor.prazo_pagamento && (
+                    <div><span className="text-muted-foreground">Prazo:</span> {receiptFornecedor.prazo_pagamento}</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Items table with checkboxes */}
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b-2 border-foreground/20">
+                    <th className="py-1.5 text-left text-[10px] font-bold uppercase w-8">✓</th>
+                    <th className="py-1.5 text-left text-[10px] font-bold uppercase">PRODUTO</th>
+                    <th className="py-1.5 text-center text-[10px] font-bold uppercase w-14">EMBAL</th>
+                    <th className="py-1.5 text-center text-[10px] font-bold uppercase w-10">QT</th>
+                    <th className="py-1.5 text-right text-[10px] font-bold uppercase w-20">PREÇO</th>
+                    <th className="py-1.5 text-right text-[10px] font-bold uppercase w-20">SUBTOTAL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {receiptItems.map((it, i) => (
+                    <tr key={i} className="border-b border-dashed">
+                      <td className="py-2">
+                        <div className="w-4 h-4 border-2 border-foreground/40 rounded-sm" />
+                      </td>
+                      <td className="py-2 font-medium text-xs">{it.produto}</td>
+                      <td className="py-2 text-center text-xs text-muted-foreground">{it.embalagem}</td>
+                      <td className="py-2 text-center text-xs font-bold">{it.quantidade}</td>
+                      <td className="py-2 text-right text-xs font-mono">R${formatNumber(it.preco)}</td>
+                      <td className="py-2 text-right text-xs font-mono font-bold">{formatBRL(it.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-foreground/30">
+                    <td colSpan={5} className="py-2 text-right font-bold">TOTAL:</td>
+                    <td className="py-2 text-right font-mono font-extrabold text-lg">
+                      {formatBRL(receiptItems.reduce((s, it) => s + it.total, 0))}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+
+              {/* Signature area */}
+              <div className="border-t pt-4 mt-4 grid grid-cols-2 gap-8">
+                <div className="text-center">
+                  <div className="border-b border-foreground/30 mb-1 h-8" />
+                  <span className="text-xs text-muted-foreground">Conferido por</span>
+                </div>
+                <div className="text-center">
+                  <div className="border-b border-foreground/30 mb-1 h-8" />
+                  <span className="text-xs text-muted-foreground">Data de recebimento</span>
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end gap-2 print:hidden mt-2">
+            <Button variant="outline" onClick={() => setReceiptOpen(false)}>Fechar</Button>
+            <Button onClick={printReceipt} className="bg-primary">
+              <Printer className="h-4 w-4 mr-1" /> Imprimir
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
