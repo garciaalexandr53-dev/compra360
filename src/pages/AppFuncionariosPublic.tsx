@@ -284,6 +284,7 @@ const AppFuncionariosPublic = () => {
                         min="1"
                         value={productQtds[i] || "1"}
                         onChange={(e) => setProductQtds((prev) => ({ ...prev, [i]: e.target.value }))}
+                        onFocus={(e) => e.target.select()}
                         className="h-8 w-14 text-xs text-center"
                       />
                       <Button
