@@ -1,15 +1,28 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL, formatDateTime, formatNumber } from "@/lib/format";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Search, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
 const HistoricoPage = () => {
+  const queryClient = useQueryClient();
   const [searchItem, setSearchItem] = useState("");
   const [searchCotacao, setSearchCotacao] = useState("");
   const [expandedCotacao, setExpandedCotacao] = useState<string | null>(null);
@@ -27,7 +40,6 @@ const HistoricoPage = () => {
     },
   });
 
-  // Load cotacao details when expanded
   const { data: cotacaoDetails = { produtos: [], precos: [] } as { produtos: any[]; precos: any[] } } = useQuery<{ produtos: any[]; precos: any[] }>({
     queryKey: ["cotacao-details", expandedCotacao],
     enabled: !!expandedCotacao,
@@ -49,12 +61,10 @@ const HistoricoPage = () => {
     },
   });
 
-  // Search items across all cotacoes
   const { data: itemSearchResults = [] } = useQuery({
     queryKey: ["item-search", searchItem],
     enabled: searchItem.length >= 2,
     queryFn: async () => {
-      // Find products matching search
       const { data: prods } = await supabase
         .from("produtos")
         .select("id, nome")
@@ -64,7 +74,6 @@ const HistoricoPage = () => {
 
       const prodIds = prods.map((p) => p.id);
 
-      // Find cotacao_produtos for these products
       const { data: cps } = await supabase
         .from("cotacao_produtos")
         .select("*, cotacoes(nome, created_at, status), produtos(nome, embalagem)")
@@ -72,7 +81,6 @@ const HistoricoPage = () => {
         .order("cotacao_id");
       if (!cps?.length) return [];
 
-      // Get prices
       const cpIds = cps.map((cp: any) => cp.id);
       const { data: precos } = await supabase
         .from("precos")
@@ -87,6 +95,49 @@ const HistoricoPage = () => {
     },
   });
 
+  const clearHistoryMutation = useMutation({
+    mutationFn: async () => {
+      const ids = cotacoes.map((c) => c.id);
+      if (!ids.length) return;
+      // Delete precos for those cotacoes' products
+      for (const cotId of ids) {
+        const { data: cps } = await supabase.from("cotacao_produtos").select("id").eq("cotacao_id", cotId);
+        if (cps?.length) {
+          const cpIds = cps.map((cp: any) => cp.id);
+          await supabase.from("precos").delete().in("cotacao_produto_id", cpIds);
+        }
+        await supabase.from("cotacao_produtos").delete().eq("cotacao_id", cotId);
+        await supabase.from("cotacao_fornecedores").delete().eq("cotacao_id", cotId);
+      }
+      await supabase.from("cotacoes").delete().in("id", ids);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cotacoes-historico"] });
+      setExpandedCotacao(null);
+      toast.success("Histórico limpo com sucesso!");
+    },
+    onError: (e: any) => toast.error("Erro: " + e.message),
+  });
+
+  const deleteSingleMutation = useMutation({
+    mutationFn: async (cotId: string) => {
+      const { data: cps } = await supabase.from("cotacao_produtos").select("id").eq("cotacao_id", cotId);
+      if (cps?.length) {
+        const cpIds = cps.map((cp: any) => cp.id);
+        await supabase.from("precos").delete().in("cotacao_produto_id", cpIds);
+      }
+      await supabase.from("cotacao_produtos").delete().eq("cotacao_id", cotId);
+      await supabase.from("cotacao_fornecedores").delete().eq("cotacao_id", cotId);
+      await supabase.from("cotacoes").delete().eq("id", cotId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cotacoes-historico"] });
+      setExpandedCotacao(null);
+      toast.success("Cotação removida!");
+    },
+    onError: (e: any) => toast.error("Erro: " + e.message),
+  });
+
   const filteredCotacoes = cotacoes.filter((c) =>
     !searchCotacao || c.nome.toLowerCase().includes(searchCotacao.toLowerCase())
   );
@@ -97,7 +148,35 @@ const HistoricoPage = () => {
 
   return (
     <div className="p-5">
-      <h1 className="text-xl font-bold mb-5">🕐 Histórico de Cotações</h1>
+      <div className="flex items-center justify-between mb-5">
+        <h1 className="text-xl font-bold">🕐 Histórico de Cotações</h1>
+        {cotacoes.length > 0 && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                <Trash2 className="h-4 w-4 mr-1" /> Limpar Histórico
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>⚠️ Limpar todo o histórico?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Isso irá remover permanentemente <strong>{cotacoes.length} cotação(ões)</strong> finalizadas e todos os preços associados. Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => clearHistoryMutation.mutate()}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Sim, limpar tudo
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </div>
 
       <Tabs defaultValue="cotacoes">
         <TabsList className="w-full mb-4">
@@ -132,6 +211,35 @@ const HistoricoPage = () => {
                     <div className="text-xs text-muted-foreground">{formatDateTime(c.created_at)}</div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Remover "{c.nome}"?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Essa cotação e todos os seus preços serão removidos permanentemente.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteSingleMutation.mutate(c.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Remover
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                       c.status === "finalizada" ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
                     }`}>
@@ -214,7 +322,6 @@ const HistoricoPage = () => {
             </div>
           ) : (
             (() => {
-              // Group by product name
               const grouped: Record<string, { nome: string; embalagem: string; entries: typeof itemSearchResults }> = {};
               itemSearchResults.forEach((item: any) => {
                 const key = item.produtos?.nome || "?";

@@ -211,6 +211,7 @@ export type Database = {
           enviado_at: string | null
           fornecedor_id: string
           id: string
+          numero: number
           status: Database["public"]["Enums"]["pedido_status"]
           total: number | null
         }
@@ -221,6 +222,7 @@ export type Database = {
           enviado_at?: string | null
           fornecedor_id: string
           id?: string
+          numero?: number
           status?: Database["public"]["Enums"]["pedido_status"]
           total?: number | null
         }
@@ -231,6 +233,7 @@ export type Database = {
           enviado_at?: string | null
           fornecedor_id?: string
           id?: string
+          numero?: number
           status?: Database["public"]["Enums"]["pedido_status"]
           total?: number | null
         }
