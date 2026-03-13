@@ -322,12 +322,13 @@ const AppFuncionariosPublic = () => {
                   <span className="text-xs text-muted-foreground">{item.embalagem}</span>
                 </div>
                 <Input
-                  type="number"
-                  min="1"
-                  value={item.quantidade}
-                  onChange={(e) => updateItemQtd(i, e.target.value)}
-                  className="h-7 w-14 text-xs text-center"
-                />
+                   type="number"
+                   min="1"
+                   value={item.quantidade}
+                   onChange={(e) => updateItemQtd(i, e.target.value)}
+                   onFocus={(e) => e.target.select()}
+                   className="h-7 w-14 text-xs text-center"
+                 />
                 <button
                   onClick={() => removeItem(i)}
                   className="text-destructive text-sm hover:bg-destructive/10 rounded-full w-7 h-7 flex items-center justify-center"

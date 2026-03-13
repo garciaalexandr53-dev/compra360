@@ -355,17 +355,7 @@ const CotacaoPage = () => {
     return items;
   }, [cotacaoProdutos, search, filterAnomalies, localPrices, fornecedores]);
 
-  // Realtime
-  useEffect(() => {
-    if (!cotacaoAtiva?.id) return;
-    const channel = supabase
-      .channel("precos-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "precos" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["precos"] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [cotacaoAtiva?.id, queryClient]);
+  // (realtime subscription is already set up above — lines 191-205)
 
   const buildSuspiciousReport = () => {
     const rows: { Produto: string; Embalagem: string; Fornecedor: string; Preço: number; Média: string; Desvio: string; Tipo: string; "Preço Anterior": string; "Variação Histórica": string }[] = [];
