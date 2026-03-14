@@ -86,11 +86,22 @@ const CotacaoPage = () => {
       const sel: Record<string, boolean> = {};
       allFornecedores.forEach((f) => { sel[f.id] = false; });
       cotacaoFornecedores.forEach((cf: any) => { sel[cf.fornecedor_id] = true; });
-      setSelectedSuppliers(sel);
-    } else if (Object.keys(selectedSuppliers).length === 0) {
-      const initial: Record<string, boolean> = {};
-      allFornecedores.forEach((f) => { initial[f.id] = true; });
-      setSelectedSuppliers(initial);
+      // Only update if changed to avoid infinite loop
+      setSelectedSuppliers((prev) => {
+        const prevKeys = Object.keys(prev).sort().join(",");
+        const newKeys = Object.keys(sel).sort().join(",");
+        const prevVals = Object.values(prev).join(",");
+        const newVals = Object.values(sel).join(",");
+        if (prevKeys === newKeys && prevVals === newVals) return prev;
+        return sel;
+      });
+    } else {
+      setSelectedSuppliers((prev) => {
+        if (Object.keys(prev).length > 0) return prev;
+        const initial: Record<string, boolean> = {};
+        allFornecedores.forEach((f) => { initial[f.id] = true; });
+        return initial;
+      });
     }
   }, [allFornecedores, cotacaoFornecedores, cotacaoAtiva?.id]);
 
