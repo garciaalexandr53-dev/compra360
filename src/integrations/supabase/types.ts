@@ -341,7 +341,7 @@ export type Database = {
     }
     Enums: {
       cotacao_status: "ativa" | "finalizada" | "cancelada"
-      pedido_status: "rascunho" | "enviado" | "confirmado"
+      pedido_status: "rascunho" | "enviado" | "confirmado" | "recebido"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -470,7 +470,7 @@ export const Constants = {
   public: {
     Enums: {
       cotacao_status: ["ativa", "finalizada", "cancelada"],
-      pedido_status: ["rascunho", "enviado", "confirmado"],
+      pedido_status: ["rascunho", "enviado", "confirmado", "recebido"],
     },
   },
 } as const
