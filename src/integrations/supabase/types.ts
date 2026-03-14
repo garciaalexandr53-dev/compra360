@@ -32,6 +32,85 @@ export type Database = {
         }
         Relationships: []
       }
+      conferencia_itens: {
+        Row: {
+          conferencia_id: string
+          divergencia_preco: boolean
+          divergencia_qtd: boolean
+          embalagem: string | null
+          id: string
+          preco_cotado: number | null
+          preco_nf: number | null
+          produto_nome: string
+          quantidade_pedida: number
+          quantidade_recebida: number
+        }
+        Insert: {
+          conferencia_id: string
+          divergencia_preco?: boolean
+          divergencia_qtd?: boolean
+          embalagem?: string | null
+          id?: string
+          preco_cotado?: number | null
+          preco_nf?: number | null
+          produto_nome: string
+          quantidade_pedida?: number
+          quantidade_recebida?: number
+        }
+        Update: {
+          conferencia_id?: string
+          divergencia_preco?: boolean
+          divergencia_qtd?: boolean
+          embalagem?: string | null
+          id?: string
+          preco_cotado?: number | null
+          preco_nf?: number | null
+          produto_nome?: string
+          quantidade_pedida?: number
+          quantidade_recebida?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conferencia_itens_conferencia_id_fkey"
+            columns: ["conferencia_id"]
+            isOneToOne: false
+            referencedRelation: "conferencias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conferencias: {
+        Row: {
+          conferido_por: string
+          created_at: string
+          id: string
+          observacoes: string | null
+          pedido_id: string
+        }
+        Insert: {
+          conferido_por?: string
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          pedido_id: string
+        }
+        Update: {
+          conferido_por?: string
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          pedido_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conferencias_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cotacao_fornecedores: {
         Row: {
           cotacao_id: string
