@@ -4,9 +4,15 @@ import { formatBRL, formatDateTime } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ClipboardCheck, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, User, Clock } from "lucide-react";
-import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { ClipboardCheck, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, User, Clock, Filter, CalendarIcon, X } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface ConferenciaRow {
   id: string;
@@ -17,7 +23,8 @@ interface ConferenciaRow {
   pedidos: {
     numero: number;
     total: number | null;
-    fornecedores: { nome: string };
+    fornecedor_id: string;
+    fornecedores: { id: string; nome: string };
   };
 }
 
@@ -35,36 +42,106 @@ interface ConferenciaItem {
 
 const ConferenciasPage = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [filtroFornecedor, setFiltroFornecedor] = useState<string>("todos");
+  const [filtroDivergencia, setFiltroDivergencia] = useState<string>("todos");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
 
   const { data: conferencias = [], isLoading } = useQuery({
     queryKey: ["conferencias-historico"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("conferencias")
-        .select("id, created_at, conferido_por, observacoes, pedido_id, pedidos(numero, total, fornecedores(nome))")
+        .select("id, created_at, conferido_por, observacoes, pedido_id, pedidos(numero, total, fornecedor_id, fornecedores(id, nome))")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data as unknown as ConferenciaRow[]) || [];
     },
   });
 
-  const { data: itens = [] } = useQuery({
-    queryKey: ["conferencia-itens", expandedId],
-    enabled: !!expandedId,
+  // Fetch ALL conference items to know which conferences have divergências
+  const allConferenciaIds = useMemo(() => conferencias.map((c) => c.id), [conferencias]);
+
+  const { data: allItens = [] } = useQuery({
+    queryKey: ["all-conferencia-itens", allConferenciaIds],
+    enabled: allConferenciaIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("conferencia_itens")
         .select("*")
-        .eq("conferencia_id", expandedId!);
+        .in("conferencia_id", allConferenciaIds);
       if (error) throw error;
       return (data as ConferenciaItem[]) || [];
     },
   });
 
-  const totalConferencias = conferencias.length;
-  const comDivergencia = conferencias.filter((c) => c.id).length; // We'll compute from items below
-  
-  // Stats
+  // Map: conferencia_id -> has divergence
+  const divergenciaMap = useMemo(() => {
+    const map = new Map<string, boolean>();
+    for (const item of allItens) {
+      if (item.divergencia_qtd || item.divergencia_preco) {
+        map.set((item as any).conferencia_id, true);
+      }
+    }
+    return map;
+  }, [allItens]);
+
+  // Items for expanded conference
+  const expandedItens = useMemo(
+    () => expandedId ? allItens.filter((i: any) => i.conferencia_id === expandedId) : [],
+    [allItens, expandedId]
+  );
+
+  // Unique suppliers for filter
+  const fornecedores = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of conferencias) {
+      if (c.pedidos?.fornecedores) {
+        map.set(c.pedidos.fornecedores.id, c.pedidos.fornecedores.nome);
+      }
+    }
+    return Array.from(map, ([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome));
+  }, [conferencias]);
+
+  // Apply filters
+  const filtered = useMemo(() => {
+    return conferencias.filter((c) => {
+      // Fornecedor filter
+      if (filtroFornecedor !== "todos" && c.pedidos?.fornecedores?.id !== filtroFornecedor) return false;
+
+      // Date range filter
+      const date = new Date(c.created_at);
+      if (dateFrom) {
+        const from = new Date(dateFrom);
+        from.setHours(0, 0, 0, 0);
+        if (date < from) return false;
+      }
+      if (dateTo) {
+        const to = new Date(dateTo);
+        to.setHours(23, 59, 59, 999);
+        if (date > to) return false;
+      }
+
+      // Divergência filter
+      if (filtroDivergencia === "com") {
+        if (!divergenciaMap.get(c.id)) return false;
+      } else if (filtroDivergencia === "sem") {
+        if (divergenciaMap.get(c.id)) return false;
+      }
+
+      return true;
+    });
+  }, [conferencias, filtroFornecedor, dateFrom, dateTo, filtroDivergencia, divergenciaMap]);
+
+  const activeFilters = (filtroFornecedor !== "todos" ? 1 : 0) + (filtroDivergencia !== "todos" ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
+
+  const clearFilters = () => {
+    setFiltroFornecedor("todos");
+    setFiltroDivergencia("todos");
+    setDateFrom(undefined);
+    setDateTo(undefined);
+  };
+
   const toggle = (id: string) => setExpandedId(expandedId === id ? null : id);
 
   if (isLoading) {
@@ -76,57 +153,159 @@ const ConferenciasPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <ClipboardCheck className="h-6 w-6 text-primary" />
           Histórico de Conferências
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Todas as conferências de pedidos realizadas pelos funcionários
+          Todas as conferências realizadas pelos funcionários
         </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         <Card>
-          <CardContent className="pt-4 pb-3 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <ClipboardCheck className="h-5 w-5 text-primary" />
+          <CardContent className="pt-3 pb-2 px-3 flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <ClipboardCheck className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">{totalConferencias}</p>
-              <p className="text-xs text-muted-foreground">Conferências realizadas</p>
+              <p className="text-lg font-bold text-foreground">{conferencias.length}</p>
+              <p className="text-[10px] text-muted-foreground">Total</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-3 pb-2 px-3 flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+            </div>
+            <div>
+              <p className="text-lg font-bold text-foreground">{Array.from(divergenciaMap.values()).filter(Boolean).length}</p>
+              <p className="text-[10px] text-muted-foreground">Com divergência</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-3 pb-2 px-3 flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
+              <CheckCircle2 className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-lg font-bold text-foreground">{conferencias.length - Array.from(divergenciaMap.values()).filter(Boolean).length}</p>
+              <p className="text-[10px] text-muted-foreground">Sem divergência</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Filters */}
+      <Card>
+        <CardContent className="py-3 px-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">Filtros</span>
+            {activeFilters > 0 && (
+              <Badge variant="secondary" className="text-[10px] px-1.5">{activeFilters} ativo(s)</Badge>
+            )}
+            {activeFilters > 0 && (
+              <Button variant="ghost" size="sm" className="h-6 text-xs ml-auto" onClick={clearFilters}>
+                <X className="h-3 w-3 mr-1" /> Limpar
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Fornecedor */}
+            <Select value={filtroFornecedor} onValueChange={setFiltroFornecedor}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="Fornecedor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os fornecedores</SelectItem>
+                {fornecedores.map((f) => (
+                  <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Divergência */}
+            <Select value={filtroDivergencia} onValueChange={setFiltroDivergencia}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="Divergências" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todas as conferências</SelectItem>
+                <SelectItem value="com">Apenas com divergência</SelectItem>
+                <SelectItem value="sem">Apenas sem divergência</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Date range */}
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("h-9 text-xs flex-1 justify-start", !dateFrom && "text-muted-foreground")}>
+                    <CalendarIcon className="h-3 w-3 mr-1" />
+                    {dateFrom ? format(dateFrom, "dd/MM/yy") : "De"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} locale={ptBR} initialFocus className={cn("p-3 pointer-events-auto")} />
+                </PopoverContent>
+              </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("h-9 text-xs flex-1 justify-start", !dateTo && "text-muted-foreground")}>
+                    <CalendarIcon className="h-3 w-3 mr-1" />
+                    {dateTo ? format(dateTo, "dd/MM/yy") : "Até"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={dateTo} onSelect={setDateTo} locale={ptBR} initialFocus className={cn("p-3 pointer-events-auto")} />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Results count */}
+      {activeFilters > 0 && (
+        <p className="text-xs text-muted-foreground">
+          Mostrando {filtered.length} de {conferencias.length} conferência(s)
+        </p>
+      )}
+
       {/* List */}
-      {conferencias.length === 0 ? (
+      {filtered.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            Nenhuma conferência realizada ainda.
+            {conferencias.length === 0 ? "Nenhuma conferência realizada ainda." : "Nenhuma conferência encontrada com os filtros aplicados."}
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
-          {conferencias.map((conf) => {
+          {filtered.map((conf) => {
             const isExpanded = expandedId === conf.id;
-            const divergencias = isExpanded
-              ? itens.filter((i) => i.divergencia_qtd || i.divergencia_preco)
-              : [];
+            const hasDivergence = divergenciaMap.get(conf.id) || false;
+            const itemsForConf = isExpanded ? expandedItens : [];
+            const divergencias = itemsForConf.filter((i) => i.divergencia_qtd || i.divergencia_preco);
 
             return (
-              <Card key={conf.id} className="overflow-hidden">
+              <Card key={conf.id} className={cn("overflow-hidden", hasDivergence && "border-destructive/30")}>
                 <CardHeader
                   className="py-3 px-4 cursor-pointer hover:bg-accent/50 transition-colors"
                   onClick={() => toggle(conf.id)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <ClipboardCheck className="h-4 w-4 text-primary" />
+                      <div className={cn("h-9 w-9 rounded-full flex items-center justify-center shrink-0", hasDivergence ? "bg-destructive/10" : "bg-primary/10")}>
+                        {hasDivergence
+                          ? <AlertTriangle className="h-4 w-4 text-destructive" />
+                          : <CheckCircle2 className="h-4 w-4 text-primary" />
+                        }
                       </div>
                       <div className="min-w-0">
                         <CardTitle className="text-sm font-semibold truncate">
@@ -145,6 +324,11 @@ const ConferenciasPage = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      {hasDivergence && (
+                        <Badge variant="destructive" className="text-[10px] px-1.5 hidden sm:inline-flex">
+                          Divergência
+                        </Badge>
+                      )}
                       {conf.pedidos?.total && (
                         <Badge variant="outline" className="text-xs hidden sm:inline-flex">
                           {formatBRL(conf.pedidos?.total)}
@@ -174,17 +358,10 @@ const ConferenciasPage = () => {
                       </div>
                     )}
 
-                    {itens.length === 0 && divergencias.length === 0 && (
-                      <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-green-500/10 border border-green-500/20">
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-700">Carregando itens...</span>
-                      </div>
-                    )}
-
-                    {itens.length > 0 && divergencias.length === 0 && (
-                      <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-green-500/10 border border-green-500/20">
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-700">Tudo conferido sem divergências ✓</span>
+                    {itemsForConf.length > 0 && divergencias.length === 0 && (
+                      <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-accent border border-border">
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium text-primary">Tudo conferido sem divergências ✓</span>
                       </div>
                     )}
 
@@ -201,13 +378,10 @@ const ConferenciasPage = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {itens.map((item) => {
-                            const hasDivergence = item.divergencia_qtd || item.divergencia_preco;
+                          {itemsForConf.map((item) => {
+                            const hasDivItem = item.divergencia_qtd || item.divergencia_preco;
                             return (
-                              <TableRow
-                                key={item.id}
-                                className={hasDivergence ? "bg-yellow-50 dark:bg-yellow-950/20" : ""}
-                              >
+                              <TableRow key={item.id} className={hasDivItem ? "bg-destructive/5" : ""}>
                                 <TableCell className="text-xs font-medium">
                                   {item.produto_nome}
                                   {item.embalagem && (
@@ -215,21 +389,21 @@ const ConferenciasPage = () => {
                                   )}
                                 </TableCell>
                                 <TableCell className="text-xs text-center">{item.quantidade_pedida}</TableCell>
-                                <TableCell className={`text-xs text-center font-medium ${item.divergencia_qtd ? "text-destructive" : ""}`}>
+                                <TableCell className={cn("text-xs text-center font-medium", item.divergencia_qtd && "text-destructive")}>
                                   {item.quantidade_recebida}
                                 </TableCell>
                                 <TableCell className="text-xs text-right">{formatBRL(item.preco_cotado)}</TableCell>
-                                <TableCell className={`text-xs text-right font-medium ${item.divergencia_preco ? "text-destructive" : ""}`}>
+                                <TableCell className={cn("text-xs text-right font-medium", item.divergencia_preco && "text-destructive")}>
                                   {formatBRL(item.preco_nf)}
                                 </TableCell>
                                 <TableCell className="text-center">
-                                  {hasDivergence ? (
+                                  {hasDivItem ? (
                                     <Badge variant="destructive" className="text-[10px] px-1.5">
                                       <AlertTriangle className="h-3 w-3 mr-0.5" />
                                       Divergência
                                     </Badge>
                                   ) : (
-                                    <Badge variant="outline" className="text-[10px] px-1.5 border-green-500 text-green-600">
+                                    <Badge variant="outline" className="text-[10px] px-1.5 border-primary/30 text-primary">
                                       <CheckCircle2 className="h-3 w-3 mr-0.5" />
                                       OK
                                     </Badge>
