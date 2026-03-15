@@ -17,6 +17,7 @@ import LinksPage from "./pages/LinksPage";
 import FuncionariosPage from "./pages/FuncionariosPage";
 import AppFuncionariosPublic from "./pages/AppFuncionariosPublic";
 import GuiaPage from "./pages/GuiaPage";
+import ConferenciasPage from "./pages/ConferenciasPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
