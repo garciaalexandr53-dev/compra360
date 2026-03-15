@@ -145,7 +145,7 @@ const ConferenciasPage = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {conf.total && (
+                      {conf.pedidos?.total && (
                         <Badge variant="outline" className="text-xs hidden sm:inline-flex">
                           {formatBRL(conf.pedidos?.total)}
                         </Badge>
