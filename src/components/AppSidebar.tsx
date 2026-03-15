@@ -21,6 +21,7 @@ const cotarMenu = [
 const analisarMenu = [
   { title: "Resumo", url: "/resumo", icon: TrendingUp, emoji: "📈" },
   { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, emoji: "📦" },
+  { title: "Conferências", url: "/conferencias", icon: ClipboardCheck, emoji: "📋" },
 ];
 const sistemaMenu = [
   { title: "Histórico", url: "/historico", icon: History, emoji: "🕐" },
