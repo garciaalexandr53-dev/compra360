@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
+import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
@@ -18,6 +19,7 @@ const emptyForm = { nome: "", categoria_id: "", embalagem: "" };
 
 const ProdutosPage = () => {
   const queryClient = useQueryClient();
+  const { lojaAtiva } = useLojaAtiva();
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState<string>("Todos");
   const [modalOpen, setModalOpen] = useState(false);
@@ -53,9 +55,13 @@ const ProdutosPage = () => {
   });
 
   const { data: cotacaoAtiva } = useQuery({
-    queryKey: ["cotacao-ativa"],
+    queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("cotacoes").select("id").eq("status", "ativa").limit(1).maybeSingle();
+      let query = supabase.from("cotacoes").select("id").eq("status", "ativa").limit(1);
+      if (lojaAtiva?.id) {
+        query = query.eq("loja_id", lojaAtiva.id);
+      }
+      const { data } = await query.maybeSingle();
       return data;
     },
   });
@@ -153,11 +159,13 @@ const ProdutosPage = () => {
         if (deleteErr) throw deleteErr;
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
+      toast.success(variables.ativo ? "Produto adicionado à cotação!" : "Produto removido da cotação");
     },
+    onError: (e: any) => toast.error(e.message),
   });
 
   const filtered = produtos.filter((p) => {
