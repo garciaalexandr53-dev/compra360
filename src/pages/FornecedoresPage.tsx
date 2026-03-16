@@ -65,6 +65,7 @@ const FornecedoresPage = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (data: TablesInsert<"fornecedores"> | { id: string } & TablesUpdate<"fornecedores">) => {
+      let fId = editingId;
       if (editingId) {
         const { error } = await supabase.from("fornecedores").update({
           nome: data.nome,
@@ -77,7 +78,7 @@ const FornecedoresPage = () => {
         }).eq("id", editingId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("fornecedores").insert({
+        const { data: inserted, error } = await supabase.from("fornecedores").insert({
           nome: data.nome!,
           representante: (data as any).representante || null,
           telefone: (data as any).telefone || null,
@@ -85,12 +86,24 @@ const FornecedoresPage = () => {
           pedido_minimo: (data as any).pedido_minimo || 0,
           prazo_pagamento: (data as any).prazo_pagamento || null,
           observacoes: (data as any).observacoes || null,
-        });
+        }).select("id").single();
         if (error) throw error;
+        fId = inserted.id;
+      }
+
+      // Sync fornecedor_lojas
+      if (fId) {
+        await supabase.from("fornecedor_lojas").delete().eq("fornecedor_id", fId);
+        if (selectedLojas.length > 0) {
+          await supabase.from("fornecedor_lojas").insert(
+            selectedLojas.map((lId) => ({ fornecedor_id: fId!, loja_id: lId }))
+          );
+        }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fornecedores"] });
+      queryClient.invalidateQueries({ queryKey: ["fornecedor-lojas"] });
       setModalOpen(false);
       setEditingId(null);
       setForm(emptyForm);
