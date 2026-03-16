@@ -24,7 +24,9 @@ interface ConferenciaRow {
     numero: number;
     total: number | null;
     fornecedor_id: string;
+    loja_id: string | null;
     fornecedores: { id: string; nome: string };
+    lojas: { nome: string; cnpj: string | null; razao_social: string | null; inscricao_estadual: string | null; endereco: string | null } | null;
   };
 }
 
