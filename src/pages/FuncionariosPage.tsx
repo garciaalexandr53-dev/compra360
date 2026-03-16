@@ -237,6 +237,7 @@ const FuncionariosPage = () => {
                   <div className="text-sm font-medium">{item.nome}</div>
                   <div className="text-xs text-muted-foreground">
                     {item.registrado_por && `Por: ${item.registrado_por} · `}
+                    {(item as any).lojas?.nome && `Loja: ${(item as any).lojas.nome} · `}
                     {item.quantidade > 1 && `Qtd: ${item.quantidade} · `}
                     {item.observacao && `${item.observacao} · `}
                     {new Date(item.created_at).toLocaleString("pt-BR")}
