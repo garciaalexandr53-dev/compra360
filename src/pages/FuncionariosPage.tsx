@@ -16,7 +16,7 @@ const FuncionariosPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("itens_faltantes")
-        .select("*")
+        .select("*, lojas(id, nome)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
