@@ -6,6 +6,7 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import { BarChart3, Package, Users, ShoppingCart, TrendingUp, History, Link2, UserCheck, BookOpen, ClipboardCheck, Store } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Fluxo natural: Preparar → Cotar → Analisar → Pedir
 const prepararMenu = [
