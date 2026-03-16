@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Pencil, Trash2, Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL } from "@/lib/format";
@@ -30,6 +31,25 @@ const FornecedoresPage = () => {
   const [form, setForm] = useState(emptyForm);
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [selectedFornecedor, setSelectedFornecedor] = useState<Fornecedor | null>(null);
+  const [selectedLojas, setSelectedLojas] = useState<string[]>([]);
+
+  const { data: lojas = [] } = useQuery({
+    queryKey: ["lojas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("lojas").select("*").order("nome");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: fornecedorLojas = [] } = useQuery({
+    queryKey: ["fornecedor-lojas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("fornecedor_lojas").select("*");
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const { data: fornecedores = [], isLoading } = useQuery({
     queryKey: ["fornecedores"],
@@ -45,6 +65,7 @@ const FornecedoresPage = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (data: TablesInsert<"fornecedores"> | { id: string } & TablesUpdate<"fornecedores">) => {
+      let fId = editingId;
       if (editingId) {
         const { error } = await supabase.from("fornecedores").update({
           nome: data.nome,
@@ -57,7 +78,7 @@ const FornecedoresPage = () => {
         }).eq("id", editingId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("fornecedores").insert({
+        const { data: inserted, error } = await supabase.from("fornecedores").insert({
           nome: data.nome!,
           representante: (data as any).representante || null,
           telefone: (data as any).telefone || null,
@@ -65,12 +86,24 @@ const FornecedoresPage = () => {
           pedido_minimo: (data as any).pedido_minimo || 0,
           prazo_pagamento: (data as any).prazo_pagamento || null,
           observacoes: (data as any).observacoes || null,
-        });
+        }).select("id").single();
         if (error) throw error;
+        fId = inserted.id;
+      }
+
+      // Sync fornecedor_lojas
+      if (fId) {
+        await supabase.from("fornecedor_lojas").delete().eq("fornecedor_id", fId);
+        if (selectedLojas.length > 0) {
+          await supabase.from("fornecedor_lojas").insert(
+            selectedLojas.map((lId) => ({ fornecedor_id: fId!, loja_id: lId }))
+          );
+        }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fornecedores"] });
+      queryClient.invalidateQueries({ queryKey: ["fornecedor-lojas"] });
       setModalOpen(false);
       setEditingId(null);
       setForm(emptyForm);
@@ -94,6 +127,7 @@ const FornecedoresPage = () => {
   const openAdd = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setSelectedLojas([]);
     setModalOpen(true);
   };
 
@@ -108,12 +142,13 @@ const FornecedoresPage = () => {
       prazo_pagamento: (f as any).prazo_pagamento || "",
       observacoes: f.observacoes || "",
     });
+    setSelectedLojas(fornecedorLojas.filter((fl: any) => fl.fornecedor_id === f.id).map((fl: any) => fl.loja_id));
     setModalOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.nome.trim()) { toast.error("Digite o nome do fornecedor"); return; }
-    saveMutation.mutate({
+    await saveMutation.mutateAsync({
       nome: form.nome.trim().toUpperCase(),
       representante: form.representante.trim() || null,
       telefone: form.telefone.trim() || null,
@@ -248,6 +283,25 @@ const FornecedoresPage = () => {
               <Input placeholder="Ex: 30 dias, à vista, 7/14/21" value={form.prazo_pagamento} onChange={(e) => setForm({ ...form, prazo_pagamento: e.target.value })} />
             </div>
             <div><Label>Observações</Label><Input placeholder="Ex: entrega 3x por semana" value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} /></div>
+            {lojas.length > 0 && (
+              <div>
+                <Label>Lojas atendidas</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {lojas.map((l: any) => (
+                    <label key={l.id} className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg cursor-pointer text-sm transition-colors ${selectedLojas.includes(l.id) ? "border-primary bg-accent" : "border-border hover:border-muted-foreground/30"}`}>
+                      <Checkbox
+                        checked={selectedLojas.includes(l.id)}
+                        onCheckedChange={(checked) => {
+                          setSelectedLojas(checked ? [...selectedLojas, l.id] : selectedLojas.filter((x: string) => x !== l.id));
+                        }}
+                      />
+                      {l.nome}
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Selecione quais lojas este fornecedor atende</p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>

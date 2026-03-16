@@ -1,15 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink, useLocation } from "react-router-dom";
+import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, Package, Users, ShoppingCart, TrendingUp, History, Link2, UserCheck, BookOpen, ClipboardCheck } from "lucide-react";
+import { BarChart3, Package, Users, ShoppingCart, TrendingUp, History, Link2, UserCheck, BookOpen, ClipboardCheck, Store } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Fluxo natural: Preparar → Cotar → Analisar → Pedir
 const prepararMenu = [
+  { title: "Lojas", url: "/lojas", icon: Store, emoji: "🏪" },
   { title: "Banco de Produtos", url: "/produtos", icon: Package, emoji: "🗄️" },
   { title: "Fornecedores", url: "/fornecedores", icon: Users, emoji: "⚙️" },
   { title: "App Funcionários", url: "/funcionarios", icon: UserCheck, emoji: "👥" },
@@ -33,11 +35,15 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const isMobile = useIsMobile();
+  const { lojaAtiva } = useLojaAtiva();
 
   const { data: cotacaoAtiva } = useQuery({
-    queryKey: ["cotacao-ativa"],
+    queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("cotacoes").select("id").eq("status", "ativa").limit(1).maybeSingle();
+      let query = supabase.from("cotacoes").select("id").eq("status", "ativa");
+      if (lojaAtiva?.id) query = query.eq("loja_id", lojaAtiva.id);
+      else query = query.is("loja_id", null);
+      const { data } = await query.limit(1).maybeSingle();
       return data;
     },
   });

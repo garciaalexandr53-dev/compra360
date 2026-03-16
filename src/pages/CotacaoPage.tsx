@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
 import * as XLSX from "xlsx";
 import type { Tables } from "@/integrations/supabase/types";
+import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 
 type Fornecedor = Tables<"fornecedores">;
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
@@ -36,6 +37,7 @@ const MIN_SUPPLIERS_FOR_ANALYSIS = 3;
 
 const CotacaoPage = () => {
   const queryClient = useQueryClient();
+  const { lojaAtiva } = useLojaAtiva();
   const [search, setSearch] = useState("");
   const [localPrices, setLocalPrices] = useState<Record<string, Record<string, string>>>({});
   const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);
@@ -48,9 +50,12 @@ const CotacaoPage = () => {
   const [editingField, setEditingField] = useState<Record<string, { quantidade?: string; embalagem?: string; nome?: string }>>({});
 
   const { data: cotacaoAtiva } = useQuery({
-    queryKey: ["cotacao-ativa"],
+    queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("cotacoes").select("*").eq("status", "ativa").limit(1).maybeSingle();
+      let query = supabase.from("cotacoes").select("*").eq("status", "ativa");
+      if (lojaAtiva?.id) query = query.eq("loja_id", lojaAtiva.id);
+      else query = query.is("loja_id", null);
+      const { data, error } = await query.limit(1).maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -436,7 +441,7 @@ const CotacaoPage = () => {
       }
 
       await supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: new Date().toISOString() }).eq("id", cotacaoAtiva.id);
-      const { data: newCot, error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa" }).select().single();
+      const { data: newCot, error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa", loja_id: lojaAtiva?.id || null } as any).select().single();
       if (error) throw error;
 
       if ((novaCotacaoOpt === "manter" || novaCotacaoOpt === "manter_precos") && newCot) {

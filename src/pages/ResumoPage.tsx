@@ -4,14 +4,19 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL } from "@/lib/format";
 import type { Tables } from "@/integrations/supabase/types";
+import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 
 type Fornecedor = Tables<"fornecedores">;
 
 const ResumoPage = () => {
+  const { lojaAtiva } = useLojaAtiva();
   const { data: cotacaoAtiva } = useQuery({
-    queryKey: ["cotacao-ativa"],
+    queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("cotacoes").select("*").eq("status", "ativa").limit(1).maybeSingle();
+      let query = supabase.from("cotacoes").select("*").eq("status", "ativa");
+      if (lojaAtiva?.id) query = query.eq("loja_id", lojaAtiva.id);
+      else query = query.is("loja_id", null);
+      const { data, error } = await query.limit(1).maybeSingle();
       if (error) throw error;
       return data;
     },

@@ -18,6 +18,7 @@ const FornecedorCotacaoPage = () => {
   const [loading, setLoading] = useState(true);
   const [fornecedorNome, setFornecedorNome] = useState("");
   const [fornecedorId, setFornecedorId] = useState("");
+  const [lojaNome, setLojaNome] = useState("");
   const [produtos, setProdutos] = useState<ProdutoItem[]>([]);
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
@@ -40,8 +41,14 @@ const FornecedorCotacaoPage = () => {
       if (fData) setFornecedorNome(fData.nome);
 
       // Get active cotação products
-      const { data: cotacao } = await supabase.from("cotacoes").select("id").eq("status", "ativa").limit(1).maybeSingle();
+      const { data: cotacao } = await supabase.from("cotacoes").select("id, loja_id").eq("status", "ativa").limit(1).maybeSingle();
       if (!cotacao) { setLoading(false); return; }
+
+      // Get loja name if linked
+      if ((cotacao as any).loja_id) {
+        const { data: lojaData } = await supabase.from("lojas").select("nome").eq("id", (cotacao as any).loja_id).single();
+        if (lojaData) setLojaNome((lojaData as any).nome);
+      }
 
       const { data: cpData } = await supabase
         .from("cotacao_produtos")
@@ -152,6 +159,7 @@ const FornecedorCotacaoPage = () => {
       <div className="bg-gradient-to-r from-[hsl(var(--brand-dark))] via-[hsl(var(--brand))] to-[hsl(var(--brand-light))] text-white p-5 sticky top-0 z-10 shadow-lg">
         <h1 className="text-lg font-bold">📋 Cotação de Preços</h1>
         <p className="text-sm opacity-80">{fornecedorNome} · {produtos.length} produtos</p>
+        {lojaNome && <p className="text-xs opacity-70 mt-0.5">🏪 Loja: {lojaNome}</p>}
       </div>
 
       {/* Products */}
