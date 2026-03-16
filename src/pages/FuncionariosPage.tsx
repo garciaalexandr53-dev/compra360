@@ -24,9 +24,12 @@ const FuncionariosPage = () => {
   });
 
   const { data: cotacaoAtiva } = useQuery({
-    queryKey: ["cotacao-ativa"],
+    queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("cotacoes").select("id").eq("status", "ativa").limit(1).maybeSingle();
+      let query = supabase.from("cotacoes").select("id").eq("status", "ativa");
+      if (lojaAtiva?.id) query = query.eq("loja_id", lojaAtiva.id);
+      else query = query.is("loja_id", null);
+      const { data } = await query.limit(1).maybeSingle();
       return data;
     },
   });
