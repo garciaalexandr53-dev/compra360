@@ -159,11 +159,13 @@ const ProdutosPage = () => {
         if (deleteErr) throw deleteErr;
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
+      toast.success(variables.ativo ? "Produto adicionado à cotação!" : "Produto removido da cotação");
     },
+    onError: (e: any) => toast.error(e.message),
   });
 
   const filtered = produtos.filter((p) => {
