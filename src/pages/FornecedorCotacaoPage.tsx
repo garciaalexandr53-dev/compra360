@@ -15,6 +15,8 @@ interface ProdutoItem {
 
 const FornecedorCotacaoPage = () => {
   const { token } = useParams<{ token: string }>();
+  const [searchParams] = useSearchParams();
+  const lojaParam = searchParams.get("loja");
   const [loading, setLoading] = useState(true);
   const [fornecedorNome, setFornecedorNome] = useState("");
   const [fornecedorId, setFornecedorId] = useState("");
