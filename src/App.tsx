@@ -14,7 +14,7 @@ import FornecedoresPage from "./pages/FornecedoresPage";
 import HistoricoPage from "./pages/HistoricoPage";
 import ResumoPage from "./pages/ResumoPage";
 import FornecedorCotacaoPage from "./pages/FornecedorCotacaoPage";
-import LinksPage from "./pages/LinksPage";
+
 import FuncionariosPage from "./pages/FuncionariosPage";
 import AppFuncionariosPublic from "./pages/AppFuncionariosPublic";
 import GuiaPage from "./pages/GuiaPage";
