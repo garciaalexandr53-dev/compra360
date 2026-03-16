@@ -31,6 +31,25 @@ const FornecedoresPage = () => {
   const [form, setForm] = useState(emptyForm);
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [selectedFornecedor, setSelectedFornecedor] = useState<Fornecedor | null>(null);
+  const [selectedLojas, setSelectedLojas] = useState<string[]>([]);
+
+  const { data: lojas = [] } = useQuery({
+    queryKey: ["lojas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("lojas").select("*").order("nome");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: fornecedorLojas = [] } = useQuery({
+    queryKey: ["fornecedor-lojas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("fornecedor_lojas").select("*");
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const { data: fornecedores = [], isLoading } = useQuery({
     queryKey: ["fornecedores"],
