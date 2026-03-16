@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Trash2, Copy, ExternalLink } from "lucide-react";
+import { Plus, Trash2, Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL } from "@/lib/format";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
@@ -179,6 +179,12 @@ const FornecedoresPage = () => {
     setLinkModalOpen(true);
   };
 
+  // Get lojas names for a supplier
+  const getLojaNames = (fId: string) => {
+    const lojaIds = fornecedorLojas.filter((fl: any) => fl.fornecedor_id === fId).map((fl: any) => fl.loja_id);
+    return lojas.filter((l: any) => lojaIds.includes(l.id)).map((l: any) => l.nome);
+  };
+
   return (
     <div className="p-5">
       <div className="flex items-center justify-between mb-5">
@@ -200,8 +206,8 @@ const FornecedoresPage = () => {
                 <TableHead>Representante</TableHead>
                 <TableHead>Contato</TableHead>
                 <TableHead className="text-right">Pedido Mín.</TableHead>
-                <TableHead>Obs.</TableHead>
-                <TableHead className="w-[140px]"></TableHead>
+                <TableHead>Lojas</TableHead>
+                <TableHead className="w-[100px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -213,45 +219,55 @@ const FornecedoresPage = () => {
                   <br />
                   <Button onClick={openAdd} variant="outline" size="sm" className="mt-3">+ Adicionar primeiro fornecedor</Button>
                 </TableCell></TableRow>
-              ) : fornecedores.map((f) => (
-                <TableRow key={f.id} className="hover:bg-muted/50">
-                  <TableCell>
-                    <div className="font-bold text-foreground">{f.nome}</div>
-                    {f.representante && <div className="text-xs text-muted-foreground">{f.representante}</div>}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{f.representante || "-"}</TableCell>
-                  <TableCell>
-                    {f.telefone && <a href={`tel:${f.telefone}`} className="text-primary text-sm hover:underline block">{f.telefone}</a>}
-                    {f.email && <a href={`mailto:${f.email}`} className="text-muted-foreground text-xs hover:underline block">{f.email}</a>}
-                    {!f.telefone && !f.email && <span className="text-muted-foreground">-</span>}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
-                      f.pedido_minimo && f.pedido_minimo > 0
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-muted text-muted-foreground"
-                    }`}>
-                      {f.pedido_minimo && f.pedido_minimo > 0 ? formatBRL(f.pedido_minimo) : "-"}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground max-w-[140px] truncate">{f.observacoes || ""}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => showLink(f)} title="Ver link">
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(f)} title="Editar">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => {
-                        if (confirm(`Remover "${f.nome}" e todos os preços dele?`)) deleteMutation.mutate(f.id);
-                      }} title="Remover">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              ) : fornecedores.map((f) => {
+                const lojaNames = getLojaNames(f.id);
+                return (
+                  <TableRow
+                    key={f.id}
+                    className="hover:bg-muted/50 cursor-pointer"
+                    onClick={() => openEdit(f)}
+                  >
+                    <TableCell>
+                      <div className="font-bold text-foreground">{f.nome}</div>
+                      {f.observacoes && <div className="text-xs text-muted-foreground truncate max-w-[180px]">{f.observacoes}</div>}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{f.representante || "-"}</TableCell>
+                    <TableCell>
+                      {f.telefone && <span className="text-primary text-sm block" onClick={(e) => e.stopPropagation()}><a href={`tel:${f.telefone}`} className="hover:underline">{f.telefone}</a></span>}
+                      {f.email && <span className="text-muted-foreground text-xs block" onClick={(e) => e.stopPropagation()}><a href={`mailto:${f.email}`} className="hover:underline">{f.email}</a></span>}
+                      {!f.telefone && !f.email && <span className="text-muted-foreground">-</span>}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
+                        f.pedido_minimo && f.pedido_minimo > 0
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-muted text-muted-foreground"
+                      }`}>
+                        {f.pedido_minimo && f.pedido_minimo > 0 ? formatBRL(f.pedido_minimo) : "-"}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {lojaNames.length > 0 ? lojaNames.map((name, i) => (
+                          <span key={i} className="text-[10px] px-1.5 py-0.5 bg-accent rounded text-accent-foreground">{name}</span>
+                        )) : <span className="text-xs text-muted-foreground">Todas</span>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => showLink(f)} title="Ver link">
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => {
+                          if (confirm(`Remover "${f.nome}" e todos os preços dele?`)) deleteMutation.mutate(f.id);
+                        }} title="Remover">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
@@ -261,7 +277,7 @@ const FornecedoresPage = () => {
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingId ? "Editar Fornecedor" : "Novo Fornecedor"}</DialogTitle>
+            <DialogTitle>{editingId ? "✏️ Editar Fornecedor" : "Novo Fornecedor"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>

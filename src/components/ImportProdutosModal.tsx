@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +19,7 @@ interface ParsedProduct {
   nome: string;
   categoria: string;
   embalagem: string;
+  quantidade: number;
 }
 
 const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
@@ -27,6 +29,23 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
   const [parsedItems, setParsedItems] = useState<ParsedProduct[]>([]);
   const [importing, setImporting] = useState(false);
   const [dupCount, setDupCount] = useState(0);
+  const [newCatName, setNewCatName] = useState("");
+  const [creatingCat, setCreatingCat] = useState(false);
+
+  const createCategory = async () => {
+    if (!newCatName.trim()) return;
+    setCreatingCat(true);
+    try {
+      const { error } = await supabase.from("categorias").insert({ nome: newCatName.trim() });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["categorias"] });
+      toast.success(`Categoria "${newCatName.trim()}" criada!`);
+      setNewCatName("");
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+    setCreatingCat(false);
+  };
 
   const processPaste = () => {
     const lines = pasteText
@@ -38,12 +57,12 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
       return;
     }
     const items: ParsedProduct[] = lines.map((line) => {
-      // Try to detect "produto - categoria" or "produto;categoria;embalagem" patterns
       const parts = line.split(/[;\t]/).map(s => s.trim());
       return {
         nome: parts[0] || line,
         categoria: parts[1] || "Geral",
         embalagem: parts[2] || "un",
+        quantidade: parseInt(parts[3]) || 1,
       };
     });
     setParsedItems(items);
@@ -76,6 +95,9 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
             ["categoria", "grupo", "secao", "seção"].some((k) => h.includes(k))
           );
           const colEmbal = headers.findIndex((h) => h.includes("embal") || h.includes("emb") || h.includes("unidade"));
+          const colQtd = headers.findIndex((h) =>
+            ["quantidade", "qtd", "qtde", "qt"].some((k) => h.includes(k))
+          );
 
           const items: ParsedProduct[] = [];
           rows.slice(1).forEach((row) => {
@@ -85,6 +107,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
               nome,
               categoria: colCat >= 0 ? String(row[colCat] || "Geral").trim() : "Geral",
               embalagem: colEmbal >= 0 ? String(row[colEmbal] || "un").trim() : "un",
+              quantidade: colQtd >= 0 ? (parseInt(String(row[colQtd])) || 1) : 1,
             });
           });
 
@@ -119,6 +142,9 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
           ["categoria", "grupo", "secao", "seção"].some((k) => h.includes(k))
         );
         const colEmbal = headers.findIndex((h) => h.includes("embal") || h.includes("emb") || h.includes("unidade"));
+        const colQtd = headers.findIndex((h) =>
+          ["quantidade", "qtd", "qtde", "qt"].some((k) => h.includes(k))
+        );
 
         const items: ParsedProduct[] = [];
         lines.slice(1).forEach((line) => {
@@ -129,6 +155,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
             nome,
             categoria: colCat >= 0 ? (cols[colCat] || "Geral").trim() : "Geral",
             embalagem: colEmbal >= 0 ? (cols[colEmbal] || "un").trim() : "un",
+            quantidade: colQtd >= 0 ? (parseInt(cols[colQtd]) || 1) : 1,
           });
         });
 
@@ -235,7 +262,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
 
   const downloadTemplate = () => {
     const csv =
-      "Produto,Categoria,Embalagem\nDetergente Ype 500ml,Limpeza,cx\nSabao em Po Ariel 1kg,Limpeza,cx\nAgua Mineral 500ml,Bebidas,fd\n";
+      "Produto,Categoria,Embalagem,Quantidade\nDetergente Ype 500ml,Limpeza,cx,12\nSabao em Po Ariel 1kg,Limpeza,cx,6\nAgua Mineral 500ml,Bebidas,fd,24\n";
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
     a.download = "modelo_produtos_cotafacil.csv";
@@ -258,10 +285,10 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
 
           <TabsContent value="colar" className="space-y-3 mt-3">
             <p className="text-xs text-muted-foreground">
-              Cole uma lista de produtos (um por linha). Use <code>;</code> para separar: <code>Produto;Categoria;Embalagem</code>
+              Cole uma lista de produtos (um por linha). Use <code>;</code> para separar: <code>Produto;Categoria;Embalagem;Quantidade</code>
             </p>
             <Textarea
-              placeholder={"Detergente Ype 500ml;Limpeza;cx\nSabão em Pó Ariel 1kg;Limpeza;cx\nÁgua Mineral 500ml"}
+              placeholder={"Detergente Ype 500ml;Limpeza;cx;12\nSabão em Pó Ariel 1kg;Limpeza;cx;6\nÁgua Mineral 500ml"}
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
               rows={6}
@@ -273,7 +300,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
 
           <TabsContent value="arquivo" className="space-y-3 mt-3">
             <p className="text-xs text-muted-foreground">
-              Arraste um arquivo CSV ou Excel (.xlsx, .xls) com colunas: Produto, Categoria, Embalagem
+              Arraste um arquivo CSV ou Excel (.xlsx, .xls) com colunas: Produto, Categoria, Embalagem, Quantidade
             </p>
             <div
               className="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer hover:border-primary transition-colors"
@@ -298,6 +325,30 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
           </TabsContent>
         </Tabs>
 
+        {/* Quick category creation */}
+        <div className="border rounded-lg p-3 mt-2 space-y-2">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nova Categoria</p>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Nome da categoria..."
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
+              className="text-sm"
+              onKeyDown={(e) => e.key === "Enter" && createCategory()}
+            />
+            <Button size="sm" onClick={createCategory} disabled={creatingCat || !newCatName.trim()} variant="outline">
+              + Criar
+            </Button>
+          </div>
+          {categorias.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {categorias.map((c) => (
+                <span key={c.id} className="text-[10px] px-2 py-0.5 bg-muted rounded-full text-muted-foreground">{c.nome}</span>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Preview */}
         {parsedItems.length > 0 && (
           <div className="border rounded-lg overflow-hidden mt-3">
@@ -312,6 +363,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
                     <th className="px-2 py-1.5 text-left">Produto</th>
                     <th className="px-2 py-1.5 text-left">Categoria</th>
                     <th className="px-2 py-1.5 text-left">Embal</th>
+                    <th className="px-2 py-1.5 text-right">Qtd</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -320,11 +372,12 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
                       <td className="px-2 py-1.5">{p.nome}</td>
                       <td className="px-2 py-1.5 text-muted-foreground">{p.categoria}</td>
                       <td className="px-2 py-1.5 text-muted-foreground">{p.embalagem}</td>
+                      <td className="px-2 py-1.5 text-right font-bold">{p.quantidade}</td>
                     </tr>
                   ))}
                   {parsedItems.length > 10 && (
                     <tr>
-                      <td colSpan={3} className="px-2 py-1.5 text-center text-muted-foreground">
+                      <td colSpan={4} className="px-2 py-1.5 text-center text-muted-foreground">
                         ... e mais {parsedItems.length - 10} produtos
                       </td>
                     </tr>

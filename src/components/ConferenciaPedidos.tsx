@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,26 @@ interface PedidoWithDetails {
   created_at: string;
   items: ConferenciaItem[];
 }
+
+const STORAGE_KEY = "conferencia_progress";
+
+const loadProgress = (): { pedidoId: string; items: ConferenciaItem[]; nome: string } | null => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+const saveProgress = (pedidoId: string, items: ConferenciaItem[], nome: string) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ pedidoId, items, nome }));
+};
+
+const clearProgress = () => {
+  localStorage.removeItem(STORAGE_KEY);
+};
 
 const ConferenciaPedidos = () => {
   const [selectedPedido, setSelectedPedido] = useState<PedidoWithDetails | null>(null);
@@ -56,7 +76,40 @@ const ConferenciaPedidos = () => {
     },
   });
 
+  // Restore progress on mount
+  useEffect(() => {
+    if (pedidos.length === 0) return;
+    const progress = loadProgress();
+    if (progress) {
+      const pedido = pedidos.find((p: any) => p.id === progress.pedidoId);
+      if (pedido) {
+        setSelectedPedido({ ...pedido, items: progress.items });
+        setItems(progress.items);
+        setNome(progress.nome);
+        toast.info("Conferência em andamento restaurada!");
+      } else {
+        clearProgress();
+      }
+    }
+  }, [pedidos]);
+
+  // Auto-save progress whenever items or nome change
+  useEffect(() => {
+    if (selectedPedido && items.length > 0) {
+      saveProgress(selectedPedido.id, items, nome);
+    }
+  }, [items, nome, selectedPedido]);
+
   const loadPedidoDetails = async (pedido: any) => {
+    // Check if there's saved progress for this pedido
+    const progress = loadProgress();
+    if (progress && progress.pedidoId === pedido.id) {
+      setItems(progress.items);
+      setNome(progress.nome);
+      setSelectedPedido({ ...pedido, items: progress.items });
+      return;
+    }
+
     // Get the cotacao_id from the pedido
     const { data: pedidoFull } = await supabase
       .from("pedidos")
@@ -92,14 +145,16 @@ const ConferenciaPedidos = () => {
 
     setItems(orderItems);
     setSelectedPedido({ ...pedido, items: orderItems });
+    saveProgress(pedido.id, orderItems, nome);
   };
 
   const markAllCorrect = () => {
-    setItems(items.map((item) => ({
+    const updated = items.map((item) => ({
       ...item,
       quantidade_recebida: item.quantidade_pedida,
       preco_nf: item.preco_cotado,
-    })));
+    }));
+    setItems(updated);
     toast.success("Todos os itens marcados como corretos!");
   };
 
@@ -134,7 +189,6 @@ const ConferenciaPedidos = () => {
     }
 
     try {
-      // Create conferencia record
       const { data: conf, error: confError } = await supabase
         .from("conferencias")
         .insert({
@@ -147,7 +201,6 @@ const ConferenciaPedidos = () => {
 
       if (confError) throw confError;
 
-      // Insert conferencia items
       const insertItems = items.map((item) => ({
         conferencia_id: conf.id,
         produto_nome: item.produto_nome,
@@ -166,19 +219,19 @@ const ConferenciaPedidos = () => {
 
       if (itensError) throw itensError;
 
-      // Update pedido status to 'recebido'
       await supabase
         .from("pedidos")
         .update({ status: "recebido" as any })
         .eq("id", selectedPedido.id);
 
-      // Check for faltantes
       const itemsFaltantes = items
         .filter((item) => item.quantidade_recebida < item.quantidade_pedida)
         .map((item) => ({
           nome: item.produto_nome,
           qtd: item.quantidade_pedida - item.quantidade_recebida,
         }));
+
+      clearProgress();
 
       if (itemsFaltantes.length > 0) {
         setFaltantes(itemsFaltantes);
@@ -211,6 +264,7 @@ const ConferenciaPedidos = () => {
   };
 
   const resetConferencia = () => {
+    clearProgress();
     setSelectedPedido(null);
     setItems([]);
     setShowFaltantes(false);
@@ -273,7 +327,7 @@ const ConferenciaPedidos = () => {
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={resetConferencia}>
+          <Button variant="ghost" size="icon" onClick={() => { setSelectedPedido(null); setItems([]); }}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1">

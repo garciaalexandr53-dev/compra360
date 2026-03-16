@@ -61,7 +61,17 @@ const CotacaoPage = () => {
     },
   });
 
-  const { data: allFornecedores = [] } = useQuery({
+  // Fetch fornecedor_lojas to filter by active store
+  const { data: fornecedorLojas = [] } = useQuery({
+    queryKey: ["fornecedor-lojas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("fornecedor_lojas").select("*");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: allFornecedoresRaw = [] } = useQuery({
     queryKey: ["fornecedores"],
     queryFn: async () => {
       const { data, error } = await supabase.from("fornecedores").select("*").order("nome");
@@ -69,6 +79,17 @@ const CotacaoPage = () => {
       return data as Fornecedor[];
     },
   });
+
+  // Filter suppliers by active store: show only those linked to this store (or unlinked ones)
+  const allFornecedores = useMemo(() => {
+    if (!lojaAtiva?.id) return allFornecedoresRaw;
+    const linkedToStore = new Set(
+      fornecedorLojas.filter((fl: any) => fl.loja_id === lojaAtiva.id).map((fl: any) => fl.fornecedor_id)
+    );
+    // Show suppliers linked to this store, or suppliers not linked to any store
+    const allLinked = new Set(fornecedorLojas.map((fl: any) => fl.fornecedor_id));
+    return allFornecedoresRaw.filter((f) => linkedToStore.has(f.id) || !allLinked.has(f.id));
+  }, [allFornecedoresRaw, fornecedorLojas, lojaAtiva?.id]);
 
   // Load persisted supplier selection from DB
   const { data: cotacaoFornecedores = [] } = useQuery({
