@@ -26,8 +26,9 @@ const ProdutosPage = () => {
   const [editMode, setEditMode] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [catSidebarOpen, setCatSidebarOpen] = useState(false);
+  const [newCatModalOpen, setNewCatModalOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
 
-  // Inline editing state
   const [inlineEditing, setInlineEditing] = useState<Record<string, { nome?: string; embalagem?: string }>>({});
 
   const { data: categorias = [] } = useQuery({
@@ -57,6 +58,20 @@ const ProdutosPage = () => {
       const { data } = await supabase.from("cotacoes").select("id").eq("status", "ativa").limit(1).maybeSingle();
       return data;
     },
+  });
+
+  const createCatMutation = useMutation({
+    mutationFn: async (nome: string) => {
+      const { error } = await supabase.from("categorias").insert({ nome: nome.trim() });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categorias"] });
+      setNewCatModalOpen(false);
+      setNewCatName("");
+      toast.success("Categoria criada!");
+    },
+    onError: (e: any) => toast.error(e.message),
   });
 
   const saveMutation = useMutation({
@@ -118,15 +133,12 @@ const ProdutosPage = () => {
     },
   });
 
-  // Toggle product in cotação - adds/removes from cotacao_produtos
   const toggleCotacaoMutation = useMutation({
     mutationFn: async ({ id, ativo, produtoId }: { id: string; ativo: boolean; produtoId: string }) => {
-      // Toggle ativo
       const { error: updateErr } = await supabase.from("produtos").update({ ativo }).eq("id", id);
       if (updateErr) throw updateErr;
 
       if (ativo && cotacaoAtiva) {
-        // Add to cotacao_produtos
         const { error: insertErr } = await supabase.from("cotacao_produtos").insert({
           cotacao_id: cotacaoAtiva.id,
           produto_id: produtoId,
@@ -134,7 +146,6 @@ const ProdutosPage = () => {
         });
         if (insertErr) throw insertErr;
       } else if (!ativo && cotacaoAtiva) {
-        // Remove from cotacao_produtos
         const { error: deleteErr } = await supabase.from("cotacao_produtos")
           .delete()
           .eq("cotacao_id", cotacaoAtiva.id)
@@ -229,6 +240,13 @@ const ProdutosPage = () => {
                   <span className="text-[10px] font-bold bg-muted px-1.5 py-0.5 rounded-full">{catCounts[cat.nome] || 0}</span>
                 </button>
               ))}
+              <button
+                onClick={() => setNewCatModalOpen(true)}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-primary hover:bg-muted transition-colors mt-1"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Nova Categoria
+              </button>
             </div>
           </ScrollArea>
         </div>
@@ -345,7 +363,7 @@ const ProdutosPage = () => {
         </ScrollArea>
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Add/Edit Product Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>{editingId ? "Editar Produto" : "Novo Produto"}</DialogTitle></DialogHeader>
@@ -353,16 +371,21 @@ const ProdutosPage = () => {
             <div><Label>Nome do Produto *</Label><Input placeholder="Ex: Detergente Ype 500ml" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
             <div>
               <Label>Categoria</Label>
-              <select
-                value={form.categoria_id}
-                onChange={(e) => setForm({ ...form, categoria_id: e.target.value })}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">Sem categoria</option>
-                {categorias.map((c) => (
-                  <option key={c.id} value={c.id}>{c.nome}</option>
-                ))}
-              </select>
+              <div className="flex gap-2">
+                <select
+                  value={form.categoria_id}
+                  onChange={(e) => setForm({ ...form, categoria_id: e.target.value })}
+                  className="flex h-10 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Sem categoria</option>
+                  {categorias.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nome}</option>
+                  ))}
+                </select>
+                <Button variant="outline" size="icon" onClick={() => setNewCatModalOpen(true)} title="Nova categoria">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <div><Label>Embalagem</Label><Input placeholder="cx, un, fd..." value={form.embalagem} onChange={(e) => setForm({ ...form, embalagem: e.target.value })} /></div>
           </div>
@@ -370,6 +393,32 @@ const ProdutosPage = () => {
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
             <Button onClick={() => { if (!form.nome.trim()) { toast.error("Digite o nome"); return; } saveMutation.mutate(); }} disabled={saveMutation.isPending}>
               {saveMutation.isPending ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Category Modal */}
+      <Dialog open={newCatModalOpen} onOpenChange={setNewCatModalOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Nova Categoria</DialogTitle></DialogHeader>
+          <div>
+            <Label>Nome da Categoria *</Label>
+            <Input
+              placeholder="Ex: Limpeza, Bebidas..."
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && newCatName.trim() && createCatMutation.mutate(newCatName)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewCatModalOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={() => createCatMutation.mutate(newCatName)}
+              disabled={!newCatName.trim() || createCatMutation.isPending}
+              className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
+            >
+              Criar Categoria
             </Button>
           </DialogFooter>
         </DialogContent>
