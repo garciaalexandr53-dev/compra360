@@ -23,16 +23,8 @@ const FuncionariosPage = () => {
     },
   });
 
-  const { data: cotacaoAtiva } = useQuery({
-    queryKey: ["cotacao-ativa", lojaAtiva?.id],
-    queryFn: async () => {
-      let query = supabase.from("cotacoes").select("id").eq("status", "ativa");
-      if (lojaAtiva?.id) query = query.eq("loja_id", lojaAtiva.id);
-      else query = query.is("loja_id", null);
-      const { data } = await query.limit(1).maybeSingle();
-      return data;
-    },
-  });
+
+
 
   const pendentes = itens.filter((i: any) => !i.importado);
   const importados = itens.filter((i: any) => i.importado);
