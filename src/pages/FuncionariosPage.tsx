@@ -4,10 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Trash2, Download, ExternalLink, Package } from "lucide-react";
+import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { toast } from "sonner";
 
 const FuncionariosPage = () => {
   const queryClient = useQueryClient();
+  const { lojaAtiva } = useLojaAtiva();
 
   const { data: itens = [], isLoading } = useQuery({
     queryKey: ["itens-faltantes"],
@@ -22,9 +24,12 @@ const FuncionariosPage = () => {
   });
 
   const { data: cotacaoAtiva } = useQuery({
-    queryKey: ["cotacao-ativa"],
+    queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("cotacoes").select("id").eq("status", "ativa").limit(1).maybeSingle();
+      let query = supabase.from("cotacoes").select("id").eq("status", "ativa");
+      if (lojaAtiva?.id) query = query.eq("loja_id", lojaAtiva.id);
+      else query = query.is("loja_id", null);
+      const { data } = await query.limit(1).maybeSingle();
       return data;
     },
   });

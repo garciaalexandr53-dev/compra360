@@ -40,13 +40,29 @@ const FornecedorCotacaoPage = () => {
       const { data: fData } = await supabase.from("fornecedores").select("nome").eq("id", fId).single();
       if (fData) setFornecedorNome(fData.nome);
 
-      // Get active cotação products
-      const { data: cotacao } = await supabase.from("cotacoes").select("id, loja_id").eq("status", "ativa").limit(1).maybeSingle();
+      // Get lojas this supplier serves
+      const { data: fornecedorLojas } = await supabase
+        .from("fornecedor_lojas")
+        .select("loja_id")
+        .eq("fornecedor_id", fId);
+      const lojaIds = (fornecedorLojas || []).map((fl: any) => fl.loja_id);
+
+      // Get active cotação - prefer one linked to supplier's lojas
+      let cotacao: any = null;
+      if (lojaIds.length > 0) {
+        const { data } = await supabase.from("cotacoes").select("id, loja_id").eq("status", "ativa").in("loja_id", lojaIds).limit(1).maybeSingle();
+        cotacao = data;
+      }
+      // Fallback: any active cotação
+      if (!cotacao) {
+        const { data } = await supabase.from("cotacoes").select("id, loja_id").eq("status", "ativa").limit(1).maybeSingle();
+        cotacao = data;
+      }
       if (!cotacao) { setLoading(false); return; }
 
       // Get loja name if linked
-      if ((cotacao as any).loja_id) {
-        const { data: lojaData } = await supabase.from("lojas").select("nome").eq("id", (cotacao as any).loja_id).single();
+      if (cotacao.loja_id) {
+        const { data: lojaData } = await supabase.from("lojas").select("nome").eq("id", cotacao.loja_id).single();
         if (lojaData) setLojaNome((lojaData as any).nome);
       }
 
