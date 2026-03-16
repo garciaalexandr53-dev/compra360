@@ -10,6 +10,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Pencil, Trash2, Store, Check } from "lucide-react";
 import { toast } from "sonner";
 
+const formatCNPJ = (value: string) => {
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  return digits
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2");
+};
+
 const emptyForm = { nome: "", endereco: "", cnpj: "", razao_social: "", inscricao_estadual: "" };
 
 const LojasPage = () => {
