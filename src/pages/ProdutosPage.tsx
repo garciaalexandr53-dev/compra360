@@ -19,6 +19,7 @@ const emptyForm = { nome: "", categoria_id: "", embalagem: "" };
 
 const ProdutosPage = () => {
   const queryClient = useQueryClient();
+  const { lojaAtiva } = useLojaAtiva();
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState<string>("Todos");
   const [modalOpen, setModalOpen] = useState(false);
