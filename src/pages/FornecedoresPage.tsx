@@ -161,7 +161,8 @@ const FornecedoresPage = () => {
   };
 
   const getLink = (f: Fornecedor) => {
-    return `${window.location.origin}/fornecedor/${f.token}`;
+    const base = `${window.location.origin}/fornecedor/${f.token}`;
+    return lojaAtiva?.id ? `${base}?loja=${lojaAtiva.id}` : base;
   };
 
   const copyLink = (f: Fornecedor) => {
