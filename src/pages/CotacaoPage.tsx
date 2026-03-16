@@ -441,7 +441,7 @@ const CotacaoPage = () => {
       }
 
       await supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: new Date().toISOString() }).eq("id", cotacaoAtiva.id);
-      const { data: newCot, error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa" }).select().single();
+      const { data: newCot, error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa", loja_id: lojaAtiva?.id || null } as any).select().single();
       if (error) throw error;
 
       if ((novaCotacaoOpt === "manter" || novaCotacaoOpt === "manter_precos") && newCot) {

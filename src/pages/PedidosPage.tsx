@@ -21,6 +21,7 @@ interface OrderItem {
 
 const PedidosPage = () => {
   const queryClient = useQueryClient();
+  const { lojaAtiva } = useLojaAtiva();
   const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptFornecedor, setReceiptFornecedor] = useState<Fornecedor | null>(null);
@@ -28,9 +29,12 @@ const PedidosPage = () => {
   const [receiptNumero, setReceiptNumero] = useState<number | null>(null);
 
   const { data: cotacaoAtiva } = useQuery({
-    queryKey: ["cotacao-ativa"],
+    queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("cotacoes").select("*").eq("status", "ativa").limit(1).maybeSingle();
+      let query = supabase.from("cotacoes").select("*").eq("status", "ativa");
+      if (lojaAtiva?.id) query = query.eq("loja_id", lojaAtiva.id);
+      else query = query.is("loja_id", null);
+      const { data, error } = await query.limit(1).maybeSingle();
       if (error) throw error;
       return data;
     },
