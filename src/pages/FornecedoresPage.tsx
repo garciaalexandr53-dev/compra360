@@ -35,6 +35,7 @@ const FornecedoresPage = () => {
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [selectedFornecedor, setSelectedFornecedor] = useState<Fornecedor | null>(null);
   const [selectedLojas, setSelectedLojas] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const { data: lojas = [] } = useQuery({
     queryKey: ["lojas"],
