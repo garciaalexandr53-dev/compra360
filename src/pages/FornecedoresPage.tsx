@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users } from "lucide-react";
+import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL } from "@/lib/format";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
