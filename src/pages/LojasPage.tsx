@@ -176,7 +176,7 @@ const LojasPage = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>CNPJ</Label>
-                <Input value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })} placeholder="00.000.000/0000-00" />
+                <Input value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: formatCNPJ(e.target.value) })} placeholder="00.000.000/0000-00" />
               </div>
               <div>
                 <Label>Inscrição Estadual</Label>
