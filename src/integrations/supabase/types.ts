@@ -304,6 +304,7 @@ export type Database = {
           created_at: string
           id: string
           importado: boolean
+          loja_id: string | null
           nome: string
           observacao: string | null
           quantidade: number | null
@@ -313,6 +314,7 @@ export type Database = {
           created_at?: string
           id?: string
           importado?: boolean
+          loja_id?: string | null
           nome: string
           observacao?: string | null
           quantidade?: number | null
@@ -322,12 +324,21 @@ export type Database = {
           created_at?: string
           id?: string
           importado?: boolean
+          loja_id?: string | null
           nome?: string
           observacao?: string | null
           quantidade?: number | null
           registrado_por?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "itens_faltantes_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lojas: {
         Row: {
