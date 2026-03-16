@@ -18,7 +18,6 @@ const prepararMenu = [
 ];
 const cotarMenu = [
   { title: "Cotação", url: "/cotacao", icon: BarChart3, emoji: "📊" },
-  { title: "Links p/ Fornecedores", url: "/links", icon: Link2, emoji: "🔗" },
 ];
 const analisarMenu = [
   { title: "Resumo", url: "/resumo", icon: TrendingUp, emoji: "📈" },
