@@ -27,6 +27,7 @@ const emptyForm = {
 
 const FornecedoresPage = () => {
   const queryClient = useQueryClient();
+  const { lojaAtiva } = useLojaAtiva();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
