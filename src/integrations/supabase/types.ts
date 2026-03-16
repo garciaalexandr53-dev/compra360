@@ -331,22 +331,31 @@ export type Database = {
       }
       lojas: {
         Row: {
+          cnpj: string | null
           created_at: string
           endereco: string | null
           id: string
+          inscricao_estadual: string | null
           nome: string
+          razao_social: string | null
         }
         Insert: {
+          cnpj?: string | null
           created_at?: string
           endereco?: string | null
           id?: string
+          inscricao_estadual?: string | null
           nome: string
+          razao_social?: string | null
         }
         Update: {
+          cnpj?: string | null
           created_at?: string
           endereco?: string | null
           id?: string
+          inscricao_estadual?: string | null
           nome?: string
+          razao_social?: string | null
         }
         Relationships: []
       }

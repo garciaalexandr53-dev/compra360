@@ -1,18 +1,20 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Store } from "lucide-react";
+import { Plus, Pencil, Trash2, Store, Check } from "lucide-react";
 import { toast } from "sonner";
 
-const emptyForm = { nome: "", endereco: "" };
+const emptyForm = { nome: "", endereco: "", cnpj: "", razao_social: "", inscricao_estadual: "" };
 
 const LojasPage = () => {
   const queryClient = useQueryClient();
+  const { lojaAtiva, setLojaAtivaId } = useLojaAtiva();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -28,11 +30,18 @@ const LojasPage = () => {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const payload = {
+        nome: form.nome,
+        endereco: form.endereco || null,
+        cnpj: form.cnpj || null,
+        razao_social: form.razao_social || null,
+        inscricao_estadual: form.inscricao_estadual || null,
+      };
       if (editingId) {
-        const { error } = await supabase.from("lojas").update({ nome: form.nome, endereco: form.endereco || null }).eq("id", editingId);
+        const { error } = await supabase.from("lojas").update(payload).eq("id", editingId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("lojas").insert({ nome: form.nome, endereco: form.endereco || null });
+        const { error } = await supabase.from("lojas").insert(payload);
         if (error) throw error;
       }
     },
@@ -59,7 +68,17 @@ const LojasPage = () => {
   });
 
   const openAdd = () => { setEditingId(null); setForm(emptyForm); setModalOpen(true); };
-  const openEdit = (l: any) => { setEditingId(l.id); setForm({ nome: l.nome, endereco: l.endereco || "" }); setModalOpen(true); };
+  const openEdit = (l: any) => {
+    setEditingId(l.id);
+    setForm({
+      nome: l.nome,
+      endereco: l.endereco || "",
+      cnpj: l.cnpj || "",
+      razao_social: l.razao_social || "",
+      inscricao_estadual: l.inscricao_estadual || "",
+    });
+    setModalOpen(true);
+  };
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-6">
@@ -68,7 +87,7 @@ const LojasPage = () => {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Store className="h-6 w-6 text-primary" /> Lojas
           </h1>
-          <p className="text-sm text-muted-foreground">Cadastre as lojas que fazem cotação</p>
+          <p className="text-sm text-muted-foreground">Cadastre as lojas e selecione a loja ativa</p>
         </div>
         <Button onClick={openAdd} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Nova Loja
@@ -81,7 +100,6 @@ const LojasPage = () => {
         <div className="text-center py-16 bg-card border rounded-xl">
           <Store className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
           <p className="text-muted-foreground font-medium">Nenhuma loja cadastrada</p>
-          <p className="text-sm text-muted-foreground/60 mt-1">Cadastre sua primeira loja para começar</p>
           <Button onClick={openAdd} className="mt-4" size="sm"><Plus className="h-4 w-4 mr-1" /> Cadastrar Loja</Button>
         </div>
       ) : (
@@ -89,24 +107,44 @@ const LojasPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10"></TableHead>
                 <TableHead>Nome</TableHead>
+                <TableHead>CNPJ</TableHead>
                 <TableHead>Endereço</TableHead>
                 <TableHead className="w-24 text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {lojas.map((l: any) => (
-                <TableRow key={l.id}>
-                  <TableCell className="font-semibold">{l.nome}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{l.endereco || "—"}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(l)}><Pencil className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(l.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {lojas.map((l: any) => {
+                const isActive = lojaAtiva?.id === l.id;
+                return (
+                  <TableRow key={l.id} className={isActive ? "bg-primary/5" : ""}>
+                    <TableCell>
+                      <Button
+                        variant={isActive ? "default" : "outline"}
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => { setLojaAtivaId(l.id); toast.success(`Loja "${l.nome}" selecionada`); }}
+                        title="Selecionar como loja ativa"
+                      >
+                        {isActive ? <Check className="h-4 w-4" /> : <Store className="h-3.5 w-3.5" />}
+                      </Button>
+                    </TableCell>
+                    <TableCell className="font-semibold">
+                      {l.nome}
+                      {isActive && <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-primary text-primary-foreground rounded-full font-bold">ATIVA</span>}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{l.cnpj || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{l.endereco || "—"}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(l)}><Pencil className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(l.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
@@ -121,6 +159,20 @@ const LojasPage = () => {
             <div>
               <Label>Nome da Loja *</Label>
               <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder="Ex: Loja Centro" />
+            </div>
+            <div>
+              <Label>Razão Social</Label>
+              <Input value={form.razao_social} onChange={(e) => setForm({ ...form, razao_social: e.target.value })} placeholder="Ex: Empresa LTDA" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>CNPJ</Label>
+                <Input value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })} placeholder="00.000.000/0000-00" />
+              </div>
+              <div>
+                <Label>Inscrição Estadual</Label>
+                <Input value={form.inscricao_estadual} onChange={(e) => setForm({ ...form, inscricao_estadual: e.target.value })} placeholder="Opcional" />
+              </div>
             </div>
             <div>
               <Label>Endereço</Label>

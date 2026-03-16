@@ -6,6 +6,9 @@ interface Loja {
   id: string;
   nome: string;
   endereco: string | null;
+  cnpj: string | null;
+  razao_social: string | null;
+  inscricao_estadual: string | null;
 }
 
 interface LojaContextType {

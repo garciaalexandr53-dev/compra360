@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Search, ClipboardList, Package } from "lucide-react";
+import { Search, ClipboardList, Package, Store } from "lucide-react";
 import ConferenciaPedidos from "@/components/ConferenciaPedidos";
 
 interface ItemEntry {
@@ -26,11 +27,21 @@ const AppFuncionariosPublic = () => {
   const [nome, setNome] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [selectedLojaId, setSelectedLojaId] = useState<string>("");
 
   const [productSearch, setProductSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState("Todos");
   const [showProductList, setShowProductList] = useState(true);
   const [productQtds, setProductQtds] = useState<Record<number, string>>({});
+
+  const { data: lojas = [] } = useQuery({
+    queryKey: ["lojas-public"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("lojas").select("id, nome").order("nome");
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   const { data: produtos = [] } = useQuery({
     queryKey: ["produtos-public"],
@@ -87,15 +98,22 @@ const AppFuncionariosPublic = () => {
     if (e.key === "Enter") { e.preventDefault(); addItem(); }
   };
 
+  const selectedLojaName = lojas.find((l) => l.id === selectedLojaId)?.nome || "";
+
   const enviar = async () => {
     if (!items.length) { toast.error("Adicione pelo menos um item!"); return; }
+    if (lojas.length > 1 && !selectedLojaId) { toast.error("Selecione a loja!"); return; }
     setSending(true);
     try {
+      const lojaLabel = selectedLojaName ? ` [${selectedLojaName}]` : "";
       const inserts = items.map((item) => ({
         nome: item.nome,
         quantidade: item.quantidade,
-        observacao: item.embalagem !== "un" ? `Embalagem: ${item.embalagem}` : null,
-        registrado_por: nome.trim() || "Funcionário",
+        observacao: [
+          item.embalagem !== "un" ? `Embalagem: ${item.embalagem}` : null,
+          lojaLabel || null,
+        ].filter(Boolean).join(" | ") || null,
+        registrado_por: (nome.trim() || "Funcionário") + lojaLabel,
       }));
       const { error } = await supabase.from("itens_faltantes").insert(inserts);
       if (error) throw error;
@@ -114,9 +132,10 @@ const AppFuncionariosPublic = () => {
         <div className="text-center">
           <div className="text-5xl mb-4">✅</div>
           <h1 className="text-xl font-bold mb-2">Lista Enviada!</h1>
-          <p className="text-muted-foreground mb-4">
-            {items.length} item(ns) registrado(s). O comprador irá revisar.
+          <p className="text-muted-foreground mb-1">
+            {items.length} item(ns) registrado(s).
           </p>
+          {selectedLojaName && <p className="text-sm text-primary font-medium mb-4">Loja: {selectedLojaName}</p>}
           <Button
             onClick={() => { setItems([]); setSent(false); }}
             className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
@@ -172,6 +191,25 @@ const AppFuncionariosPublic = () => {
       ) : (
         <>
           <div className="p-4 space-y-4">
+            {/* Store selector (when multiple stores) */}
+            {lojas.length > 1 && (
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
+                  <Store className="h-3.5 w-3.5 inline mr-1" />Loja *
+                </label>
+                <Select value={selectedLojaId} onValueChange={setSelectedLojaId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a loja" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {lojas.map((l) => (
+                      <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             {/* Name input */}
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
@@ -313,6 +351,7 @@ const AppFuncionariosPublic = () => {
                 <div className="px-4 py-2.5 border-b bg-muted">
                   <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                     {items.length} item(ns) na lista
+                    {selectedLojaName && ` · ${selectedLojaName}`}
                   </span>
                 </div>
                 {items.map((item, i) => (
@@ -346,7 +385,7 @@ const AppFuncionariosPublic = () => {
           <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-4 shadow-lg z-10">
             <Button
               onClick={enviar}
-              disabled={sending || items.length === 0}
+              disabled={sending || items.length === 0 || (lojas.length > 1 && !selectedLojaId)}
               className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-base py-6 font-bold"
             >
               {sending ? "Enviando..." : `📤 Enviar ${items.length} Item(ns)`}
