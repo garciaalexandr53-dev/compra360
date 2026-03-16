@@ -537,7 +537,7 @@ const CotacaoPage = () => {
         <p className="text-lg font-semibold mb-2">Nenhuma cotação ativa</p>
         <p className="text-sm">Crie uma nova cotação para começar.</p>
         <Button className="mt-4 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]" onClick={async () => {
-          const { error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa" });
+          const { error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa", loja_id: lojaAtiva?.id || null } as any);
           if (error) toast.error(error.message);
           else { queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] }); toast.success("Cotação criada!"); }
         }}>
