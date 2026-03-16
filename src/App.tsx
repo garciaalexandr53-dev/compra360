@@ -14,7 +14,7 @@ import FornecedoresPage from "./pages/FornecedoresPage";
 import HistoricoPage from "./pages/HistoricoPage";
 import ResumoPage from "./pages/ResumoPage";
 import FornecedorCotacaoPage from "./pages/FornecedorCotacaoPage";
-import LinksPage from "./pages/LinksPage";
+
 import FuncionariosPage from "./pages/FuncionariosPage";
 import AppFuncionariosPublic from "./pages/AppFuncionariosPublic";
 import GuiaPage from "./pages/GuiaPage";
@@ -42,7 +42,7 @@ const App = () => (
                 <Route path="/pedidos" element={<PedidosPage />} />
                 <Route path="/produtos" element={<ProdutosPage />} />
                 <Route path="/fornecedores" element={<FornecedoresPage />} />
-                <Route path="/links" element={<LinksPage />} />
+                
                 <Route path="/funcionarios" element={<FuncionariosPage />} />
                 <Route path="/historico" element={<HistoricoPage />} />
                 <Route path="/resumo" element={<ResumoPage />} />

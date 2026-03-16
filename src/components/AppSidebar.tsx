@@ -6,7 +6,7 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, Package, Users, ShoppingCart, TrendingUp, History, Link2, UserCheck, BookOpen, ClipboardCheck, Store } from "lucide-react";
+import { BarChart3, Package, Users, ShoppingCart, TrendingUp, History, UserCheck, BookOpen, ClipboardCheck, Store } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Fluxo natural: Preparar → Cotar → Analisar → Pedir
@@ -18,7 +18,6 @@ const prepararMenu = [
 ];
 const cotarMenu = [
   { title: "Cotação", url: "/cotacao", icon: BarChart3, emoji: "📊" },
-  { title: "Links p/ Fornecedores", url: "/links", icon: Link2, emoji: "🔗" },
 ];
 const analisarMenu = [
   { title: "Resumo", url: "/resumo", icon: TrendingUp, emoji: "📈" },
