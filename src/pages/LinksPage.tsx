@@ -96,7 +96,10 @@ const LinksPage = () => {
     },
   });
 
-  const getLink = (f: Fornecedor) => `${window.location.origin}/fornecedor/${f.token}`;
+  const getLink = (f: Fornecedor) => {
+    const base = `${window.location.origin}/fornecedor/${f.token}`;
+    return lojaAtiva?.id ? `${base}?loja=${lojaAtiva.id}` : base;
+  };
 
   const copyLink = (f: Fornecedor) => {
     navigator.clipboard.writeText(getLink(f));

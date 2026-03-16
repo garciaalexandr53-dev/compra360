@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ const emptyForm = {
 
 const FornecedoresPage = () => {
   const queryClient = useQueryClient();
+  const { lojaAtiva } = useLojaAtiva();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -160,7 +162,8 @@ const FornecedoresPage = () => {
   };
 
   const getLink = (f: Fornecedor) => {
-    return `${window.location.origin}/fornecedor/${f.token}`;
+    const base = `${window.location.origin}/fornecedor/${f.token}`;
+    return lojaAtiva?.id ? `${base}?loja=${lojaAtiva.id}` : base;
   };
 
   const copyLink = (f: Fornecedor) => {

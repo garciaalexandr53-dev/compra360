@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,8 @@ interface ProdutoItem {
 
 const FornecedorCotacaoPage = () => {
   const { token } = useParams<{ token: string }>();
+  const [searchParams] = useSearchParams();
+  const lojaParam = searchParams.get("loja");
   const [loading, setLoading] = useState(true);
   const [fornecedorNome, setFornecedorNome] = useState("");
   const [fornecedorId, setFornecedorId] = useState("");
@@ -47,9 +49,13 @@ const FornecedorCotacaoPage = () => {
         .eq("fornecedor_id", fId);
       const lojaIds = (fornecedorLojas || []).map((fl: any) => fl.loja_id);
 
-      // Get active cotação - prefer one linked to supplier's lojas
+      // Get active cotação - prefer loja from URL param, then supplier's lojas
       let cotacao: any = null;
-      if (lojaIds.length > 0) {
+      if (lojaParam) {
+        const { data } = await supabase.from("cotacoes").select("id, loja_id").eq("status", "ativa").eq("loja_id", lojaParam).limit(1).maybeSingle();
+        cotacao = data;
+      }
+      if (!cotacao && lojaIds.length > 0) {
         const { data } = await supabase.from("cotacoes").select("id, loja_id").eq("status", "ativa").in("loja_id", lojaIds).limit(1).maybeSingle();
         cotacao = data;
       }
