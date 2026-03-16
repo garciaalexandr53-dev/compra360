@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
 import * as XLSX from "xlsx";
 import type { Tables } from "@/integrations/supabase/types";
+import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 
 type Fornecedor = Tables<"fornecedores">;
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
