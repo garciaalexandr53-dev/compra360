@@ -18,6 +18,7 @@ const FornecedorCotacaoPage = () => {
   const [loading, setLoading] = useState(true);
   const [fornecedorNome, setFornecedorNome] = useState("");
   const [fornecedorId, setFornecedorId] = useState("");
+  const [lojaNome, setLojaNome] = useState("");
   const [produtos, setProdutos] = useState<ProdutoItem[]>([]);
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
