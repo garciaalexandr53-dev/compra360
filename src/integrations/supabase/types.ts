@@ -189,6 +189,7 @@ export type Database = {
           created_by: string | null
           finalizada_at: string | null
           id: string
+          loja_id: string | null
           nome: string
           status: Database["public"]["Enums"]["cotacao_status"]
         }
@@ -197,6 +198,7 @@ export type Database = {
           created_by?: string | null
           finalizada_at?: string | null
           id?: string
+          loja_id?: string | null
           nome: string
           status?: Database["public"]["Enums"]["cotacao_status"]
         }
@@ -205,10 +207,55 @@ export type Database = {
           created_by?: string | null
           finalizada_at?: string | null
           id?: string
+          loja_id?: string | null
           nome?: string
           status?: Database["public"]["Enums"]["cotacao_status"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cotacoes_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fornecedor_lojas: {
+        Row: {
+          created_at: string
+          fornecedor_id: string
+          id: string
+          loja_id: string
+        }
+        Insert: {
+          created_at?: string
+          fornecedor_id: string
+          id?: string
+          loja_id: string
+        }
+        Update: {
+          created_at?: string
+          fornecedor_id?: string
+          id?: string
+          loja_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fornecedor_lojas_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fornecedor_lojas_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fornecedores: {
         Row: {
@@ -282,6 +329,27 @@ export type Database = {
         }
         Relationships: []
       }
+      lojas: {
+        Row: {
+          created_at: string
+          endereco: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       pedidos: {
         Row: {
           cotacao_id: string
@@ -290,6 +358,7 @@ export type Database = {
           enviado_at: string | null
           fornecedor_id: string
           id: string
+          loja_id: string | null
           numero: number
           status: Database["public"]["Enums"]["pedido_status"]
           total: number | null
@@ -301,6 +370,7 @@ export type Database = {
           enviado_at?: string | null
           fornecedor_id: string
           id?: string
+          loja_id?: string | null
           numero?: number
           status?: Database["public"]["Enums"]["pedido_status"]
           total?: number | null
@@ -312,6 +382,7 @@ export type Database = {
           enviado_at?: string | null
           fornecedor_id?: string
           id?: string
+          loja_id?: string | null
           numero?: number
           status?: Database["public"]["Enums"]["pedido_status"]
           total?: number | null
@@ -329,6 +400,13 @@ export type Database = {
             columns: ["fornecedor_id"]
             isOneToOne: false
             referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
             referencedColumns: ["id"]
           },
         ]
