@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
+import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
