@@ -283,6 +283,25 @@ const FornecedoresPage = () => {
               <Input placeholder="Ex: 30 dias, à vista, 7/14/21" value={form.prazo_pagamento} onChange={(e) => setForm({ ...form, prazo_pagamento: e.target.value })} />
             </div>
             <div><Label>Observações</Label><Input placeholder="Ex: entrega 3x por semana" value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} /></div>
+            {lojas.length > 0 && (
+              <div>
+                <Label>Lojas atendidas</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {lojas.map((l: any) => (
+                    <label key={l.id} className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg cursor-pointer text-sm transition-colors ${selectedLojas.includes(l.id) ? "border-primary bg-accent" : "border-border hover:border-muted-foreground/30"}`}>
+                      <Checkbox
+                        checked={selectedLojas.includes(l.id)}
+                        onCheckedChange={(checked) => {
+                          setSelectedLojas(checked ? [...selectedLojas, l.id] : selectedLojas.filter((x: string) => x !== l.id));
+                        }}
+                      />
+                      {l.nome}
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Selecione quais lojas este fornecedor atende</p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
