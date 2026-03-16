@@ -54,7 +54,7 @@ const ConferenciasPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("conferencias")
-        .select("id, created_at, conferido_por, observacoes, pedido_id, pedidos(numero, total, fornecedor_id, fornecedores(id, nome))")
+        .select("id, created_at, conferido_por, observacoes, pedido_id, pedidos(numero, total, fornecedor_id, loja_id, fornecedores(id, nome), lojas(nome, cnpj, razao_social, inscricao_estadual, endereco))")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data as unknown as ConferenciaRow[]) || [];
