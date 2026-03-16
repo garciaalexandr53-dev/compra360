@@ -4,6 +4,7 @@ import { Outlet, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { LojaSelector } from "@/components/LojaSelector";
 
 export default function AppLayout() {
   const { user, loading, signOut } = useAuth();
@@ -26,7 +27,10 @@ export default function AppLayout() {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-14 flex items-center justify-between border-b px-4 bg-card shadow-sm">
-            <SidebarTrigger />
+            <div className="flex items-center gap-3">
+              <SidebarTrigger />
+              <LojaSelector />
+            </div>
             <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={signOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Sair

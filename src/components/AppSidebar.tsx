@@ -5,11 +5,11 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, Package, Users, ShoppingCart, TrendingUp, History, Link2, UserCheck, BookOpen, ClipboardCheck } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { BarChart3, Package, Users, ShoppingCart, TrendingUp, History, Link2, UserCheck, BookOpen, ClipboardCheck, Store } from "lucide-react";
 
 // Fluxo natural: Preparar → Cotar → Analisar → Pedir
 const prepararMenu = [
+  { title: "Lojas", url: "/lojas", icon: Store, emoji: "🏪" },
   { title: "Banco de Produtos", url: "/produtos", icon: Package, emoji: "🗄️" },
   { title: "Fornecedores", url: "/fornecedores", icon: Users, emoji: "⚙️" },
   { title: "App Funcionários", url: "/funcionarios", icon: UserCheck, emoji: "👥" },
