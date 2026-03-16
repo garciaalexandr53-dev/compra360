@@ -64,7 +64,6 @@ const FornecedoresPage = () => {
     },
   });
 
-  // Links tab data
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
@@ -209,6 +208,12 @@ const FornecedoresPage = () => {
     return lojas.filter((l: any) => lojaIds.includes(l.id)).map((l: any) => l.nome);
   };
 
+  const filteredFornecedores = fornecedores.filter((f) =>
+    !searchTerm ||
+    f.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    f.representante?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="p-5">
       <div className="flex items-center justify-between mb-5">
@@ -219,6 +224,17 @@ const FornecedoresPage = () => {
         <Button onClick={openAdd} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] hover:opacity-90">
           <Plus className="h-4 w-4 mr-2" /> Novo
         </Button>
+      </div>
+
+      {/* Search */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar fornecedor..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-9"
+        />
       </div>
 
       <Tabs defaultValue="cadastro" className="w-full">
@@ -249,13 +265,12 @@ const FornecedoresPage = () => {
                 <TableBody>
                   {isLoading ? (
                     <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Carregando...</TableCell></TableRow>
-                  ) : fornecedores.length === 0 ? (
+                  ) : filteredFornecedores.length === 0 ? (
                     <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                      Nenhum fornecedor cadastrado.
-                      <br />
-                      <Button onClick={openAdd} variant="outline" size="sm" className="mt-3">+ Adicionar primeiro fornecedor</Button>
+                      {searchTerm ? "Nenhum fornecedor encontrado." : "Nenhum fornecedor cadastrado."}
+                      {!searchTerm && <><br /><Button onClick={openAdd} variant="outline" size="sm" className="mt-3">+ Adicionar primeiro fornecedor</Button></>}
                     </TableCell></TableRow>
-                  ) : fornecedores.map((f) => {
+                  ) : filteredFornecedores.map((f) => {
                     const lojaNames = getLojaNames(f.id);
                     return (
                       <TableRow key={f.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => openEdit(f)}>
@@ -314,7 +329,7 @@ const FornecedoresPage = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {fornecedores.map((f) => {
+            {filteredFornecedores.map((f) => {
               const recv = respondidos instanceof Set ? respondidos.has(f.id) : false;
               const count = precoCounts[f.id] || 0;
               return (
@@ -354,9 +369,9 @@ const FornecedoresPage = () => {
             })}
           </div>
 
-          {fornecedores.length === 0 && (
+          {filteredFornecedores.length === 0 && (
             <div className="text-center py-10 text-muted-foreground">
-              Nenhum fornecedor cadastrado. Adicione na aba "Cadastro".
+              {searchTerm ? "Nenhum fornecedor encontrado." : "Nenhum fornecedor cadastrado. Adicione na aba \"Cadastro\"."}
             </div>
           )}
         </TabsContent>
