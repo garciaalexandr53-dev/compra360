@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 const FuncionariosPage = () => {
   const queryClient = useQueryClient();
+  const { lojaAtiva } = useLojaAtiva();
 
   const { data: itens = [], isLoading } = useQuery({
     queryKey: ["itens-faltantes"],
