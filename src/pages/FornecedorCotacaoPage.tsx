@@ -41,8 +41,14 @@ const FornecedorCotacaoPage = () => {
       if (fData) setFornecedorNome(fData.nome);
 
       // Get active cotação products
-      const { data: cotacao } = await supabase.from("cotacoes").select("id").eq("status", "ativa").limit(1).maybeSingle();
+      const { data: cotacao } = await supabase.from("cotacoes").select("id, loja_id").eq("status", "ativa").limit(1).maybeSingle();
       if (!cotacao) { setLoading(false); return; }
+
+      // Get loja name if linked
+      if ((cotacao as any).loja_id) {
+        const { data: lojaData } = await supabase.from("lojas").select("nome").eq("id", (cotacao as any).loja_id).single();
+        if (lojaData) setLojaNome((lojaData as any).nome);
+      }
 
       const { data: cpData } = await supabase
         .from("cotacao_produtos")
