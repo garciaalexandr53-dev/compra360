@@ -10,6 +10,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Pencil, Trash2, Store, Check } from "lucide-react";
 import { toast } from "sonner";
 
+const formatCNPJ = (value: string) => {
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  return digits
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2");
+};
+
 const emptyForm = { nome: "", endereco: "", cnpj: "", razao_social: "", inscricao_estadual: "" };
 
 const LojasPage = () => {
@@ -167,7 +176,7 @@ const LojasPage = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>CNPJ</Label>
-                <Input value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })} placeholder="00.000.000/0000-00" />
+                <Input value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: formatCNPJ(e.target.value) })} placeholder="00.000.000/0000-00" />
               </div>
               <div>
                 <Label>Inscrição Estadual</Label>

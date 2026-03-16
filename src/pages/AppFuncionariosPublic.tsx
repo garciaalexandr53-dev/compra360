@@ -114,8 +114,9 @@ const AppFuncionariosPublic = () => {
           lojaLabel || null,
         ].filter(Boolean).join(" | ") || null,
         registrado_por: (nome.trim() || "Funcionário") + lojaLabel,
+        loja_id: selectedLojaId || (lojas.length === 1 ? lojas[0].id : null),
       }));
-      const { error } = await supabase.from("itens_faltantes").insert(inserts);
+      const { error } = await supabase.from("itens_faltantes").insert(inserts as any);
       if (error) throw error;
       setSent(true);
       toast.success("Lista enviada!");

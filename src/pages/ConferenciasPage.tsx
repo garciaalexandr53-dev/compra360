@@ -24,7 +24,9 @@ interface ConferenciaRow {
     numero: number;
     total: number | null;
     fornecedor_id: string;
+    loja_id: string | null;
     fornecedores: { id: string; nome: string };
+    lojas: { nome: string; cnpj: string | null; razao_social: string | null; inscricao_estadual: string | null; endereco: string | null } | null;
   };
 }
 
@@ -52,7 +54,7 @@ const ConferenciasPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("conferencias")
-        .select("id, created_at, conferido_por, observacoes, pedido_id, pedidos(numero, total, fornecedor_id, fornecedores(id, nome))")
+        .select("id, created_at, conferido_por, observacoes, pedido_id, pedidos(numero, total, fornecedor_id, loja_id, fornecedores(id, nome), lojas(nome, cnpj, razao_social, inscricao_estadual, endereco))")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data as unknown as ConferenciaRow[]) || [];
@@ -343,6 +345,18 @@ const ConferenciasPage = () => {
 
                 {isExpanded && (
                   <CardContent className="pt-0 px-4 pb-4">
+                    {/* Billing data */}
+                    {conf.pedidos?.lojas && (
+                      <div className="bg-muted/50 border rounded-lg p-3 mb-3 text-xs space-y-0.5">
+                        <p className="font-bold text-sm mb-1">📄 Dados para Faturamento</p>
+                        <p><span className="text-muted-foreground">Loja:</span> {conf.pedidos.lojas.nome}</p>
+                        {conf.pedidos.lojas.razao_social && <p><span className="text-muted-foreground">Razão Social:</span> {conf.pedidos.lojas.razao_social}</p>}
+                        {conf.pedidos.lojas.cnpj && <p><span className="text-muted-foreground">CNPJ:</span> {conf.pedidos.lojas.cnpj}</p>}
+                        {conf.pedidos.lojas.inscricao_estadual && <p><span className="text-muted-foreground">IE:</span> {conf.pedidos.lojas.inscricao_estadual}</p>}
+                        {conf.pedidos.lojas.endereco && <p><span className="text-muted-foreground">Endereço:</span> {conf.pedidos.lojas.endereco}</p>}
+                      </div>
+                    )}
+
                     {conf.observacoes && (
                       <p className="text-sm text-muted-foreground mb-3 italic">
                         📝 {conf.observacoes}

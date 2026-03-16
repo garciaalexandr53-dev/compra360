@@ -16,23 +16,15 @@ const FuncionariosPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("itens_faltantes")
-        .select("*")
+        .select("*, lojas(id, nome)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
   });
 
-  const { data: cotacaoAtiva } = useQuery({
-    queryKey: ["cotacao-ativa", lojaAtiva?.id],
-    queryFn: async () => {
-      let query = supabase.from("cotacoes").select("id").eq("status", "ativa");
-      if (lojaAtiva?.id) query = query.eq("loja_id", lojaAtiva.id);
-      else query = query.is("loja_id", null);
-      const { data } = await query.limit(1).maybeSingle();
-      return data;
-    },
-  });
+
+
 
   const pendentes = itens.filter((i: any) => !i.importado);
   const importados = itens.filter((i: any) => i.importado);
@@ -49,7 +41,7 @@ const FuncionariosPage = () => {
       const newItems = itemsToImport.filter((i: any) => !existingNames.has(i.nome.toLowerCase().trim()));
       const dupCount = itemsToImport.length - newItems.length;
 
-      // Insert each unique item into produtos with ativo=true so they appear in cotação
+      // Insert each unique item into produtos with ativo=true
       const inserts = newItems.map((item: any) => ({
         nome: item.nome,
         embalagem: item.observacao?.replace("Embalagem: ", "") || "un",
@@ -61,35 +53,55 @@ const FuncionariosPage = () => {
         if (prodErr) throw prodErr;
       }
 
-      // If there's an active cotação, also add to cotacao_produtos with correct quantities
-      if (cotacaoAtiva) {
-        // Get all products that match imported names (includes previously existing ones)
-        const allNames = itemsToImport.map((i: any) => i.nome);
-        const { data: matchedProds } = await supabase
-          .from("produtos")
-          .select("id, nome")
-          .in("nome", allNames);
+      // Group items by loja_id to add to the correct cotação per store
+      const itemsByLoja = new Map<string, any[]>();
+      for (const item of itemsToImport) {
+        const lid = (item as any).loja_id || lojaAtiva?.id || "__none__";
+        if (!itemsByLoja.has(lid)) itemsByLoja.set(lid, []);
+        itemsByLoja.get(lid)!.push(item);
+      }
 
-        if (matchedProds?.length) {
-          // Check which are already in cotacao_produtos
-          const { data: existingCp } = await supabase
-            .from("cotacao_produtos")
-            .select("produto_id")
-            .eq("cotacao_id", cotacaoAtiva.id);
-          const existingProdIds = new Set((existingCp || []).map((cp) => cp.produto_id));
+      // For each loja group, find the active cotação and add products
+      for (const [lojaId, lojaItems] of itemsByLoja) {
+        let cotacaoId: string | null = null;
+        if (lojaId !== "__none__") {
+          const { data: cot } = await supabase
+            .from("cotacoes")
+            .select("id")
+            .eq("status", "ativa")
+            .eq("loja_id", lojaId)
+            .limit(1)
+            .maybeSingle();
+          cotacaoId = cot?.id || null;
+        }
 
-          const cpInserts = matchedProds
-            .filter((p) => !existingProdIds.has(p.id))
-            .map((p) => {
-              const item = itemsToImport.find((i: any) => i.nome.toLowerCase().trim() === p.nome.toLowerCase().trim());
-              return {
-                cotacao_id: cotacaoAtiva.id,
-                produto_id: p.id,
-                quantidade: item?.quantidade || 1,
-              };
-            });
-          if (cpInserts.length) {
-            await supabase.from("cotacao_produtos").insert(cpInserts);
+        if (cotacaoId) {
+          const allNames = lojaItems.map((i: any) => i.nome);
+          const { data: matchedProds } = await supabase
+            .from("produtos")
+            .select("id, nome")
+            .in("nome", allNames);
+
+          if (matchedProds?.length) {
+            const { data: existingCp } = await supabase
+              .from("cotacao_produtos")
+              .select("produto_id")
+              .eq("cotacao_id", cotacaoId);
+            const existingProdIds = new Set((existingCp || []).map((cp) => cp.produto_id));
+
+            const cpInserts = matchedProds
+              .filter((p) => !existingProdIds.has(p.id))
+              .map((p) => {
+                const item = lojaItems.find((i: any) => i.nome.toLowerCase().trim() === p.nome.toLowerCase().trim());
+                return {
+                  cotacao_id: cotacaoId!,
+                  produto_id: p.id,
+                  quantidade: item?.quantidade || 1,
+                };
+              });
+            if (cpInserts.length) {
+              await supabase.from("cotacao_produtos").insert(cpInserts);
+            }
           }
         }
       }
@@ -217,6 +229,7 @@ const FuncionariosPage = () => {
                   <div className="text-sm font-medium">{item.nome}</div>
                   <div className="text-xs text-muted-foreground">
                     {item.registrado_por && `Por: ${item.registrado_por} · `}
+                    {(item as any).lojas?.nome && `Loja: ${(item as any).lojas.nome} · `}
                     {item.quantidade > 1 && `Qtd: ${item.quantidade} · `}
                     {item.observacao && `${item.observacao} · `}
                     {new Date(item.created_at).toLocaleString("pt-BR")}
