@@ -37,6 +37,7 @@ const MIN_SUPPLIERS_FOR_ANALYSIS = 3;
 
 const CotacaoPage = () => {
   const queryClient = useQueryClient();
+  const { lojaAtiva } = useLojaAtiva();
   const [search, setSearch] = useState("");
   const [localPrices, setLocalPrices] = useState<Record<string, Record<string, string>>>({});
   const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);
@@ -49,9 +50,12 @@ const CotacaoPage = () => {
   const [editingField, setEditingField] = useState<Record<string, { quantidade?: string; embalagem?: string; nome?: string }>>({});
 
   const { data: cotacaoAtiva } = useQuery({
-    queryKey: ["cotacao-ativa"],
+    queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("cotacoes").select("*").eq("status", "ativa").limit(1).maybeSingle();
+      let query = supabase.from("cotacoes").select("*").eq("status", "ativa");
+      if (lojaAtiva?.id) query = query.eq("loja_id", lojaAtiva.id);
+      else query = query.is("loja_id", null);
+      const { data, error } = await query.limit(1).maybeSingle();
       if (error) throw error;
       return data;
     },
