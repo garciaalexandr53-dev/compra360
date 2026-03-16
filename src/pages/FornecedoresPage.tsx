@@ -114,6 +114,7 @@ const FornecedoresPage = () => {
   const openAdd = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setSelectedLojas([]);
     setModalOpen(true);
   };
 
@@ -128,12 +129,13 @@ const FornecedoresPage = () => {
       prazo_pagamento: (f as any).prazo_pagamento || "",
       observacoes: f.observacoes || "",
     });
+    setSelectedLojas(fornecedorLojas.filter((fl: any) => fl.fornecedor_id === f.id).map((fl: any) => fl.loja_id));
     setModalOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.nome.trim()) { toast.error("Digite o nome do fornecedor"); return; }
-    saveMutation.mutate({
+    await saveMutation.mutateAsync({
       nome: form.nome.trim().toUpperCase(),
       representante: form.representante.trim() || null,
       telefone: form.telefone.trim() || null,
