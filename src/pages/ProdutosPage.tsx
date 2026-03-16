@@ -55,9 +55,13 @@ const ProdutosPage = () => {
   });
 
   const { data: cotacaoAtiva } = useQuery({
-    queryKey: ["cotacao-ativa"],
+    queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("cotacoes").select("id").eq("status", "ativa").limit(1).maybeSingle();
+      let query = supabase.from("cotacoes").select("id").eq("status", "ativa").limit(1);
+      if (lojaAtiva?.id) {
+        query = query.eq("loja_id", lojaAtiva.id);
+      }
+      const { data } = await query.maybeSingle();
       return data;
     },
   });
