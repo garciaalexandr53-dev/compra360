@@ -215,7 +215,7 @@ const FornecedorCotacaoPage = () => {
                 inputMode="decimal"
                 placeholder="0,00"
                 value={prices[p.cotacao_produto_id] || ""}
-                onChange={(e) => setPrices({ ...prices, [p.cotacao_produto_id]: e.target.value })}
+                onChange={(e) => handlePriceChange(p.cotacao_produto_id, e.target.value)}
                 className="font-mono text-right text-base font-bold"
               />
             </div>
