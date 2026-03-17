@@ -339,7 +339,10 @@ const FornecedoresPage = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filteredFornecedores.map((f) => {
+            {(cotacaoAtiva && selectedFornecedorIds.length > 0
+              ? filteredFornecedores.filter((f) => selectedFornecedorIds.includes(f.id))
+              : filteredFornecedores
+            ).map((f) => {
               const recv = respondidos instanceof Set ? respondidos.has(f.id) : false;
               const count = precoCounts[f.id] || 0;
               return (
