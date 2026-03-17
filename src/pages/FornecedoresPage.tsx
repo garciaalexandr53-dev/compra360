@@ -101,6 +101,16 @@ const FornecedoresPage = () => {
     },
   });
 
+  // Fornecedores selecionados para participar da cotação ativa
+  const { data: selectedFornecedorIds = [] } = useQuery({
+    queryKey: ["cotacao-fornecedores-ids", cotacaoAtiva?.id],
+    enabled: !!cotacaoAtiva?.id,
+    queryFn: async () => {
+      const { data } = await supabase.from("cotacao_fornecedores").select("fornecedor_id").eq("cotacao_id", cotacaoAtiva!.id);
+      return (data || []).map((d) => d.fornecedor_id);
+    },
+  });
+
   const regenerateTokenMutation = useMutation({
     mutationFn: async (fornecedorId: string) => {
       const newToken = Array.from(crypto.getRandomValues(new Uint8Array(16)))
