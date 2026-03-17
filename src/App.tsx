@@ -19,6 +19,7 @@ import AppFuncionariosPublic from "./pages/AppFuncionariosPublic";
 import ConferenciasPage from "./pages/ConferenciasPage";
 import LojasPage from "./pages/LojasPage";
 import NotFound from "./pages/NotFound";
+import PriceNotificationListener from "./components/PriceNotificationListener";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <PriceNotificationListener />
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
