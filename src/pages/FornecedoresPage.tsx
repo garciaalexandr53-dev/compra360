@@ -382,9 +382,14 @@ const FornecedoresPage = () => {
             })}
           </div>
 
-          {filteredFornecedores.length === 0 && (
+          {(cotacaoAtiva && selectedFornecedorIds.length > 0
+            ? filteredFornecedores.filter((f) => selectedFornecedorIds.includes(f.id))
+            : filteredFornecedores
+          ).length === 0 && (
             <div className="text-center py-10 text-muted-foreground">
-              {searchTerm ? "Nenhum fornecedor encontrado." : "Nenhum fornecedor cadastrado. Adicione na aba \"Cadastro\"."}
+              {cotacaoAtiva && selectedFornecedorIds.length === 0
+                ? "Nenhum fornecedor selecionado na cotação. Selecione os participantes na aba Cotação."
+                : searchTerm ? "Nenhum fornecedor encontrado." : "Nenhum fornecedor cadastrado. Adicione na aba \"Cadastro\"."}
             </div>
           )}
         </TabsContent>
