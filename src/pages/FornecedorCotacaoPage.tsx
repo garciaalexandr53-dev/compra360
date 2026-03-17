@@ -108,6 +108,21 @@ const FornecedorCotacaoPage = () => {
     setLoading(false);
   };
 
+  const formatCurrency = (raw: string): string => {
+    // Remove tudo exceto dígitos
+    const digits = raw.replace(/\D/g, "");
+    if (!digits) return "";
+    const cents = parseInt(digits, 10);
+    const value = (cents / 100).toFixed(2);
+    const [int, dec] = value.split(".");
+    const formattedInt = int.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return `${formattedInt},${dec}`;
+  };
+
+  const handlePriceChange = (cpId: string, raw: string) => {
+    setPrices({ ...prices, [cpId]: formatCurrency(raw) });
+  };
+
   const handleSend = async () => {
     setSending(true);
     try {
@@ -200,7 +215,7 @@ const FornecedorCotacaoPage = () => {
                 inputMode="decimal"
                 placeholder="0,00"
                 value={prices[p.cotacao_produto_id] || ""}
-                onChange={(e) => setPrices({ ...prices, [p.cotacao_produto_id]: e.target.value })}
+                onChange={(e) => handlePriceChange(p.cotacao_produto_id, e.target.value)}
                 className="font-mono text-right text-base font-bold"
               />
             </div>
