@@ -6,27 +6,22 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, Package, Users, ShoppingCart, TrendingUp, History, UserCheck, BookOpen, ClipboardCheck, Store } from "lucide-react";
+import { BarChart3, Package, Users, TrendingUp, History, UserCheck, ClipboardCheck, Store, LayoutDashboard } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-// Fluxo natural: Preparar → Cotar → Analisar → Pedir
-const prepararMenu = [
-  { title: "Lojas", url: "/lojas", icon: Store, emoji: "🏪" },
-  { title: "Banco de Produtos", url: "/produtos", icon: Package, emoji: "🗄️" },
+const mainMenu = [
+  { title: "Painel", url: "/dashboard", icon: LayoutDashboard, emoji: "🏠" },
+  { title: "Produtos", url: "/produtos", icon: Package, emoji: "🗄️" },
   { title: "Fornecedores", url: "/fornecedores", icon: Users, emoji: "⚙️" },
-  { title: "App Funcionários", url: "/funcionarios", icon: UserCheck, emoji: "👥" },
-];
-const cotarMenu = [
   { title: "Cotação", url: "/cotacao", icon: BarChart3, emoji: "📊" },
+  { title: "Análise", url: "/analise", icon: TrendingUp, emoji: "📈" },
 ];
-const analisarMenu = [
-  { title: "Resumo", url: "/resumo", icon: TrendingUp, emoji: "📈" },
-  { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, emoji: "📦" },
+
+const maisMenu = [
+  { title: "Lojas", url: "/lojas", icon: Store, emoji: "🏪" },
+  { title: "App Funcionários", url: "/funcionarios", icon: UserCheck, emoji: "👥" },
   { title: "Conferências", url: "/conferencias", icon: ClipboardCheck, emoji: "📋" },
-];
-const sistemaMenu = [
   { title: "Histórico", url: "/historico", icon: History, emoji: "🕐" },
-  { title: "Como Usar", url: "/guia", icon: BookOpen, emoji: "📖" },
 ];
 
 export function AppSidebar() {
@@ -56,14 +51,6 @@ export function AppSidebar() {
     },
   });
 
-  const { data: fornecedorCount = 0 } = useQuery({
-    queryKey: ["fornecedor-count"],
-    queryFn: async () => {
-      const { count } = await supabase.from("fornecedores").select("*", { count: "exact", head: true });
-      return count || 0;
-    },
-  });
-
   const { data: respostaCount = 0 } = useQuery({
     queryKey: ["resposta-count", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
@@ -84,12 +71,10 @@ export function AppSidebar() {
   };
 
   const handleNavClick = () => {
-    if (isMobile) {
-      setOpenMobile(false);
-    }
+    if (isMobile) setOpenMobile(false);
   };
 
-  const renderMenu = (items: typeof prepararMenu) => (
+  const renderMenu = (items: typeof mainMenu) => (
     <SidebarMenu>
       {items.map((item) => {
         const isActive = location.pathname === item.url || location.pathname.startsWith(item.url + "/");
@@ -135,37 +120,28 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>1. Preparar</SidebarGroupLabel>
-          <SidebarGroupContent>{renderMenu(prepararMenu)}</SidebarGroupContent>
+          <SidebarGroupLabel>Fluxo</SidebarGroupLabel>
+          <SidebarGroupContent>{renderMenu(mainMenu)}</SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>2. Cotar</SidebarGroupLabel>
-          <SidebarGroupContent>{renderMenu(cotarMenu)}</SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>3. Analisar</SidebarGroupLabel>
-          <SidebarGroupContent>{renderMenu(analisarMenu)}</SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Sistema</SidebarGroupLabel>
-          <SidebarGroupContent>{renderMenu(sistemaMenu)}</SidebarGroupContent>
+          <SidebarGroupLabel>Mais</SidebarGroupLabel>
+          <SidebarGroupContent>{renderMenu(maisMenu)}</SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter className="p-3 border-t border-sidebar-border">
-        {!collapsed && (
-          <div className="grid grid-cols-3 gap-1 bg-sidebar-accent/50 border border-sidebar-border rounded-lg p-2.5">
-            <div className="text-center">
-              <span className="block text-[15px] font-bold text-sidebar-foreground">{itemCount}</span>
-              <span className="text-[8.5px] text-sidebar-foreground/35 uppercase tracking-wider">Itens</span>
-            </div>
-            <div className="text-center">
-              <span className="block text-[15px] font-bold text-sidebar-foreground">{fornecedorCount}</span>
-              <span className="text-[8.5px] text-sidebar-foreground/35 uppercase tracking-wider">Forn.</span>
-            </div>
-            <div className="text-center">
-              <span className="block text-[15px] font-bold text-sidebar-foreground">{respostaCount}</span>
-              <span className="text-[8.5px] text-sidebar-foreground/35 uppercase tracking-wider">Resp.</span>
+        {!collapsed && cotacaoAtiva && (
+          <div className="bg-sidebar-accent/50 border border-sidebar-border rounded-lg p-2.5 text-center">
+            <span className="text-[8.5px] text-sidebar-foreground/35 uppercase tracking-wider">Cotação ativa</span>
+            <div className="flex justify-around mt-1">
+              <div className="text-center">
+                <span className="block text-[15px] font-bold text-sidebar-foreground">{itemCount}</span>
+                <span className="text-[8.5px] text-sidebar-foreground/35">Itens</span>
+              </div>
+              <div className="text-center">
+                <span className="block text-[15px] font-bold text-sidebar-foreground">{respostaCount}</span>
+                <span className="text-[8.5px] text-sidebar-foreground/35">Resp.</span>
+              </div>
             </div>
           </div>
         )}

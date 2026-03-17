@@ -8,16 +8,14 @@ import { LojaProvider } from "@/hooks/useLojaAtiva";
 import AppLayout from "./components/AppLayout";
 import LoginPage from "./pages/LoginPage";
 import CotacaoPage from "./pages/CotacaoPage";
-import PedidosPage from "./pages/PedidosPage";
 import ProdutosPage from "./pages/ProdutosPage";
 import FornecedoresPage from "./pages/FornecedoresPage";
 import HistoricoPage from "./pages/HistoricoPage";
-import ResumoPage from "./pages/ResumoPage";
+import DashboardPage from "./pages/DashboardPage";
+import AnalisePage from "./pages/AnalisePage";
 import FornecedorCotacaoPage from "./pages/FornecedorCotacaoPage";
-
 import FuncionariosPage from "./pages/FuncionariosPage";
 import AppFuncionariosPublic from "./pages/AppFuncionariosPublic";
-import GuiaPage from "./pages/GuiaPage";
 import ConferenciasPage from "./pages/ConferenciasPage";
 import LojasPage from "./pages/LojasPage";
 import NotFound from "./pages/NotFound";
@@ -38,20 +36,22 @@ const App = () => (
               <Route path="/app-funcionarios" element={<AppFuncionariosPublic />} />
               
               <Route element={<AppLayout />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/cotacao" element={<CotacaoPage />} />
-                <Route path="/pedidos" element={<PedidosPage />} />
                 <Route path="/produtos" element={<ProdutosPage />} />
                 <Route path="/fornecedores" element={<FornecedoresPage />} />
-                
                 <Route path="/funcionarios" element={<FuncionariosPage />} />
                 <Route path="/historico" element={<HistoricoPage />} />
-                <Route path="/resumo" element={<ResumoPage />} />
+                <Route path="/analise" element={<AnalisePage />} />
                 <Route path="/conferencias" element={<ConferenciasPage />} />
                 <Route path="/lojas" element={<LojasPage />} />
-                <Route path="/guia" element={<GuiaPage />} />
               </Route>
 
-              <Route path="/" element={<Navigate to="/cotacao" replace />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              {/* Legacy redirects */}
+              <Route path="/resumo" element={<Navigate to="/analise" replace />} />
+              <Route path="/pedidos" element={<Navigate to="/analise" replace />} />
+              <Route path="/guia" element={<Navigate to="/dashboard" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
