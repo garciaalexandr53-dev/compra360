@@ -101,6 +101,16 @@ const FornecedoresPage = () => {
     },
   });
 
+  // Fornecedores selecionados para participar da cotação ativa
+  const { data: selectedFornecedorIds = [] } = useQuery({
+    queryKey: ["cotacao-fornecedores-ids", cotacaoAtiva?.id],
+    enabled: !!cotacaoAtiva?.id,
+    queryFn: async () => {
+      const { data } = await supabase.from("cotacao_fornecedores").select("fornecedor_id").eq("cotacao_id", cotacaoAtiva!.id);
+      return (data || []).map((d) => d.fornecedor_id);
+    },
+  });
+
   const regenerateTokenMutation = useMutation({
     mutationFn: async (fornecedorId: string) => {
       const newToken = Array.from(crypto.getRandomValues(new Uint8Array(16)))
@@ -329,7 +339,10 @@ const FornecedoresPage = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filteredFornecedores.map((f) => {
+            {(cotacaoAtiva && selectedFornecedorIds.length > 0
+              ? filteredFornecedores.filter((f) => selectedFornecedorIds.includes(f.id))
+              : filteredFornecedores
+            ).map((f) => {
               const recv = respondidos instanceof Set ? respondidos.has(f.id) : false;
               const count = precoCounts[f.id] || 0;
               return (
@@ -369,9 +382,14 @@ const FornecedoresPage = () => {
             })}
           </div>
 
-          {filteredFornecedores.length === 0 && (
+          {(cotacaoAtiva && selectedFornecedorIds.length > 0
+            ? filteredFornecedores.filter((f) => selectedFornecedorIds.includes(f.id))
+            : filteredFornecedores
+          ).length === 0 && (
             <div className="text-center py-10 text-muted-foreground">
-              {searchTerm ? "Nenhum fornecedor encontrado." : "Nenhum fornecedor cadastrado. Adicione na aba \"Cadastro\"."}
+              {cotacaoAtiva && selectedFornecedorIds.length === 0
+                ? "Nenhum fornecedor selecionado na cotação. Selecione os participantes na aba Cotação."
+                : searchTerm ? "Nenhum fornecedor encontrado." : "Nenhum fornecedor cadastrado. Adicione na aba \"Cadastro\"."}
             </div>
           )}
         </TabsContent>
