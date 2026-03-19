@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { LojaProvider } from "@/hooks/useLojaAtiva";
 import AppLayout from "./components/AppLayout";
 import LoginPage from "./pages/LoginPage";
+import LandingPage from "./pages/LandingPage";
 import CotacaoPage from "./pages/CotacaoPage";
 import ProdutosPage from "./pages/ProdutosPage";
 import FornecedoresPage from "./pages/FornecedoresPage";
@@ -33,6 +34,7 @@ const App = () => (
           <PriceNotificationListener />
           <BrowserRouter>
             <Routes>
+              <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/fornecedor/:token" element={<FornecedorCotacaoPage />} />
               <Route path="/app-funcionarios" element={<AppFuncionariosPublic />} />
@@ -49,7 +51,6 @@ const App = () => (
                 <Route path="/lojas" element={<LojasPage />} />
               </Route>
 
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
               {/* Legacy redirects */}
               <Route path="/resumo" element={<Navigate to="/analise" replace />} />
               <Route path="/pedidos" element={<Navigate to="/analise" replace />} />
