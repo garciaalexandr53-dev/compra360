@@ -225,11 +225,13 @@ Retorne APENAS o JSON, sem markdown.` }
         }
       } catch { /* fallback */ }
 
-      // Map suggestions to cotacao_produto ids
+      // Map suggestions to cotacao_produto ids (fuzzy name matching)
       const mapped = suggestions.map((s: any) => {
-        const match = (cps || []).find((cp: any) => 
-          cp.produtos?.nome?.toLowerCase() === s.nome?.toLowerCase() || cp.produto_id === s.produto_id
-        );
+        const sName = (s.nome || "").toLowerCase().trim();
+        const match = (cps || []).find((cp: any) => {
+          const cpName = (cp.produtos?.nome || "").toLowerCase().trim();
+          return cpName === sName || cpName.includes(sName) || sName.includes(cpName) || cp.produto_id === s.produto_id;
+        });
         return { ...s, cotacao_produto_id: match?.id || null };
       });
 

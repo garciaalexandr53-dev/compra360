@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, ChevronRight, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
@@ -32,6 +32,7 @@ const ProdutosPage = () => {
   const [newCatName, setNewCatName] = useState("");
 
   const [inlineEditing, setInlineEditing] = useState<Record<string, { nome?: string; embalagem?: string }>>({});
+  const [classifying, setClassifying] = useState(false);
 
   const { data: categorias = [] } = useQuery({
     queryKey: ["categorias"],
@@ -214,6 +215,64 @@ const ProdutosPage = () => {
     });
   };
 
+  const autoClassifyProducts = async () => {
+    const uncategorized = produtos.filter((p) => !p.categoria_id);
+    const targets = uncategorized.length > 0 ? uncategorized : filtered;
+    if (!targets.length) {
+      toast.info("Nenhum produto para classificar.");
+      return;
+    }
+    setClassifying(true);
+    try {
+      const existingCatNames = categorias.map((c) => c.nome);
+      const resp = await supabase.functions.invoke("ai-automacao", {
+        body: {
+          type: "classify-products",
+          products: targets.map((p) => ({ nome: p.nome })),
+          existing_categories: existingCatNames,
+        },
+      });
+      if (resp.error) throw new Error(resp.error.message);
+      const classifications = resp.data?.classifications || [];
+      if (!classifications.length) {
+        toast.info("IA não conseguiu classificar os produtos.");
+        setClassifying(false);
+        return;
+      }
+
+      // Build cat map
+      const catMap: Record<string, string> = {};
+      categorias.forEach((c) => { catMap[c.nome.toLowerCase()] = c.id; });
+
+      // Create new categories
+      const allCatNames = classifications.map((c: any) => String(c.categoria || "")).filter((c: string) => c && !catMap[c.toLowerCase()]);
+      const newCats = Array.from(new Set<string>(allCatNames));
+      for (const catName of newCats) {
+        const { data, error } = await supabase.from("categorias").insert([{ nome: catName }]).select("id").single();
+        if (!error && data) catMap[catName.toLowerCase()] = data.id;
+      }
+
+      // Update products
+      let updated = 0;
+      for (const cl of classifications) {
+        const catId = catMap[cl.categoria?.toLowerCase()];
+        if (!catId) continue;
+        const prod = targets.find((p) => p.nome.toLowerCase() === cl.nome?.toLowerCase());
+        if (prod) {
+          const { error } = await supabase.from("produtos").update({ categoria_id: catId }).eq("id", prod.id);
+          if (!error) updated++;
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["produtos"] });
+      queryClient.invalidateQueries({ queryKey: ["categorias"] });
+      toast.success(`🤖 ${updated} produtos classificados pela IA!`);
+    } catch (e: any) {
+      toast.error(e.message || "Erro na classificação automática");
+    }
+    setClassifying(false);
+  };
+
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
       {/* Category sidebar - collapsible */}
@@ -283,6 +342,10 @@ const ProdutosPage = () => {
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
               <Upload className="h-4 w-4 mr-1" /> Importar
+            </Button>
+            <Button variant="outline" size="sm" onClick={autoClassifyProducts} disabled={classifying || produtos.length === 0}>
+              {classifying ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+              {classifying ? "Classificando..." : "🤖 Classificar IA"}
             </Button>
             <Button variant={editMode ? "default" : "outline"} size="sm" onClick={() => setEditMode(!editMode)}>
               {editMode ? <><Check className="h-4 w-4 mr-1" /> Concluir</> : <><Pencil className="h-4 w-4 mr-1" /> Editar</>}
