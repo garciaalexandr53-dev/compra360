@@ -678,6 +678,10 @@ const CotacaoPage = () => {
         <Button variant="outline" size="sm" onClick={exportSuspiciousReport}>
           <FileWarning className="h-4 w-4 mr-1" /> Suspeitos
         </Button>
+        <Button variant="outline" size="sm" onClick={runAiAnalysis} disabled={aiAnalysisLoading}>
+          {aiAnalysisLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+          Análise IA
+        </Button>
         <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
           <Save className="h-4 w-4 mr-1" /> Salvar
         </Button>
