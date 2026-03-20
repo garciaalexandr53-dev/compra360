@@ -546,7 +546,6 @@ const CotacaoPage = () => {
   const saveSupplierSelection = async () => {
     if (!cotacaoAtiva?.id) return;
     const selectedIds = Object.entries(selectedSuppliers).filter(([, v]) => v).map(([id]) => id);
-    // Delete existing and re-insert
     await supabase.from("cotacao_fornecedores").delete().eq("cotacao_id", cotacaoAtiva.id);
     if (selectedIds.length) {
       await supabase.from("cotacao_fornecedores").insert(
@@ -556,6 +555,84 @@ const CotacaoPage = () => {
     queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
     setSupplierModalOpen(false);
     toast.success("Seleção de fornecedores salva!");
+  };
+
+  const runAiAnalysis = async () => {
+    if (!cotacaoAtiva?.id) return;
+    setAiAnalysisOpen(true);
+    setAiAnalysisText("");
+    setAiAnalysisLoading(true);
+
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-precos`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ cotacao_id: cotacaoAtiva.id }),
+        }
+      );
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
+        toast.error(err.error || "Erro na análise de IA");
+        setAiAnalysisLoading(false);
+        return;
+      }
+
+      const reader = resp.body?.getReader();
+      if (!reader) throw new Error("No reader");
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let newlineIdx: number;
+        while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, newlineIdx);
+          buffer = buffer.slice(newlineIdx + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              fullText += content;
+              setAiAnalysisText(fullText);
+            }
+          } catch { /* partial JSON */ }
+        }
+      }
+      // flush remaining
+      if (buffer.trim()) {
+        for (let raw of buffer.split("\n")) {
+          if (!raw || !raw.startsWith("data: ")) continue;
+          const jsonStr = raw.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              fullText += content;
+              setAiAnalysisText(fullText);
+            }
+          } catch { /* ignore */ }
+        }
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Erro na análise");
+    } finally {
+      setAiAnalysisLoading(false);
+    }
   };
 
 
