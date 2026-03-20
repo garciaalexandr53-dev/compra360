@@ -49,6 +49,7 @@ const ConferenciasPage = () => {
   const [filtroDivergencia, setFiltroDivergencia] = useState<string>("todos");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [showFilters, setShowFilters] = useState(false);
 
   const { data: conferencias = [], isLoading } = useQuery({
     queryKey: ["conferencias-historico"],
