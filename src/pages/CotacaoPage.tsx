@@ -715,6 +715,10 @@ const CotacaoPage = () => {
           <FileSpreadsheet className="h-4 w-4 mr-1" /> Importar ERP
         </Button>
 
+        <Button size="sm" onClick={() => setNfImportOpen(true)} variant="outline">
+          <Camera className="h-4 w-4 mr-1" /> OCR NF
+        </Button>
+
         <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
           <Save className="h-4 w-4 mr-1" /> Salvar
         </Button>
