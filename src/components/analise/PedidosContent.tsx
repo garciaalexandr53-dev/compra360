@@ -23,6 +23,7 @@ const PedidosContent = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
   const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
+  const [whatsappAiLoading, setWhatsappAiLoading] = useState<string | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptFornecedor, setReceiptFornecedor] = useState<Fornecedor | null>(null);
   const [receiptItems, setReceiptItems] = useState<OrderItem[]>([]);
