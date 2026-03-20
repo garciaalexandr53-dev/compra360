@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Loader2 } from "lucide-react";
+import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Loader2, Wand2, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
 import * as XLSX from "xlsx";
@@ -55,6 +55,14 @@ const CotacaoPage = () => {
   const [aiAnalysisText, setAiAnalysisText] = useState("");
   const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
   const aiScrollRef = useRef<HTMLDivElement>(null);
+
+  // Quantity suggestion state
+  const [qtySuggestLoading, setQtySuggestLoading] = useState(false);
+  const [qtySuggestions, setQtySuggestions] = useState<{ cotacao_produto_id: string; nome: string; quantidade_sugerida: number; justificativa: string }[]>([]);
+  const [qtySuggestOpen, setQtySuggestOpen] = useState(false);
+
+  // WhatsApp AI state
+  const [whatsappAiLoading, setWhatsappAiLoading] = useState<string | null>(null);
 
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
@@ -557,6 +565,34 @@ const CotacaoPage = () => {
     toast.success("Seleção de fornecedores salva!");
   };
 
+  const runQtySuggestion = async () => {
+    if (!cotacaoAtiva?.id) return;
+    setQtySuggestLoading(true);
+    setQtySuggestOpen(true);
+    setQtySuggestions([]);
+    try {
+      const resp = await supabase.functions.invoke("ai-automacao", {
+        body: { type: "suggest-quantities", cotacao_id: cotacaoAtiva.id, loja_id: lojaAtiva?.id || null },
+      });
+      if (resp.error) throw new Error(resp.error.message);
+      setQtySuggestions(resp.data?.suggestions || []);
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao sugerir quantidades");
+    }
+    setQtySuggestLoading(false);
+  };
+
+  const applyQtySuggestions = async () => {
+    for (const s of qtySuggestions) {
+      if (s.cotacao_produto_id && s.quantidade_sugerida) {
+        await supabase.from("cotacao_produtos").update({ quantidade: s.quantidade_sugerida }).eq("id", s.cotacao_produto_id);
+      }
+    }
+    queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
+    setQtySuggestOpen(false);
+    toast.success("Quantidades atualizadas com sugestões da IA!");
+  };
+
   const runAiAnalysis = async () => {
     if (!cotacaoAtiva?.id) return;
     setAiAnalysisOpen(true);
@@ -681,6 +717,10 @@ const CotacaoPage = () => {
         <Button variant="outline" size="sm" onClick={runAiAnalysis} disabled={aiAnalysisLoading}>
           {aiAnalysisLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
           Análise IA
+        </Button>
+        <Button variant="outline" size="sm" onClick={runQtySuggestion} disabled={qtySuggestLoading}>
+          {qtySuggestLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Wand2 className="h-4 w-4 mr-1" />}
+          Sugerir Qtd
         </Button>
         <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
           <Save className="h-4 w-4 mr-1" /> Salvar
@@ -967,6 +1007,48 @@ const CotacaoPage = () => {
             <Button onClick={runAiAnalysis} disabled={aiAnalysisLoading} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
               {aiAnalysisLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
               Reanalisar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quantity Suggestion Dialog */}
+      <Dialog open={qtySuggestOpen} onOpenChange={setQtySuggestOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wand2 className="h-5 w-5 text-primary" />
+              Sugestão de Quantidades (IA)
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto min-h-[200px]">
+            {qtySuggestLoading && (
+              <div className="flex items-center justify-center gap-3 py-12 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Analisando histórico...</span>
+              </div>
+            )}
+            {!qtySuggestLoading && qtySuggestions.length === 0 && (
+              <p className="text-center text-muted-foreground py-8 text-sm">Nenhuma sugestão disponível.</p>
+            )}
+            {qtySuggestions.length > 0 && (
+              <div className="space-y-2">
+                {qtySuggestions.map((s, i) => (
+                  <div key={i} className="border rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">{s.nome}</span>
+                      <span className="text-primary font-bold text-sm">Qtd: {s.quantidade_sugerida}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{s.justificativa}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setQtySuggestOpen(false)}>Cancelar</Button>
+            <Button onClick={applyQtySuggestions} disabled={!qtySuggestions.length} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
+              Aplicar Sugestões
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Loader2, Sparkles } from "lucide-react";
 import * as XLSX from "xlsx";
 
 interface Props {
@@ -31,6 +32,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
   const [dupCount, setDupCount] = useState(0);
   const [newCatName, setNewCatName] = useState("");
   const [creatingCat, setCreatingCat] = useState(false);
+  const [classifying, setClassifying] = useState(false);
 
   const createCategory = async () => {
     if (!newCatName.trim()) return;
@@ -47,7 +49,33 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
     setCreatingCat(false);
   };
 
-  const processPaste = () => {
+  const autoClassify = async () => {
+    if (!parsedItems.length) return;
+    setClassifying(true);
+    try {
+      const existingCatNames = categorias.map((c) => c.nome);
+      const resp = await supabase.functions.invoke("ai-automacao", {
+        body: { type: "classify-products", products: parsedItems, existing_categories: existingCatNames },
+      });
+      if (resp.error) throw new Error(resp.error.message);
+      const classifications = resp.data?.classifications || [];
+      if (classifications.length) {
+        const updated = parsedItems.map((p) => {
+          const match = classifications.find((c: any) => c.nome?.toLowerCase() === p.nome.toLowerCase());
+          return match?.categoria ? { ...p, categoria: match.categoria } : p;
+        });
+        setParsedItems(updated);
+        toast.success(`🤖 ${classifications.length} produtos classificados por IA!`);
+      } else {
+        toast.info("IA não conseguiu classificar os produtos.");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Erro na classificação automática");
+    }
+    setClassifying(false);
+  };
+
+
     const lines = pasteText
       .split(/\r?\n/)
       .map((l) => l.trim())
@@ -352,9 +380,13 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
         {/* Preview */}
         {parsedItems.length > 0 && (
           <div className="border rounded-lg overflow-hidden mt-3">
-            <div className="px-3 py-2 bg-green-50 border-b text-xs font-bold text-green-700">
-              ✅ {parsedItems.length} produtos prontos para importar
-              {dupCount > 0 && <span className="text-amber-600 ml-2">({dupCount} duplicados serão ignorados)</span>}
+            <div className="px-3 py-2 bg-green-50 border-b text-xs font-bold text-green-700 flex items-center gap-2">
+              <span>✅ {parsedItems.length} produtos prontos para importar</span>
+              {dupCount > 0 && <span className="text-amber-600">({dupCount} duplicados serão ignorados)</span>}
+              <Button size="sm" variant="outline" className="ml-auto text-xs h-6" onClick={autoClassify} disabled={classifying}>
+                {classifying ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                {classifying ? "Classificando..." : "🤖 Classificar IA"}
+              </Button>
             </div>
             <div className="max-h-[200px] overflow-y-auto">
               <table className="w-full text-xs">

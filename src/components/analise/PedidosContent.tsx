@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatBRL, formatNumber } from "@/lib/format";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Printer, FileText } from "lucide-react";
+import { ChevronDown, Printer, FileText, Loader2, MessageSquare } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
@@ -23,6 +23,7 @@ const PedidosContent = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
   const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
+  const [whatsappAiLoading, setWhatsappAiLoading] = useState<string | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptFornecedor, setReceiptFornecedor] = useState<Fornecedor | null>(null);
   const [receiptItems, setReceiptItems] = useState<OrderItem[]>([]);
@@ -177,7 +178,44 @@ const PedidosContent = () => {
     window.open(url, "_blank");
   };
 
-  const openReceipt = async (f: Fornecedor) => {
+  const sendWhatsAppAi = async (f: Fornecedor) => {
+    const items = orders[f.id] || [];
+    if (!items.length) { toast.error("Nenhum item para " + f.nome); return; }
+    const total = items.reduce((s, it) => s + it.total, 0);
+    setWhatsappAiLoading(f.id);
+
+    let pedidoNumero: number | null = null;
+    try {
+      const pedido = await createPedidoMutation.mutateAsync({ fornecedorId: f.id, total });
+      pedidoNumero = (pedido as any).numero || null;
+      queryClient.invalidateQueries({ queryKey: ["pedidos"] });
+    } catch (e) {
+      console.error("Failed to create pedido record", e);
+    }
+
+    try {
+      const resp = await supabase.functions.invoke("ai-automacao", {
+        body: {
+          type: "whatsapp-message",
+          fornecedor_id: f.id,
+          cotacao_id: cotacaoAtiva?.id,
+          loja_id: lojaAtiva?.id,
+          items: items.map((it) => ({ ...it, preco: formatNumber(it.preco), total: it.total.toFixed(2) })),
+        },
+      });
+      if (resp.error) throw new Error(resp.error.message);
+      const msg = resp.data?.message || "";
+      const phone = f.telefone?.replace(/\D/g, "");
+      const url = phone
+        ? `https://api.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(msg)}`
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+      window.open(url, "_blank");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao gerar mensagem IA");
+    }
+    setWhatsappAiLoading(null);
+  };
+
     const items = orders[f.id] || [];
     if (!items.length) { toast.error("Nenhum item para " + f.nome); return; }
     let numero: number | null = null;
@@ -241,6 +279,10 @@ const PedidosContent = () => {
                 </Button>
                 <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={(e) => { e.stopPropagation(); sendWhatsApp(f); }}>
                   📱 Enviar
+                </Button>
+                <Button size="sm" variant="outline" className="text-primary border-primary/30" onClick={(e) => { e.stopPropagation(); sendWhatsAppAi(f); }} disabled={whatsappAiLoading === f.id}>
+                  {whatsappAiLoading === f.id ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <MessageSquare className="h-3.5 w-3.5 mr-1" />}
+                  🤖 IA
                 </Button>
                 <span className={`text-lg font-extrabold font-mono ${minOk ? "text-green-700" : "text-red-600"}`}>
                   {formatBRL(total)}
