@@ -117,8 +117,8 @@ const PedidosContent = () => {
         produto: cp.produtos?.nome || "?",
         embalagem: cp.produtos?.embalagem || "un",
         quantidade: qt,
-        preco: best.preco,
-        total: best.preco * qt,
+        preco: best.preco ?? 0,
+        total: (best.preco ?? 0) * qt,
       });
     });
     return result;
