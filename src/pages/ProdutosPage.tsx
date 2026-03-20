@@ -245,9 +245,9 @@ const ProdutosPage = () => {
       categorias.forEach((c) => { catMap[c.nome.toLowerCase()] = c.id; });
 
       // Create new categories
-      const newCats = [...new Set(classifications.map((c: any) => c.categoria).filter((c: string) => c && !catMap[c.toLowerCase()]))];
+      const newCats: string[] = [...new Set(classifications.map((c: any) => c.categoria as string).filter((c: string) => c && !catMap[c.toLowerCase()]))];
       for (const catName of newCats) {
-        const { data, error } = await supabase.from("categorias").insert({ nome: catName }).select("id").single();
+        const { data, error } = await supabase.from("categorias").insert([{ nome: catName }]).select("id").single();
         if (!error && data) catMap[catName.toLowerCase()] = data.id;
       }
 
