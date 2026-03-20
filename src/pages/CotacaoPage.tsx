@@ -565,6 +565,34 @@ const CotacaoPage = () => {
     toast.success("Seleção de fornecedores salva!");
   };
 
+  const runQtySuggestion = async () => {
+    if (!cotacaoAtiva?.id) return;
+    setQtySuggestLoading(true);
+    setQtySuggestOpen(true);
+    setQtySuggestions([]);
+    try {
+      const resp = await supabase.functions.invoke("ai-automacao", {
+        body: { type: "suggest-quantities", cotacao_id: cotacaoAtiva.id, loja_id: lojaAtiva?.id || null },
+      });
+      if (resp.error) throw new Error(resp.error.message);
+      setQtySuggestions(resp.data?.suggestions || []);
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao sugerir quantidades");
+    }
+    setQtySuggestLoading(false);
+  };
+
+  const applyQtySuggestions = async () => {
+    for (const s of qtySuggestions) {
+      if (s.cotacao_produto_id && s.quantidade_sugerida) {
+        await supabase.from("cotacao_produtos").update({ quantidade: s.quantidade_sugerida }).eq("id", s.cotacao_produto_id);
+      }
+    }
+    queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
+    setQtySuggestOpen(false);
+    toast.success("Quantidades atualizadas com sugestões da IA!");
+  };
+
   const runAiAnalysis = async () => {
     if (!cotacaoAtiva?.id) return;
     setAiAnalysisOpen(true);
