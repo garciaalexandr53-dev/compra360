@@ -380,9 +380,13 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
         {/* Preview */}
         {parsedItems.length > 0 && (
           <div className="border rounded-lg overflow-hidden mt-3">
-            <div className="px-3 py-2 bg-green-50 border-b text-xs font-bold text-green-700">
-              ✅ {parsedItems.length} produtos prontos para importar
-              {dupCount > 0 && <span className="text-amber-600 ml-2">({dupCount} duplicados serão ignorados)</span>}
+            <div className="px-3 py-2 bg-green-50 border-b text-xs font-bold text-green-700 flex items-center gap-2">
+              <span>✅ {parsedItems.length} produtos prontos para importar</span>
+              {dupCount > 0 && <span className="text-amber-600">({dupCount} duplicados serão ignorados)</span>}
+              <Button size="sm" variant="outline" className="ml-auto text-xs h-6" onClick={autoClassify} disabled={classifying}>
+                {classifying ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                {classifying ? "Classificando..." : "🤖 Classificar IA"}
+              </Button>
             </div>
             <div className="max-h-[200px] overflow-y-auto">
               <table className="w-full text-xs">
