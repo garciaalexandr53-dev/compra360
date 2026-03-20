@@ -1011,6 +1011,48 @@ const CotacaoPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Quantity Suggestion Dialog */}
+      <Dialog open={qtySuggestOpen} onOpenChange={setQtySuggestOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wand2 className="h-5 w-5 text-primary" />
+              Sugestão de Quantidades (IA)
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto min-h-[200px]">
+            {qtySuggestLoading && (
+              <div className="flex items-center justify-center gap-3 py-12 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Analisando histórico...</span>
+              </div>
+            )}
+            {!qtySuggestLoading && qtySuggestions.length === 0 && (
+              <p className="text-center text-muted-foreground py-8 text-sm">Nenhuma sugestão disponível.</p>
+            )}
+            {qtySuggestions.length > 0 && (
+              <div className="space-y-2">
+                {qtySuggestions.map((s, i) => (
+                  <div key={i} className="border rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">{s.nome}</span>
+                      <span className="text-primary font-bold text-sm">Qtd: {s.quantidade_sugerida}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{s.justificativa}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setQtySuggestOpen(false)}>Cancelar</Button>
+            <Button onClick={applyQtySuggestions} disabled={!qtySuggestions.length} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
+              Aplicar Sugestões
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
     </TooltipProvider>
   );
