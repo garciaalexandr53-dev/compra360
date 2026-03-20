@@ -272,6 +272,7 @@ const ProdutosPage = () => {
     setClassifying(false);
   };
 
+  return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
       {/* Category sidebar - collapsible */}
       {catSidebarOpen && (
