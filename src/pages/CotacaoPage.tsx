@@ -1069,6 +1069,9 @@ const CotacaoPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ERP Import Modal */}
+      <ImportErpModal open={erpImportOpen} onOpenChange={setErpImportOpen} cotacaoId={cotacaoAtiva.id} />
     </div>
     </TooltipProvider>
   );
