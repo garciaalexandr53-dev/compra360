@@ -343,6 +343,10 @@ const ProdutosPage = () => {
             <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
               <Upload className="h-4 w-4 mr-1" /> Importar
             </Button>
+            <Button variant="outline" size="sm" onClick={autoClassifyProducts} disabled={classifying || produtos.length === 0}>
+              {classifying ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+              {classifying ? "Classificando..." : "🤖 Classificar IA"}
+            </Button>
             <Button variant={editMode ? "default" : "outline"} size="sm" onClick={() => setEditMode(!editMode)}>
               {editMode ? <><Check className="h-4 w-4 mr-1" /> Concluir</> : <><Pencil className="h-4 w-4 mr-1" /> Editar</>}
             </Button>
