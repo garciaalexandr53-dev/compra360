@@ -583,14 +583,20 @@ const CotacaoPage = () => {
   };
 
   const applyQtySuggestions = async () => {
+    let applied = 0;
     for (const s of qtySuggestions) {
       if (s.cotacao_produto_id && s.quantidade_sugerida) {
-        await supabase.from("cotacao_produtos").update({ quantidade: s.quantidade_sugerida }).eq("id", s.cotacao_produto_id);
+        const { error } = await supabase.from("cotacao_produtos").update({ quantidade: s.quantidade_sugerida }).eq("id", s.cotacao_produto_id);
+        if (!error) applied++;
       }
     }
     queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
     setQtySuggestOpen(false);
-    toast.success("Quantidades atualizadas com sugestões da IA!");
+    if (applied > 0) {
+      toast.success(`${applied} quantidades atualizadas com sugestões da IA!`);
+    } else {
+      toast.error("Nenhuma quantidade pôde ser aplicada. Verifique se há produtos na cotação.");
+    }
   };
 
   const runAiAnalysis = async () => {
