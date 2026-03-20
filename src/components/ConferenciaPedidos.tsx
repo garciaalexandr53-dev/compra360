@@ -393,10 +393,28 @@ const ConferenciaPedidos = () => {
             <h2 className="text-base font-bold">Pedido #{selectedPedido.numero}</h2>
             <p className="text-xs text-muted-foreground">{selectedPedido.fornecedor}</p>
           </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={ocrLoading}
+            className="text-xs gap-1.5"
+          >
+            {ocrLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+            OCR NF
+          </Button>
           <Button size="sm" variant="outline" onClick={markAllCorrect} className="text-xs gap-1.5">
             <CheckCheck className="h-3.5 w-3.5" />
             Tudo correto
           </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handleOcrUpload}
+          />
         </div>
 
         {/* Divergence counter */}
