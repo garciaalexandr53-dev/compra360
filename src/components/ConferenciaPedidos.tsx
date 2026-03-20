@@ -53,7 +53,66 @@ const ConferenciaPedidos = () => {
   const [showFaltantes, setShowFaltantes] = useState(false);
   const [faltantes, setFaltantes] = useState<{ nome: string; qtd: number }[]>([]);
   const [conferenciaDone, setConferenciaDone] = useState(false);
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+
+  const handleOcrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Arquivo muito grande. Máximo 10MB.");
+      return;
+    }
+
+    setOcrLoading(true);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await supabase.functions.invoke("ocr-nota-fiscal", {
+        body: { image_base64: base64, mode: "conferencia" },
+      });
+
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+
+      const ocrItems: { produto: string; quantidade: number; preco_unitario: number }[] = data.result || [];
+      if (!ocrItems.length) {
+        toast.warning("Nenhum item encontrado na nota fiscal.");
+        return;
+      }
+
+      // Match OCR items to conference items by fuzzy name
+      let matched = 0;
+      const updatedItems = [...items];
+      for (const ocr of ocrItems) {
+        const ocrName = (ocr.produto || "").toLowerCase().trim();
+        const idx = updatedItems.findIndex((item) => {
+          const itemName = item.produto_nome.toLowerCase().trim();
+          return itemName.includes(ocrName) || ocrName.includes(itemName) ||
+            itemName.split(" ").some(w => w.length > 3 && ocrName.includes(w));
+        });
+        if (idx >= 0) {
+          if (ocr.quantidade != null) updatedItems[idx].quantidade_recebida = ocr.quantidade;
+          if (ocr.preco_unitario != null) updatedItems[idx].preco_nf = ocr.preco_unitario;
+          matched++;
+        }
+      }
+
+      setItems(updatedItems);
+      toast.success(`OCR: ${matched} de ${ocrItems.length} itens preenchidos automaticamente`);
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao processar nota fiscal");
+    } finally {
+      setOcrLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   // Fetch pedidos with status 'enviado'
   const { data: pedidos = [], isLoading } = useQuery({
