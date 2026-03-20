@@ -34,7 +34,7 @@ serve(async (req) => {
       const itemsList = (items || []).map((it: any, i: number) =>
         `${i+1}. ${it.produto} | Emb: ${it.embalagem} | Qtd: ${it.quantidade} | R$ ${it.preco} | Subtotal: R$ ${it.total}`
       ).join("\n");
-      const totalGeral = (items || []).reduce((s: number, it: any) => s + (it.total || 0), 0);
+      const totalGeral = Number((items || []).reduce((s: number, it: any) => s + (Number(it.total) || 0), 0)) || 0;
 
       const prompt = `Você é o assistente CotaFácil. Gere uma mensagem de WhatsApp profissional e amigável para enviar um pedido de compra ao fornecedor.
 
