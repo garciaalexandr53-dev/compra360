@@ -32,6 +32,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
   const [dupCount, setDupCount] = useState(0);
   const [newCatName, setNewCatName] = useState("");
   const [creatingCat, setCreatingCat] = useState(false);
+  const [classifying, setClassifying] = useState(false);
 
   const createCategory = async () => {
     if (!newCatName.trim()) return;
