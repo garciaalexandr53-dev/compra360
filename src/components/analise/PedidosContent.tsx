@@ -280,6 +280,10 @@ const PedidosContent = () => {
                 <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={(e) => { e.stopPropagation(); sendWhatsApp(f); }}>
                   📱 Enviar
                 </Button>
+                <Button size="sm" variant="outline" className="text-primary border-primary/30" onClick={(e) => { e.stopPropagation(); sendWhatsAppAi(f); }} disabled={whatsappAiLoading === f.id}>
+                  {whatsappAiLoading === f.id ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <MessageSquare className="h-3.5 w-3.5 mr-1" />}
+                  🤖 IA
+                </Button>
                 <span className={`text-lg font-extrabold font-mono ${minOk ? "text-green-700" : "text-red-600"}`}>
                   {formatBRL(total)}
                 </span>
