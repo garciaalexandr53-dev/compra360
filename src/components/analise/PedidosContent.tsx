@@ -216,6 +216,7 @@ const PedidosContent = () => {
     setWhatsappAiLoading(null);
   };
 
+  const openReceipt = async (f: Fornecedor) => {
     const items = orders[f.id] || [];
     if (!items.length) { toast.error("Nenhum item para " + f.nome); return; }
     let numero: number | null = null;
