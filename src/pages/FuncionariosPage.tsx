@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Trash2, Download, ExternalLink, Package } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Trash2, Download, ExternalLink, Package, MoreHorizontal } from "lucide-react";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { toast } from "sonner";
 
@@ -163,36 +164,26 @@ const FuncionariosPage = () => {
   };
 
   return (
-    <div className="p-5">
-      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-        <div>
-          <h1 className="text-xl font-bold">👥 App Funcionários</h1>
-          <p className="text-sm text-muted-foreground">
-            Funcionários registram itens faltantes sem acessar o sistema.
-          </p>
+    <div className="p-5 space-y-3">
+      {/* Compact header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-bold">App Funcionários</h1>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{pendentes.length} pendentes</span>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={copyLink}>
-            📋 Copiar Link
-          </Button>
-          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={openWhatsApp}>
-            📱 WhatsApp
-          </Button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={copyLink}>📋 Copiar Link</DropdownMenuItem>
+            <DropdownMenuItem onClick={openWhatsApp}>📱 Enviar WhatsApp</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* Link card */}
-      <div className="bg-card border rounded-xl p-4 mb-5 shadow-sm">
-        <div className="flex items-center gap-3 mb-3">
-          <ExternalLink className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-bold">Link do App</span>
-        </div>
-        <div className="bg-muted rounded-lg p-3 font-mono text-xs break-all mb-3">{appUrl}</div>
-        <p className="text-xs text-muted-foreground">
-          Compartilhe este link com os funcionários. Eles abrem no celular, digitam os itens faltantes e enviam.
-          Você importa a lista aqui para o Banco de Produtos e monta a cotação.
-        </p>
-      </div>
+      {/* Inline link */}
+      <div className="bg-muted rounded-lg p-2 font-mono text-[10px] break-all">{appUrl}</div>
 
       {/* Pending items */}
       <div className="bg-card border rounded-xl shadow-sm overflow-hidden mb-5">

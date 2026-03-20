@@ -6,18 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { Search, ChevronDown, ChevronUp, Trash2, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -147,41 +141,48 @@ const HistoricoPage = () => {
   };
 
   return (
-    <div className="p-5">
-      <div className="flex items-center justify-between mb-5">
-        <h1 className="text-xl font-bold">🕐 Histórico de Cotações</h1>
+    <div className="p-5 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-bold">Histórico</h1>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{cotacoes.length}</span>
+        </div>
         {cotacoes.length > 0 && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10">
-                <Trash2 className="h-4 w-4 mr-1" /> Limpar Histórico
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>⚠️ Limpar todo o histórico?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Isso irá remover permanentemente <strong>{cotacoes.length} cotação(ões)</strong> finalizadas e todos os preços associados. Esta ação não pode ser desfeita.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => clearHistoryMutation.mutate()}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  Sim, limpar tudo
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                    <Trash2 className="h-4 w-4 mr-2" /> Limpar Histórico
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Limpar todo o histórico?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Isso irá remover {cotacoes.length} cotação(ões) e todos os preços associados.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => clearHistoryMutation.mutate()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Limpar tudo
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 
       <Tabs defaultValue="cotacoes">
-        <TabsList className="w-full mb-4">
-          <TabsTrigger value="cotacoes" className="flex-1">📋 Por Cotação</TabsTrigger>
-          <TabsTrigger value="itens" className="flex-1">🔍 Buscar por Item</TabsTrigger>
+        <TabsList className="w-full">
+          <TabsTrigger value="cotacoes" className="flex-1 text-xs">Por Cotação</TabsTrigger>
+          <TabsTrigger value="itens" className="flex-1 text-xs">Buscar Item</TabsTrigger>
         </TabsList>
 
         <TabsContent value="cotacoes" className="space-y-3">
