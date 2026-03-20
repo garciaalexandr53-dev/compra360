@@ -7,12 +7,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Loader2, Wand2, MessageSquare, MoreHorizontal, FileSpreadsheet, RotateCcw } from "lucide-react";
+import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Loader2, Wand2, MessageSquare, MoreHorizontal, FileSpreadsheet, RotateCcw, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
 import * as XLSX from "xlsx";
 import ReactMarkdown from "react-markdown";
 import ImportErpModal from "@/components/ImportErpModal";
+import ImportNfModal from "@/components/ImportNfModal";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 
@@ -68,6 +69,7 @@ const CotacaoPage = () => {
 
   // ERP Import state
   const [erpImportOpen, setErpImportOpen] = useState(false);
+  const [nfImportOpen, setNfImportOpen] = useState(false);
 
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
@@ -713,6 +715,10 @@ const CotacaoPage = () => {
           <FileSpreadsheet className="h-4 w-4 mr-1" /> Importar ERP
         </Button>
 
+        <Button size="sm" onClick={() => setNfImportOpen(true)} variant="outline">
+          <Camera className="h-4 w-4 mr-1" /> OCR NF
+        </Button>
+
         <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
           <Save className="h-4 w-4 mr-1" /> Salvar
         </Button>
@@ -1072,6 +1078,15 @@ const CotacaoPage = () => {
 
       {/* ERP Import Modal */}
       <ImportErpModal open={erpImportOpen} onOpenChange={setErpImportOpen} cotacaoId={cotacaoAtiva.id} />
+      <ImportNfModal
+        open={nfImportOpen}
+        onOpenChange={setNfImportOpen}
+        onImported={() => {
+          queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
+          queryClient.invalidateQueries({ queryKey: ["produtos"] });
+          queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
+        }}
+      />
     </div>
     </TooltipProvider>
   );
