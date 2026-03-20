@@ -49,7 +49,33 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
     setCreatingCat(false);
   };
 
-  const processPaste = () => {
+  const autoClassify = async () => {
+    if (!parsedItems.length) return;
+    setClassifying(true);
+    try {
+      const existingCatNames = categorias.map((c) => c.nome);
+      const resp = await supabase.functions.invoke("ai-automacao", {
+        body: { type: "classify-products", products: parsedItems, existing_categories: existingCatNames },
+      });
+      if (resp.error) throw new Error(resp.error.message);
+      const classifications = resp.data?.classifications || [];
+      if (classifications.length) {
+        const updated = parsedItems.map((p) => {
+          const match = classifications.find((c: any) => c.nome?.toLowerCase() === p.nome.toLowerCase());
+          return match?.categoria ? { ...p, categoria: match.categoria } : p;
+        });
+        setParsedItems(updated);
+        toast.success(`🤖 ${classifications.length} produtos classificados por IA!`);
+      } else {
+        toast.info("IA não conseguiu classificar os produtos.");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Erro na classificação automática");
+    }
+    setClassifying(false);
+  };
+
+
     const lines = pasteText
       .split(/\r?\n/)
       .map((l) => l.trim())
