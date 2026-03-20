@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Save, RefreshCw, FileWarning, Filter, Users } from "lucide-react";
+import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
 import * as XLSX from "xlsx";
+import ReactMarkdown from "react-markdown";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 
@@ -48,6 +49,12 @@ const CotacaoPage = () => {
   const [selectedSuppliers, setSelectedSuppliers] = useState<Record<string, boolean>>({});
 
   const [editingField, setEditingField] = useState<Record<string, { quantidade?: string; embalagem?: string; nome?: string }>>({});
+
+  // AI Analysis state
+  const [aiAnalysisOpen, setAiAnalysisOpen] = useState(false);
+  const [aiAnalysisText, setAiAnalysisText] = useState("");
+  const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
+  const aiScrollRef = useRef<HTMLDivElement>(null);
 
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
@@ -539,7 +546,6 @@ const CotacaoPage = () => {
   const saveSupplierSelection = async () => {
     if (!cotacaoAtiva?.id) return;
     const selectedIds = Object.entries(selectedSuppliers).filter(([, v]) => v).map(([id]) => id);
-    // Delete existing and re-insert
     await supabase.from("cotacao_fornecedores").delete().eq("cotacao_id", cotacaoAtiva.id);
     if (selectedIds.length) {
       await supabase.from("cotacao_fornecedores").insert(
@@ -549,6 +555,84 @@ const CotacaoPage = () => {
     queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
     setSupplierModalOpen(false);
     toast.success("Seleção de fornecedores salva!");
+  };
+
+  const runAiAnalysis = async () => {
+    if (!cotacaoAtiva?.id) return;
+    setAiAnalysisOpen(true);
+    setAiAnalysisText("");
+    setAiAnalysisLoading(true);
+
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-precos`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ cotacao_id: cotacaoAtiva.id }),
+        }
+      );
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
+        toast.error(err.error || "Erro na análise de IA");
+        setAiAnalysisLoading(false);
+        return;
+      }
+
+      const reader = resp.body?.getReader();
+      if (!reader) throw new Error("No reader");
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let newlineIdx: number;
+        while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, newlineIdx);
+          buffer = buffer.slice(newlineIdx + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              fullText += content;
+              setAiAnalysisText(fullText);
+            }
+          } catch { /* partial JSON */ }
+        }
+      }
+      // flush remaining
+      if (buffer.trim()) {
+        for (let raw of buffer.split("\n")) {
+          if (!raw || !raw.startsWith("data: ")) continue;
+          const jsonStr = raw.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              fullText += content;
+              setAiAnalysisText(fullText);
+            }
+          } catch { /* ignore */ }
+        }
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Erro na análise");
+    } finally {
+      setAiAnalysisLoading(false);
+    }
   };
 
 
@@ -593,6 +677,10 @@ const CotacaoPage = () => {
         </Button>
         <Button variant="outline" size="sm" onClick={exportSuspiciousReport}>
           <FileWarning className="h-4 w-4 mr-1" /> Suspeitos
+        </Button>
+        <Button variant="outline" size="sm" onClick={runAiAnalysis} disabled={aiAnalysisLoading}>
+          {aiAnalysisLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+          Análise IA
         </Button>
         <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
           <Save className="h-4 w-4 mr-1" /> Salvar
@@ -851,6 +939,38 @@ const CotacaoPage = () => {
           </DialogFooter>
         </DialogContent>
        </Dialog>
+
+      {/* AI Analysis Dialog */}
+      <Dialog open={aiAnalysisOpen} onOpenChange={setAiAnalysisOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Análise Inteligente de Preços
+            </DialogTitle>
+          </DialogHeader>
+          <div ref={aiScrollRef} className="flex-1 overflow-y-auto pr-2 min-h-[200px]">
+            {aiAnalysisLoading && !aiAnalysisText && (
+              <div className="flex items-center justify-center gap-3 py-12 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Analisando preços com IA...</span>
+              </div>
+            )}
+            {aiAnalysisText && (
+              <div className="prose prose-sm max-w-none dark:prose-invert">
+                <ReactMarkdown>{aiAnalysisText}</ReactMarkdown>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAiAnalysisOpen(false)}>Fechar</Button>
+            <Button onClick={runAiAnalysis} disabled={aiAnalysisLoading} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
+              {aiAnalysisLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+              Reanalisar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
     </TooltipProvider>
   );
