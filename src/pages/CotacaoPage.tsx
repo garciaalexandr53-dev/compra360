@@ -1078,6 +1078,15 @@ const CotacaoPage = () => {
 
       {/* ERP Import Modal */}
       <ImportErpModal open={erpImportOpen} onOpenChange={setErpImportOpen} cotacaoId={cotacaoAtiva.id} />
+      <ImportNfModal
+        open={nfImportOpen}
+        onOpenChange={setNfImportOpen}
+        onImported={() => {
+          queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
+          queryClient.invalidateQueries({ queryKey: ["produtos"] });
+          queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
+        }}
+      />
     </div>
     </TooltipProvider>
   );
