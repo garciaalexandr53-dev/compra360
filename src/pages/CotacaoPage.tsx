@@ -718,6 +718,10 @@ const CotacaoPage = () => {
           {aiAnalysisLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
           Análise IA
         </Button>
+        <Button variant="outline" size="sm" onClick={runQtySuggestion} disabled={qtySuggestLoading}>
+          {qtySuggestLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Wand2 className="h-4 w-4 mr-1" />}
+          Sugerir Qtd
+        </Button>
         <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
           <Save className="h-4 w-4 mr-1" /> Salvar
         </Button>
