@@ -117,8 +117,8 @@ const PedidosContent = () => {
         produto: cp.produtos?.nome || "?",
         embalagem: cp.produtos?.embalagem || "un",
         quantidade: qt,
-        preco: best.preco,
-        total: best.preco * qt,
+        preco: best.preco ?? 0,
+        total: (best.preco ?? 0) * qt,
       });
     });
     return result;
@@ -216,6 +216,7 @@ const PedidosContent = () => {
     setWhatsappAiLoading(null);
   };
 
+  const openReceipt = async (f: Fornecedor) => {
     const items = orders[f.id] || [];
     if (!items.length) { toast.error("Nenhum item para " + f.nome); return; }
     let numero: number | null = null;
