@@ -156,7 +156,6 @@ const ConferenciasPage = () => {
     );
   }
 
-  const [showFilters, setShowFilters] = useState(false);
 
   return (
     <div className="space-y-3">
