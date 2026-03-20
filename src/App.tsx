@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { LojaProvider } from "@/hooks/useLojaAtiva";
+import { ThemeProvider } from "@/hooks/useTheme";
 import AppLayout from "./components/AppLayout";
 import LoginPage from "./pages/LoginPage";
 import LandingPage from "./pages/LandingPage";
