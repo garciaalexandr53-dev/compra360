@@ -66,6 +66,9 @@ const CotacaoPage = () => {
   // WhatsApp AI state
   const [whatsappAiLoading, setWhatsappAiLoading] = useState<string | null>(null);
 
+  // ERP Import state
+  const [erpImportOpen, setErpImportOpen] = useState(false);
+
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
