@@ -32,6 +32,7 @@ const ProdutosPage = () => {
   const [newCatName, setNewCatName] = useState("");
 
   const [inlineEditing, setInlineEditing] = useState<Record<string, { nome?: string; embalagem?: string }>>({});
+  const [classifying, setClassifying] = useState(false);
 
   const { data: categorias = [] } = useQuery({
     queryKey: ["categorias"],
