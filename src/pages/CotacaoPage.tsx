@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Loader2, Wand2, MessageSquare } from "lucide-react";
+import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Loader2, Wand2, MessageSquare, MoreHorizontal, FileSpreadsheet, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
 import * as XLSX from "xlsx";
 import ReactMarkdown from "react-markdown";
+import ImportErpModal from "@/components/ImportErpModal";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 
@@ -63,6 +65,9 @@ const CotacaoPage = () => {
 
   // WhatsApp AI state
   const [whatsappAiLoading, setWhatsappAiLoading] = useState<string | null>(null);
+
+  // ERP Import state
+  const [erpImportOpen, setErpImportOpen] = useState(false);
 
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
@@ -697,48 +702,53 @@ const CotacaoPage = () => {
   return (
     <TooltipProvider>
     <div className="flex flex-col h-[calc(100vh-3.5rem)]">
-      {/* Toolbar */}
-      <div className="p-3 border-b bg-card flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[160px] max-w-xs">
+      {/* Toolbar — simplified */}
+      <div className="p-3 border-b bg-card flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[140px] max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar produto..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
-        <Button
-          variant={filterAnomalies ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilterAnomalies(!filterAnomalies)}
-          className={filterAnomalies ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : ""}
-        >
-          <Filter className="h-4 w-4 mr-1" /> {filterAnomalies ? "Anomalias" : "Filtrar ▲▼"}
+
+        <Button size="sm" onClick={() => setErpImportOpen(true)} variant="outline">
+          <FileSpreadsheet className="h-4 w-4 mr-1" /> Importar ERP
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setSupplierModalOpen(true)}>
-          <Users className="h-4 w-4 mr-1" /> Fornecedores ({fornecedores.length})
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries()}>
-          <RefreshCw className="h-4 w-4 mr-1" /> Atualizar
-        </Button>
-        <Button variant="outline" size="sm" onClick={exportSuspiciousReport}>
-          <FileWarning className="h-4 w-4 mr-1" /> Suspeitos
-        </Button>
-        <Button variant="outline" size="sm" onClick={runAiAnalysis} disabled={aiAnalysisLoading}>
-          {aiAnalysisLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
-          Análise IA
-        </Button>
-        <Button variant="outline" size="sm" onClick={runQtySuggestion} disabled={qtySuggestLoading}>
-          {qtySuggestLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Wand2 className="h-4 w-4 mr-1" />}
-          Sugerir Qtd
-        </Button>
+
         <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
           <Save className="h-4 w-4 mr-1" /> Salvar
         </Button>
-      </div>
 
-      {/* Nova cotação strip */}
-      <div className="px-4 py-2.5 bg-amber-50 border-b border-amber-100 flex items-center gap-3 flex-wrap">
-        <p className="text-xs text-amber-700 flex-1">💡 Inicie uma nova rodada — salva o histórico e limpa os preços.</p>
-        <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs" onClick={() => setNovaCotacaoOpen(true)}>
-          🔄 Nova Cotação
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="px-2">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuItem onClick={() => setSupplierModalOpen(true)}>
+              <Users className="h-4 w-4 mr-2" /> Fornecedores ({fornecedores.length})
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setFilterAnomalies(!filterAnomalies)}>
+              <Filter className="h-4 w-4 mr-2" /> {filterAnomalies ? "✓ Filtro anomalias" : "Filtrar anomalias"}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={exportSuspiciousReport}>
+              <FileWarning className="h-4 w-4 mr-2" /> Relatório suspeitos
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={runAiAnalysis} disabled={aiAnalysisLoading}>
+              <Sparkles className="h-4 w-4 mr-2" /> Análise IA
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={runQtySuggestion} disabled={qtySuggestLoading}>
+              <Wand2 className="h-4 w-4 mr-2" /> Sugerir quantidades
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => queryClient.invalidateQueries()}>
+              <RefreshCw className="h-4 w-4 mr-2" /> Atualizar dados
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setNovaCotacaoOpen(true)}>
+              <RotateCcw className="h-4 w-4 mr-2" /> Nova cotação
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Legend */}
@@ -1059,6 +1069,9 @@ const CotacaoPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ERP Import Modal */}
+      <ImportErpModal open={erpImportOpen} onOpenChange={setErpImportOpen} cotacaoId={cotacaoAtiva.id} />
     </div>
     </TooltipProvider>
   );
