@@ -178,7 +178,44 @@ const PedidosContent = () => {
     window.open(url, "_blank");
   };
 
-  const openReceipt = async (f: Fornecedor) => {
+  const sendWhatsAppAi = async (f: Fornecedor) => {
+    const items = orders[f.id] || [];
+    if (!items.length) { toast.error("Nenhum item para " + f.nome); return; }
+    const total = items.reduce((s, it) => s + it.total, 0);
+    setWhatsappAiLoading(f.id);
+
+    let pedidoNumero: number | null = null;
+    try {
+      const pedido = await createPedidoMutation.mutateAsync({ fornecedorId: f.id, total });
+      pedidoNumero = (pedido as any).numero || null;
+      queryClient.invalidateQueries({ queryKey: ["pedidos"] });
+    } catch (e) {
+      console.error("Failed to create pedido record", e);
+    }
+
+    try {
+      const resp = await supabase.functions.invoke("ai-automacao", {
+        body: {
+          type: "whatsapp-message",
+          fornecedor_id: f.id,
+          cotacao_id: cotacaoAtiva?.id,
+          loja_id: lojaAtiva?.id,
+          items: items.map((it) => ({ ...it, preco: formatNumber(it.preco), total: it.total.toFixed(2) })),
+        },
+      });
+      if (resp.error) throw new Error(resp.error.message);
+      const msg = resp.data?.message || "";
+      const phone = f.telefone?.replace(/\D/g, "");
+      const url = phone
+        ? `https://api.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(msg)}`
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+      window.open(url, "_blank");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao gerar mensagem IA");
+    }
+    setWhatsappAiLoading(null);
+  };
+
     const items = orders[f.id] || [];
     if (!items.length) { toast.error("Nenhum item para " + f.nome); return; }
     let numero: number | null = null;
