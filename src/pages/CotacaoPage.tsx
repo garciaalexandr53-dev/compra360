@@ -50,6 +50,12 @@ const CotacaoPage = () => {
 
   const [editingField, setEditingField] = useState<Record<string, { quantidade?: string; embalagem?: string; nome?: string }>>({});
 
+  // AI Analysis state
+  const [aiAnalysisOpen, setAiAnalysisOpen] = useState(false);
+  const [aiAnalysisText, setAiAnalysisText] = useState("");
+  const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
+  const aiScrollRef = useRef<HTMLDivElement>(null);
+
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
