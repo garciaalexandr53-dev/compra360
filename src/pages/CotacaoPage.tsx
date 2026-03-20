@@ -13,6 +13,7 @@ import { formatBRL, formatNumber } from "@/lib/format";
 import * as XLSX from "xlsx";
 import ReactMarkdown from "react-markdown";
 import ImportErpModal from "@/components/ImportErpModal";
+import ImportNfModal from "@/components/ImportNfModal";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 
