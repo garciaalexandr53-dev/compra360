@@ -227,25 +227,21 @@ const FornecedoresPage = () => {
 
   return (
     <div className="p-5">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-xl font-bold">Fornecedores</h1>
-          <p className="text-sm text-muted-foreground">{fornecedores.length} fornecedor{fornecedores.length !== 1 ? "es" : ""}</p>
+      {/* Toolbar */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar fornecedor..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
         </div>
-        <Button onClick={openAdd} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] hover:opacity-90">
-          <Plus className="h-4 w-4 mr-2" /> Novo
+        <span className="text-sm text-muted-foreground whitespace-nowrap">{fornecedores.length}</span>
+        <Button size="sm" onClick={openAdd}>
+          <Plus className="h-4 w-4 mr-1" /> Novo
         </Button>
-      </div>
-
-      {/* Search */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar fornecedor..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-9"
-        />
       </div>
 
       <Tabs defaultValue="cadastro" className="w-full">
@@ -254,7 +250,7 @@ const FornecedoresPage = () => {
             <Users className="h-4 w-4" /> Cadastro
           </TabsTrigger>
           <TabsTrigger value="links" className="flex items-center gap-2">
-            <Link2 className="h-4 w-4" /> Links de Cotação
+            <Link2 className="h-4 w-4" /> Links
           </TabsTrigger>
         </TabsList>
 

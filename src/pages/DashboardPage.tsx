@@ -113,80 +113,53 @@ const DashboardPage = () => {
   ];
 
   return (
-    <div className="p-5 max-w-3xl mx-auto">
-      {/* Status header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">
-          Painel
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {cotacaoAtiva
-            ? `Cotação ativa: ${cotacaoAtiva.nome}`
-            : "Nenhuma cotação ativa — crie uma na aba Cotação"}
-        </p>
+    <div className="p-5 max-w-2xl mx-auto">
+      {/* Status */}
+      <p className="text-sm text-muted-foreground mb-4">
+        {cotacaoAtiva
+          ? `Cotação ativa: ${cotacaoAtiva.nome}`
+          : "Nenhuma cotação ativa — crie uma na aba Cotação"}
+      </p>
+
+      {/* Steps */}
+      <div className="space-y-2 mb-5">
+        {steps.map((step) => (
+          <button
+            key={step.num}
+            onClick={step.action}
+            className="w-full flex items-center gap-3 p-3 bg-card border rounded-lg hover:bg-muted/50 transition-colors text-left group"
+          >
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+              step.done ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+            }`}>
+              {step.done ? <CheckCircle2 className="h-4 w-4" /> : step.num}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-foreground">{step.label}</div>
+              <div className="text-xs text-muted-foreground">{step.desc}</div>
+            </div>
+            <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+          </button>
+        ))}
       </div>
 
-      {/* Wizard steps */}
-      <div className="bg-card border rounded-xl p-5 shadow-sm mb-5">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Fluxo de Cotação</h2>
-        <div className="space-y-3">
-          {steps.map((step) => (
-            <button
-              key={step.num}
-              onClick={step.action}
-              className="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors text-left group"
-            >
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 transition-colors ${
-                step.done
-                  ? "bg-green-100 text-green-700"
-                  : "bg-muted text-muted-foreground"
-              }`}>
-                {step.done ? <CheckCircle2 className="h-5 w-5" /> : step.num}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-foreground">{step.label}</div>
-                <div className="text-xs text-muted-foreground">{step.desc}</div>
-              </div>
-              <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                Abrir →
-              </span>
+      {/* Alerts */}
+      {(itensFaltantes > 0 || pedidosPendentes > 0) && (
+        <div className="space-y-2">
+          {itensFaltantes > 0 && (
+            <button onClick={() => navigate("/funcionarios")} className="w-full flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-left hover:shadow-sm transition-shadow">
+              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+              <span className="text-sm text-amber-800">{itensFaltantes} item(ns) faltantes aguardando importação</span>
             </button>
-          ))}
+          )}
+          {pedidosPendentes > 0 && (
+            <button onClick={() => navigate("/analise")} className="w-full flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-left hover:shadow-sm transition-shadow">
+              <Clock className="h-4 w-4 text-blue-600 shrink-0" />
+              <span className="text-sm text-blue-800">{pedidosPendentes} pedido(s) aguardando confirmação</span>
+            </button>
+          )}
         </div>
-      </div>
-
-      {/* Alert cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {itensFaltantes > 0 && (
-          <button
-            onClick={() => navigate("/funcionarios")}
-            className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              <span className="text-sm font-bold text-amber-800">Itens Faltantes</span>
-            </div>
-            <p className="text-xs text-amber-700">
-              {itensFaltantes} item(ns) aguardando importação
-            </p>
-          </button>
-        )}
-
-        {pedidosPendentes > 0 && (
-          <button
-            onClick={() => navigate("/analise")}
-            className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-left hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <Clock className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-bold text-blue-800">Pedidos Enviados</span>
-            </div>
-            <p className="text-xs text-blue-700">
-              {pedidosPendentes} pedido(s) aguardando confirmação
-            </p>
-          </button>
-        )}
-      </div>
+      )}
     </div>
   );
 };

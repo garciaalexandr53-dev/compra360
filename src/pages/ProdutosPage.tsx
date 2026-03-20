@@ -340,29 +340,41 @@ const ProdutosPage = () => {
             </div>
             <span className="text-sm text-muted-foreground whitespace-nowrap">{filtered.length}</span>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
-              <Upload className="h-4 w-4 mr-1" /> Importar
-            </Button>
-            <Button variant="outline" size="sm" onClick={autoClassifyProducts} disabled={classifying || produtos.length === 0}>
-              {classifying ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
-              {classifying ? "Classificando..." : "🤖 Classificar IA"}
-            </Button>
-            <Button variant={editMode ? "default" : "outline"} size="sm" onClick={() => setEditMode(!editMode)}>
-              {editMode ? <><Check className="h-4 w-4 mr-1" /> Concluir</> : <><Pencil className="h-4 w-4 mr-1" /> Editar</>}
-            </Button>
-            {editMode && (
+          <div className="flex items-center gap-2">
+            {editMode ? (
               <>
+                <Button size="sm" onClick={() => setEditMode(false)}>
+                  <Check className="h-4 w-4 mr-1" /> Concluir
+                </Button>
+                <Button size="sm" onClick={openAdd}>
+                  <Plus className="h-4 w-4 mr-1" /> Novo
+                </Button>
                 <Button size="sm" variant="destructive" onClick={() => {
-                  if (confirm(`Tem certeza que deseja excluir TODOS os ${produtos.length} produtos? Esta ação não pode ser desfeita.`))
-                    deleteAllMutation.mutate();
+                  if (confirm(`Excluir TODOS os ${produtos.length} produtos?`)) deleteAllMutation.mutate();
                 }} disabled={deleteAllMutation.isPending || produtos.length === 0}>
                   <Trash2 className="h-4 w-4 mr-1" /> Excluir Todos
                 </Button>
-                <Button size="sm" onClick={openAdd} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
-                  <Plus className="h-4 w-4 mr-1" /> Novo
-                </Button>
               </>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-9 w-9 shrink-0">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setImportOpen(true)}>
+                    <Upload className="h-4 w-4 mr-2" /> Importar Produtos
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={autoClassifyProducts} disabled={classifying || produtos.length === 0}>
+                    <Sparkles className="h-4 w-4 mr-2" /> {classifying ? "Classificando..." : "Classificar IA"}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setEditMode(true)}>
+                    <Pencil className="h-4 w-4 mr-2" /> Modo Edição
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         </div>
