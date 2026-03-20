@@ -56,6 +56,14 @@ const CotacaoPage = () => {
   const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
   const aiScrollRef = useRef<HTMLDivElement>(null);
 
+  // Quantity suggestion state
+  const [qtySuggestLoading, setQtySuggestLoading] = useState(false);
+  const [qtySuggestions, setQtySuggestions] = useState<{ cotacao_produto_id: string; nome: string; quantidade_sugerida: number; justificativa: string }[]>([]);
+  const [qtySuggestOpen, setQtySuggestOpen] = useState(false);
+
+  // WhatsApp AI state
+  const [whatsappAiLoading, setWhatsappAiLoading] = useState<string | null>(null);
+
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
