@@ -75,7 +75,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
     setClassifying(false);
   };
 
-
+  const processPaste = () => {
     const lines = pasteText
       .split(/\r?\n/)
       .map((l) => l.trim())
