@@ -69,6 +69,7 @@ const CotacaoPage = () => {
 
   // ERP Import state
   const [erpImportOpen, setErpImportOpen] = useState(false);
+  const [nfImportOpen, setNfImportOpen] = useState(false);
 
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
