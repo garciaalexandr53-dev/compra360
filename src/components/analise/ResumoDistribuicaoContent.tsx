@@ -6,7 +6,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Sparkles, Loader2, RefreshCw, TrendingUp, Users } from "lucide-react";
+import { ChevronDown, Sparkles, Loader2, RefreshCw, TrendingUp, TrendingDown, Users } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 
