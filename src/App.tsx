@@ -35,31 +35,33 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <PriceNotificationListener />
+            <Suspense fallback={null}>
+              <PriceNotificationListener />
+            </Suspense>
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/fornecedor/:token" element={<FornecedorCotacaoPage />} />
-                <Route path="/app-funcionarios" element={<AppFuncionariosPublic />} />
+                <Route path="/login" element={<Suspense fallback={null}><LoginPage /></Suspense>} />
+                <Route path="/fornecedor/:token" element={<Suspense fallback={null}><FornecedorCotacaoPage /></Suspense>} />
+                <Route path="/app-funcionarios" element={<Suspense fallback={null}><AppFuncionariosPublic /></Suspense>} />
                 
-                <Route element={<AppLayout />}>
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/cotacao" element={<CotacaoPage />} />
-                  <Route path="/produtos" element={<ProdutosPage />} />
-                  <Route path="/fornecedores" element={<FornecedoresPage />} />
-                  <Route path="/funcionarios" element={<FuncionariosPage />} />
-                  <Route path="/historico" element={<HistoricoPage />} />
-                  <Route path="/analise" element={<AnalisePage />} />
-                  <Route path="/conferencias" element={<ConferenciasPage />} />
-                  <Route path="/lojas" element={<LojasPage />} />
+                <Route element={<Suspense fallback={null}><AppLayout /></Suspense>}>
+                  <Route path="/dashboard" element={<Suspense fallback={null}><DashboardPage /></Suspense>} />
+                  <Route path="/cotacao" element={<Suspense fallback={null}><CotacaoPage /></Suspense>} />
+                  <Route path="/produtos" element={<Suspense fallback={null}><ProdutosPage /></Suspense>} />
+                  <Route path="/fornecedores" element={<Suspense fallback={null}><FornecedoresPage /></Suspense>} />
+                  <Route path="/funcionarios" element={<Suspense fallback={null}><FuncionariosPage /></Suspense>} />
+                  <Route path="/historico" element={<Suspense fallback={null}><HistoricoPage /></Suspense>} />
+                  <Route path="/analise" element={<Suspense fallback={null}><AnalisePage /></Suspense>} />
+                  <Route path="/conferencias" element={<Suspense fallback={null}><ConferenciasPage /></Suspense>} />
+                  <Route path="/lojas" element={<Suspense fallback={null}><LojasPage /></Suspense>} />
                 </Route>
 
                 {/* Legacy redirects */}
                 <Route path="/resumo" element={<Navigate to="/analise" replace />} />
                 <Route path="/pedidos" element={<Navigate to="/analise" replace />} />
                 <Route path="/guia" element={<Navigate to="/dashboard" replace />} />
-                <Route path="*" element={<NotFound />} />
+                <Route path="*" element={<Suspense fallback={null}><NotFound /></Suspense>} />
               </Routes>
             </BrowserRouter>
           </TooltipProvider>
