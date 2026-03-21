@@ -52,7 +52,7 @@ const LoginPage = () => {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">
-            Cota<span className="text-primary">Fácil</span>
+            Compra<span className="text-primary">360</span>
           </CardTitle>
           <CardDescription>
             {isSignUp ? "Crie sua conta" : "Entre com sua conta para continuar"}
