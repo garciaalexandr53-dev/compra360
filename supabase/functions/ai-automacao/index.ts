@@ -36,7 +36,7 @@ serve(async (req) => {
       ).join("\n");
       const totalGeral = Number((items || []).reduce((s: number, it: any) => s + (Number(it.total) || 0), 0)) || 0;
 
-      const prompt = `Você é o assistente CotaFácil. Gere uma mensagem de WhatsApp profissional e amigável para enviar um pedido de compra ao fornecedor.
+      const prompt = `Você é o assistente Compra360. Gere uma mensagem de WhatsApp profissional e amigável para enviar um pedido de compra ao fornecedor.
 
 DADOS DO FORNECEDOR:
 - Nome: ${forn?.nome || "Desconhecido"}
