@@ -9,7 +9,7 @@ const ThemeContext = createContext<{ theme: Theme; toggle: () => void }>({
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    const stored = localStorage.getItem("cotafacil-theme");
+    const stored = localStorage.getItem("compra360-theme");
     return stored === "dark" ? "dark" : "light";
   });
 
