@@ -6,7 +6,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Sparkles, Loader2, RefreshCw, TrendingUp, Users } from "lucide-react";
+import { ChevronDown, Sparkles, Loader2, RefreshCw, TrendingUp, TrendingDown, Users } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 
@@ -83,6 +83,55 @@ const ResumoDistribuicaoContent = () => {
       const { data, error } = await supabase.from("precos").select("*").in("cotacao_produto_id", cpIds);
       if (error) throw error;
       return data || [];
+    },
+  });
+
+  // ---- Previous cotação total for savings comparison ----
+  const { data: previousTotal } = useQuery({
+    queryKey: ["cotacao-anterior-total", cotacaoAtiva?.id, lojaAtiva?.id],
+    enabled: !!cotacaoAtiva?.id,
+    queryFn: async () => {
+      // Find the most recent finalized cotação before the current one
+      let query = supabase
+        .from("cotacoes")
+        .select("id")
+        .eq("status", "finalizada")
+        .order("finalizada_at", { ascending: false })
+        .limit(1);
+      if (lojaAtiva?.id) query = query.eq("loja_id", lojaAtiva.id);
+      else query = query.is("loja_id", null);
+
+      const { data: prevCotacao } = await query.maybeSingle();
+      if (!prevCotacao) return null;
+
+      // Get products + prices for the previous cotação
+      const { data: prevCps } = await supabase
+        .from("cotacao_produtos")
+        .select("id, quantidade")
+        .eq("cotacao_id", prevCotacao.id);
+      if (!prevCps?.length) return null;
+
+      const prevCpIds = prevCps.map((cp) => cp.id);
+      const { data: prevPrecos } = await supabase
+        .from("precos")
+        .select("cotacao_produto_id, preco")
+        .in("cotacao_produto_id", prevCpIds)
+        .not("preco", "is", null)
+        .gt("preco", 0);
+      if (!prevPrecos?.length) return null;
+
+      // Calculate best-price total for previous cotação
+      let total = 0;
+      const qtyMap = Object.fromEntries(prevCps.map((cp) => [cp.id, cp.quantidade || 1]));
+      const grouped: Record<string, number[]> = {};
+      prevPrecos.forEach((p) => {
+        if (!grouped[p.cotacao_produto_id]) grouped[p.cotacao_produto_id] = [];
+        grouped[p.cotacao_produto_id].push(Number(p.preco));
+      });
+      for (const [cpId, prices] of Object.entries(grouped)) {
+        total += Math.min(...prices) * (qtyMap[cpId] || 1);
+      }
+      return total;
     },
   });
 
@@ -225,7 +274,8 @@ const ResumoDistribuicaoContent = () => {
         <KpiCard label="Itens Cotados" value={String(stats.itensCotados)} sub={`de ${stats.totalItems} total`} />
       </div>
 
-      {/* Fornecedores — collapsible */}
+      {/* Resumo Executivo — Economia vs cotação anterior */}
+      <SavingsCard previousTotal={previousTotal} currentTotal={stats.grandTotal} />
       <Collapsible open={suppliersOpen} onOpenChange={setSuppliersOpen}>
         <CollapsibleTrigger className="flex items-center justify-between w-full bg-card border rounded-xl px-4 py-3 hover:bg-muted/50 transition-colors">
           <span className="flex items-center gap-2 text-sm font-bold text-foreground">
@@ -323,6 +373,36 @@ function KpiCard({ label, value, sub }: { label: string; value: string; sub: str
       <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">{label}</div>
       <div className="text-xl font-extrabold text-foreground tracking-tight">{value}</div>
       <div className="text-xs text-muted-foreground mt-1">{sub}</div>
+    </div>
+  );
+}
+
+function SavingsCard({ previousTotal, currentTotal }: { previousTotal: number | null | undefined; currentTotal: number }) {
+  if (previousTotal == null || previousTotal <= 0 || currentTotal <= 0) return null;
+  const diff = previousTotal - currentTotal;
+  const pct = Math.round((diff / previousTotal) * 100);
+  const saved = diff > 0;
+  return (
+    <div className={`flex items-center gap-3 rounded-xl border p-4 shadow-sm ${saved ? "bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800" : "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800"}`}>
+      <div className={`flex items-center justify-center h-10 w-10 rounded-full shrink-0 ${saved ? "bg-green-100 dark:bg-green-900" : "bg-amber-100 dark:bg-amber-900"}`}>
+        {saved ? <TrendingDown className="h-5 w-5 text-green-700 dark:text-green-400" /> : <TrendingUp className="h-5 w-5 text-amber-700 dark:text-amber-400" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          {saved ? "Economia vs cotação anterior" : "Aumento vs cotação anterior"}
+        </div>
+        <div className="flex items-baseline gap-2 mt-0.5 flex-wrap">
+          <span className={`text-lg font-extrabold font-mono ${saved ? "text-green-700 dark:text-green-400" : "text-amber-700 dark:text-amber-400"}`}>
+            {saved ? "-" : "+"}{formatBRL(Math.abs(diff))}
+          </span>
+          <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${saved ? "bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200" : "bg-amber-200 text-amber-800 dark:bg-amber-800 dark:text-amber-200"}`}>
+            {saved ? "↓" : "↑"} {Math.abs(pct)}%
+          </span>
+        </div>
+        <div className="text-xs text-muted-foreground mt-1">
+          Anterior: {formatBRL(previousTotal)} → Atual: {formatBRL(currentTotal)}
+        </div>
+      </div>
     </div>
   );
 }
