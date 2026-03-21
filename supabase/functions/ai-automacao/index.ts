@@ -60,7 +60,7 @@ Regras:
 - Inclua saudação personalizada usando o nome do representante se disponível
 - Liste todos os itens de forma organizada
 - Inclua dados de faturamento da loja
-- Finalize com "Enviado via CotaFácil"
+- Finalize com "Enviado via Compra360"
 - Formate para WhatsApp (use *negrito* e _itálico_)
 - Seja direto mas cordial`;
 

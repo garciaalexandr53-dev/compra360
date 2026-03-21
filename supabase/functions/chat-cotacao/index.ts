@@ -96,7 +96,7 @@ serve(async (req) => {
       contextText = lines.join("\n");
     }
 
-    const systemPrompt = `Você é o assistente de compras do CotaFácil. Responda sempre em português brasileiro, de forma objetiva e útil.
+    const systemPrompt = `Você é o assistente de compras do Compra360. Responda sempre em português brasileiro, de forma objetiva e útil.
 Você tem acesso aos dados reais da cotação ativa do comprador. Use esses dados para responder perguntas sobre preços, fornecedores, economia e recomendações.
 
 DADOS DA COTAÇÃO ATIVA:

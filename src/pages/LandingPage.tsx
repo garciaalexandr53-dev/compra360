@@ -171,7 +171,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t bg-card py-6 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} CotaFácil — Cotações inteligentes para seu negócio.
+        © {new Date().getFullYear()} Compra360 — Cotações inteligentes para seu negócio.
       </footer>
     </div>
   );

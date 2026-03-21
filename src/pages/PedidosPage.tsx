@@ -336,7 +336,7 @@ const PedidosPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-lg font-bold">FICHA DE CONFERÊNCIA</h2>
-                    <p className="text-sm text-muted-foreground">CotaFácil</p>
+                    <p className="text-sm text-muted-foreground">Compra360</p>
                   </div>
                   {receiptNumero && (
                     <div className="text-right">
