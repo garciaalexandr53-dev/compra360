@@ -275,36 +275,7 @@ const ResumoDistribuicaoContent = () => {
       </div>
 
       {/* Resumo Executivo — Economia vs cotação anterior */}
-      {previousTotal != null && previousTotal > 0 && stats.grandTotal > 0 && (
-        () => {
-          const diff = previousTotal - stats.grandTotal;
-          const pct = Math.round((diff / previousTotal) * 100);
-          const saved = diff > 0;
-          return (
-            <div className={`flex items-center gap-3 rounded-xl border p-4 shadow-sm ${saved ? "bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800" : "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800"}`}>
-              <div className={`flex items-center justify-center h-10 w-10 rounded-full shrink-0 ${saved ? "bg-green-100 dark:bg-green-900" : "bg-amber-100 dark:bg-amber-900"}`}>
-                {saved ? <TrendingDown className="h-5 w-5 text-green-700 dark:text-green-400" /> : <TrendingUp className="h-5 w-5 text-amber-700 dark:text-amber-400" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  {saved ? "Economia vs cotação anterior" : "Aumento vs cotação anterior"}
-                </div>
-                <div className="flex items-baseline gap-2 mt-0.5 flex-wrap">
-                  <span className={`text-lg font-extrabold font-mono ${saved ? "text-green-700 dark:text-green-400" : "text-amber-700 dark:text-amber-400"}`}>
-                    {saved ? "-" : "+"}{formatBRL(Math.abs(diff))}
-                  </span>
-                  <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${saved ? "bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200" : "bg-amber-200 text-amber-800 dark:bg-amber-800 dark:text-amber-200"}`}>
-                    {saved ? "↓" : "↑"} {Math.abs(pct)}%
-                  </span>
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Anterior: {formatBRL(previousTotal)} → Atual: {formatBRL(stats.grandTotal)}
-                </div>
-              </div>
-            </div>
-          );
-        }
-      )()}
+      <SavingsCard previousTotal={previousTotal} currentTotal={stats.grandTotal} />
       <Collapsible open={suppliersOpen} onOpenChange={setSuppliersOpen}>
         <CollapsibleTrigger className="flex items-center justify-between w-full bg-card border rounded-xl px-4 py-3 hover:bg-muted/50 transition-colors">
           <span className="flex items-center gap-2 text-sm font-bold text-foreground">
