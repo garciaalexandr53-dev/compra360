@@ -108,7 +108,7 @@ export function AppSidebar() {
               ✦
             </div>
             <span className="text-lg font-bold text-sidebar-foreground">
-              Cota<span className="text-sidebar-primary">Fácil</span>
+              Compra<span className="text-sidebar-primary">360</span>
             </span>
           </div>
         ) : (
