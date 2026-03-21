@@ -86,6 +86,55 @@ const ResumoDistribuicaoContent = () => {
     },
   });
 
+  // ---- Previous cotação total for savings comparison ----
+  const { data: previousTotal } = useQuery({
+    queryKey: ["cotacao-anterior-total", cotacaoAtiva?.id, lojaAtiva?.id],
+    enabled: !!cotacaoAtiva?.id,
+    queryFn: async () => {
+      // Find the most recent finalized cotação before the current one
+      let query = supabase
+        .from("cotacoes")
+        .select("id")
+        .eq("status", "finalizada")
+        .order("finalizada_at", { ascending: false })
+        .limit(1);
+      if (lojaAtiva?.id) query = query.eq("loja_id", lojaAtiva.id);
+      else query = query.is("loja_id", null);
+
+      const { data: prevCotacao } = await query.maybeSingle();
+      if (!prevCotacao) return null;
+
+      // Get products + prices for the previous cotação
+      const { data: prevCps } = await supabase
+        .from("cotacao_produtos")
+        .select("id, quantidade")
+        .eq("cotacao_id", prevCotacao.id);
+      if (!prevCps?.length) return null;
+
+      const prevCpIds = prevCps.map((cp) => cp.id);
+      const { data: prevPrecos } = await supabase
+        .from("precos")
+        .select("cotacao_produto_id, preco")
+        .in("cotacao_produto_id", prevCpIds)
+        .not("preco", "is", null)
+        .gt("preco", 0);
+      if (!prevPrecos?.length) return null;
+
+      // Calculate best-price total for previous cotação
+      let total = 0;
+      const qtyMap = Object.fromEntries(prevCps.map((cp) => [cp.id, cp.quantidade || 1]));
+      const grouped: Record<string, number[]> = {};
+      prevPrecos.forEach((p) => {
+        if (!grouped[p.cotacao_produto_id]) grouped[p.cotacao_produto_id] = [];
+        grouped[p.cotacao_produto_id].push(Number(p.preco));
+      });
+      for (const [cpId, prices] of Object.entries(grouped)) {
+        total += Math.min(...prices) * (qtyMap[cpId] || 1);
+      }
+      return total;
+    },
+  });
+
   // ---- Stats computation ----
   const stats = useMemo(() => {
     const totalItems = cotacaoProdutos.length;
