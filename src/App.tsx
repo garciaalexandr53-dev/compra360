@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { LojaProvider } from "@/hooks/useLojaAtiva";
 import { ThemeProvider } from "@/hooks/useTheme";
-import LandingPage from "./pages/LandingPage";
+const LandingPage = lazy(() => import("./pages/LandingPage"));
 
 const AppLayout = lazy(() => import("./components/AppLayout"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
@@ -40,7 +40,7 @@ const App = () => (
             </Suspense>
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<LandingPage />} />
+                <Route path="/" element={<Suspense fallback={null}><LandingPage /></Suspense>} />
                 <Route path="/login" element={<Suspense fallback={null}><LoginPage /></Suspense>} />
                 <Route path="/fornecedor/:token" element={<Suspense fallback={null}><FornecedorCotacaoPage /></Suspense>} />
                 <Route path="/app-funcionarios" element={<Suspense fallback={null}><AppFuncionariosPublic /></Suspense>} />
