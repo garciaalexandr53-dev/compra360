@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,22 +7,23 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { LojaProvider } from "@/hooks/useLojaAtiva";
 import { ThemeProvider } from "@/hooks/useTheme";
-import AppLayout from "./components/AppLayout";
-import LoginPage from "./pages/LoginPage";
 import LandingPage from "./pages/LandingPage";
-import CotacaoPage from "./pages/CotacaoPage";
-import ProdutosPage from "./pages/ProdutosPage";
-import FornecedoresPage from "./pages/FornecedoresPage";
-import HistoricoPage from "./pages/HistoricoPage";
-import DashboardPage from "./pages/DashboardPage";
-import AnalisePage from "./pages/AnalisePage";
-import FornecedorCotacaoPage from "./pages/FornecedorCotacaoPage";
-import FuncionariosPage from "./pages/FuncionariosPage";
-import AppFuncionariosPublic from "./pages/AppFuncionariosPublic";
-import ConferenciasPage from "./pages/ConferenciasPage";
-import LojasPage from "./pages/LojasPage";
-import NotFound from "./pages/NotFound";
-import PriceNotificationListener from "./components/PriceNotificationListener";
+
+const AppLayout = lazy(() => import("./components/AppLayout"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const CotacaoPage = lazy(() => import("./pages/CotacaoPage"));
+const ProdutosPage = lazy(() => import("./pages/ProdutosPage"));
+const FornecedoresPage = lazy(() => import("./pages/FornecedoresPage"));
+const HistoricoPage = lazy(() => import("./pages/HistoricoPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const AnalisePage = lazy(() => import("./pages/AnalisePage"));
+const FornecedorCotacaoPage = lazy(() => import("./pages/FornecedorCotacaoPage"));
+const FuncionariosPage = lazy(() => import("./pages/FuncionariosPage"));
+const AppFuncionariosPublic = lazy(() => import("./pages/AppFuncionariosPublic"));
+const ConferenciasPage = lazy(() => import("./pages/ConferenciasPage"));
+const LojasPage = lazy(() => import("./pages/LojasPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const PriceNotificationListener = lazy(() => import("./components/PriceNotificationListener"));
 
 const queryClient = new QueryClient();
 
