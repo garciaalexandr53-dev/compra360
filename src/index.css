@@ -1,5 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
+/* Reduce CLS from font loading */
+:root {
+  font-synthesis: none;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -107,7 +112,9 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Sora', sans-serif;
+    font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-optical-sizing: auto;
     -webkit-font-smoothing: antialiased;
   }
   h1, h2, h3, h4 {
