@@ -3,9 +3,9 @@ import { BookOpen, Package, Users, BarChart3, Link2, ShoppingCart, TrendingUp, H
 const sections = [
   {
     icon: BookOpen,
-    title: "O que é o CotaFácil?",
+    title: "O que é o Compra360?",
     color: "text-primary",
-    content: `O CotaFácil é um sistema de cotação de preços desenvolvido para **reduzir custos de compras**, **aumentar o poder de negociação**, **padronizar o processo de cotação** e **economizar tempo do comprador**.
+    content: `O Compra360 é um sistema de cotação de preços desenvolvido para **reduzir custos de compras**, **aumentar o poder de negociação**, **padronizar o processo de cotação** e **economizar tempo do comprador**.
 
 Com ele, você cadastra produtos, envia links para fornecedores preencherem os preços, compara automaticamente e gera pedidos otimizados.`,
   },
