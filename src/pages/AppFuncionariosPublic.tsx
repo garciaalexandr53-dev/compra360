@@ -153,7 +153,7 @@ const AppFuncionariosPublic = () => {
       <Sonner />
       {/* Header */}
       <div className="bg-gradient-to-r from-[hsl(var(--brand-dark))] via-[hsl(var(--brand))] to-[hsl(var(--brand-light))] text-white p-5 sticky top-0 z-20 shadow-lg">
-        <h1 className="text-lg font-bold">📋 CotaFácil — Funcionários</h1>
+        <h1 className="text-lg font-bold">📋 Compra360 — Funcionários</h1>
         <p className="text-sm opacity-80">
           {activeTab === "lista" ? "Registre itens faltantes" : "Confira pedidos recebidos"}
         </p>

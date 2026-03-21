@@ -293,7 +293,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
       "Produto,Categoria,Embalagem,Quantidade\nDetergente Ype 500ml,Limpeza,cx,12\nSabao em Po Ariel 1kg,Limpeza,cx,6\nAgua Mineral 500ml,Bebidas,fd,24\n";
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
-    a.download = "modelo_produtos_cotafacil.csv";
+    a.download = "modelo_produtos_compra360.csv";
     a.click();
     toast.success("Modelo baixado!");
   };

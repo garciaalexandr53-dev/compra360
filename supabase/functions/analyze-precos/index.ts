@@ -103,7 +103,7 @@ serve(async (req) => {
 
     const contextText = lines.join("\n");
 
-    const systemPrompt = `Você é um analista especialista em compras e detecção de preços suspeitos para o CotaFácil.
+    const systemPrompt = `Você é um analista especialista em compras e detecção de preços suspeitos para o Compra360.
 
 Analise os preços da cotação ativa e identifique:
 

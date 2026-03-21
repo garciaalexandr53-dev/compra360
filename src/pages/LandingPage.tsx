@@ -87,7 +87,7 @@ export default function LandingPage() {
             <span className="text-primary">compras mais baratas.</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            O CotaFácil automatiza o processo de cotação de preços: envie links para fornecedores,
+            O Compra360 automatiza o processo de cotação de preços: envie links para fornecedores,
             compare preços em tempo real e gere pedidos otimizados com um clique.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -171,7 +171,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t bg-card py-6 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} CotaFácil — Cotações inteligentes para seu negócio.
+        © {new Date().getFullYear()} Compra360 — Cotações inteligentes para seu negócio.
       </footer>
     </div>
   );

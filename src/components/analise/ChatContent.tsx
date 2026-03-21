@@ -153,7 +153,7 @@ const ChatContent = () => {
                 <Sparkles className="h-7 w-7 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-foreground">Assistente CotaFácil</h3>
+                <h3 className="text-lg font-bold text-foreground">Assistente Compra360</h3>
                 <p className="text-sm text-muted-foreground mt-1">
                   Pergunte sobre preços, fornecedores e economia da cotação ativa.
                 </p>
