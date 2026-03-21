@@ -112,7 +112,9 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Sora', sans-serif;
+    font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-optical-sizing: auto;
     -webkit-font-smoothing: antialiased;
   }
   h1, h2, h3, h4 {
