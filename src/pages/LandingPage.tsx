@@ -78,9 +78,7 @@ export default function LandingPage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/20" />
         <div className="relative max-w-5xl mx-auto px-5 pt-16 pb-20 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-primary flex items-center justify-center text-primary-foreground text-3xl font-extrabold shadow-lg mx-auto mb-6">
-            ✦
-          </div>
+          <img src="/logo-compra360.png" alt="Compra360" className="w-16 h-16 rounded-2xl shadow-lg mx-auto mb-6" />
           <h1 className="text-4xl sm:text-5xl font-extrabold text-foreground tracking-tight leading-tight mb-4">
             Cotações inteligentes,
             <br />
