@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import logoCompra360 from "/logo-compra360.png";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink, useLocation } from "react-router-dom";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
@@ -104,17 +105,13 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         {!collapsed ? (
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] flex items-center justify-center text-white text-xs font-extrabold shadow-md">
-              ✦
-            </div>
+            <img src={logoCompra360} alt="Compra360" className="w-8 h-8 rounded-lg shadow-md" />
             <span className="text-lg font-bold text-sidebar-foreground">
               Compra<span className="text-sidebar-primary">360</span>
             </span>
           </div>
         ) : (
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] flex items-center justify-center text-white text-xs font-extrabold shadow-md mx-auto">
-            ✦
-          </div>
+          <img src={logoCompra360} alt="Compra360" className="w-8 h-8 rounded-lg shadow-md mx-auto" />
         )}
       </SidebarHeader>
 
