@@ -151,7 +151,9 @@ const FuncionariosPage = () => {
     },
   });
 
-  const appUrl = `${window.location.origin}/app-funcionarios`;
+  const appUrl = lojaAtiva
+    ? `${window.location.origin}/app-funcionarios?loja=${lojaAtiva.id}`
+    : `${window.location.origin}/app-funcionarios`;
 
   const copyLink = () => {
     navigator.clipboard.writeText(appUrl);
@@ -159,7 +161,8 @@ const FuncionariosPage = () => {
   };
 
   const openWhatsApp = () => {
-    const msg = `📋 Use este link para registrar itens faltantes:\n${appUrl}\n\nBasta abrir no celular, digitar o item e enviar!`;
+    const lojaLabel = lojaAtiva ? ` da loja ${lojaAtiva.nome}` : "";
+    const msg = `📋 Use este link para registrar itens faltantes${lojaLabel}:\n${appUrl}\n\nBasta abrir no celular, digitar o item e enviar!`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, "_blank");
   };
 

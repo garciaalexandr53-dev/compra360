@@ -39,7 +39,15 @@ const AppFuncionariosPublic = () => {
   const [nome, setNome] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
-  const [selectedLojaId, setSelectedLojaId] = useState<string>("");
+
+  // Read loja from URL param (pre-defined by buyer)
+  const urlLojaId = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("loja") || "";
+  }, []);
+  const lojaFromUrl = !!urlLojaId;
+
+  const [selectedLojaId, setSelectedLojaId] = useState<string>(urlLojaId);
   const [productSearch, setProductSearch] = useState("");
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
   const [showProductList, setShowProductList] = useState(true);
