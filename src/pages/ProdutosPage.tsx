@@ -433,72 +433,84 @@ const ProdutosPage = () => {
           </div>
         </div>
 
-        <ScrollArea className="flex-1">
+        <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto">
           {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
           ) : filtered.length === 0 ? (
             <div className="p-10 text-center text-muted-foreground">Nenhum produto encontrado.</div>
           ) : (
-            Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([cat, prods]) => (
-              <div key={cat}>
-                {selectedCat === "Todos" && (
-                  <div className="px-4 py-1.5 bg-muted text-[10px] font-bold uppercase tracking-wider text-muted-foreground sticky top-0 z-10 border-b">
-                    {cat}
-                  </div>
-                )}
-                {prods.map((p) => (
-                  <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted/30 transition-colors">
-                    <div className="flex-1 min-w-0">
+            <>
+              {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([cat, prods]) => (
+                <div key={cat}>
+                  {selectedCat === "Todos" && (
+                    <div className="px-4 py-1.5 bg-muted text-[10px] font-bold uppercase tracking-wider text-muted-foreground sticky top-0 z-10 border-b">
+                      {cat}
+                    </div>
+                  )}
+                  {prods.map((p) => (
+                    <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted/30 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        {editMode ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Input
+                              className="h-7 text-sm font-medium w-auto flex-1 min-w-[150px]"
+                              defaultValue={p.nome}
+                              onBlur={(e) => handleInlineBlur(p.id, "nome", e.target.value, p.nome)}
+                            />
+                            <Input
+                              className="h-7 text-xs w-20"
+                              defaultValue={p.embalagem || ""}
+                              placeholder="embal."
+                              onBlur={(e) => handleInlineBlur(p.id, "embalagem", e.target.value, p.embalagem || "")}
+                            />
+                          </div>
+                        ) : (
+                          <>
+                            <div className="text-sm font-medium text-foreground">{p.nome}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {p.categorias?.nome || "Sem Categoria"} · {p.embalagem || "un"}
+                            </div>
+                          </>
+                        )}
+                      </div>
                       {editMode ? (
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Input
-                            className="h-7 text-sm font-medium w-auto flex-1 min-w-[150px]"
-                            defaultValue={p.nome}
-                            onBlur={(e) => handleInlineBlur(p.id, "nome", e.target.value, p.nome)}
-                          />
-                          <Input
-                            className="h-7 text-xs w-20"
-                            defaultValue={p.embalagem || ""}
-                            placeholder="embal."
-                            onBlur={(e) => handleInlineBlur(p.id, "embalagem", e.target.value, p.embalagem || "")}
-                          />
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(p)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => {
+                            if (confirm(`Remover "${p.nome}"?`)) deleteMutation.mutate(p.id);
+                          }}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       ) : (
-                        <>
-                          <div className="text-sm font-medium text-foreground">{p.nome}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {p.categorias?.nome || "Sem Categoria"} · {p.embalagem || "un"}
-                          </div>
-                        </>
+                        <Button
+                          size="sm"
+                          variant={p.ativo ? "outline" : "default"}
+                          className={p.ativo ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100" : "bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"}
+                          onClick={() => toggleCotacaoMutation.mutate({ id: p.id, ativo: !p.ativo, produtoId: p.id })}
+                        >
+                          {p.ativo ? "✓ Na cotação" : "+ Adicionar"}
+                        </Button>
                       )}
                     </div>
-                    {editMode ? (
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(p)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => {
-                          if (confirm(`Remover "${p.nome}"?`)) deleteMutation.mutate(p.id);
-                        }}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant={p.ativo ? "outline" : "default"}
-                        className={p.ativo ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100" : "bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"}
-                        onClick={() => toggleCotacaoMutation.mutate({ id: p.id, ativo: !p.ativo, produtoId: p.id })}
-                      >
-                        {p.ativo ? "✓ Na cotação" : "+ Adicionar"}
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ))
+                  ))}
+                </div>
+              ))}
+              {isFetchingNextPage && (
+                <div className="p-4 text-center text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin inline mr-2" />Carregando mais...
+                </div>
+              )}
+              {!hasNextPage && produtos.length > 0 && (
+                <div className="p-3 text-center text-xs text-muted-foreground">
+                  {produtos.length} de {totalCount} produtos carregados
+                </div>
+              )}
+            </>
           )}
-        </ScrollArea>
+        </div>
       </div>
 
       {/* Add/Edit Product Modal */}
