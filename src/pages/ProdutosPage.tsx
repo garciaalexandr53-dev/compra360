@@ -11,6 +11,7 @@ import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, ChevronRight,
 import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { useAuth } from "@/hooks/useAuth";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
