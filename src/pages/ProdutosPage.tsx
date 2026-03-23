@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo, useCallback, useRef } from "react";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 type Categoria = Tables<"categorias">;
 
 const emptyForm = { nome: "", categoria_id: "", embalagem: "" };
+const PAGE_SIZE = 80;
 
 const ProdutosPage = () => {
   const queryClient = useQueryClient();
@@ -34,6 +35,7 @@ const ProdutosPage = () => {
 
   const [inlineEditing, setInlineEditing] = useState<Record<string, { nome?: string; embalagem?: string }>>({});
   const [classifying, setClassifying] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: categorias = [] } = useQuery({
     queryKey: ["categorias"],
@@ -44,16 +46,39 @@ const ProdutosPage = () => {
     },
   });
 
-  const { data: produtos = [], isLoading } = useQuery({
-    queryKey: ["produtos"],
-    queryFn: async () => {
-      const { data, error } = await supabase
+  const {
+    data: produtosData,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["produtos", search, selectedCat],
+    queryFn: async ({ pageParam = 0 }) => {
+      const from = pageParam * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      let query = supabase
         .from("produtos")
-        .select("*, categorias(nome)")
-        .order("nome");
+        .select("*, categorias(nome)", { count: "exact" })
+        .order("nome")
+        .range(from, to);
+
+      if (search.trim()) {
+        query = query.ilike("nome", `%${search.trim()}%`);
+      }
+
+      const { data, error, count } = await query;
       if (error) throw error;
-      return data as Produto[];
+      const totalCount = count ?? 0;
+      const hasMore = from + PAGE_SIZE < totalCount;
+      return {
+        products: data as Produto[],
+        nextPage: hasMore ? pageParam + 1 : undefined,
+        totalCount,
+      };
     },
+    getNextPageParam: (lastPage) => lastPage.nextPage,
+    initialPageParam: 0,
   });
 
   const { data: cotacaoAtiva } = useQuery({
@@ -67,6 +92,21 @@ const ProdutosPage = () => {
       return data;
     },
   });
+
+  const produtos = useMemo(
+    () => produtosData?.pages.flatMap((p) => p.products) ?? [],
+    [produtosData]
+  );
+
+  const totalCount = produtosData?.pages[0]?.totalCount ?? 0;
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || !hasNextPage || isFetchingNextPage) return;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 150) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const createCatMutation = useMutation({
     mutationFn: async (nome: string) => {
@@ -185,11 +225,10 @@ const ProdutosPage = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const filtered = produtos.filter((p) => {
+  const filtered = useMemo(() => produtos.filter((p) => {
     const matchCat = selectedCat === "Todos" || p.categorias?.nome === selectedCat;
-    const matchSearch = !search || p.nome.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
-  });
+    return matchCat;
+  }), [produtos, selectedCat]);
 
   const grouped = filtered.reduce<Record<string, Produto[]>>((acc, p) => {
     const cat = p.categorias?.nome || "Sem Categoria";
@@ -309,7 +348,7 @@ const ProdutosPage = () => {
                 }`}
               >
                 <span className="truncate">Todos</span>
-                <span className="text-[10px] font-bold bg-muted px-1.5 py-0.5 rounded-full">{produtos.length}</span>
+                <span className="text-[10px] font-bold bg-muted px-1.5 py-0.5 rounded-full">{totalCount}</span>
               </button>
               {categorias.map((cat) => (
                 <button
@@ -353,7 +392,7 @@ const ProdutosPage = () => {
                 className="pl-9"
               />
             </div>
-            <span className="text-sm text-muted-foreground whitespace-nowrap">{filtered.length}</span>
+            <span className="text-sm text-muted-foreground whitespace-nowrap">{filtered.length}{totalCount > filtered.length ? `/${totalCount}` : ""}</span>
           </div>
           <div className="flex items-center gap-2">
             {editMode ? (
@@ -394,72 +433,84 @@ const ProdutosPage = () => {
           </div>
         </div>
 
-        <ScrollArea className="flex-1">
+        <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto">
           {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
           ) : filtered.length === 0 ? (
             <div className="p-10 text-center text-muted-foreground">Nenhum produto encontrado.</div>
           ) : (
-            Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([cat, prods]) => (
-              <div key={cat}>
-                {selectedCat === "Todos" && (
-                  <div className="px-4 py-1.5 bg-muted text-[10px] font-bold uppercase tracking-wider text-muted-foreground sticky top-0 z-10 border-b">
-                    {cat}
-                  </div>
-                )}
-                {prods.map((p) => (
-                  <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted/30 transition-colors">
-                    <div className="flex-1 min-w-0">
+            <>
+              {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([cat, prods]) => (
+                <div key={cat}>
+                  {selectedCat === "Todos" && (
+                    <div className="px-4 py-1.5 bg-muted text-[10px] font-bold uppercase tracking-wider text-muted-foreground sticky top-0 z-10 border-b">
+                      {cat}
+                    </div>
+                  )}
+                  {prods.map((p) => (
+                    <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted/30 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        {editMode ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Input
+                              className="h-7 text-sm font-medium w-auto flex-1 min-w-[150px]"
+                              defaultValue={p.nome}
+                              onBlur={(e) => handleInlineBlur(p.id, "nome", e.target.value, p.nome)}
+                            />
+                            <Input
+                              className="h-7 text-xs w-20"
+                              defaultValue={p.embalagem || ""}
+                              placeholder="embal."
+                              onBlur={(e) => handleInlineBlur(p.id, "embalagem", e.target.value, p.embalagem || "")}
+                            />
+                          </div>
+                        ) : (
+                          <>
+                            <div className="text-sm font-medium text-foreground">{p.nome}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {p.categorias?.nome || "Sem Categoria"} · {p.embalagem || "un"}
+                            </div>
+                          </>
+                        )}
+                      </div>
                       {editMode ? (
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Input
-                            className="h-7 text-sm font-medium w-auto flex-1 min-w-[150px]"
-                            defaultValue={p.nome}
-                            onBlur={(e) => handleInlineBlur(p.id, "nome", e.target.value, p.nome)}
-                          />
-                          <Input
-                            className="h-7 text-xs w-20"
-                            defaultValue={p.embalagem || ""}
-                            placeholder="embal."
-                            onBlur={(e) => handleInlineBlur(p.id, "embalagem", e.target.value, p.embalagem || "")}
-                          />
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(p)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => {
+                            if (confirm(`Remover "${p.nome}"?`)) deleteMutation.mutate(p.id);
+                          }}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       ) : (
-                        <>
-                          <div className="text-sm font-medium text-foreground">{p.nome}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {p.categorias?.nome || "Sem Categoria"} · {p.embalagem || "un"}
-                          </div>
-                        </>
+                        <Button
+                          size="sm"
+                          variant={p.ativo ? "outline" : "default"}
+                          className={p.ativo ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100" : "bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"}
+                          onClick={() => toggleCotacaoMutation.mutate({ id: p.id, ativo: !p.ativo, produtoId: p.id })}
+                        >
+                          {p.ativo ? "✓ Na cotação" : "+ Adicionar"}
+                        </Button>
                       )}
                     </div>
-                    {editMode ? (
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(p)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => {
-                          if (confirm(`Remover "${p.nome}"?`)) deleteMutation.mutate(p.id);
-                        }}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant={p.ativo ? "outline" : "default"}
-                        className={p.ativo ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100" : "bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"}
-                        onClick={() => toggleCotacaoMutation.mutate({ id: p.id, ativo: !p.ativo, produtoId: p.id })}
-                      >
-                        {p.ativo ? "✓ Na cotação" : "+ Adicionar"}
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ))
+                  ))}
+                </div>
+              ))}
+              {isFetchingNextPage && (
+                <div className="p-4 text-center text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin inline mr-2" />Carregando mais...
+                </div>
+              )}
+              {!hasNextPage && produtos.length > 0 && (
+                <div className="p-3 text-center text-xs text-muted-foreground">
+                  {produtos.length} de {totalCount} produtos carregados
+                </div>
+              )}
+            </>
           )}
-        </ScrollArea>
+        </div>
       </div>
 
       {/* Add/Edit Product Modal */}
