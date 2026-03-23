@@ -110,7 +110,7 @@ const ProdutosPage = () => {
 
   const createCatMutation = useMutation({
     mutationFn: async (nome: string) => {
-      const { error } = await supabase.from("categorias").insert({ nome: nome.trim() });
+      const { error } = await supabase.from("categorias").insert({ nome: nome.trim(), user_id: user?.id });
       if (error) throw error;
     },
     onSuccess: () => {
