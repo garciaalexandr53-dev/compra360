@@ -63,6 +63,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         const { error } = await supabase.from("produtos").insert({
           nome: prodNome.trim(),
           embalagem: prodEmbalagem.trim() || null,
+          user_id: user?.id,
         });
         if (error) throw error;
         qc.invalidateQueries({ queryKey: ["produtos"] });
