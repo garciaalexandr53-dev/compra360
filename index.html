@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=optional" />
-    <link rel="preload" as="font" type="font/woff2" crossorigin href="https://fonts.gstatic.com/s/sora/v17/xMQbuFFYT72XzQUpDqW1KX4.woff2" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=optional" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=optional" /></noscript>
     <title>Compra360</title>
     <meta name="description" content="Compra360 — O jeito inteligente de comprar.">
     <meta name="author" content="Lovable" />
@@ -32,7 +32,9 @@
 </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <style>body{margin:0;background:#f3f5f7;font-family:system-ui,-apple-system,sans-serif}</style>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
