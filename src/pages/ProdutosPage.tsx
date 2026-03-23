@@ -107,13 +107,26 @@ const ProdutosPage = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const cleanOrphanCategories = async () => {
+    const { data: allCats } = await supabase.from("categorias").select("id");
+    if (!allCats?.length) return;
+    const { data: usedCats } = await supabase.from("produtos").select("categoria_id");
+    const usedIds = new Set((usedCats || []).map((p) => p.categoria_id).filter(Boolean));
+    const orphans = allCats.filter((c) => !usedIds.has(c.id)).map((c) => c.id);
+    if (orphans.length) {
+      await supabase.from("categorias").delete().in("id", orphans);
+    }
+  };
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("produtos").delete().eq("id", id);
       if (error) throw error;
+      await cleanOrphanCategories();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
+      queryClient.invalidateQueries({ queryKey: ["categorias"] });
       toast.success("Produto removido!");
     },
     onError: (e: any) => toast.error(e.message),
@@ -123,10 +136,12 @@ const ProdutosPage = () => {
     mutationFn: async () => {
       const { error } = await supabase.from("produtos").delete().neq("id", "00000000-0000-0000-0000-000000000000");
       if (error) throw error;
+      await supabase.from("categorias").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
-      toast.success("Todos os produtos foram removidos!");
+      queryClient.invalidateQueries({ queryKey: ["categorias"] });
+      toast.success("Todos os produtos e categorias foram removidos!");
     },
     onError: (e: any) => toast.error(e.message),
   });
