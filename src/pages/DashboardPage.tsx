@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { formatBRL } from "@/lib/format";
@@ -8,6 +9,21 @@ import { Package, Users, BarChart3, ShoppingCart, AlertCircle, CheckCircle2, Clo
 const DashboardPage = () => {
   const { lojaAtiva } = useLojaAtiva();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Realtime — atualiza contadores quando precos ou cotacao_produtos mudam
+  useEffect(() => {
+    const channel = supabase.channel('dashboard-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'precos' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["resposta-count"] });
+        queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores-count"] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cotacao_produtos' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],

@@ -160,15 +160,36 @@ const CotacaoPage = () => {
     return map;
   }, [precos]);
 
-  // Realtime
+  // Realtime — precos (INSERT/UPDATE from suppliers)
+  // IMPORTANTE: As tabelas precos e cotacao_produtos devem ter Realtime habilitado no Supabase
   useEffect(() => {
     if (!cotacaoAtiva?.id) return;
-    const channel = supabase.channel('precos-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'precos' }, () => {
-      queryClient.invalidateQueries({ queryKey: ["precos", cotacaoAtiva.id] });
-      toast.info("📬 Preços atualizados por um fornecedor!", { duration: 4000 });
-    }).subscribe();
+    const channel = supabase.channel('precos-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'precos' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["precos", cotacaoAtiva.id] });
+        toast.info("💬 Novo preço recebido de fornecedor", { duration: 4000 });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'precos' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["precos", cotacaoAtiva.id] });
+        toast.info("💬 Novo preço recebido de fornecedor", { duration: 4000 });
+      })
+      .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [cotacaoAtiva?.id]);
+  }, [cotacaoAtiva?.id, queryClient]);
+
+  // Realtime — cotacao_produtos (INSERT/DELETE)
+  useEffect(() => {
+    if (!cotacaoAtiva?.id) return;
+    const channel = supabase.channel('cotacao-produtos-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'cotacao_produtos' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["cotacao-produtos", cotacaoAtiva.id] });
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'cotacao_produtos' }, () => {
+        queryClient.invalidateQueries({ queryKey: ["cotacao-produtos", cotacaoAtiva.id] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [cotacaoAtiva?.id, queryClient]);
 
   useEffect(() => {
     const lp: Record<string, Record<string, string>> = {};
