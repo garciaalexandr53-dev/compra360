@@ -49,7 +49,9 @@ const AppFuncionariosPublic = () => {
       const { data, error } = await supabase
         .from("produtos")
         .select("nome, embalagem, categorias(nome)")
-        .order("nome");
+        .eq("ativo", true)
+        .order("nome")
+        .limit(5000);
       if (error) throw error;
       return data as any[];
     },
