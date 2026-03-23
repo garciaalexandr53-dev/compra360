@@ -40,6 +40,33 @@ const AppFuncionariosPublic = () => {
   const [nome, setNome] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+
+  // Swap manifest to funcionarios version & listen for install prompt
+  useEffect(() => {
+    // Inject funcionarios manifest
+    const existing = document.querySelector('link[rel="manifest"]');
+    if (existing) existing.setAttribute("href", "/manifest-funcionarios.json");
+    else {
+      const link = document.createElement("link");
+      link.rel = "manifest";
+      link.href = "/manifest-funcionarios.json";
+      document.head.appendChild(link);
+    }
+
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+
+    return () => {
+      // Restore default manifest
+      const el = document.querySelector('link[rel="manifest"]');
+      if (el) el.setAttribute("href", "/manifest.json");
+      window.removeEventListener("beforeinstallprompt", handler);
+    };
+  }, []);
 
   // Read loja from URL param (pre-defined by buyer)
   const urlLojaId = useMemo(() => {
