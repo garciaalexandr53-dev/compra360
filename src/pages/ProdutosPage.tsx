@@ -17,6 +17,7 @@ type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 type Categoria = Tables<"categorias">;
 
 const emptyForm = { nome: "", categoria_id: "", embalagem: "" };
+const PAGE_SIZE = 80;
 
 const ProdutosPage = () => {
   const queryClient = useQueryClient();
@@ -34,6 +35,7 @@ const ProdutosPage = () => {
 
   const [inlineEditing, setInlineEditing] = useState<Record<string, { nome?: string; embalagem?: string }>>({});
   const [classifying, setClassifying] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: categorias = [] } = useQuery({
     queryKey: ["categorias"],
@@ -44,16 +46,39 @@ const ProdutosPage = () => {
     },
   });
 
-  const { data: produtos = [], isLoading } = useQuery({
-    queryKey: ["produtos"],
-    queryFn: async () => {
-      const { data, error } = await supabase
+  const {
+    data: produtosData,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["produtos", search, selectedCat],
+    queryFn: async ({ pageParam = 0 }) => {
+      const from = pageParam * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      let query = supabase
         .from("produtos")
-        .select("*, categorias(nome)")
-        .order("nome");
+        .select("*, categorias(nome)", { count: "exact" })
+        .order("nome")
+        .range(from, to);
+
+      if (search.trim()) {
+        query = query.ilike("nome", `%${search.trim()}%`);
+      }
+
+      const { data, error, count } = await query;
       if (error) throw error;
-      return data as Produto[];
+      const totalCount = count ?? 0;
+      const hasMore = from + PAGE_SIZE < totalCount;
+      return {
+        products: data as Produto[],
+        nextPage: hasMore ? pageParam + 1 : undefined,
+        totalCount,
+      };
     },
+    getNextPageParam: (lastPage) => lastPage.nextPage,
+    initialPageParam: 0,
   });
 
   const { data: cotacaoAtiva } = useQuery({
