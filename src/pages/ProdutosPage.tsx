@@ -348,7 +348,7 @@ const ProdutosPage = () => {
                 }`}
               >
                 <span className="truncate">Todos</span>
-                <span className="text-[10px] font-bold bg-muted px-1.5 py-0.5 rounded-full">{produtos.length}</span>
+                <span className="text-[10px] font-bold bg-muted px-1.5 py-0.5 rounded-full">{totalCount}</span>
               </button>
               {categorias.map((cat) => (
                 <button
