@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { Download } from "lucide-react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,33 @@ const AppFuncionariosPublic = () => {
   const [nome, setNome] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+
+  // Swap manifest to funcionarios version & listen for install prompt
+  useEffect(() => {
+    // Inject funcionarios manifest
+    const existing = document.querySelector('link[rel="manifest"]');
+    if (existing) existing.setAttribute("href", "/manifest-funcionarios.json");
+    else {
+      const link = document.createElement("link");
+      link.rel = "manifest";
+      link.href = "/manifest-funcionarios.json";
+      document.head.appendChild(link);
+    }
+
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+
+    return () => {
+      // Restore default manifest
+      const el = document.querySelector('link[rel="manifest"]');
+      if (el) el.setAttribute("href", "/manifest.json");
+      window.removeEventListener("beforeinstallprompt", handler);
+    };
+  }, []);
 
   // Read loja from URL param (pre-defined by buyer)
   const urlLojaId = useMemo(() => {
@@ -272,10 +300,29 @@ const AppFuncionariosPublic = () => {
     <div className="min-h-screen bg-background pb-32">
       <Sonner />
       <div className="bg-gradient-to-r from-[hsl(var(--brand-dark))] via-[hsl(var(--brand))] to-[hsl(var(--brand-light))] text-white p-5 sticky top-0 z-20 shadow-lg">
-        <h1 className="text-lg font-bold">📋 Compra360 — Funcionários</h1>
-        <p className="text-sm opacity-80">
-          {activeTab === "lista" ? "Registre itens faltantes" : "Confira pedidos recebidos"}
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-bold">📋 Compra360 — Funcionários</h1>
+            <p className="text-sm opacity-80">
+              {activeTab === "lista" ? "Registre itens faltantes" : "Confira pedidos recebidos"}
+            </p>
+          </div>
+          {installPrompt && (
+            <Button
+              size="sm"
+              variant="secondary"
+              className="gap-1.5 text-xs"
+              onClick={async () => {
+                installPrompt.prompt();
+                const { outcome } = await installPrompt.userChoice;
+                if (outcome === "accepted") setInstallPrompt(null);
+              }}
+            >
+              <Download className="h-3.5 w-3.5" />
+              Instalar App
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex border-b bg-card sticky top-[76px] z-10">

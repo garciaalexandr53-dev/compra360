@@ -1,0 +1,22 @@
+{
+  "name": "Compra360",
+  "short_name": "Compra360",
+  "description": "Sistema de cotação para supermercados",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/logo-compra360-128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo-compra360.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
