@@ -358,8 +358,9 @@ const ProdutosPage = () => {
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-9 w-9 shrink-0">
+                  <Button variant="outline" className="h-9 shrink-0 px-2 gap-1">
                     <MoreHorizontal className="h-4 w-4" />
+                    <span className="text-xs">Mais</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
