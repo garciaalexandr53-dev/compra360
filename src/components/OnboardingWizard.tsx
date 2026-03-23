@@ -21,6 +21,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { user } = useAuth();
 
   // Step 1 - Loja
   const [lojaNome, setLojaNome] = useState("");
