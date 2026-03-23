@@ -1,9 +1,8 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -16,7 +15,20 @@ interface ItemEntry {
   embalagem: string;
 }
 
+interface ProdutoPublico {
+  nome: string;
+  embalagem: string | null;
+  categorias: {
+    nome: string;
+  } | null;
+}
+
 type AppTab = "lista" | "conferencia";
+
+const PRODUCT_PAGE_SIZE = 80;
+const SEARCH_DEBOUNCE_MS = 250;
+
+const getProductKey = (product: ProdutoPublico) => `${product.nome}::${product.embalagem || "un"}`;
 
 const AppFuncionariosPublic = () => {
   const [activeTab, setActiveTab] = useState<AppTab>("lista");
@@ -28,11 +40,19 @@ const AppFuncionariosPublic = () => {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [selectedLojaId, setSelectedLojaId] = useState<string>("");
-
   const [productSearch, setProductSearch] = useState("");
-  const [selectedCat, setSelectedCat] = useState("Todos");
+  const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
   const [showProductList, setShowProductList] = useState(true);
-  const [productQtds, setProductQtds] = useState<Record<number, string>>({});
+  const [productQtds, setProductQtds] = useState<Record<string, string>>({});
+  const productsListRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedProductSearch(productSearch.trim());
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [productSearch]);
 
   const { data: lojas = [] } = useQuery({
     queryKey: ["lojas-public"],
@@ -43,69 +63,135 @@ const AppFuncionariosPublic = () => {
     },
   });
 
-  const { data: produtos = [] } = useQuery({
-    queryKey: ["produtos-public"],
-    queryFn: async () => {
-      const { data, error } = await supabase
+  const {
+    data: produtosData,
+    isLoading: produtosLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["produtos-public", debouncedProductSearch],
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
+      const from = pageParam * PRODUCT_PAGE_SIZE;
+      const to = from + PRODUCT_PAGE_SIZE - 1;
+      const searchTerms = debouncedProductSearch.toLowerCase().split(/\s+/).filter(Boolean);
+
+      let query = supabase
         .from("produtos")
-        .select("nome, embalagem, categorias(nome)")
+        .select("nome, embalagem, categorias(nome)", { count: "exact" })
         .eq("ativo", true)
         .order("nome")
-        .limit(5000);
+        .range(from, to);
+
+      if (searchTerms.length > 0) {
+        query = query.ilike("nome", `%${searchTerms[0]}%`);
+      }
+
+      const { data, error, count } = await query;
+
       if (error) throw error;
-      return data as any[];
+
+      const products = ((data || []) as ProdutoPublico[]).filter((product) => {
+        if (searchTerms.length === 0) return true;
+        const productName = product.nome.toLowerCase();
+        return searchTerms.every((term) => productName.includes(term));
+      });
+
+      const nextOffset = from + (data?.length || 0);
+
+      return {
+        products,
+        nextPage: count !== null && nextOffset < count ? pageParam + 1 : undefined,
+      };
     },
+    getNextPageParam: (lastPage) => lastPage.nextPage,
   });
 
-  const { data: categorias = [] } = useQuery({
-    queryKey: ["categorias-public"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("categorias").select("nome").order("nome");
-      if (error) throw error;
-      return data as { nome: string }[];
-    },
-  });
+  const filteredProducts = useMemo(
+    () => produtosData?.pages.flatMap((page) => page.products) ?? [],
+    [produtosData]
+  );
 
-  const filteredProducts = produtos.filter((p) => {
-    const matchCat = selectedCat === "Todos" || p.categorias?.nome === selectedCat;
-    if (!productSearch.trim()) return matchCat;
-    const terms = productSearch.toLowerCase().trim().split(/\s+/);
-    const name = p.nome.toLowerCase();
-    return matchCat && terms.every((t) => name.includes(t));
-  });
+  useEffect(() => {
+    if (!showProductList || !productsListRef.current || !hasNextPage || isFetchingNextPage || produtosLoading) {
+      return;
+    }
+
+    const listElement = productsListRef.current;
+    if (listElement.scrollHeight <= listElement.clientHeight + 24) {
+      fetchNextPage();
+    }
+  }, [showProductList, filteredProducts.length, hasNextPage, isFetchingNextPage, fetchNextPage, produtosLoading]);
 
   const addItem = () => {
     const trimmed = current.trim();
     if (!trimmed) return;
-    setItems([...items, { nome: trimmed, quantidade: parseInt(currentQtd) || 1, embalagem: currentEmbal || "un" }]);
+
+    setItems((prev) => [
+      ...prev,
+      { nome: trimmed, quantidade: parseInt(currentQtd) || 1, embalagem: currentEmbal || "un" },
+    ]);
     setCurrent("");
     setCurrentQtd("1");
     setCurrentEmbal("un");
   };
 
-  const addFromProduct = (p: any, index: number) => {
-    const qty = parseInt(productQtds[index] || "1") || 1;
-    setItems([...items, { nome: p.nome, quantidade: qty, embalagem: p.embalagem || "un" }]);
-    setProductQtds((prev) => { const c = { ...prev }; delete c[index]; return c; });
-    toast.success(`${p.nome} (${qty}x) adicionado!`);
+  const addFromProduct = (product: ProdutoPublico) => {
+    const productKey = getProductKey(product);
+    const qty = parseInt(productQtds[productKey] || "1") || 1;
+
+    setItems((prev) => [...prev, { nome: product.nome, quantidade: qty, embalagem: product.embalagem || "un" }]);
+    setProductQtds((prev) => {
+      const next = { ...prev };
+      delete next[productKey];
+      return next;
+    });
+    toast.success(`${product.nome} (${qty}x) adicionado!`);
   };
 
-  const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
+  const removeItem = (index: number) => setItems((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
 
-  const updateItemQtd = (index: number, val: string) => {
-    setItems(items.map((item, i) => i === index ? { ...item, quantidade: parseInt(val) || 1 } : item));
+  const updateItemQtd = (index: number, value: string) => {
+    setItems((prev) =>
+      prev.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, quantidade: parseInt(value) || 1 } : item
+      )
+    );
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") { e.preventDefault(); addItem(); }
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addItem();
+    }
   };
 
-  const selectedLojaName = lojas.find((l) => l.id === selectedLojaId)?.nome || "";
+  const handleProductsScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    const listElement = event.currentTarget;
+    const distanceFromBottom = listElement.scrollHeight - listElement.scrollTop - listElement.clientHeight;
+
+    if (distanceFromBottom < 120 && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
+
+  const selectedLojaName = lojas.find((loja) => loja.id === selectedLojaId)?.nome || "";
+  const isSearchingProducts = productSearch.trim() !== debouncedProductSearch;
 
   const enviar = async () => {
-    if (!items.length) { toast.error("Adicione pelo menos um item!"); return; }
-    if (lojas.length > 1 && !selectedLojaId) { toast.error("Selecione a loja!"); return; }
+    if (!items.length) {
+      toast.error("Adicione pelo menos um item!");
+      return;
+    }
+
+    if (lojas.length > 1 && !selectedLojaId) {
+      toast.error("Selecione a loja!");
+      return;
+    }
+
     setSending(true);
+
     try {
       const lojaLabel = selectedLojaName ? ` [${selectedLojaName}]` : "";
       const inserts = items.map((item) => ({
@@ -114,17 +200,22 @@ const AppFuncionariosPublic = () => {
         observacao: [
           item.embalagem !== "un" ? `Embalagem: ${item.embalagem}` : null,
           lojaLabel || null,
-        ].filter(Boolean).join(" | ") || null,
+        ]
+          .filter(Boolean)
+          .join(" | ") || null,
         registrado_por: (nome.trim() || "Funcionário") + lojaLabel,
         loja_id: selectedLojaId || (lojas.length === 1 ? lojas[0].id : null),
       }));
-      const { error } = await supabase.from("itens_faltantes").insert(inserts as any);
+
+      const { error } = await supabase.from("itens_faltantes").insert(inserts as never);
       if (error) throw error;
+
       setSent(true);
       toast.success("Lista enviada!");
-    } catch (e: any) {
-      toast.error("Erro: " + e.message);
+    } catch (error: any) {
+      toast.error("Erro: " + error.message);
     }
+
     setSending(false);
   };
 
@@ -135,12 +226,13 @@ const AppFuncionariosPublic = () => {
         <div className="text-center">
           <div className="text-5xl mb-4">✅</div>
           <h1 className="text-xl font-bold mb-2">Lista Enviada!</h1>
-          <p className="text-muted-foreground mb-1">
-            {items.length} item(ns) registrado(s).
-          </p>
+          <p className="text-muted-foreground mb-1">{items.length} item(ns) registrado(s).</p>
           {selectedLojaName && <p className="text-sm text-primary font-medium mb-4">Loja: {selectedLojaName}</p>}
           <Button
-            onClick={() => { setItems([]); setSent(false); }}
+            onClick={() => {
+              setItems([]);
+              setSent(false);
+            }}
             className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
           >
             Enviar outra lista
@@ -153,7 +245,6 @@ const AppFuncionariosPublic = () => {
   return (
     <div className="min-h-screen bg-background pb-32">
       <Sonner />
-      {/* Header */}
       <div className="bg-gradient-to-r from-[hsl(var(--brand-dark))] via-[hsl(var(--brand))] to-[hsl(var(--brand-light))] text-white p-5 sticky top-0 z-20 shadow-lg">
         <h1 className="text-lg font-bold">📋 Compra360 — Funcionários</h1>
         <p className="text-sm opacity-80">
@@ -161,7 +252,6 @@ const AppFuncionariosPublic = () => {
         </p>
       </div>
 
-      {/* Tab navigation */}
       <div className="flex border-b bg-card sticky top-[76px] z-10">
         <button
           onClick={() => setActiveTab("lista")}
@@ -194,7 +284,6 @@ const AppFuncionariosPublic = () => {
       ) : (
         <>
           <div className="p-4 space-y-4">
-            {/* Store selector (when multiple stores) */}
             {lojas.length > 1 && (
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
@@ -205,23 +294,23 @@ const AppFuncionariosPublic = () => {
                     <SelectValue placeholder="Selecione a loja" />
                   </SelectTrigger>
                   <SelectContent>
-                    {lojas.map((l) => (
-                      <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
+                    {lojas.map((loja) => (
+                      <SelectItem key={loja.id} value={loja.id}>
+                        {loja.nome}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             )}
 
-            {/* Name input */}
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
                 Seu nome (opcional)
               </label>
-              <Input placeholder="Ex: João" value={nome} onChange={(e) => setNome(e.target.value)} />
+              <Input placeholder="Ex: João" value={nome} onChange={(event) => setNome(event.target.value)} />
             </div>
 
-            {/* Toggle: search vs manual */}
             <div className="flex gap-2">
               <Button
                 size="sm"
@@ -250,20 +339,26 @@ const AppFuncionariosPublic = () => {
                   <Input
                     placeholder="Ex: Detergente Ype 500ml"
                     value={current}
-                    onChange={(e) => setCurrent(e.target.value)}
+                    onChange={(event) => setCurrent(event.target.value)}
                     onKeyDown={handleKeyDown}
                   />
                 </div>
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <label className="text-xs text-muted-foreground mb-1 block">Qtd</label>
-                    <Input type="number" min="1" value={currentQtd} onChange={(e) => setCurrentQtd(e.target.value)} onFocus={(e) => e.target.select()} />
+                    <Input
+                      type="number"
+                      min="1"
+                      value={currentQtd}
+                      onChange={(event) => setCurrentQtd(event.target.value)}
+                      onFocus={(event) => event.target.select()}
+                    />
                   </div>
                   <div className="flex-1">
                     <label className="text-xs text-muted-foreground mb-1 block">Embalagem</label>
                     <select
                       value={currentEmbal}
-                      onChange={(e) => setCurrentEmbal(e.target.value)}
+                      onChange={(event) => setCurrentEmbal(event.target.value)}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
                       <option value="un">un</option>
@@ -293,41 +388,69 @@ const AppFuncionariosPublic = () => {
                   <Input
                     placeholder="Buscar produto... (ex: det ype)"
                     value={productSearch}
-                    onChange={(e) => setProductSearch(e.target.value)}
+                    onChange={(event) => setProductSearch(event.target.value)}
                     className="pl-9"
                   />
                 </div>
-                <ScrollArea className="h-[250px] border rounded-lg">
-                  {filteredProducts.length === 0 ? (
+
+                <div
+                  ref={productsListRef}
+                  onScroll={handleProductsScroll}
+                  className="h-[250px] overflow-y-auto border rounded-lg"
+                >
+                  {produtosLoading || isSearchingProducts ? (
+                    <div className="p-6 text-center text-muted-foreground text-sm">Carregando produtos...</div>
+                  ) : filteredProducts.length === 0 ? (
                     <div className="p-6 text-center text-muted-foreground text-sm">Nenhum produto encontrado.</div>
                   ) : (
-                    filteredProducts.map((p, i) => (
-                      <div key={i} className="flex items-center justify-between px-4 py-3 border-b hover:bg-muted/30 transition-colors">
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium">{p.nome}</div>
-                          <div className="text-xs text-muted-foreground">{p.categorias?.nome || "Sem categoria"} · {p.embalagem || "un"}</div>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <Input
-                            type="number"
-                            min="1"
-                            value={productQtds[i] || "1"}
-                            onChange={(e) => setProductQtds((prev) => ({ ...prev, [i]: e.target.value }))}
-                            onFocus={(e) => e.target.select()}
-                            className="h-8 w-14 text-xs text-center"
-                          />
-                          <Button size="sm" variant="ghost" className="h-8 px-2 text-primary font-bold text-lg" onClick={() => addFromProduct(p, i)}>
-                            +
-                          </Button>
-                        </div>
-                      </div>
-                    ))
+                    <>
+                      {filteredProducts.map((product, index) => {
+                        const productKey = getProductKey(product);
+
+                        return (
+                          <div
+                            key={`${productKey}-${index}`}
+                            className="flex items-center justify-between px-4 py-3 border-b hover:bg-muted/30 transition-colors"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium">{product.nome}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {product.categorias?.nome || "Sem categoria"} · {product.embalagem || "un"}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <Input
+                                type="number"
+                                min="1"
+                                value={productQtds[productKey] || "1"}
+                                onChange={(event) =>
+                                  setProductQtds((prev) => ({ ...prev, [productKey]: event.target.value }))
+                                }
+                                onFocus={(event) => event.target.select()}
+                                className="h-8 w-14 text-xs text-center"
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 px-2 text-primary font-bold text-lg"
+                                onClick={() => addFromProduct(product)}
+                              >
+                                +
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {isFetchingNextPage && (
+                        <div className="px-4 py-3 text-center text-xs text-muted-foreground">Carregando mais produtos...</div>
+                      )}
+                    </>
                   )}
-                </ScrollArea>
+                </div>
               </div>
             )}
 
-            {/* Items list */}
             {items.length > 0 && (
               <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
                 <div className="px-4 py-2.5 border-b bg-muted">
@@ -336,9 +459,9 @@ const AppFuncionariosPublic = () => {
                     {selectedLojaName && ` · ${selectedLojaName}`}
                   </span>
                 </div>
-                {items.map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 px-4 py-3 border-b last:border-b-0">
-                    <span className="text-xs text-muted-foreground">{i + 1}.</span>
+                {items.map((item, index) => (
+                  <div key={index} className="flex items-center gap-3 px-4 py-3 border-b last:border-b-0">
+                    <span className="text-xs text-muted-foreground">{index + 1}.</span>
                     <div className="flex-1 min-w-0">
                       <span className="text-sm font-medium block">{item.nome}</span>
                       <span className="text-xs text-muted-foreground">{item.embalagem}</span>
@@ -347,12 +470,12 @@ const AppFuncionariosPublic = () => {
                       type="number"
                       min="1"
                       value={item.quantidade}
-                      onChange={(e) => updateItemQtd(i, e.target.value)}
-                      onFocus={(e) => e.target.select()}
+                      onChange={(event) => updateItemQtd(index, event.target.value)}
+                      onFocus={(event) => event.target.select()}
                       className="h-7 w-14 text-xs text-center"
                     />
                     <button
-                      onClick={() => removeItem(i)}
+                      onClick={() => removeItem(index)}
                       className="text-destructive text-sm hover:bg-destructive/10 rounded-full w-7 h-7 flex items-center justify-center"
                     >
                       ✕
@@ -363,7 +486,6 @@ const AppFuncionariosPublic = () => {
             )}
           </div>
 
-          {/* Footer */}
           <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-4 shadow-lg z-10">
             <Button
               onClick={enviar}
