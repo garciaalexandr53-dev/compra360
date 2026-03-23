@@ -197,6 +197,25 @@ const FuncionariosPage = () => {
         </DropdownMenu>
       </div>
 
+      {/* Loja selector for link */}
+      {lojas.length > 1 && (
+        <div>
+          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
+            <Store className="h-3.5 w-3.5 inline mr-1" />Para qual loja?
+          </label>
+          <Select value={linkLojaId} onValueChange={setLinkLojaId}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Selecione a loja para gerar o link" />
+            </SelectTrigger>
+            <SelectContent>
+              {lojas.map((l) => (
+                <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Inline link */}
       <div className="bg-muted rounded-lg p-2 font-mono text-[10px] break-all">{appUrl}</div>
 

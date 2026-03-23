@@ -236,7 +236,8 @@ const AppFuncionariosPublic = () => {
       if (error) throw error;
 
       setSent(true);
-      toast.success("Lista enviada!");
+      const lojaMsg = selectedLojaName ? ` para ${selectedLojaName}` : "";
+      toast.success(`${items.length} itens enviados${lojaMsg}!`);
     } catch (error: any) {
       toast.error("Erro: " + error.message);
     }
