@@ -62,9 +62,15 @@ const AppFuncionariosPublic = () => {
     return () => window.clearTimeout(timeout);
   }, [productSearch]);
 
+  // If loja comes from URL, fetch only that loja; otherwise fetch all (public page, RLS handles visibility)
   const { data: lojas = [] } = useQuery({
-    queryKey: ["lojas-public"],
+    queryKey: ["lojas-public", urlLojaId],
     queryFn: async () => {
+      if (urlLojaId) {
+        const { data, error } = await supabase.from("lojas").select("id, nome").eq("id", urlLojaId);
+        if (error) throw error;
+        return data || [];
+      }
       const { data, error } = await supabase.from("lojas").select("id, nome").order("nome");
       if (error) throw error;
       return data || [];
