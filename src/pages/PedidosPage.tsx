@@ -8,6 +8,7 @@ import { ChevronDown, Printer, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { useAuth } from "@/hooks/useAuth";
 
 type Fornecedor = Tables<"fornecedores">;
 
