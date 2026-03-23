@@ -725,9 +725,8 @@ const CotacaoPage = () => {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="px-2 gap-1">
+            <Button variant="outline" size="sm" className="px-2">
               <MoreHorizontal className="h-4 w-4" />
-              <span className="text-xs">Mais</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
