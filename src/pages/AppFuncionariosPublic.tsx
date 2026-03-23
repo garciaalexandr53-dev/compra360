@@ -295,27 +295,6 @@ const AppFuncionariosPublic = () => {
                     className="pl-9"
                   />
                 </div>
-                <div className="flex gap-1.5 flex-wrap">
-                  <button
-                    onClick={() => setSelectedCat("Todos")}
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                      selectedCat === "Todos" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    Todos
-                  </button>
-                  {categorias.map((c) => (
-                    <button
-                      key={c.nome}
-                      onClick={() => setSelectedCat(c.nome)}
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                        selectedCat === c.nome ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {c.nome}
-                    </button>
-                  ))}
-                </div>
                 <ScrollArea className="h-[250px] border rounded-lg">
                   {filteredProducts.length === 0 ? (
                     <div className="p-6 text-center text-muted-foreground text-sm">Nenhum produto encontrado.</div>
