@@ -3,15 +3,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Trash2, Download, ExternalLink, Package, MoreHorizontal } from "lucide-react";
+import { Trash2, Download, Package, MoreHorizontal, Store } from "lucide-react";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { toast } from "sonner";
 
 const FuncionariosPage = () => {
   const queryClient = useQueryClient();
-  const { lojaAtiva } = useLojaAtiva();
-
+  const { lojaAtiva, lojas } = useLojaAtiva();
+  const [linkLojaId, setLinkLojaId] = useState<string>("");
   const { data: itens = [], isLoading } = useQuery({
     queryKey: ["itens-faltantes"],
     queryFn: async () => {
@@ -151,17 +152,28 @@ const FuncionariosPage = () => {
     },
   });
 
-  const appUrl = lojaAtiva
-    ? `${window.location.origin}/app-funcionarios?loja=${lojaAtiva.id}`
+  // Determine which loja to use for the link
+  const effectiveLinkLojaId = lojas.length === 1 ? lojas[0].id : linkLojaId;
+  const effectiveLinkLoja = lojas.find((l) => l.id === effectiveLinkLojaId);
+  const appUrl = effectiveLinkLojaId
+    ? `${window.location.origin}/app-funcionarios?loja=${effectiveLinkLojaId}`
     : `${window.location.origin}/app-funcionarios`;
 
   const copyLink = () => {
+    if (lojas.length > 1 && !effectiveLinkLojaId) {
+      toast.error("Selecione a loja primeiro!");
+      return;
+    }
     navigator.clipboard.writeText(appUrl);
-    toast.success("Link copiado!");
+    toast.success(`Link copiado! (${effectiveLinkLoja?.nome || ""})`);
   };
 
   const openWhatsApp = () => {
-    const lojaLabel = lojaAtiva ? ` da loja ${lojaAtiva.nome}` : "";
+    if (lojas.length > 1 && !effectiveLinkLojaId) {
+      toast.error("Selecione a loja primeiro!");
+      return;
+    }
+    const lojaLabel = effectiveLinkLoja ? ` da loja ${effectiveLinkLoja.nome}` : "";
     const msg = `📋 Use este link para registrar itens faltantes${lojaLabel}:\n${appUrl}\n\nBasta abrir no celular, digitar o item e enviar!`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, "_blank");
   };
@@ -184,6 +196,25 @@ const FuncionariosPage = () => {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Loja selector for link */}
+      {lojas.length > 1 && (
+        <div>
+          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
+            <Store className="h-3.5 w-3.5 inline mr-1" />Para qual loja?
+          </label>
+          <Select value={linkLojaId} onValueChange={setLinkLojaId}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Selecione a loja para gerar o link" />
+            </SelectTrigger>
+            <SelectContent>
+              {lojas.map((l) => (
+                <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {/* Inline link */}
       <div className="bg-muted rounded-lg p-2 font-mono text-[10px] break-all">{appUrl}</div>

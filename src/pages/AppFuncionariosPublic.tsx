@@ -62,9 +62,15 @@ const AppFuncionariosPublic = () => {
     return () => window.clearTimeout(timeout);
   }, [productSearch]);
 
+  // If loja comes from URL, fetch only that loja; otherwise fetch all (public page, RLS handles visibility)
   const { data: lojas = [] } = useQuery({
-    queryKey: ["lojas-public"],
+    queryKey: ["lojas-public", urlLojaId],
     queryFn: async () => {
+      if (urlLojaId) {
+        const { data, error } = await supabase.from("lojas").select("id, nome").eq("id", urlLojaId);
+        if (error) throw error;
+        return data || [];
+      }
       const { data, error } = await supabase.from("lojas").select("id, nome").order("nome");
       if (error) throw error;
       return data || [];
@@ -78,12 +84,19 @@ const AppFuncionariosPublic = () => {
     hasNextPage,
     fetchNextPage,
   } = useInfiniteQuery({
-    queryKey: ["produtos-public", debouncedProductSearch],
+    queryKey: ["produtos-public", debouncedProductSearch, selectedLojaId],
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       const from = pageParam * PRODUCT_PAGE_SIZE;
       const to = from + PRODUCT_PAGE_SIZE - 1;
       const searchTerms = debouncedProductSearch.toLowerCase().split(/\s+/).filter(Boolean);
+
+      // If a loja is selected, find products owned by that loja's owner
+      let ownerUserId: string | null = null;
+      if (selectedLojaId) {
+        const { data: lojaData } = await supabase.from("lojas").select("user_id").eq("id", selectedLojaId).maybeSingle();
+        ownerUserId = lojaData?.user_id || null;
+      }
 
       let query = supabase
         .from("produtos")
@@ -91,6 +104,10 @@ const AppFuncionariosPublic = () => {
         .eq("ativo", true)
         .order("nome")
         .range(from, to);
+
+      if (ownerUserId) {
+        query = query.eq("user_id", ownerUserId);
+      }
 
       if (searchTerms.length > 0) {
         query = query.ilike("nome", `%${searchTerms[0]}%`);
@@ -219,7 +236,8 @@ const AppFuncionariosPublic = () => {
       if (error) throw error;
 
       setSent(true);
-      toast.success("Lista enviada!");
+      const lojaMsg = selectedLojaName ? ` para ${selectedLojaName}` : "";
+      toast.success(`${items.length} itens enviados${lojaMsg}!`);
     } catch (error: any) {
       toast.error("Erro: " + error.message);
     }
