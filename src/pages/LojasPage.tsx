@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
@@ -24,6 +25,7 @@ const emptyForm = { nome: "", endereco: "", cnpj: "", razao_social: "", inscrica
 const LojasPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva, setLojaAtivaId } = useLojaAtiva();
+  const { user } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -50,7 +52,7 @@ const LojasPage = () => {
         const { error } = await supabase.from("lojas").update(payload).eq("id", editingId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("lojas").insert(payload);
+        const { error } = await supabase.from("lojas").insert({ ...payload, user_id: user?.id });
         if (error) throw error;
       }
     },

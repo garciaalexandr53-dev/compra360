@@ -8,6 +8,7 @@ import { ChevronDown, Printer, FileText, Loader2, MessageSquare } from "lucide-r
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { useAuth } from "@/hooks/useAuth";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -22,6 +23,7 @@ interface OrderItem {
 const PedidosContent = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
+  const { user } = useAuth();
   const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
   const [whatsappAiLoading, setWhatsappAiLoading] = useState<string | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -135,6 +137,7 @@ const PedidosContent = () => {
         status: "enviado",
         total,
         enviado_at: new Date().toISOString(),
+        created_by: user?.id,
       }).select().single();
       if (error) throw error;
       return data;

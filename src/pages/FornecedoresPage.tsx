@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ const emptyForm = {
 const FornecedoresPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
+  const { user } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -142,7 +144,7 @@ const FornecedoresPage = () => {
           nome: data.nome!, representante: (data as any).representante || null,
           telefone: (data as any).telefone || null, email: (data as any).email || null,
           pedido_minimo: (data as any).pedido_minimo || 0, prazo_pagamento: (data as any).prazo_pagamento || null,
-          observacoes: (data as any).observacoes || null,
+          observacoes: (data as any).observacoes || null, user_id: user?.id,
         }).select("id").single();
         if (error) throw error;
         fId = inserted.id;

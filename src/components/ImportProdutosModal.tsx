@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import * as XLSX from "xlsx";
 
 interface Props {
@@ -25,6 +26,7 @@ interface ParsedProduct {
 
 const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pasteText, setPasteText] = useState("");
   const [parsedItems, setParsedItems] = useState<ParsedProduct[]>([]);
@@ -38,7 +40,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
     if (!newCatName.trim()) return;
     setCreatingCat(true);
     try {
-      const { error } = await supabase.from("categorias").insert({ nome: newCatName.trim() });
+      const { error } = await supabase.from("categorias").insert({ nome: newCatName.trim(), user_id: user?.id });
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["categorias"] });
       toast.success(`Categoria "${newCatName.trim()}" criada!`);
@@ -252,7 +254,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
       for (const catName of newCats) {
         const { data, error } = await supabase
           .from("categorias")
-          .insert({ nome: catName })
+          .insert({ nome: catName, user_id: user?.id })
           .select("id")
           .single();
         if (!error && data) catMap[catName.toLowerCase()] = data.id;
@@ -267,6 +269,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
           categoria_id: catMap[p.categoria.toLowerCase()] || null,
           embalagem: p.embalagem || "un",
           ativo: false,
+          user_id: user?.id,
         }));
         const { error } = await supabase.from("produtos").insert(batch);
         if (error) throw error;

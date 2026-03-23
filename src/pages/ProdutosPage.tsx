@@ -11,6 +11,7 @@ import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, ChevronRight,
 import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { useAuth } from "@/hooks/useAuth";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
@@ -22,6 +23,7 @@ const PAGE_SIZE = 80;
 const ProdutosPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState<string>("Todos");
   const [modalOpen, setModalOpen] = useState(false);
@@ -110,7 +112,7 @@ const ProdutosPage = () => {
 
   const createCatMutation = useMutation({
     mutationFn: async (nome: string) => {
-      const { error } = await supabase.from("categorias").insert({ nome: nome.trim() });
+      const { error } = await supabase.from("categorias").insert({ nome: nome.trim(), user_id: user?.id });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -133,7 +135,7 @@ const ProdutosPage = () => {
         const { error } = await supabase.from("produtos").update(payload).eq("id", editingId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("produtos").insert(payload);
+        const { error } = await supabase.from("produtos").insert({ ...payload, user_id: user?.id });
         if (error) throw error;
       }
     },
@@ -305,7 +307,7 @@ const ProdutosPage = () => {
       const allCatNames = classifications.map((c: any) => String(c.categoria || "")).filter((c: string) => c && !catMap[c.toLowerCase()]);
       const newCats = Array.from(new Set<string>(allCatNames));
       for (const catName of newCats) {
-        const { data, error } = await supabase.from("categorias").insert([{ nome: catName }]).select("id").single();
+        const { data, error } = await supabase.from("categorias").insert([{ nome: catName, user_id: user?.id }]).select("id").single();
         if (!error && data) catMap[catName.toLowerCase()] = data.id;
       }
 

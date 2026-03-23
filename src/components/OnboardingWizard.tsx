@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Store, Truck, Package, Sparkles, ArrowLeft, ArrowRight, Check, X } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface OnboardingWizardProps {
   open: boolean;
@@ -20,6 +21,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { user } = useAuth();
 
   // Step 1 - Loja
   const [lojaNome, setLojaNome] = useState("");
@@ -42,7 +44,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
     try {
       if (step === 1) {
         if (!lojaNome.trim()) return;
-        const { error } = await supabase.from("lojas").insert({ nome: lojaNome.trim() });
+        const { error } = await supabase.from("lojas").insert({ nome: lojaNome.trim(), user_id: user?.id });
         if (error) throw error;
         qc.invalidateQueries({ queryKey: ["lojas"] });
       } else if (step === 2) {
@@ -52,6 +54,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
           representante: fornRepresentante.trim() || null,
           telefone: fornTelefone.trim() || null,
           email: fornEmail.trim() || null,
+          user_id: user?.id,
         });
         if (error) throw error;
         qc.invalidateQueries({ queryKey: ["fornecedores"] });
@@ -60,6 +63,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         const { error } = await supabase.from("produtos").insert({
           nome: prodNome.trim(),
           embalagem: prodEmbalagem.trim() || null,
+          user_id: user?.id,
         });
         if (error) throw error;
         qc.invalidateQueries({ queryKey: ["produtos"] });
