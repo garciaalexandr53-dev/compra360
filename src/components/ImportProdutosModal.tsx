@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import * as XLSX from "xlsx";
 
 interface Props {
