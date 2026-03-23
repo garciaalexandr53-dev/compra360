@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { formatBRL } from "@/lib/format";
 import { useNavigate } from "react-router-dom";
-import { Package, Users, BarChart3, ShoppingCart, AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { Package, Users, BarChart3, ShoppingCart, AlertCircle, CheckCircle2, Clock, History, Trophy, MessageSquare, Star } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 const DashboardPage = () => {
   const { lojaAtiva } = useLojaAtiva();
