@@ -152,17 +152,28 @@ const FuncionariosPage = () => {
     },
   });
 
-  const appUrl = lojaAtiva
-    ? `${window.location.origin}/app-funcionarios?loja=${lojaAtiva.id}`
+  // Determine which loja to use for the link
+  const effectiveLinkLojaId = lojas.length === 1 ? lojas[0].id : linkLojaId;
+  const effectiveLinkLoja = lojas.find((l) => l.id === effectiveLinkLojaId);
+  const appUrl = effectiveLinkLojaId
+    ? `${window.location.origin}/app-funcionarios?loja=${effectiveLinkLojaId}`
     : `${window.location.origin}/app-funcionarios`;
 
   const copyLink = () => {
+    if (lojas.length > 1 && !effectiveLinkLojaId) {
+      toast.error("Selecione a loja primeiro!");
+      return;
+    }
     navigator.clipboard.writeText(appUrl);
-    toast.success("Link copiado!");
+    toast.success(`Link copiado! (${effectiveLinkLoja?.nome || ""})`);
   };
 
   const openWhatsApp = () => {
-    const lojaLabel = lojaAtiva ? ` da loja ${lojaAtiva.nome}` : "";
+    if (lojas.length > 1 && !effectiveLinkLojaId) {
+      toast.error("Selecione a loja primeiro!");
+      return;
+    }
+    const lojaLabel = effectiveLinkLoja ? ` da loja ${effectiveLinkLoja.nome}` : "";
     const msg = `📋 Use este link para registrar itens faltantes${lojaLabel}:\n${appUrl}\n\nBasta abrir no celular, digitar o item e enviar!`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, "_blank");
   };
