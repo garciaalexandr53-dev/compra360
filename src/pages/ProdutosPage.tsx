@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, ChevronRight, Sparkles, Loader2, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
@@ -343,25 +344,45 @@ const ProdutosPage = () => {
           <div className="flex items-center gap-2">
             {editMode ? (
               <>
-                <Button size="sm" onClick={() => setEditMode(false)}>
-                  <Check className="h-4 w-4 mr-1" /> Concluir
-                </Button>
-                <Button size="sm" onClick={openAdd}>
-                  <Plus className="h-4 w-4 mr-1" /> Novo
-                </Button>
-                <Button size="sm" variant="destructive" onClick={() => {
-                  if (confirm(`Excluir TODOS os ${produtos.length} produtos?`)) deleteAllMutation.mutate();
-                }} disabled={deleteAllMutation.isPending || produtos.length === 0}>
-                  <Trash2 className="h-4 w-4 mr-1" /> Excluir Todos
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="sm" onClick={() => setEditMode(false)}>
+                      <Check className="h-4 w-4 mr-1" /> Concluir
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Sair do modo edição</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="sm" onClick={openAdd}>
+                      <Plus className="h-4 w-4 mr-1" /> Novo
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Adicionar novo produto</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="sm" variant="destructive" onClick={() => {
+                      if (confirm(`Excluir TODOS os ${produtos.length} produtos?`)) deleteAllMutation.mutate();
+                    }} disabled={deleteAllMutation.isPending || produtos.length === 0}>
+                      <Trash2 className="h-4 w-4 mr-1" /> Excluir Todos
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Remover todos os produtos cadastrados</TooltipContent>
+                </Tooltip>
               </>
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-9 shrink-0 px-2 gap-1">
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="text-xs">Mais</span>
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" className="h-9 shrink-0 px-2 gap-1">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="text-xs">Mais</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Importar, classificar e editar</TooltipContent>
+                  </Tooltip>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => setImportOpen(true)}>

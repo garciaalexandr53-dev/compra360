@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Trash2, Download, ExternalLink, Package, MoreHorizontal } from "lucide-react";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { toast } from "sonner";
@@ -173,7 +174,12 @@ const FuncionariosPage = () => {
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="h-8 px-2 gap-1"><MoreHorizontal className="h-4 w-4" /><span className="text-xs">Mais</span></Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" className="h-8 px-2 gap-1"><MoreHorizontal className="h-4 w-4" /><span className="text-xs">Mais</span></Button>
+              </TooltipTrigger>
+              <TooltipContent>Compartilhar link do app</TooltipContent>
+            </Tooltip>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={copyLink}>📋 Copiar Link</DropdownMenuItem>
@@ -196,15 +202,20 @@ const FuncionariosPage = () => {
             </span>
           </div>
           {pendentes.length > 0 && (
-            <Button
-              size="sm"
-              onClick={() => importarMutation.mutate()}
-              disabled={importarMutation.isPending}
-              className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
-            >
-              <Download className="h-4 w-4 mr-1" />
-              {importarMutation.isPending ? "Importando..." : `Importar ${pendentes.length} itens`}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  onClick={() => importarMutation.mutate()}
+                  disabled={importarMutation.isPending}
+                  className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  {importarMutation.isPending ? "Importando..." : `Importar ${pendentes.length} itens`}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Importar itens para o banco de produtos e cotação ativa</TooltipContent>
+            </Tooltip>
           )}
         </div>
         <ScrollArea className="max-h-[400px]">
