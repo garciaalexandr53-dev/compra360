@@ -193,7 +193,7 @@ const AppFuncionariosPublic = () => {
       return;
     }
 
-    if (lojas.length > 1 && !selectedLojaId) {
+    if (!lojaFromUrl && lojas.length > 1 && !selectedLojaId) {
       toast.error("Selecione a loja!");
       return;
     }
