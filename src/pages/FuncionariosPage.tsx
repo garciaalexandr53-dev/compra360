@@ -3,15 +3,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Trash2, Download, ExternalLink, Package, MoreHorizontal } from "lucide-react";
+import { Trash2, Download, Package, MoreHorizontal, Store } from "lucide-react";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { toast } from "sonner";
 
 const FuncionariosPage = () => {
   const queryClient = useQueryClient();
-  const { lojaAtiva } = useLojaAtiva();
-
+  const { lojaAtiva, lojas } = useLojaAtiva();
+  const [linkLojaId, setLinkLojaId] = useState<string>("");
   const { data: itens = [], isLoading } = useQuery({
     queryKey: ["itens-faltantes"],
     queryFn: async () => {
