@@ -93,7 +93,21 @@ const ProdutosPage = () => {
     },
   });
 
-  const createCatMutation = useMutation({
+  const produtos = useMemo(
+    () => produtosData?.pages.flatMap((p) => p.products) ?? [],
+    [produtosData]
+  );
+
+  const totalCount = produtosData?.pages[0]?.totalCount ?? 0;
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || !hasNextPage || isFetchingNextPage) return;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 150) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
     mutationFn: async (nome: string) => {
       const { error } = await supabase.from("categorias").insert({ nome: nome.trim() });
       if (error) throw error;
