@@ -16,6 +16,7 @@ import ImportErpModal from "@/components/ImportErpModal";
 import ImportNfModal from "@/components/ImportNfModal";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { useAuth } from "@/hooks/useAuth";
 
 type Fornecedor = Tables<"fornecedores">;
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
