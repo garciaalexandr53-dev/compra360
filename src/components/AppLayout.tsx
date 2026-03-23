@@ -64,6 +64,7 @@ export default function AppLayout() {
         </div>
       </div>
       <BottomNav />
+      <OnboardingWizard open={showOnboarding} onClose={() => setShowOnboarding(false)} />
     </SidebarProvider>
   );
 }
