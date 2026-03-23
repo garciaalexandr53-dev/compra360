@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
