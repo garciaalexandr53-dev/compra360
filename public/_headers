@@ -3,3 +3,9 @@
 
 /~flock.js
   Cache-Control: public, max-age=86400
+
+/logo-compra360-128.png
+  Cache-Control: public, max-age=2592000
+
+/favicon-32.png
+  Cache-Control: public, max-age=2592000
