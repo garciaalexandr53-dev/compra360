@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Outlet, Navigate } from "react-router-dom";
@@ -6,11 +7,21 @@ import { LogOut, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { LojaSelector } from "@/components/LojaSelector";
 import { useTheme } from "@/hooks/useTheme";
+import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import BottomNav from "@/components/BottomNav";
+import OnboardingWizard from "@/components/OnboardingWizard";
 
 export default function AppLayout() {
   const { user, loading, signOut } = useAuth();
   const { theme, toggle } = useTheme();
+  const { lojas, loading: lojasLoading } = useLojaAtiva();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    if (!lojasLoading && lojas.length === 0 && user) {
+      setShowOnboarding(true);
+    }
+  }, [lojasLoading, lojas, user]);
 
   if (loading) {
     return (
