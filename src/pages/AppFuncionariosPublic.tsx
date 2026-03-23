@@ -39,7 +39,15 @@ const AppFuncionariosPublic = () => {
   const [nome, setNome] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
-  const [selectedLojaId, setSelectedLojaId] = useState<string>("");
+
+  // Read loja from URL param (pre-defined by buyer)
+  const urlLojaId = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("loja") || "";
+  }, []);
+  const lojaFromUrl = !!urlLojaId;
+
+  const [selectedLojaId, setSelectedLojaId] = useState<string>(urlLojaId);
   const [productSearch, setProductSearch] = useState("");
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
   const [showProductList, setShowProductList] = useState(true);
@@ -185,7 +193,7 @@ const AppFuncionariosPublic = () => {
       return;
     }
 
-    if (lojas.length > 1 && !selectedLojaId) {
+    if (!lojaFromUrl && lojas.length > 1 && !selectedLojaId) {
       toast.error("Selecione a loja!");
       return;
     }
@@ -284,7 +292,12 @@ const AppFuncionariosPublic = () => {
       ) : (
         <>
           <div className="p-4 space-y-4">
-            {lojas.length > 1 && (
+            {lojaFromUrl ? (
+              <div className="bg-muted rounded-lg px-3 py-2 flex items-center gap-2">
+                <Store className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">{selectedLojaName || "Loja selecionada"}</span>
+              </div>
+            ) : lojas.length > 1 ? (
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
                   <Store className="h-3.5 w-3.5 inline mr-1" />Loja *
@@ -302,7 +315,7 @@ const AppFuncionariosPublic = () => {
                   </SelectContent>
                 </Select>
               </div>
-            )}
+            ) : null}
 
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
