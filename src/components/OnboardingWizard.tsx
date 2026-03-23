@@ -44,7 +44,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
     try {
       if (step === 1) {
         if (!lojaNome.trim()) return;
-        const { error } = await supabase.from("lojas").insert({ nome: lojaNome.trim() });
+        const { error } = await supabase.from("lojas").insert({ nome: lojaNome.trim(), user_id: user?.id });
         if (error) throw error;
         qc.invalidateQueries({ queryKey: ["lojas"] });
       } else if (step === 2) {
