@@ -1,4 +1,4 @@
-/* Fonts loaded via index.html to avoid render-blocking @import */
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=optional');
 
 /* Reduce CLS from font loading */
 :root {
