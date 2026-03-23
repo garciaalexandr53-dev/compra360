@@ -8,7 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { LojaProvider } from "@/hooks/useLojaAtiva";
 import { ThemeProvider } from "@/hooks/useTheme";
 import LandingSkeleton from "./components/LandingSkeleton";
-const LandingPage = lazy(() => import("./pages/LandingPage"));
+import LandingPage from "./pages/LandingPage";
 
 const AppLayout = lazy(() => import("./components/AppLayout"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
@@ -41,7 +41,7 @@ const App = () => (
             </Suspense>
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Suspense fallback={<LandingSkeleton />}><LandingPage /></Suspense>} />
+                <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Suspense fallback={null}><LoginPage /></Suspense>} />
                 <Route path="/fornecedor/:token" element={<Suspense fallback={null}><FornecedorCotacaoPage /></Suspense>} />
                 <Route path="/app-funcionarios" element={<Suspense fallback={null}><AppFuncionariosPublic /></Suspense>} />
