@@ -84,12 +84,19 @@ const AppFuncionariosPublic = () => {
     hasNextPage,
     fetchNextPage,
   } = useInfiniteQuery({
-    queryKey: ["produtos-public", debouncedProductSearch],
+    queryKey: ["produtos-public", debouncedProductSearch, selectedLojaId],
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       const from = pageParam * PRODUCT_PAGE_SIZE;
       const to = from + PRODUCT_PAGE_SIZE - 1;
       const searchTerms = debouncedProductSearch.toLowerCase().split(/\s+/).filter(Boolean);
+
+      // If a loja is selected, find products owned by that loja's owner
+      let ownerUserId: string | null = null;
+      if (selectedLojaId) {
+        const { data: lojaData } = await supabase.from("lojas").select("user_id").eq("id", selectedLojaId).maybeSingle();
+        ownerUserId = lojaData?.user_id || null;
+      }
 
       let query = supabase
         .from("produtos")
@@ -97,6 +104,10 @@ const AppFuncionariosPublic = () => {
         .eq("ativo", true)
         .order("nome")
         .range(from, to);
+
+      if (ownerUserId) {
+        query = query.eq("user_id", ownerUserId);
+      }
 
       if (searchTerms.length > 0) {
         query = query.ilike("nome", `%${searchTerms[0]}%`);
