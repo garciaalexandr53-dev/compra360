@@ -225,11 +225,10 @@ const ProdutosPage = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const filtered = produtos.filter((p) => {
+  const filtered = useMemo(() => produtos.filter((p) => {
     const matchCat = selectedCat === "Todos" || p.categorias?.nome === selectedCat;
-    const matchSearch = !search || p.nome.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
-  });
+    return matchCat;
+  }), [produtos, selectedCat]);
 
   const grouped = filtered.reduce<Record<string, Produto[]>>((acc, p) => {
     const cat = p.categorias?.nome || "Sem Categoria";
