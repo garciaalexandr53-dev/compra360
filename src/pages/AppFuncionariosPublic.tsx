@@ -292,7 +292,12 @@ const AppFuncionariosPublic = () => {
       ) : (
         <>
           <div className="p-4 space-y-4">
-            {lojas.length > 1 && (
+            {lojaFromUrl ? (
+              <div className="bg-muted rounded-lg px-3 py-2 flex items-center gap-2">
+                <Store className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">{selectedLojaName || "Loja selecionada"}</span>
+              </div>
+            ) : lojas.length > 1 ? (
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
                   <Store className="h-3.5 w-3.5 inline mr-1" />Loja *
@@ -310,7 +315,7 @@ const AppFuncionariosPublic = () => {
                   </SelectContent>
                 </Select>
               </div>
-            )}
+            ) : null}
 
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
