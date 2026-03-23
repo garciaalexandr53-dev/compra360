@@ -392,7 +392,7 @@ const ProdutosPage = () => {
                 className="pl-9"
               />
             </div>
-            <span className="text-sm text-muted-foreground whitespace-nowrap">{filtered.length}</span>
+            <span className="text-sm text-muted-foreground whitespace-nowrap">{filtered.length}{totalCount > filtered.length ? `/${totalCount}` : ""}</span>
           </div>
           <div className="flex items-center gap-2">
             {editMode ? (
