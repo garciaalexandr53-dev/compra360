@@ -264,7 +264,61 @@ const DashboardPage = () => {
               <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
               <span className="text-sm text-amber-800">{itensFaltantes} item(ns) faltantes aguardando importação</span>
             </button>
-          )}
+      )}
+
+      {/* Métricas históricas */}
+      <div className="mt-6">
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Histórico</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <Card>
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <History className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-xs font-medium text-muted-foreground">Cotações realizadas</span>
+              </div>
+              <p className="text-lg font-bold text-foreground">{totalCotacoes > 0 ? totalCotacoes : <span className="text-sm font-normal text-muted-foreground">Sem dados ainda</span>}</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Trophy className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-xs font-medium text-muted-foreground">Mais competitivo</span>
+              </div>
+              <p className="text-sm font-bold text-foreground truncate">{fornecedorMaisCompetitivo || <span className="font-normal text-muted-foreground">Sem dados ainda</span>}</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <MessageSquare className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-xs font-medium text-muted-foreground">Média respostas/cotação</span>
+              </div>
+              <p className="text-lg font-bold text-foreground">{mediaRespostas || <span className="text-sm font-normal text-muted-foreground">Sem dados ainda</span>}</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Star className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-xs font-medium text-muted-foreground">Mais cotados</span>
+              </div>
+              {produtosMaisCotados?.length ? (
+                <ul className="space-y-0.5">
+                  {produtosMaisCotados.map((nome, i) => (
+                    <li key={i} className="text-xs text-foreground truncate">• {nome}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">Sem dados ainda</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
           {pedidosPendentes > 0 && (
             <button onClick={() => navigate("/analise")} className="w-full flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-left hover:shadow-sm transition-shadow">
               <Clock className="h-4 w-4 text-blue-600 shrink-0" />
