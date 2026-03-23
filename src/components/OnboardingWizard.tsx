@@ -54,6 +54,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
           representante: fornRepresentante.trim() || null,
           telefone: fornTelefone.trim() || null,
           email: fornEmail.trim() || null,
+          user_id: user?.id,
         });
         if (error) throw error;
         qc.invalidateQueries({ queryKey: ["fornecedores"] });
