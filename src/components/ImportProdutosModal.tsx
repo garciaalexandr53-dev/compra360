@@ -269,6 +269,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
           categoria_id: catMap[p.categoria.toLowerCase()] || null,
           embalagem: p.embalagem || "un",
           ativo: false,
+          user_id: user?.id,
         }));
         const { error } = await supabase.from("produtos").insert(batch);
         if (error) throw error;
