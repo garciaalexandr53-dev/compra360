@@ -305,7 +305,7 @@ const ProdutosPage = () => {
       const allCatNames = classifications.map((c: any) => String(c.categoria || "")).filter((c: string) => c && !catMap[c.toLowerCase()]);
       const newCats = Array.from(new Set<string>(allCatNames));
       for (const catName of newCats) {
-        const { data, error } = await supabase.from("categorias").insert([{ nome: catName }]).select("id").single();
+        const { data, error } = await supabase.from("categorias").insert([{ nome: catName, user_id: user?.id }]).select("id").single();
         if (!error && data) catMap[catName.toLowerCase()] = data.id;
       }
 

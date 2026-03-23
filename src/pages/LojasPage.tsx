@@ -50,7 +50,7 @@ const LojasPage = () => {
         const { error } = await supabase.from("lojas").update(payload).eq("id", editingId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("lojas").insert(payload);
+        const { error } = await supabase.from("lojas").insert({ ...payload, user_id: user?.id });
         if (error) throw error;
       }
     },

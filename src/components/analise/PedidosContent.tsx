@@ -135,6 +135,7 @@ const PedidosContent = () => {
         status: "enviado",
         total,
         enviado_at: new Date().toISOString(),
+        created_by: user?.id,
       }).select().single();
       if (error) throw error;
       return data;

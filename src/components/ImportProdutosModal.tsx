@@ -38,7 +38,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
     if (!newCatName.trim()) return;
     setCreatingCat(true);
     try {
-      const { error } = await supabase.from("categorias").insert({ nome: newCatName.trim() });
+      const { error } = await supabase.from("categorias").insert({ nome: newCatName.trim(), user_id: user?.id });
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["categorias"] });
       toast.success(`Categoria "${newCatName.trim()}" criada!`);
