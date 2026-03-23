@@ -344,17 +344,32 @@ const ProdutosPage = () => {
           <div className="flex items-center gap-2">
             {editMode ? (
               <>
-                <Button size="sm" onClick={() => setEditMode(false)}>
-                  <Check className="h-4 w-4 mr-1" /> Concluir
-                </Button>
-                <Button size="sm" onClick={openAdd}>
-                  <Plus className="h-4 w-4 mr-1" /> Novo
-                </Button>
-                <Button size="sm" variant="destructive" onClick={() => {
-                  if (confirm(`Excluir TODOS os ${produtos.length} produtos?`)) deleteAllMutation.mutate();
-                }} disabled={deleteAllMutation.isPending || produtos.length === 0}>
-                  <Trash2 className="h-4 w-4 mr-1" /> Excluir Todos
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="sm" onClick={() => setEditMode(false)}>
+                      <Check className="h-4 w-4 mr-1" /> Concluir
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Sair do modo edição</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="sm" onClick={openAdd}>
+                      <Plus className="h-4 w-4 mr-1" /> Novo
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Adicionar novo produto</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="sm" variant="destructive" onClick={() => {
+                      if (confirm(`Excluir TODOS os ${produtos.length} produtos?`)) deleteAllMutation.mutate();
+                    }} disabled={deleteAllMutation.isPending || produtos.length === 0}>
+                      <Trash2 className="h-4 w-4 mr-1" /> Excluir Todos
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Remover todos os produtos cadastrados</TooltipContent>
+                </Tooltip>
               </>
             ) : (
               <DropdownMenu>
