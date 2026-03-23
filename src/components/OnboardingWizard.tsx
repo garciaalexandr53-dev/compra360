@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Store, Truck, Package, Sparkles, ArrowLeft, ArrowRight, Check, X } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface OnboardingWizardProps {
   open: boolean;
