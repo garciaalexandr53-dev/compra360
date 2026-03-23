@@ -41,7 +41,7 @@ const App = () => (
             </Suspense>
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Suspense fallback={<LandingSkeleton />}><LandingPage /></Suspense>} />
+                <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Suspense fallback={null}><LoginPage /></Suspense>} />
                 <Route path="/fornecedor/:token" element={<Suspense fallback={null}><FornecedorCotacaoPage /></Suspense>} />
                 <Route path="/app-funcionarios" element={<Suspense fallback={null}><AppFuncionariosPublic /></Suspense>} />
