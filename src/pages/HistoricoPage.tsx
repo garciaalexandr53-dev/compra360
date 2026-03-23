@@ -151,7 +151,12 @@ const HistoricoPage = () => {
         {cotacoes.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="h-8 px-2 gap-1"><MoreHorizontal className="h-4 w-4" /><span className="text-xs">Mais</span></Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" className="h-8 px-2 gap-1"><MoreHorizontal className="h-4 w-4" /><span className="text-xs">Mais</span></Button>
+                </TooltipTrigger>
+                <TooltipContent>Gerenciar histórico</TooltipContent>
+              </Tooltip>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <AlertDialog>

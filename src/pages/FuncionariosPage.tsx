@@ -202,15 +202,20 @@ const FuncionariosPage = () => {
             </span>
           </div>
           {pendentes.length > 0 && (
-            <Button
-              size="sm"
-              onClick={() => importarMutation.mutate()}
-              disabled={importarMutation.isPending}
-              className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
-            >
-              <Download className="h-4 w-4 mr-1" />
-              {importarMutation.isPending ? "Importando..." : `Importar ${pendentes.length} itens`}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  onClick={() => importarMutation.mutate()}
+                  disabled={importarMutation.isPending}
+                  className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  {importarMutation.isPending ? "Importando..." : `Importar ${pendentes.length} itens`}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Importar itens para o banco de produtos e cotação ativa</TooltipContent>
+            </Tooltip>
           )}
         </div>
         <ScrollArea className="max-h-[400px]">

@@ -740,10 +740,15 @@ const CotacaoPage = () => {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="px-2 gap-1">
-              <MoreHorizontal className="h-4 w-4" />
-              <span className="text-xs">Mais</span>
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" className="px-2 gap-1">
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="text-xs">Mais</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Mais ações e automações</TooltipContent>
+            </Tooltip>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuItem onClick={() => setSupplierModalOpen(true)}>

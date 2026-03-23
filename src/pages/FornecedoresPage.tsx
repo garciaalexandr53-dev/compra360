@@ -240,9 +240,14 @@ const FornecedoresPage = () => {
           />
         </div>
         <span className="text-sm text-muted-foreground whitespace-nowrap">{fornecedores.length}</span>
-        <Button size="sm" onClick={openAdd}>
-          <Plus className="h-4 w-4 mr-1" /> Novo
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button size="sm" onClick={openAdd}>
+              <Plus className="h-4 w-4 mr-1" /> Novo
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Cadastrar novo fornecedor</TooltipContent>
+        </Tooltip>
       </div>
 
       <Tabs defaultValue="cadastro" className="w-full">

@@ -374,10 +374,15 @@ const ProdutosPage = () => {
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-9 shrink-0 px-2 gap-1">
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="text-xs">Mais</span>
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" className="h-9 shrink-0 px-2 gap-1">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="text-xs">Mais</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Importar, classificar e editar</TooltipContent>
+                  </Tooltip>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => setImportOpen(true)}>
