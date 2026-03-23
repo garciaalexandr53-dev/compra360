@@ -254,7 +254,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
       for (const catName of newCats) {
         const { data, error } = await supabase
           .from("categorias")
-          .insert({ nome: catName })
+          .insert({ nome: catName, user_id: user?.id })
           .select("id")
           .single();
         if (!error && data) catMap[catName.toLowerCase()] = data.id;
