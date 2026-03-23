@@ -711,17 +711,32 @@ const CotacaoPage = () => {
           <Input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
 
-        <Button size="sm" onClick={() => setErpImportOpen(true)} variant="outline">
-          <FileSpreadsheet className="h-4 w-4 mr-1" /> Importar ERP
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button size="sm" onClick={() => setErpImportOpen(true)} variant="outline">
+              <FileSpreadsheet className="h-4 w-4 mr-1" /> Importar ERP
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Importar planilha do ERP</TooltipContent>
+        </Tooltip>
 
-        <Button size="sm" onClick={() => setNfImportOpen(true)} variant="outline">
-          <Camera className="h-4 w-4 mr-1" /> OCR NF
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button size="sm" onClick={() => setNfImportOpen(true)} variant="outline">
+              <Camera className="h-4 w-4 mr-1" /> OCR NF
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Ler nota fiscal com OCR</TooltipContent>
+        </Tooltip>
 
-        <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
-          <Save className="h-4 w-4 mr-1" /> Salvar
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
+              <Save className="h-4 w-4 mr-1" /> Salvar
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Salvar todos os preços e quantidades</TooltipContent>
+        </Tooltip>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
