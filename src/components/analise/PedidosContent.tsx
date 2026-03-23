@@ -23,6 +23,7 @@ interface OrderItem {
 const PedidosContent = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
+  const { user } = useAuth();
   const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
   const [whatsappAiLoading, setWhatsappAiLoading] = useState<string | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);

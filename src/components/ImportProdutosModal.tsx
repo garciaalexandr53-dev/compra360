@@ -26,6 +26,7 @@ interface ParsedProduct {
 
 const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pasteText, setPasteText] = useState("");
   const [parsedItems, setParsedItems] = useState<ParsedProduct[]>([]);

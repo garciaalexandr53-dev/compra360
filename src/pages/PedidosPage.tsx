@@ -23,6 +23,7 @@ interface OrderItem {
 const PedidosPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
+  const { user } = useAuth();
   const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [receiptFornecedor, setReceiptFornecedor] = useState<Fornecedor | null>(null);

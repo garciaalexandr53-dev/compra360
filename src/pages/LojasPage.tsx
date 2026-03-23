@@ -25,6 +25,7 @@ const emptyForm = { nome: "", endereco: "", cnpj: "", razao_social: "", inscrica
 const LojasPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva, setLojaAtivaId } = useLojaAtiva();
+  const { user } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);

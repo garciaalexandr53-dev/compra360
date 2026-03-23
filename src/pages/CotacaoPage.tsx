@@ -43,6 +43,7 @@ const MIN_SUPPLIERS_FOR_ANALYSIS = 3;
 const CotacaoPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [localPrices, setLocalPrices] = useState<Record<string, Record<string, string>>>({});
   const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);

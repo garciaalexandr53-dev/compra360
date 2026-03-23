@@ -23,6 +23,7 @@ const PAGE_SIZE = 80;
 const ProdutosPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState<string>("Todos");
   const [modalOpen, setModalOpen] = useState(false);
