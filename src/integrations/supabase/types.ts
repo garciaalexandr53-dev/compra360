@@ -19,16 +19,19 @@ export type Database = {
           created_at: string
           id: string
           nome: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           nome: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           nome?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -270,6 +273,7 @@ export type Database = {
           telefone: string | null
           token: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -283,6 +287,7 @@ export type Database = {
           telefone?: string | null
           token?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -296,6 +301,7 @@ export type Database = {
           telefone?: string | null
           token?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -349,6 +355,7 @@ export type Database = {
           inscricao_estadual: string | null
           nome: string
           razao_social: string | null
+          user_id: string | null
         }
         Insert: {
           cnpj?: string | null
@@ -358,6 +365,7 @@ export type Database = {
           inscricao_estadual?: string | null
           nome: string
           razao_social?: string | null
+          user_id?: string | null
         }
         Update: {
           cnpj?: string | null
@@ -367,6 +375,7 @@ export type Database = {
           inscricao_estadual?: string | null
           nome?: string
           razao_social?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -479,6 +488,7 @@ export type Database = {
           id: string
           nome: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           ativo?: boolean
@@ -488,6 +498,7 @@ export type Database = {
           id?: string
           nome: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           ativo?: boolean
@@ -497,6 +508,7 @@ export type Database = {
           id?: string
           nome?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
