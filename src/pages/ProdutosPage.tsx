@@ -133,7 +133,7 @@ const ProdutosPage = () => {
         const { error } = await supabase.from("produtos").update(payload).eq("id", editingId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("produtos").insert(payload);
+        const { error } = await supabase.from("produtos").insert({ ...payload, user_id: user?.id });
         if (error) throw error;
       }
     },
