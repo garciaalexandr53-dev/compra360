@@ -55,6 +55,8 @@ const CotacaoPage = () => {
   const [qtySuggestions, setQtySuggestions] = useState<{ cotacao_produto_id: string; nome: string; quantidade_sugerida: number; justificativa: string }[]>([]);
   const [qtySuggestOpen, setQtySuggestOpen] = useState(false);
   const [erpImportOpen, setErpImportOpen] = useState(false);
+  const [cancelCotacaoOpen, setCancelCotacaoOpen] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   // Toggle legend with localStorage persistence
   const toggleLegend = () => {
@@ -429,6 +431,34 @@ const CotacaoPage = () => {
     const link = `${baseUrl}/fornecedor/${f.token}`;
     navigator.clipboard.writeText(link);
     toast.success("Link copiado!");
+  };
+
+  const handleCancelCotacao = async () => {
+    if (!cotacaoAtiva?.id) return;
+    setCancelLoading(true);
+    try {
+      // Delete prices for this quote's products
+      const cpIds = cotacaoProdutos.map((cp) => cp.id);
+      if (cpIds.length) {
+        await supabase.from("precos").delete().in("cotacao_produto_id", cpIds);
+      }
+      // Delete cotacao_produtos
+      await supabase.from("cotacao_produtos").delete().eq("cotacao_id", cotacaoAtiva.id);
+      // Delete cotacao_fornecedores
+      await supabase.from("cotacao_fornecedores").delete().eq("cotacao_id", cotacaoAtiva.id);
+      // Delete the cotacao itself
+      await supabase.from("cotacoes").delete().eq("id", cotacaoAtiva.id);
+      // Reset local state
+      setLocalPrices({});
+      setSelectedSuppliers({});
+      queryClient.invalidateQueries();
+      toast.success("Cotação excluída com sucesso");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao excluir cotação");
+    } finally {
+      setCancelLoading(false);
+      setCancelCotacaoOpen(false);
+    }
   };
 
   // ── Empty state ──
