@@ -625,7 +625,6 @@ const CotacaoPage = () => {
       </AlertDialog>
     </div>
     </TooltipProvider>
-    </TooltipProvider>
   );
 };
 
