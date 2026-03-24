@@ -156,9 +156,11 @@ const TabelaCotacao = ({
                     const hiVar = numVal !== null && isHighVariation(numVal, info.allVals);
                     const loVar = numVal !== null && isLowVariation(numVal, info.allVals);
 
-                    let inputClass = "w-20 text-right font-mono text-xs h-8 px-2";
-                    if (isMin) inputClass += " font-bold text-blue-600 border-blue-200 bg-blue-50/50";
-                    else if (isSecond) inputClass += " price-second";
+                    let inputClass = "w-20 text-right font-mono text-xs h-8 px-2 border-transparent bg-transparent";
+                    if (isMin) inputClass += " font-bold text-emerald-400 dark:text-emerald-400 text-green-700";
+                    else if (numVal !== null) inputClass += " text-foreground";
+                    else inputClass += " text-muted-foreground";
+                    if (isSecond && !isMin) inputClass += " price-second";
                     if (hiVar && !isMin) inputClass += " price-high-var";
                     if (loVar && !isMin) inputClass += " price-low-var";
 
@@ -201,10 +203,10 @@ const TabelaCotacao = ({
                       </td>
                     );
                   })}
-                  <td className="px-3 py-2 border-b text-right font-mono text-xs font-bold text-blue-600">
+                  <td className="px-3 py-2 border-b text-right font-mono text-xs font-bold text-green-700 dark:text-emerald-400">
                     {info.minVal !== null ? `R$${formatNumber(info.minVal)}` : "-"}
                   </td>
-                  <td className="px-3 py-2 border-b text-right font-mono text-xs font-bold text-amber-700">
+                  <td className="px-3 py-2 border-b text-right font-mono text-xs font-bold text-amber-700 dark:text-amber-400">
                     {totalLine !== null ? formatBRL(totalLine) : "-"}
                   </td>
                 </tr>
