@@ -8,7 +8,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Wand2, MoreHorizontal, FileSpreadsheet, RotateCcw, Copy, HelpCircle, ClipboardCopy } from "lucide-react";
+import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Wand2, MoreHorizontal, FileSpreadsheet, RotateCcw, Copy, HelpCircle, ClipboardCopy, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
 import * as XLSX from "xlsx";
@@ -54,6 +55,8 @@ const CotacaoPage = () => {
   const [qtySuggestions, setQtySuggestions] = useState<{ cotacao_produto_id: string; nome: string; quantidade_sugerida: number; justificativa: string }[]>([]);
   const [qtySuggestOpen, setQtySuggestOpen] = useState(false);
   const [erpImportOpen, setErpImportOpen] = useState(false);
+  const [cancelCotacaoOpen, setCancelCotacaoOpen] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   // Toggle legend with localStorage persistence
   const toggleLegend = () => {
@@ -430,6 +433,34 @@ const CotacaoPage = () => {
     toast.success("Link copiado!");
   };
 
+  const handleCancelCotacao = async () => {
+    if (!cotacaoAtiva?.id) return;
+    setCancelLoading(true);
+    try {
+      // Delete prices for this quote's products
+      const cpIds = cotacaoProdutos.map((cp) => cp.id);
+      if (cpIds.length) {
+        await supabase.from("precos").delete().in("cotacao_produto_id", cpIds);
+      }
+      // Delete cotacao_produtos
+      await supabase.from("cotacao_produtos").delete().eq("cotacao_id", cotacaoAtiva.id);
+      // Delete cotacao_fornecedores
+      await supabase.from("cotacao_fornecedores").delete().eq("cotacao_id", cotacaoAtiva.id);
+      // Delete the cotacao itself
+      await supabase.from("cotacoes").delete().eq("id", cotacaoAtiva.id);
+      // Reset local state
+      setLocalPrices({});
+      setSelectedSuppliers({});
+      queryClient.invalidateQueries();
+      toast.success("Cotação excluída com sucesso");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao excluir cotação");
+    } finally {
+      setCancelLoading(false);
+      setCancelCotacaoOpen(false);
+    }
+  };
+
   // ── Empty state ──
   if (!cotacaoAtiva) {
     return (
@@ -468,6 +499,8 @@ const CotacaoPage = () => {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => queryClient.invalidateQueries()}><RefreshCw className="h-4 w-4 mr-2" /> Atualizar dados</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setNovaCotacaoOpen(true)}><RotateCcw className="h-4 w-4 mr-2" /> Nova cotação</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setCancelCotacaoOpen(true)} className="text-destructive focus:text-destructive"><Trash2 className="h-4 w-4 mr-2" /> Excluir cotação</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -569,6 +602,27 @@ const CotacaoPage = () => {
       <ModalAiAnalise open={aiAnalysisOpen} onOpenChange={setAiAnalysisOpen} text={aiAnalysisText} loading={aiAnalysisLoading} onReanalisar={runAiAnalysis} />
       <ModalQtySugestao open={qtySuggestOpen} onOpenChange={setQtySuggestOpen} suggestions={qtySuggestions} loading={qtySuggestLoading} onApply={applyQtySuggestions} />
       <ImportErpModal open={erpImportOpen} onOpenChange={setErpImportOpen} cotacaoId={cotacaoAtiva.id} />
+
+      <AlertDialog open={cancelCotacaoOpen} onOpenChange={setCancelCotacaoOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza que deseja excluir esta cotação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Essa ação não poderá ser desfeita. Todos os produtos, preços e fornecedores vinculados serão removidos permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelCotacao}
+              disabled={cancelLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cancelLoading ? "Excluindo..." : "Excluir cotação"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
     </TooltipProvider>
   );
