@@ -157,9 +157,9 @@ const TabelaCotacao = ({
                     const loVar = numVal !== null && isLowVariation(numVal, info.allVals);
 
                     let inputClass = "w-20 text-right font-mono text-xs h-8 px-2 border-transparent bg-transparent";
-                    if (isMin) inputClass += " font-bold text-emerald-400 dark:text-emerald-400 text-green-700";
-                    else if (numVal !== null) inputClass += " text-foreground";
-                    else inputClass += " text-muted-foreground";
+                    if (isMin) inputClass += " price-best";
+                    else if (numVal !== null) inputClass += " text-foreground font-normal";
+                    else inputClass += " text-muted-foreground font-normal";
                     if (isSecond && !isMin) inputClass += " price-second";
                     if (hiVar && !isMin) inputClass += " price-high-var";
                     if (loVar && !isMin) inputClass += " price-low-var";

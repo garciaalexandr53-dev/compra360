@@ -127,28 +127,32 @@
     font-family: 'JetBrains Mono', monospace;
   }
   .price-best {
-    @apply bg-green-50 text-green-700 border-green-200 font-semibold;
+    @apply bg-transparent font-bold;
+    color: hsl(160 84% 39%) !important;
   }
   .dark .price-best {
-    @apply bg-transparent text-emerald-400 border-transparent font-bold;
+    color: hsl(160 67% 52%) !important;
   }
   .price-second {
-    @apply bg-amber-50 text-amber-700 border-amber-100;
+    @apply bg-amber-50/50 text-amber-700 border-amber-100;
   }
   .dark .price-second {
-    @apply bg-transparent text-foreground border-transparent;
+    @apply bg-transparent border-transparent;
+    color: hsl(var(--foreground)) !important;
   }
   .price-high-var {
     @apply border-orange-400/40 bg-orange-50/80 text-orange-700;
   }
   .dark .price-high-var {
-    @apply border-transparent bg-transparent text-foreground;
+    @apply border-transparent bg-transparent;
+    color: hsl(var(--foreground)) !important;
   }
   .price-low-var {
     @apply border-blue-400/40 bg-blue-50/80 text-blue-700;
   }
   .dark .price-low-var {
-    @apply border-transparent bg-transparent text-foreground;
+    @apply border-transparent bg-transparent;
+    color: hsl(var(--foreground)) !important;
   }
 }
 
