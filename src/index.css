@@ -128,31 +128,34 @@
   }
   .price-best {
     @apply bg-transparent font-bold;
-    color: hsl(160 84% 39%) !important;
+    color: hsl(var(--brand-light)) !important;
   }
   .dark .price-best {
-    color: hsl(160 67% 52%) !important;
+    color: hsl(174 72% 50%) !important;
   }
   .price-second {
-    @apply bg-amber-50/50 text-amber-700 border-amber-100;
+    @apply bg-transparent border-transparent font-semibold;
+    color: hsl(30 95% 60%) !important;
   }
   .dark .price-second {
     @apply bg-transparent border-transparent;
-    color: hsl(var(--foreground)) !important;
+    color: hsl(30 95% 65%) !important;
   }
   .price-high-var {
-    @apply border-orange-400/40 bg-orange-50/80 text-orange-700;
+    @apply bg-transparent border-transparent;
+    color: hsl(0 84% 60%) !important;
   }
   .dark .price-high-var {
-    @apply border-transparent bg-transparent;
-    color: hsl(var(--foreground)) !important;
+    @apply bg-transparent border-transparent;
+    color: hsl(0 75% 65%) !important;
   }
   .price-low-var {
-    @apply border-blue-400/40 bg-blue-50/80 text-blue-700;
+    @apply bg-transparent border-transparent;
+    color: hsl(210 80% 60%) !important;
   }
   .dark .price-low-var {
-    @apply border-transparent bg-transparent;
-    color: hsl(var(--foreground)) !important;
+    @apply bg-transparent border-transparent;
+    color: hsl(210 80% 70%) !important;
   }
 }
 
