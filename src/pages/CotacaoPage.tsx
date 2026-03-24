@@ -499,8 +499,9 @@ const CotacaoPage = () => {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => queryClient.invalidateQueries()}><RefreshCw className="h-4 w-4 mr-2" /> Atualizar dados</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setNovaCotacaoOpen(true)}><RotateCcw className="h-4 w-4 mr-2" /> Nova cotação</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setCancelCotacaoOpen(true)} className="text-destructive focus:text-destructive"><Trash2 className="h-4 w-4 mr-2" /> Excluir cotação</DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
       {/* Progress bar */}
@@ -600,7 +601,29 @@ const CotacaoPage = () => {
       <ModalAiAnalise open={aiAnalysisOpen} onOpenChange={setAiAnalysisOpen} text={aiAnalysisText} loading={aiAnalysisLoading} onReanalisar={runAiAnalysis} />
       <ModalQtySugestao open={qtySuggestOpen} onOpenChange={setQtySuggestOpen} suggestions={qtySuggestions} loading={qtySuggestLoading} onApply={applyQtySuggestions} />
       <ImportErpModal open={erpImportOpen} onOpenChange={setErpImportOpen} cotacaoId={cotacaoAtiva.id} />
+
+      <AlertDialog open={cancelCotacaoOpen} onOpenChange={setCancelCotacaoOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza que deseja excluir esta cotação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Essa ação não poderá ser desfeita. Todos os produtos, preços e fornecedores vinculados serão removidos permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelCotacao}
+              disabled={cancelLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cancelLoading ? "Excluindo..." : "Excluir cotação"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+    </TooltipProvider>
     </TooltipProvider>
   );
 };
