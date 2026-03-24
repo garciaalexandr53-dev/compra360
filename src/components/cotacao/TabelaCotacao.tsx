@@ -94,24 +94,24 @@ const TabelaCotacao = ({
         <table className="w-full text-sm border-collapse">
           <thead className="sticky top-0 z-10">
             <tr className="bg-muted">
-              <th className="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border whitespace-nowrap sticky left-0 bg-muted z-20">
+              <th className="px-2 py-2 text-left text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border whitespace-nowrap sticky left-0 bg-muted z-20">
                 Produto
               </th>
-              <th className="px-2 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border w-16">Embal</th>
-              <th className="px-2 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border w-14">QT</th>
+              <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-14">Emb</th>
+              <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-12">Qt</th>
               {fornecedores.map((f) => {
                 const hasPrice = precos.some((p) => p.fornecedor_id === f.id && p.preco !== null && p.preco > 0);
                 return (
-                  <th key={f.id} className="px-3 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b-2 border-border whitespace-nowrap min-w-[100px]">
+                  <th key={f.id} className="px-1 py-2 text-center text-[9px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border whitespace-nowrap min-w-[80px]">
                     <div className="flex items-center justify-center gap-1">
-                      <span className={`inline-block w-2 h-2 rounded-full ${hasPrice ? "bg-green-500 shadow-[0_0_0_2px_rgba(34,197,94,.2)]" : "bg-muted-foreground/30"}`} />
-                      <span>{f.nome}</span>
+                      <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${hasPrice ? "bg-green-500" : "bg-muted-foreground/30"}`} />
+                      <span className="truncate max-w-[70px]">{f.nome}</span>
                     </div>
                   </th>
                 );
               })}
-              <th className="px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-blue-600 border-b-2 border-border">MIN</th>
-              <th className="px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-wider text-amber-700 border-b-2 border-border">TOTAL</th>
+              <th className="px-2 py-2 text-right text-[9px] font-bold uppercase tracking-wider text-primary border-b border-border">Min</th>
+              <th className="px-2 py-2 text-right text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -125,23 +125,23 @@ const TabelaCotacao = ({
 
               return (
                 <tr key={cp.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-3 py-2 border-b font-medium text-foreground whitespace-nowrap sticky left-0 bg-card z-10">
+                  <td className="px-2 py-1.5 border-b border-border/50 font-medium text-foreground sticky left-0 bg-card z-10">
                     <Input
-                      className="h-7 text-sm font-medium border-transparent hover:border-input focus:border-input bg-transparent w-full min-w-[120px]"
+                      className="h-6 text-xs font-medium border-transparent hover:border-input focus:border-input bg-transparent w-full min-w-[100px] rounded-none shadow-none ring-0 focus-visible:ring-1 placeholder:text-muted-foreground"
                       defaultValue={cp.produto?.nome || ""}
                       onBlur={(e) => onFieldBlur(cp.id, "nome", e.target.value, cp.produto?.nome || "")}
                     />
                   </td>
-                  <td className="px-1 py-2 border-b text-center">
+                  <td className="px-1 py-1.5 border-b border-border/50 text-center">
                     <Input
-                      className="h-7 text-xs text-center border-transparent hover:border-input focus:border-input bg-transparent w-16 mx-auto"
+                      className="h-6 text-[11px] text-center border-transparent hover:border-input focus:border-input bg-transparent w-14 mx-auto rounded-none shadow-none ring-0 focus-visible:ring-1 text-muted-foreground"
                       defaultValue={cp.produto?.embalagem || "un"}
                       onBlur={(e) => onFieldBlur(cp.id, "embalagem", e.target.value, cp.produto?.embalagem || "un")}
                     />
                   </td>
-                  <td className="px-1 py-2 border-b text-center">
+                  <td className="px-1 py-1.5 border-b border-border/50 text-center">
                     <Input
-                      className="h-7 text-xs text-center border-transparent hover:border-input focus:border-input bg-transparent w-14 mx-auto"
+                      className="h-6 text-[11px] text-center border-transparent hover:border-input focus:border-input bg-transparent w-12 mx-auto rounded-none shadow-none ring-0 focus-visible:ring-1 text-muted-foreground"
                       type="number"
                       defaultValue={cp.quantidade || 1}
                       onBlur={(e) => onFieldBlur(cp.id, "quantidade", e.target.value, String(cp.quantidade || 1))}
@@ -156,16 +156,16 @@ const TabelaCotacao = ({
                     const hiVar = numVal !== null && isHighVariation(numVal, info.allVals);
                     const loVar = numVal !== null && isLowVariation(numVal, info.allVals);
 
-                    let inputClass = "w-20 text-right font-mono text-xs h-8 px-2 border-transparent bg-transparent";
+                    let inputClass = "w-20 text-right font-mono text-xs h-7 px-1 border-transparent bg-transparent rounded-none shadow-none ring-0 focus-visible:ring-1 focus-visible:ring-ring focus-visible:bg-muted/30";
                     if (isMin) inputClass += " price-best";
-                    else if (numVal !== null) inputClass += " text-foreground font-normal";
-                    else inputClass += " text-muted-foreground font-normal";
-                    if (isSecond && !isMin) inputClass += " price-second";
-                    if (hiVar && !isMin) inputClass += " price-high-var";
-                    if (loVar && !isMin) inputClass += " price-low-var";
+                    else if (isSecond && !isMin) inputClass += " price-second";
+                    else if (hiVar && !isMin) inputClass += " price-high-var";
+                    else if (loVar && !isMin) inputClass += " price-low-var";
+                    else if (numVal !== null) inputClass += " text-foreground";
+                    else inputClass += " text-muted-foreground/40";
 
                     return (
-                      <td key={f.id} className="px-1 py-1 border-b text-center">
+                      <td key={f.id} className="px-0.5 py-1 border-b border-border/50 text-center">
                         <div className="relative inline-flex items-center">
                           <Input
                             type="text"
