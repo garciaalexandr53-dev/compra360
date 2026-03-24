@@ -1,6 +1,8 @@
+import { useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatBRL, formatNumber } from "@/lib/format";
+import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Fornecedor = Tables<"fornecedores">;
@@ -40,8 +42,8 @@ interface TabelaCotacaoProps {
   legendVisible: boolean;
   onLegendClose: () => void;
   analyzePrices: (cpId: string) => PriceAnalysis;
-  isHighVariation: (val: number, allVals: number[]) => boolean;
-  isLowVariation: (val: number, allVals: number[]) => boolean;
+  getHistAlert: (produtoId: string, val: number) => "high" | "low" | null;
+  historicalAvgMap: Record<string, { avg: number; count: number }>;
   onPriceChange: (cpId: string, fornecedorId: string, value: string) => void;
   onPriceBlur: (cpId: string, fornecedorId: string) => void;
   onFieldBlur: (cpId: string, field: string, value: string, original: string) => void;
@@ -58,12 +60,15 @@ const TabelaCotacao = ({
   legendVisible,
   onLegendClose,
   analyzePrices,
-  isHighVariation,
-  isLowVariation,
+  getHistAlert,
+  historicalAvgMap,
   onPriceChange,
   onPriceBlur,
   onFieldBlur,
 }: TabelaCotacaoProps) => {
+  // Track which low-price toasts we already showed to avoid spamming
+  const toastedRef = useRef<Set<string>>(new Set());
+
   return (
     <>
       {/* Legend */}
@@ -71,7 +76,7 @@ const TabelaCotacao = ({
         <div className="flex items-center gap-4 px-4 py-1.5 bg-muted/50 border-b text-[10px] flex-wrap">
           <span className="font-bold uppercase tracking-wider text-muted-foreground">Legenda:</span>
           <span className="flex items-center gap-1.5 text-muted-foreground">
-            <span className="text-blue-600 font-extrabold text-[10px]">R$0,00</span> Menor preço
+            <span className="text-[hsl(var(--brand-light))] font-extrabold text-[10px]">R$0,00</span> Menor preço
           </span>
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <span className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white text-[6.5px] font-extrabold px-1 rounded">EMP</span> Empate
@@ -80,10 +85,10 @@ const TabelaCotacao = ({
             <span className="bg-amber-500 text-white text-[7px] font-extrabold px-1 rounded">2º</span> Segundo menor
           </span>
           <span className="flex items-center gap-1.5 text-muted-foreground">
-            <span className="bg-gradient-to-r from-orange-500 to-red-600 text-white text-[7px] font-extrabold px-1 rounded">▲</span> +25% acima
+            <span className="text-sm">⚠️</span> Abaixo do histórico
           </span>
           <span className="flex items-center gap-1.5 text-muted-foreground">
-            <span className="bg-gradient-to-r from-red-500 to-red-700 text-white text-[7px] font-extrabold px-1 rounded">▼</span> -15% abaixo (discrepância)
+            <span className="text-sm">🔴</span> Acima do histórico
           </span>
           <button onClick={onLegendClose} className="ml-auto text-muted-foreground hover:text-foreground">✕ ocultar</button>
         </div>
@@ -153,16 +158,24 @@ const TabelaCotacao = ({
                     const isMin = numVal !== null && info.minVal !== null && numVal === info.minVal;
                     const isTieMin = isMin && info.tiedCount > 1;
                     const isSecond = info.second === f.id;
-                    const hiVar = numVal !== null && isHighVariation(numVal, info.allVals);
-                    const loVar = numVal !== null && isLowVariation(numVal, info.allVals);
+                    const histAlert = numVal !== null ? getHistAlert(cp.produto_id, numVal) : null;
+
+                    // Show toast for suspiciously low prices (only once per cell)
+                    const cellKey = `${cp.id}-${f.id}`;
+                    if (histAlert === "low" && !toastedRef.current.has(cellKey)) {
+                      toastedRef.current.add(cellKey);
+                      setTimeout(() => {
+                        toast.warning(`⚠️ Preço de ${cp.produto?.nome || "produto"} parece muito baixo — confirme com o fornecedor`, { duration: 6000 });
+                      }, 100);
+                    }
 
                     let inputClass = "w-20 text-right font-mono text-xs h-7 px-1 border-transparent bg-transparent rounded-none shadow-none ring-0 focus-visible:ring-1 focus-visible:ring-ring focus-visible:bg-muted/30";
                     if (isMin) inputClass += " price-best";
                     else if (isSecond && !isMin) inputClass += " price-second";
-                    else if (hiVar && !isMin) inputClass += " price-high-var";
-                    else if (loVar && !isMin) inputClass += " price-low-var";
                     else if (numVal !== null) inputClass += " text-foreground";
                     else inputClass += " text-muted-foreground/40";
+
+                    const hist = historicalAvgMap[cp.produto_id];
 
                     return (
                       <td key={f.id} className="px-0.5 py-1 border-b border-border/50 text-center">
@@ -177,25 +190,31 @@ const TabelaCotacao = ({
                           />
                           {isTieMin && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white text-[6.5px] font-extrabold px-1 rounded">EMP</span>}
                           {isSecond && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[6px] font-extrabold px-1 rounded">2º</span>}
-                          {hiVar && !isMin && (
+                          {histAlert === "low" && (
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="absolute -bottom-1.5 -right-1 bg-gradient-to-r from-orange-500 to-red-600 text-white text-[7px] font-extrabold px-1 rounded cursor-help">▲</span>
+                                <span className="absolute -bottom-1.5 -right-1 text-[11px] cursor-help leading-none">⚠️</span>
                               </TooltipTrigger>
                               <TooltipContent side="top" className="max-w-xs text-xs">
-                                <p className="font-bold">⚠️ Preço muito acima da média</p>
-                                <p className="text-[11px] mt-1">+25% acima dos demais fornecedores. Verifique se há erro de digitação.</p>
+                                <p className="font-bold">⚠️ Preço muito abaixo do histórico</p>
+                                <p className="text-[11px] mt-1">
+                                  Média histórica: R${formatNumber(hist?.avg || 0)} ({hist?.count || 0} cotações).
+                                  Possível erro de digitação.
+                                </p>
                               </TooltipContent>
                             </Tooltip>
                           )}
-                          {loVar && !isMin && (
+                          {histAlert === "high" && (
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="absolute -bottom-1.5 -left-1 bg-gradient-to-r from-red-500 to-red-700 text-white text-[7px] font-extrabold px-1 rounded cursor-help">▼</span>
+                                <span className="absolute -bottom-1.5 -right-1 text-[11px] cursor-help leading-none">🔴</span>
                               </TooltipTrigger>
                               <TooltipContent side="top" className="max-w-xs text-xs">
-                                <p className="font-bold">⚠️ Discrepância de preço</p>
-                                <p className="text-[11px] mt-1">-15% abaixo da média. Verifique possível erro de digitação ou unidade.</p>
+                                <p className="font-bold">🔴 Preço acima do histórico</p>
+                                <p className="text-[11px] mt-1">
+                                  Média histórica: R${formatNumber(hist?.avg || 0)} ({hist?.count || 0} cotações).
+                                  Preço significativamente acima do habitual.
+                                </p>
                               </TooltipContent>
                             </Tooltip>
                           )}

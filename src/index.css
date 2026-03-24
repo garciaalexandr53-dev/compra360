@@ -141,22 +141,6 @@
     @apply bg-transparent border-transparent;
     color: hsl(30 95% 65%) !important;
   }
-  .price-high-var {
-    @apply bg-transparent border-transparent;
-    color: hsl(0 84% 60%) !important;
-  }
-  .dark .price-high-var {
-    @apply bg-transparent border-transparent;
-    color: hsl(0 75% 65%) !important;
-  }
-  .price-low-var {
-    @apply bg-transparent border-transparent;
-    color: hsl(210 80% 60%) !important;
-  }
-  .dark .price-low-var {
-    @apply bg-transparent border-transparent;
-    color: hsl(210 80% 70%) !important;
-  }
 }
 
 /* Print styles for receipts */
