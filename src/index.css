@@ -129,14 +129,26 @@
   .price-best {
     @apply bg-green-50 text-green-700 border-green-200 font-semibold;
   }
+  .dark .price-best {
+    @apply bg-transparent text-emerald-400 border-transparent font-bold;
+  }
   .price-second {
     @apply bg-amber-50 text-amber-700 border-amber-100;
+  }
+  .dark .price-second {
+    @apply bg-transparent text-foreground border-transparent;
   }
   .price-high-var {
     @apply border-orange-400/40 bg-orange-50/80 text-orange-700;
   }
+  .dark .price-high-var {
+    @apply border-transparent bg-transparent text-foreground;
+  }
   .price-low-var {
     @apply border-blue-400/40 bg-blue-50/80 text-blue-700;
+  }
+  .dark .price-low-var {
+    @apply border-transparent bg-transparent text-foreground;
   }
 }
 
