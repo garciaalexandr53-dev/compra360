@@ -24,7 +24,7 @@ serve(async (req) => {
     // Fetch products with prices
     const { data: cotacaoProdutos } = await supabase
       .from("cotacao_produtos")
-      .select("id, quantidade, produtos(nome, embalagem, categorias(nome))")
+      .select("id, quantidade, produto_id, produtos(nome, embalagem, categorias(nome))")
       .eq("cotacao_id", cotacao_id);
 
     // Fetch selected suppliers
@@ -40,25 +40,70 @@ serve(async (req) => {
       precos = data || [];
     }
 
-    // Fetch historical prices (last finalized cotação)
+    // Fetch historical prices (last 3 finalized cotações)
     const { data: lastFinalized } = await supabase
       .from("cotacoes")
       .select("id")
       .eq("status", "finalizada")
       .order("finalizada_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(3);
 
-    let historicalPrices: any[] = [];
-    if (lastFinalized) {
+    // Build historical averages per produto_id and best supplier per product
+    const historicalAvgs: Record<string, { avg: number; count: number; bestSupplier: string | null; bestPrice: number | null }> = {};
+    const historicalDetails: string[] = [];
+
+    if (lastFinalized && lastFinalized.length > 0) {
+      const histCotIds = lastFinalized.map((c: any) => c.id);
       const { data: histCps } = await supabase
         .from("cotacao_produtos")
         .select("id, produto_id")
-        .eq("cotacao_id", lastFinalized.id);
-      const histCpIds = (histCps || []).map((cp: any) => cp.id);
-      if (histCpIds.length > 0) {
-        const { data } = await supabase.from("precos").select("*").in("cotacao_produto_id", histCpIds);
-        historicalPrices = data || [];
+        .in("cotacao_id", histCotIds);
+
+      if (histCps && histCps.length > 0) {
+        const histCpIds = histCps.map((cp: any) => cp.id);
+        const { data: histPrecos } = await supabase
+          .from("precos")
+          .select("cotacao_produto_id, fornecedor_id, preco")
+          .in("cotacao_produto_id", histCpIds);
+
+        if (histPrecos) {
+          // Group by produto_id
+          const prodPrices: Record<string, { total: number; count: number; supplierPrices: Record<string, number[]> }> = {};
+          for (const hp of histPrecos) {
+            if (hp.preco == null || hp.preco <= 0) continue;
+            const cp = histCps.find((c: any) => c.id === hp.cotacao_produto_id);
+            if (!cp) continue;
+            const pid = cp.produto_id;
+            if (!prodPrices[pid]) prodPrices[pid] = { total: 0, count: 0, supplierPrices: {} };
+            prodPrices[pid].total += Number(hp.preco);
+            prodPrices[pid].count += 1;
+            if (!prodPrices[pid].supplierPrices[hp.fornecedor_id]) prodPrices[pid].supplierPrices[hp.fornecedor_id] = [];
+            prodPrices[pid].supplierPrices[hp.fornecedor_id].push(Number(hp.preco));
+          }
+
+          // Build supplier map for names
+          const fornecedorMap: Record<string, string> = {};
+          (cotacaoFornecedores || []).forEach((cf: any) => {
+            fornecedorMap[cf.fornecedor_id] = cf.fornecedores?.nome || "Desconhecido";
+          });
+
+          for (const [pid, data] of Object.entries(prodPrices)) {
+            const avg = data.total / data.count;
+            // Find supplier with lowest avg price
+            let bestSupplierId: string | null = null;
+            let bestAvg = Infinity;
+            for (const [sid, prices] of Object.entries(data.supplierPrices)) {
+              const sAvg = prices.reduce((a, b) => a + b, 0) / prices.length;
+              if (sAvg < bestAvg) { bestAvg = sAvg; bestSupplierId = sid; }
+            }
+            historicalAvgs[pid] = {
+              avg,
+              count: data.count,
+              bestSupplier: bestSupplierId ? (fornecedorMap[bestSupplierId] || bestSupplierId) : null,
+              bestPrice: bestAvg < Infinity ? bestAvg : null,
+            };
+          }
+        }
       }
     }
 
@@ -68,9 +113,16 @@ serve(async (req) => {
       fornecedorMap[cf.fornecedor_id] = cf.fornecedores?.nome || "Desconhecido";
     });
 
+    // Count suppliers who responded
+    const respondedSuppliers = new Set(precos.filter((p: any) => p.preco > 0).map((p: any) => p.fornecedor_id));
+    const totalSuppliers = (cotacaoFornecedores || []).length;
+
     // Build analysis data
     const lines: string[] = [];
-    lines.push(`Cotação com ${(cotacaoProdutos || []).length} produtos e ${(cotacaoFornecedores || []).length} fornecedores.\n`);
+    lines.push(`Cotação com ${(cotacaoProdutos || []).length} produtos e ${totalSuppliers} fornecedores (${respondedSuppliers.size} responderam, ${totalSuppliers - respondedSuppliers.size} pendentes).\n`);
+
+    // Products without any price
+    const semPreco: string[] = [];
 
     lines.push("PRODUTOS E PREÇOS ATUAIS:");
     (cotacaoProdutos || []).forEach((cp: any) => {
@@ -80,8 +132,7 @@ serve(async (req) => {
       const precosStr = cpPrecos
         .map((p: any) => `${fornecedorMap[p.fornecedor_id] || "?"}: R$${Number(p.preco).toFixed(2)}`)
         .join(", ");
-      
-      // Compute stats
+
       if (cpPrecos.length > 0) {
         const vals = cpPrecos.map((p: any) => Number(p.preco));
         const avg = vals.reduce((a: number, b: number) => a + b, 0) / vals.length;
@@ -91,38 +142,51 @@ serve(async (req) => {
         lines.push(`- ${prod?.nome} [${cat}] (emb: ${prod?.embalagem || "-"}, qtd: ${cp.quantidade || 1})`);
         lines.push(`  Preços: ${precosStr}`);
         lines.push(`  Média: R$${avg.toFixed(2)} | Min: R$${min.toFixed(2)} | Max: R$${max.toFixed(2)} | Spread: ${spread}%`);
+
+        // Historical comparison
+        const hist = historicalAvgs[cp.produto_id];
+        if (hist) {
+          const diffPct = ((avg - hist.avg) / hist.avg * 100).toFixed(1);
+          lines.push(`  Histórico (últimas 3): Média R$${hist.avg.toFixed(2)} | Variação: ${Number(diffPct) > 0 ? "+" : ""}${diffPct}%${hist.bestSupplier ? ` | Fornecedor mais competitivo: ${hist.bestSupplier} (R$${hist.bestPrice?.toFixed(2)})` : ""}`);
+        }
       } else {
         lines.push(`- ${prod?.nome} [${cat}] → sem preço informado`);
+        semPreco.push(prod?.nome || "?");
       }
     });
 
-    if (historicalPrices.length > 0) {
-      lines.push("\nPREÇOS HISTÓRICOS (cotação anterior):");
-      lines.push("(Disponíveis para comparação com os preços atuais)");
+    if (semPreco.length > 0) {
+      lines.push(`\nPRODUTOS SEM NENHUM PREÇO: ${semPreco.join(", ")}`);
     }
 
     const contextText = lines.join("\n");
 
     const systemPrompt = `Você é um analista especialista em compras e detecção de preços suspeitos para o Compra360.
 
-Analise os preços da cotação ativa e identifique:
+Analise os preços da cotação ativa comparando com dados históricos e identifique:
 
-1. **PREÇOS SUSPEITOS**: Valores muito acima ou muito abaixo dos demais fornecedores para o mesmo item. Considere:
+1. **PREÇOS SUSPEITOS VS HISTÓRICO**: Compare cada preço com a média histórica das últimas 3 cotações. Destaque variações significativas (ex: "Arroz Tipo 1 está 18% acima da média histórica com o Fornecedor X").
+
+2. **PREÇOS SUSPEITOS VS CONCORRÊNCIA**: Valores muito acima ou muito abaixo dos demais fornecedores para o mesmo item. Considere:
    - Possíveis erros de digitação (ex: R$1,50 vs R$15,00)
    - Unidades diferentes (preço por kg vs por unidade)
-   - Preços defasados vs mercado
+   - Preços muito abaixo do histórico: "Detergente com preço 60% abaixo do histórico — possível erro de digitação"
 
-2. **ANOMALIAS POR CATEGORIA**: Padrões estranhos dentro de categorias (ex: todas as bebidas de um fornecedor muito caras)
+3. **RECOMENDAÇÕES BASEADAS NO HISTÓRICO**: Sugira fornecedores mais competitivos baseado no desempenho histórico.
 
-3. **RECOMENDAÇÕES**: Sugira ações concretas para o comprador (verificar com fornecedor, pedir reenvio, etc.)
+FORMATO DA RESPOSTA (use esta estrutura exata):
 
-FORMATO DA RESPOSTA:
-Use markdown. Organize em seções claras:
-- 🚨 **Alertas Críticos** (erros prováveis de digitação)
-- ⚠️ **Preços Acima do Esperado** (>25% acima da média)
-- 📉 **Preços Muito Abaixo** (>15% abaixo - pode indicar erro ou produto diferente)
-- 💡 **Recomendações**
-- 📊 **Resumo Geral** (uma frase sobre a saúde geral dos preços)
+📊 **Resumo Geral**
+(Progresso da cotação: X de Y fornecedores responderam, total de itens, itens sem preço)
+
+🏆 **Melhores Escolhas por Fornecedor**
+(Qual fornecedor tem mais itens com menor preço, recomendações de alocação)
+
+⚠️ **Alertas**
+(Anomalias, possíveis erros de digitação, preços muito diferentes do histórico)
+
+💡 **Recomendações Finais**
+(Ações concretas: verificar com fornecedor, pedir reenvio, considerar fornecedor histórico, etc.)
 
 Se não houver anomalias, diga claramente que os preços estão dentro do esperado.
 Use formato monetário brasileiro (R$ X,XX).

@@ -4,8 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Check, CheckCheck, AlertTriangle, ChevronRight, Minus, Plus, ArrowLeft, Package, Camera, Loader2 } from "lucide-react";
+import { Check, CheckCheck, AlertTriangle, ChevronRight, Minus, Plus, ArrowLeft, Package, Camera, Loader2, XCircle, AlertCircle } from "lucide-react";
+import { formatBRL } from "@/lib/format";
 
 interface ConferenciaItem {
   produto_nome: string;
@@ -24,6 +26,17 @@ interface PedidoWithDetails {
   total: number;
   created_at: string;
   items: ConferenciaItem[];
+}
+
+type OcrStatus = "correto" | "divergencia" | "nao_pedido" | "faltando";
+
+interface OcrComparisonItem {
+  produto_nome: string;
+  status: OcrStatus;
+  qtd_pedida?: number;
+  qtd_nf?: number;
+  preco_cotado?: number | null;
+  preco_nf?: number | null;
 }
 
 const STORAGE_KEY = "conferencia_progress";
@@ -54,6 +67,8 @@ const ConferenciaPedidos = () => {
   const [faltantes, setFaltantes] = useState<{ nome: string; qtd: number }[]>([]);
   const [conferenciaDone, setConferenciaDone] = useState(false);
   const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrReport, setOcrReport] = useState<OcrComparisonItem[] | null>(null);
+  const [ocrTotalNf, setOcrTotalNf] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
@@ -90,22 +105,65 @@ const ConferenciaPedidos = () => {
       // Match OCR items to conference items by fuzzy name
       let matched = 0;
       const updatedItems = [...items];
+      const comparisonReport: OcrComparisonItem[] = [];
+      const matchedIndices = new Set<number>();
+
       for (const ocr of ocrItems) {
         const ocrName = (ocr.produto || "").toLowerCase().trim();
-        const idx = updatedItems.findIndex((item) => {
+        const idx = updatedItems.findIndex((item, i) => {
+          if (matchedIndices.has(i)) return false;
           const itemName = item.produto_nome.toLowerCase().trim();
           return itemName.includes(ocrName) || ocrName.includes(itemName) ||
             itemName.split(" ").some(w => w.length > 3 && ocrName.includes(w));
         });
+
         if (idx >= 0) {
+          matchedIndices.add(idx);
           if (ocr.quantidade != null) updatedItems[idx].quantidade_recebida = ocr.quantidade;
           if (ocr.preco_unitario != null) updatedItems[idx].preco_nf = ocr.preco_unitario;
           matched++;
+
+          const qtdMatch = ocr.quantidade === updatedItems[idx].quantidade_pedida;
+          comparisonReport.push({
+            produto_nome: updatedItems[idx].produto_nome,
+            status: qtdMatch ? "correto" : "divergencia",
+            qtd_pedida: updatedItems[idx].quantidade_pedida,
+            qtd_nf: ocr.quantidade,
+            preco_cotado: updatedItems[idx].preco_cotado,
+            preco_nf: ocr.preco_unitario,
+          });
+        } else {
+          // Item in NF but not in order
+          comparisonReport.push({
+            produto_nome: ocr.produto,
+            status: "nao_pedido",
+            qtd_nf: ocr.quantidade,
+            preco_nf: ocr.preco_unitario,
+          });
         }
       }
 
+      // Items in order but not in NF
+      updatedItems.forEach((item, i) => {
+        if (!matchedIndices.has(i)) {
+          comparisonReport.push({
+            produto_nome: item.produto_nome,
+            status: "faltando",
+            qtd_pedida: item.quantidade_pedida,
+            preco_cotado: item.preco_cotado,
+          });
+          // Set received to 0 for missing items
+          updatedItems[i].quantidade_recebida = 0;
+        }
+      });
+
+      // Calculate NF total
+      const nfTotal = ocrItems.reduce((sum, ocr) => sum + (ocr.preco_unitario || 0) * (ocr.quantidade || 1), 0);
+
       setItems(updatedItems);
-      toast.success(`OCR: ${matched} de ${ocrItems.length} itens preenchidos automaticamente`);
+      setOcrReport(comparisonReport);
+      setOcrTotalNf(nfTotal);
+      toast.success(`OCR: ${matched} de ${ocrItems.length} itens identificados`);
     } catch (err: any) {
       toast.error(err.message || "Erro ao processar nota fiscal");
     } finally {
@@ -160,7 +218,6 @@ const ConferenciaPedidos = () => {
   }, [items, nome, selectedPedido]);
 
   const loadPedidoDetails = async (pedido: any) => {
-    // Check if there's saved progress for this pedido
     const progress = loadProgress();
     if (progress && progress.pedidoId === pedido.id) {
       setItems(progress.items);
@@ -169,7 +226,6 @@ const ConferenciaPedidos = () => {
       return;
     }
 
-    // Get the cotacao_id from the pedido
     const { data: pedidoFull } = await supabase
       .from("pedidos")
       .select("cotacao_id")
@@ -178,7 +234,6 @@ const ConferenciaPedidos = () => {
 
     if (!pedidoFull) return;
 
-    // Get products and prices for this supplier in this cotação
     const { data: cotacaoProdutos } = await supabase
       .from("cotacao_produtos")
       .select("id, quantidade, produto_id, produtos(nome, embalagem)")
@@ -329,6 +384,8 @@ const ConferenciaPedidos = () => {
     setShowFaltantes(false);
     setFaltantes([]);
     setConferenciaDone(false);
+    setOcrReport(null);
+    setOcrTotalNf(null);
   };
 
   // Done screen
@@ -382,11 +439,14 @@ const ConferenciaPedidos = () => {
 
   // Conferencia detail screen
   if (selectedPedido) {
+    const pedidoTotal = selectedPedido.total || 0;
+    const totalDiff = ocrTotalNf !== null ? ocrTotalNf - pedidoTotal : null;
+
     return (
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => { setSelectedPedido(null); setItems([]); }}>
+          <Button variant="ghost" size="icon" onClick={() => { setSelectedPedido(null); setItems([]); setOcrReport(null); setOcrTotalNf(null); }}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1">
@@ -417,11 +477,82 @@ const ConferenciaPedidos = () => {
           />
         </div>
 
+        {/* OCR Comparison Report */}
+        {ocrReport && (
+          <div className="bg-card border rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold">📋 Relatório OCR</h3>
+              <button onClick={() => setOcrReport(null)} className="text-xs text-muted-foreground hover:text-foreground">✕ fechar</button>
+            </div>
+
+            {/* Value comparison */}
+            {totalDiff !== null && (
+              <div className={`rounded-lg px-3 py-2 text-sm flex items-center justify-between ${
+                Math.abs(totalDiff) < 0.01 ? "bg-green-50 dark:bg-green-950/30" : "bg-amber-50 dark:bg-amber-950/30"
+              }`}>
+                <span className="text-muted-foreground text-xs">Total NF: <span className="font-bold text-foreground">{formatBRL(ocrTotalNf!)}</span></span>
+                <span className="text-muted-foreground text-xs">Total Pedido: <span className="font-bold text-foreground">{formatBRL(pedidoTotal)}</span></span>
+                {Math.abs(totalDiff) >= 0.01 && (
+                  <span className={`text-xs font-bold ${totalDiff > 0 ? "text-red-600" : "text-amber-600"}`}>
+                    {totalDiff > 0 ? "+" : ""}{formatBRL(totalDiff)}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Status summary */}
+            <div className="flex gap-2 flex-wrap">
+              {[
+                { status: "correto" as OcrStatus, label: "Correto", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: "✅" },
+                { status: "divergencia" as OcrStatus, label: "Divergência", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: "⚠️" },
+                { status: "nao_pedido" as OcrStatus, label: "Não pedido", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400", icon: "❌" },
+                { status: "faltando" as OcrStatus, label: "Faltando", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400", icon: "🔴" },
+              ].map(({ status, label, color, icon }) => {
+                const count = ocrReport.filter((r) => r.status === status).length;
+                if (count === 0) return null;
+                return (
+                  <span key={status} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>
+                    {icon} {count} {label}
+                  </span>
+                );
+              })}
+            </div>
+
+            {/* Item list */}
+            <ScrollArea className="max-h-[200px]">
+              <div className="space-y-1.5">
+                {ocrReport.map((r, i) => (
+                  <div key={i} className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-xs ${
+                    r.status === "correto" ? "bg-green-50/50 dark:bg-green-950/10" :
+                    r.status === "divergencia" ? "bg-amber-50/50 dark:bg-amber-950/10" :
+                    r.status === "nao_pedido" ? "bg-red-50/50 dark:bg-red-950/10" :
+                    "bg-purple-50/50 dark:bg-purple-950/10"
+                  }`}>
+                    <span className="shrink-0">
+                      {r.status === "correto" ? "✅" : r.status === "divergencia" ? "⚠️" : r.status === "nao_pedido" ? "❌" : "🔴"}
+                    </span>
+                    <span className="flex-1 font-medium truncate">{r.produto_nome}</span>
+                    {r.status === "divergencia" && (
+                      <span className="text-amber-600 shrink-0">Ped:{r.qtd_pedida} → NF:{r.qtd_nf}</span>
+                    )}
+                    {r.status === "faltando" && (
+                      <span className="text-purple-600 shrink-0">Pedido: {r.qtd_pedida}</span>
+                    )}
+                    {r.status === "nao_pedido" && (
+                      <span className="text-red-600 shrink-0">NF: {r.qtd_nf}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        )}
+
         {/* Divergence counter */}
         {totalDivergencias > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5 flex items-center gap-2">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5 flex items-center gap-2 dark:bg-amber-950/30 dark:border-amber-800">
             <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-            <span className="text-sm text-amber-800 font-medium">
+            <span className="text-sm text-amber-800 dark:text-amber-300 font-medium">
               {totalDivergencias} divergência(s) encontrada(s)
             </span>
           </div>
@@ -436,7 +567,7 @@ const ConferenciaPedidos = () => {
                 <div
                   key={i}
                   className={`bg-card border rounded-xl p-4 space-y-3 transition-colors ${
-                    isDivergent ? "border-amber-300 bg-amber-50/50" : ""
+                    isDivergent ? "border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-950/20" : ""
                   }`}
                 >
                   <div className="flex items-start justify-between">
@@ -473,7 +604,7 @@ const ConferenciaPedidos = () => {
                         onChange={(e) => updateQtdRecebidaInput(i, e.target.value)}
                         onFocus={(e) => e.target.select()}
                         className={`h-7 w-14 text-xs text-center ${
-                          item.quantidade_recebida !== item.quantidade_pedida ? "border-amber-400 bg-amber-50" : ""
+                          item.quantidade_recebida !== item.quantidade_pedida ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30" : ""
                         }`}
                       />
                       <Button
@@ -507,7 +638,7 @@ const ConferenciaPedidos = () => {
                           onFocus={(e) => e.target.select()}
                           className={`h-7 w-24 text-xs text-right pr-2 pl-7 ${
                             item.preco_nf != null && item.preco_cotado != null && item.preco_nf !== item.preco_cotado
-                              ? "border-amber-400 bg-amber-50"
+                              ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30"
                               : ""
                           }`}
                         />

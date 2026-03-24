@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Wand2, MoreHorizontal, FileSpreadsheet, RotateCcw, Camera } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Wand2, MoreHorizontal, FileSpreadsheet, RotateCcw, Copy, HelpCircle, ClipboardCopy } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
 import * as XLSX from "xlsx";
 import ImportErpModal from "@/components/ImportErpModal";
-import ImportNfModal from "@/components/ImportNfModal";
 import ModalNovaCotacao from "@/components/cotacao/ModalNovaCotacao";
 import ModalFornecedores from "@/components/cotacao/ModalFornecedores";
 import ModalAiAnalise from "@/components/cotacao/ModalAiAnalise";
@@ -38,8 +40,11 @@ const CotacaoPage = () => {
   const [localPrices, setLocalPrices] = useState<Record<string, Record<string, string>>>({});
   const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);
   const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "manter_precos" | "zerar" | null>(null);
-  const [legendVisible, setLegendVisible] = useState(true);
+  const [legendVisible, setLegendVisible] = useState(() => {
+    try { return localStorage.getItem("cotacao-legend") !== "hidden"; } catch { return false; }
+  });
   const [filterAnomalies, setFilterAnomalies] = useState(false);
+  const [filterSemPreco, setFilterSemPreco] = useState(false);
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
   const [selectedSuppliers, setSelectedSuppliers] = useState<Record<string, boolean>>({});
   const [aiAnalysisOpen, setAiAnalysisOpen] = useState(false);
@@ -49,7 +54,15 @@ const CotacaoPage = () => {
   const [qtySuggestions, setQtySuggestions] = useState<{ cotacao_produto_id: string; nome: string; quantidade_sugerida: number; justificativa: string }[]>([]);
   const [qtySuggestOpen, setQtySuggestOpen] = useState(false);
   const [erpImportOpen, setErpImportOpen] = useState(false);
-  const [nfImportOpen, setNfImportOpen] = useState(false);
+
+  // Toggle legend with localStorage persistence
+  const toggleLegend = () => {
+    setLegendVisible((prev) => {
+      const next = !prev;
+      try { localStorage.setItem("cotacao-legend", next ? "visible" : "hidden"); } catch {}
+      return next;
+    });
+  };
 
   // ── Queries ──
   const { data: cotacaoAtiva } = useQuery({
@@ -245,6 +258,14 @@ const CotacaoPage = () => {
     return fornecedores.some((f) => { const rawVal = localPrices[cpId]?.[f.id]?.replace(",", ".").replace(/[^0-9.]/g, ""); if (!rawVal) return false; const num = parseFloat(rawVal); if (isNaN(num) || num <= 0) return false; return isHighVariation(num, info.allVals) || isLowVariation(num, info.allVals); });
   };
 
+  // Check if a product has no price from any supplier
+  const hasNoPrice = (cpId: string) => {
+    return !fornecedores.some((f) => {
+      const rawVal = localPrices[cpId]?.[f.id]?.replace(",", ".").replace(/[^0-9.]/g, "");
+      return rawVal && parseFloat(rawVal) > 0;
+    });
+  };
+
   const grandTotal = useMemo(() => {
     let total = 0;
     cotacaoProdutos.forEach((cp) => { const info = analyzePrices(cp.id); if (info.min && info.minVal !== null) total += info.minVal * (cp.quantidade || 1); });
@@ -255,9 +276,22 @@ const CotacaoPage = () => {
     let items = [...cotacaoProdutos];
     if (search) items = items.filter((cp) => cp.produto?.nome.toLowerCase().includes(search.toLowerCase()));
     if (filterAnomalies) items = items.filter((cp) => hasAnomaly(cp.id));
+    if (filterSemPreco) items = items.filter((cp) => hasNoPrice(cp.id));
     items.sort((a, b) => (a.produto?.nome || "").localeCompare(b.produto?.nome || "", "pt-BR"));
     return items;
-  }, [cotacaoProdutos, search, filterAnomalies, localPrices, fornecedores]);
+  }, [cotacaoProdutos, search, filterAnomalies, filterSemPreco, localPrices, fornecedores]);
+
+  // ── Supplier progress ──
+  const supplierProgress = useMemo(() => {
+    const total = fornecedores.length;
+    const responded = fornecedores.filter((f) =>
+      precos.some((p) => p.fornecedor_id === f.id && p.preco !== null && p.preco > 0)
+    ).length;
+    return { total, responded, percent: total > 0 ? Math.round((responded / total) * 100) : 0 };
+  }, [fornecedores, precos]);
+
+  const supplierHasResponded = (fId: string) =>
+    precos.some((p) => p.fornecedor_id === fId && p.preco !== null && p.preco > 0);
 
   // ── Handlers ──
   const handlePriceChange = (cpId: string, fornecedorId: string, value: string) => { setLocalPrices((prev) => ({ ...prev, [cpId]: { ...prev[cpId], [fornecedorId]: value } })); };
@@ -363,6 +397,13 @@ const CotacaoPage = () => {
     } catch (e: any) { toast.error(e.message || "Erro na análise"); } finally { setAiAnalysisLoading(false); }
   };
 
+  const copySupplierLink = (f: Fornecedor) => {
+    const baseUrl = window.location.origin;
+    const link = `${baseUrl}/fornecedor/${f.token}`;
+    navigator.clipboard.writeText(link);
+    toast.success("Link copiado!");
+  };
+
   // ── Empty state ──
   if (!cotacaoAtiva) {
     return (
@@ -380,14 +421,12 @@ const CotacaoPage = () => {
   return (
     <TooltipProvider>
     <div className="flex flex-col h-[calc(100vh-3.5rem)]">
-      {/* Toolbar */}
+      {/* Toolbar — simplified */}
       <div className="p-3 border-b bg-card flex items-center gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[140px] max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
-        <Button size="sm" onClick={() => setErpImportOpen(true)} variant="outline"><FileSpreadsheet className="h-4 w-4 mr-1" /> Importar ERP</Button>
-        <Button size="sm" onClick={() => setNfImportOpen(true)} variant="outline"><Camera className="h-4 w-4 mr-1" /> OCR NF</Button>
         <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"><Save className="h-4 w-4 mr-1" /> Salvar</Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="gap-1"><MoreHorizontal className="h-4 w-4" /><span className="text-xs">Mais</span></Button></DropdownMenuTrigger>
@@ -396,6 +435,8 @@ const CotacaoPage = () => {
             <DropdownMenuItem onClick={() => setFilterAnomalies(!filterAnomalies)}><Filter className="h-4 w-4 mr-2" /> {filterAnomalies ? "✓ Filtro anomalias" : "Filtrar anomalias"}</DropdownMenuItem>
             <DropdownMenuItem onClick={exportSuspiciousReport}><FileWarning className="h-4 w-4 mr-2" /> Relatório suspeitos</DropdownMenuItem>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setErpImportOpen(true)}><FileSpreadsheet className="h-4 w-4 mr-2" /> Importar ERP</DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={runAiAnalysis} disabled={aiAnalysisLoading}><Sparkles className="h-4 w-4 mr-2" /> Análise IA</DropdownMenuItem>
             <DropdownMenuItem onClick={runQtySuggestion} disabled={qtySuggestLoading}><Wand2 className="h-4 w-4 mr-2" /> Sugerir quantidades</DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -403,6 +444,80 @@ const CotacaoPage = () => {
             <DropdownMenuItem onClick={() => setNovaCotacaoOpen(true)}><RotateCcw className="h-4 w-4 mr-2" /> Nova cotação</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+      </div>
+
+      {/* Progress bar */}
+      <div className="px-4 py-2 border-b bg-card/50 flex items-center gap-3">
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
+          {supplierProgress.responded} de {supplierProgress.total} fornecedores responderam
+        </span>
+        <Progress value={supplierProgress.percent} className="h-2 flex-1 bg-muted [&>div]:bg-green-500" />
+        <span className="text-xs font-bold text-muted-foreground">{supplierProgress.percent}%</span>
+      </div>
+
+      {/* Supplier chips */}
+      {fornecedores.length > 0 && (
+        <div className="px-4 py-2 border-b bg-card/50 flex items-center gap-2 overflow-x-auto scrollbar-thin">
+          {fornecedores.map((f) => {
+            const responded = supplierHasResponded(f.id);
+            return (
+              <Popover key={f.id}>
+                <PopoverTrigger asChild>
+                  <button className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
+                    responded
+                      ? "bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400"
+                      : "bg-muted/50 border-border text-muted-foreground"
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${responded ? "bg-green-500" : "bg-muted-foreground/40"}`} />
+                    {f.nome}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-48 p-1.5" align="start">
+                  <button
+                    onClick={() => copySupplierLink(f)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                  >
+                    <ClipboardCopy className="h-4 w-4" />
+                    Copiar link WhatsApp
+                  </button>
+                  <button
+                    onClick={() => setSupplierModalOpen(true)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                  >
+                    <Users className="h-4 w-4" />
+                    Gerenciar fornecedores
+                  </button>
+                </PopoverContent>
+              </Popover>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Quick filter + Legend toggle */}
+      <div className="px-4 py-1.5 border-b bg-card/50 flex items-center gap-3">
+        <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
+          <button
+            onClick={() => setFilterSemPreco(false)}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${!filterSemPreco ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+          >
+            Todos
+          </button>
+          <button
+            onClick={() => setFilterSemPreco(true)}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${filterSemPreco ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
+          >
+            Sem preço
+          </button>
+        </div>
+        <div className="flex-1" />
+        <button
+          onClick={toggleLegend}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <HelpCircle className="h-3.5 w-3.5" />
+          Legenda
+        </button>
       </div>
 
       <TabelaCotacao
@@ -414,7 +529,7 @@ const CotacaoPage = () => {
         cotacaoProdutosCount={cotacaoProdutos.length}
         grandTotal={grandTotal}
         legendVisible={legendVisible}
-        onLegendClose={() => setLegendVisible(false)}
+        onLegendClose={toggleLegend}
         analyzePrices={analyzePrices}
         isHighVariation={isHighVariation}
         isLowVariation={isLowVariation}
@@ -428,7 +543,6 @@ const CotacaoPage = () => {
       <ModalAiAnalise open={aiAnalysisOpen} onOpenChange={setAiAnalysisOpen} text={aiAnalysisText} loading={aiAnalysisLoading} onReanalisar={runAiAnalysis} />
       <ModalQtySugestao open={qtySuggestOpen} onOpenChange={setQtySuggestOpen} suggestions={qtySuggestions} loading={qtySuggestLoading} onApply={applyQtySuggestions} />
       <ImportErpModal open={erpImportOpen} onOpenChange={setErpImportOpen} cotacaoId={cotacaoAtiva.id} />
-      <ImportNfModal open={nfImportOpen} onOpenChange={setNfImportOpen} onImported={() => { queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] }); queryClient.invalidateQueries({ queryKey: ["produtos"] }); queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] }); }} />
     </div>
     </TooltipProvider>
   );
