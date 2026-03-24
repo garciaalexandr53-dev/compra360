@@ -502,6 +502,7 @@ const CotacaoPage = () => {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => setCancelCotacaoOpen(true)} className="text-destructive focus:text-destructive"><Trash2 className="h-4 w-4 mr-2" /> Excluir cotação</DropdownMenuItem>
           </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Progress bar */}
