@@ -28,9 +28,9 @@ type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 interface CotacaoProduto { id: string; produto_id: string; cotacao_id: string; quantidade: number | null; produto?: Produto; }
 interface Preco { id: string; cotacao_produto_id: string; fornecedor_id: string; preco: number | null; }
 
-const HIGH_THRESHOLD = 0.25;
-const LOW_THRESHOLD = 0.15;
-const MIN_SUPPLIERS_FOR_ANALYSIS = 3;
+const HIST_HIGH_THRESHOLD = 0.40; // 40% acima da média histórica
+const HIST_LOW_THRESHOLD = 0.30;  // 30% abaixo da média histórica
+const MIN_HIST_QUOTES = 2;       // mínimo de cotações anteriores para análise
 
 const CotacaoPage = () => {
   const queryClient = useQueryClient();
@@ -146,26 +146,52 @@ const CotacaoPage = () => {
     },
   });
 
-  const { data: historicalPrices = [] } = useQuery({
-    queryKey: ["historical-prices", cotacaoAtiva?.id],
+  // Fetch avg prices from last 3 finalized quotes per product
+  const { data: historicalAvgMap = {} } = useQuery<Record<string, { avg: number; count: number }>>({
+    queryKey: ["historical-avg-prices", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id && cotacaoProdutos.length > 0,
     queryFn: async () => {
       const produtoIds = cotacaoProdutos.map((cp) => cp.produto_id);
-      if (!produtoIds.length) return [];
-      const { data: lastCot } = await supabase.from("cotacoes").select("id").eq("status", "finalizada").order("finalizada_at", { ascending: false }).limit(1).maybeSingle();
-      if (!lastCot) return [];
-      const { data: oldCps } = await supabase.from("cotacao_produtos").select("id, produto_id").eq("cotacao_id", lastCot.id).in("produto_id", produtoIds);
-      if (!oldCps?.length) return [];
-      const { data: oldPrecos } = await supabase.from("precos").select("*").in("cotacao_produto_id", oldCps.map((cp: any) => cp.id));
-      return (oldPrecos || []).map((p: any) => { const cp = oldCps.find((c: any) => c.id === p.cotacao_produto_id); return { ...p, produto_id: cp?.produto_id }; });
+      if (!produtoIds.length) return {};
+      // Get last 3 finalized quotes (excluding current)
+      const { data: lastCots } = await supabase
+        .from("cotacoes").select("id")
+        .neq("status", "ativa")
+        .order("finalizada_at", { ascending: false })
+        .limit(3);
+      if (!lastCots?.length) return {};
+      const cotIds = lastCots.map((c: any) => c.id);
+      // Get cotacao_produtos for those quotes
+      const { data: oldCps } = await supabase
+        .from("cotacao_produtos").select("id, produto_id, cotacao_id")
+        .in("cotacao_id", cotIds)
+        .in("produto_id", produtoIds);
+      if (!oldCps?.length) return {};
+      // Get prices
+      const { data: oldPrecos } = await supabase
+        .from("precos").select("cotacao_produto_id, preco")
+        .in("cotacao_produto_id", oldCps.map((cp: any) => cp.id))
+        .gt("preco", 0);
+      if (!oldPrecos?.length) return {};
+      // Build avg map: produto_id -> { avg, count (number of distinct quotes with data) }
+      const prodPrices: Record<string, { sum: number; n: number; quotesWithData: Set<string> }> = {};
+      oldPrecos.forEach((p: any) => {
+        const cp = oldCps.find((c: any) => c.id === p.cotacao_produto_id);
+        if (!cp || p.preco === null) return;
+        if (!prodPrices[cp.produto_id]) prodPrices[cp.produto_id] = { sum: 0, n: 0, quotesWithData: new Set() };
+        prodPrices[cp.produto_id].sum += Number(p.preco);
+        prodPrices[cp.produto_id].n += 1;
+        prodPrices[cp.produto_id].quotesWithData.add(cp.cotacao_id);
+      });
+      const result: Record<string, { avg: number; count: number }> = {};
+      Object.entries(prodPrices).forEach(([pid, d]) => {
+        if (d.quotesWithData.size >= MIN_HIST_QUOTES) {
+          result[pid] = { avg: d.sum / d.n, count: d.quotesWithData.size };
+        }
+      });
+      return result;
     },
   });
-
-  const historicalMap = useMemo(() => {
-    const map: Record<string, Record<string, number>> = {};
-    historicalPrices.forEach((p: any) => { if (p.produto_id && p.preco !== null && p.preco > 0) { if (!map[p.produto_id]) map[p.produto_id] = {}; map[p.produto_id][p.fornecedor_id] = p.preco; } });
-    return map;
-  }, [historicalPrices]);
 
   const priceMap = useMemo(() => {
     const map: Record<string, Record<string, number | null>> = {};
@@ -238,24 +264,26 @@ const CotacaoPage = () => {
     return { min: tied[0].fId, second: prices.length > 1 ? prices.find((p) => p.val !== minVal)?.fId || null : null, minVal, tiedCount: tied.length, allVals: prices.map((p) => p.val) };
   };
 
-  const isHighVariation = (val: number, allVals: number[]) => {
-    if (allVals.length < MIN_SUPPLIERS_FOR_ANALYSIS) return false;
-    const sorted = [...allVals].sort((a, b) => a - b);
-    const mid = Math.floor(sorted.length / 2);
-    const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-    return median > 0 && (val - median) / median > HIGH_THRESHOLD;
-  };
-
-  const isLowVariation = (val: number, allVals: number[]) => {
-    if (allVals.length < MIN_SUPPLIERS_FOR_ANALYSIS) return false;
-    const avg = allVals.reduce((a, b) => a + b, 0) / allVals.length;
-    return avg > 0 && (avg - val) / avg >= LOW_THRESHOLD;
+  // Historical-based anomaly detection
+  const getHistAlert = (produtoId: string, val: number): "high" | "low" | null => {
+    const hist = historicalAvgMap[produtoId];
+    if (!hist) return null;
+    const diff = (val - hist.avg) / hist.avg;
+    if (diff > HIST_HIGH_THRESHOLD) return "high";
+    if (diff < -HIST_LOW_THRESHOLD) return "low";
+    return null;
   };
 
   const hasAnomaly = (cpId: string) => {
-    const info = analyzePrices(cpId);
-    if (info.allVals.length < MIN_SUPPLIERS_FOR_ANALYSIS) return false;
-    return fornecedores.some((f) => { const rawVal = localPrices[cpId]?.[f.id]?.replace(",", ".").replace(/[^0-9.]/g, ""); if (!rawVal) return false; const num = parseFloat(rawVal); if (isNaN(num) || num <= 0) return false; return isHighVariation(num, info.allVals) || isLowVariation(num, info.allVals); });
+    const cp = cotacaoProdutos.find(c => c.id === cpId);
+    if (!cp) return false;
+    return fornecedores.some((f) => {
+      const rawVal = localPrices[cpId]?.[f.id]?.replace(",", ".").replace(/[^0-9.]/g, "");
+      if (!rawVal) return false;
+      const num = parseFloat(rawVal);
+      if (isNaN(num) || num <= 0) return false;
+      return getHistAlert(cp.produto_id, num) !== null;
+    });
   };
 
   // Check if a product has no price from any supplier
@@ -325,17 +353,15 @@ const CotacaoPage = () => {
   const buildSuspiciousReport = () => {
     const rows: any[] = [];
     cotacaoProdutos.forEach((cp) => {
-      const info = analyzePrices(cp.id);
-      if (info.allVals.length < MIN_SUPPLIERS_FOR_ANALYSIS) return;
-      const avg = info.allVals.reduce((a, b) => a + b, 0) / info.allVals.length;
+      const hist = historicalAvgMap[cp.produto_id];
+      if (!hist) return;
       fornecedores.forEach((f) => {
         const rawVal = localPrices[cp.id]?.[f.id]?.replace(",", ".").replace(/[^0-9.]/g, ""); if (!rawVal) return;
         const num = parseFloat(rawVal); if (isNaN(num) || num <= 0) return;
-        const hi = isHighVariation(num, info.allVals); const lo = isLowVariation(num, info.allVals); if (!hi && !lo) return;
-        const histPrice = historicalMap[cp.produto_id]?.[f.id];
-        let precoAnterior = "—", variacaoHist = "—";
-        if (histPrice !== undefined) { precoAnterior = `R$ ${formatNumber(histPrice)}`; const histVar = ((num - histPrice) / histPrice * 100).toFixed(1); variacaoHist = `${Number(histVar) > 0 ? "+" : ""}${histVar}%`; }
-        rows.push({ Produto: cp.produto?.nome || "", Embalagem: cp.produto?.embalagem || "un", Fornecedor: f.nome, Preço: num, Média: formatNumber(avg), Desvio: `${((num - avg) / avg * 100).toFixed(1)}%`, Tipo: hi ? "⚠️ Acima (+25%)" : "⚠️ Abaixo (-15%)", "Preço Anterior": precoAnterior, "Variação Histórica": variacaoHist });
+        const alert = getHistAlert(cp.produto_id, num);
+        if (!alert) return;
+        const diff = ((num - hist.avg) / hist.avg * 100).toFixed(1);
+        rows.push({ Produto: cp.produto?.nome || "", Embalagem: cp.produto?.embalagem || "un", Fornecedor: f.nome, Preço: num, "Média Histórica": formatNumber(hist.avg), "Desvio Histórico": `${Number(diff) > 0 ? "+" : ""}${diff}%`, Tipo: alert === "high" ? "🔴 Acima do histórico" : "⚠️ Abaixo do histórico", "Cotações base": hist.count });
       });
     });
     return rows;
@@ -531,8 +557,8 @@ const CotacaoPage = () => {
         legendVisible={legendVisible}
         onLegendClose={toggleLegend}
         analyzePrices={analyzePrices}
-        isHighVariation={isHighVariation}
-        isLowVariation={isLowVariation}
+        getHistAlert={getHistAlert}
+        historicalAvgMap={historicalAvgMap}
         onPriceChange={handlePriceChange}
         onPriceBlur={handlePriceBlur}
         onFieldBlur={handleFieldBlur}
