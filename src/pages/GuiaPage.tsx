@@ -54,8 +54,8 @@ Cada fornecedor recebe um **token único** usado para gerar o link de cotação.
 **Destaques automáticos:**
 - 🟢 **MIN** — menor preço (verde)
 - 🟡 **2º** — segundo menor preço (amarelo)
-- 🟠 **▲** — preço 25%+ acima da média (possível sobrepreço)
-- 🔵 **▼** — preço 25%+ abaixo da média (possível erro de digitação, unidade ou cotação incorreta)
+- ⚠️ — preço muito abaixo do histórico (possível erro de digitação)
+- 🔴 — preço acima do histórico (possível sobrepreço)
 
 **Edição:** todos os campos são editáveis diretamente na tabela (nome, embalagem, quantidade, preço).
 
@@ -148,8 +148,8 @@ const GuiaPage = () => {
           <h3 className="text-sm font-bold text-amber-800">Dicas Importantes</h3>
         </div>
         <ul className="text-sm text-amber-700 space-y-2">
-          <li>• Sempre verifique preços com o indicador <strong className="text-blue-600">▼</strong> (muito abaixo) — podem ser erros de digitação ou unidade errada.</li>
-          <li>• Preços com <strong className="text-orange-600">▲</strong> (muito acima) indicam possibilidade de negociação.</li>
+          <li>• Sempre verifique preços com o indicador ⚠️ (abaixo do histórico) — podem ser erros de digitação ou unidade errada.</li>
+          <li>• Preços com 🔴 (acima do histórico) indicam possibilidade de negociação.</li>
           <li>• Envie o link do App Funcionários para toda a equipe — quanto mais itens reportados, melhor a cotação.</li>
           <li>• Use o Histórico para comparar preços entre cotações e identificar tendências.</li>
         </ul>
