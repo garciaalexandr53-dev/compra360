@@ -53,11 +53,16 @@ const CotacaoPage = () => {
   const [aiAnalysisText, setAiAnalysisText] = useState("");
   const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
   const [qtySuggestLoading, setQtySuggestLoading] = useState(false);
-  const [qtySuggestions, setQtySuggestions] = useState<{ cotacao_produto_id: string; nome: string; quantidade_sugerida: number; justificativa: string }[]>([]);
+  const [qtySuggestions, setQtySuggestions] = useState<{ cotacao_produto_id: string; nome: string; quantidade_sugerida: number; justificativa: string; tendencia?: string }[]>([]);
   const [qtySuggestOpen, setQtySuggestOpen] = useState(false);
   const [erpImportOpen, setErpImportOpen] = useState(false);
   const [cancelCotacaoOpen, setCancelCotacaoOpen] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [fornSuggestOpen, setFornSuggestOpen] = useState(false);
+  const [fornSuggestText, setFornSuggestText] = useState("");
+  const [fornSuggestLoading, setFornSuggestLoading] = useState(false);
+  const [fornSuggestHasHistory, setFornSuggestHasHistory] = useState(false);
+  const [fornSuggestRecommendedIds, setFornSuggestRecommendedIds] = useState<string[]>([]);
 
   // Toggle legend with localStorage persistence
   const toggleLegend = () => {
