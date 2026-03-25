@@ -524,7 +524,7 @@ const CotacaoPage = () => {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={runAiAnalysis} disabled={aiAnalysisLoading}><Sparkles className="h-4 w-4 mr-2" /> Análise IA</DropdownMenuItem>
             <DropdownMenuItem onClick={runQtySuggestion} disabled={qtySuggestLoading}><Wand2 className="h-4 w-4 mr-2" /> Sugerir quantidades</DropdownMenuItem>
-            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={runFornSuggestion} disabled={fornSuggestLoading}><Target className="h-4 w-4 mr-2" /> Fornecedores recomendados</DropdownMenuItem>
             <DropdownMenuItem onClick={() => queryClient.invalidateQueries()}><RefreshCw className="h-4 w-4 mr-2" /> Atualizar dados</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setNovaCotacaoOpen(true)}><RotateCcw className="h-4 w-4 mr-2" /> Nova cotação</DropdownMenuItem>
             <DropdownMenuSeparator />
