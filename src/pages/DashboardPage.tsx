@@ -166,7 +166,7 @@ const DashboardPage = () => {
       for (const cp of cps) {
         const cpPrecos = precos.filter(p => p.cotacao_produto_id === cp.id).map(p => Number(p.preco)).filter(v => v > 0);
         if (cpPrecos.length < 2) continue;
-        const qty = cp.quantity || 1;
+        const qty = cp.quantidade || 1;
         totalMin += Math.min(...cpPrecos) * qty;
         totalMax += Math.max(...cpPrecos) * qty;
       }
