@@ -53,7 +53,7 @@ const CotacaoPage = () => {
   const [aiAnalysisText, setAiAnalysisText] = useState("");
   const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
   const [qtySuggestLoading, setQtySuggestLoading] = useState(false);
-  const [qtySuggestions, setQtySuggestions] = useState<{ cotacao_produto_id: string; nome: string; quantidade_sugerida: number; justificativa: string; tendencia?: string }[]>([]);
+  const [qtySuggestions, setQtySuggestions] = useState<{ cotacao_produto_id: string; nome: string; quantidade_sugerida: number; justificativa: string; tendencia?: "crescente" | "estável" | "diminuindo" | "sem_historico" }[]>([]);
   const [qtySuggestOpen, setQtySuggestOpen] = useState(false);
   const [erpImportOpen, setErpImportOpen] = useState(false);
   const [cancelCotacaoOpen, setCancelCotacaoOpen] = useState(false);
