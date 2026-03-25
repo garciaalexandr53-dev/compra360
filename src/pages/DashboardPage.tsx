@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ClipboardList, FileSpreadsheet, Pencil, Send, Users, Eye, Trophy, RefreshCw, Smartphone, CheckCircle2, Clock } from "lucide-react";
+import { ClipboardList, FileSpreadsheet, Pencil, Send, Users, Eye, Trophy, RefreshCw, Smartphone, CheckCircle2, Clock, Target, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { formatBRL } from "@/lib/format";
@@ -19,6 +19,7 @@ import DashboardHistorico from "@/components/dashboard/DashboardHistorico";
 import SendQueueModal from "@/components/dashboard/SendQueueModal";
 import ImportErpModal from "@/components/ImportErpModal";
 import ModalFornecedores from "@/components/cotacao/ModalFornecedores";
+import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugestao";
 
 type Fornecedor = Tables<"fornecedores">;
 
