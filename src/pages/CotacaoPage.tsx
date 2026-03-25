@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Wand2, MoreHorizontal, FileSpreadsheet, RotateCcw, Copy, HelpCircle, ClipboardCopy, Trash2 } from "lucide-react";
+import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Wand2, MoreHorizontal, FileSpreadsheet, RotateCcw, Copy, HelpCircle, ClipboardCopy, Trash2, Target } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
@@ -18,6 +18,7 @@ import ModalNovaCotacao from "@/components/cotacao/ModalNovaCotacao";
 import ModalFornecedores from "@/components/cotacao/ModalFornecedores";
 import ModalAiAnalise from "@/components/cotacao/ModalAiAnalise";
 import ModalQtySugestao from "@/components/cotacao/ModalQtySugestao";
+import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugestao";
 import TabelaCotacao from "@/components/cotacao/TabelaCotacao";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
@@ -52,11 +53,16 @@ const CotacaoPage = () => {
   const [aiAnalysisText, setAiAnalysisText] = useState("");
   const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
   const [qtySuggestLoading, setQtySuggestLoading] = useState(false);
-  const [qtySuggestions, setQtySuggestions] = useState<{ cotacao_produto_id: string; nome: string; quantidade_sugerida: number; justificativa: string }[]>([]);
+  const [qtySuggestions, setQtySuggestions] = useState<{ cotacao_produto_id: string; nome: string; quantidade_sugerida: number; justificativa: string; tendencia?: "crescente" | "estável" | "diminuindo" | "sem_historico" }[]>([]);
   const [qtySuggestOpen, setQtySuggestOpen] = useState(false);
   const [erpImportOpen, setErpImportOpen] = useState(false);
   const [cancelCotacaoOpen, setCancelCotacaoOpen] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [fornSuggestOpen, setFornSuggestOpen] = useState(false);
+  const [fornSuggestText, setFornSuggestText] = useState("");
+  const [fornSuggestLoading, setFornSuggestLoading] = useState(false);
+  const [fornSuggestHasHistory, setFornSuggestHasHistory] = useState(false);
+  const [fornSuggestRecommendedIds, setFornSuggestRecommendedIds] = useState<string[]>([]);
 
   // Toggle legend with localStorage persistence
   const toggleLegend = () => {
@@ -406,6 +412,28 @@ const CotacaoPage = () => {
     setQtySuggestLoading(false);
   };
 
+  const runFornSuggestion = async () => {
+    if (!cotacaoAtiva?.id) return;
+    setFornSuggestLoading(true); setFornSuggestOpen(true); setFornSuggestText(""); setFornSuggestHasHistory(false); setFornSuggestRecommendedIds([]);
+    try {
+      const resp = await supabase.functions.invoke("ai-automacao", { body: { type: "suggest-fornecedores", cotacao_id: cotacaoAtiva.id, loja_id: lojaAtiva?.id || null } });
+      if (resp.error) throw new Error(resp.error.message);
+      setFornSuggestText(resp.data?.text || "");
+      setFornSuggestHasHistory(resp.data?.has_history ?? false);
+      setFornSuggestRecommendedIds(resp.data?.recommended_supplier_ids || []);
+    } catch (e: any) { toast.error(e.message || "Erro ao sugerir fornecedores"); }
+    setFornSuggestLoading(false);
+  };
+
+  const applyFornSuggestions = () => {
+    if (!fornSuggestRecommendedIds.length) return;
+    const updated: Record<string, boolean> = {};
+    allFornecedores.forEach((f) => { updated[f.id] = fornSuggestRecommendedIds.includes(f.id); });
+    setSelectedSuppliers(updated);
+    setFornSuggestOpen(false);
+    toast.success(`${fornSuggestRecommendedIds.length} fornecedores recomendados selecionados!`);
+  };
+
   const applyQtySuggestions = async () => {
     let applied = 0;
     for (const s of qtySuggestions) { if (s.cotacao_produto_id && s.quantidade_sugerida) { const { error } = await supabase.from("cotacao_produtos").update({ quantidade: s.quantidade_sugerida }).eq("id", s.cotacao_produto_id); if (!error) applied++; } }
@@ -496,6 +524,7 @@ const CotacaoPage = () => {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={runAiAnalysis} disabled={aiAnalysisLoading}><Sparkles className="h-4 w-4 mr-2" /> Análise IA</DropdownMenuItem>
             <DropdownMenuItem onClick={runQtySuggestion} disabled={qtySuggestLoading}><Wand2 className="h-4 w-4 mr-2" /> Sugerir quantidades</DropdownMenuItem>
+            <DropdownMenuItem onClick={runFornSuggestion} disabled={fornSuggestLoading}><Target className="h-4 w-4 mr-2" /> Fornecedores recomendados</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => queryClient.invalidateQueries()}><RefreshCw className="h-4 w-4 mr-2" /> Atualizar dados</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setNovaCotacaoOpen(true)}><RotateCcw className="h-4 w-4 mr-2" /> Nova cotação</DropdownMenuItem>
@@ -602,6 +631,7 @@ const CotacaoPage = () => {
       <ModalAiAnalise open={aiAnalysisOpen} onOpenChange={setAiAnalysisOpen} text={aiAnalysisText} loading={aiAnalysisLoading} onReanalisar={runAiAnalysis} />
       <ModalQtySugestao open={qtySuggestOpen} onOpenChange={setQtySuggestOpen} suggestions={qtySuggestions} loading={qtySuggestLoading} onApply={applyQtySuggestions} />
       <ImportErpModal open={erpImportOpen} onOpenChange={setErpImportOpen} cotacaoId={cotacaoAtiva.id} />
+      <ModalFornecedorSugestao open={fornSuggestOpen} onOpenChange={setFornSuggestOpen} text={fornSuggestText} loading={fornSuggestLoading} hasHistory={fornSuggestHasHistory} recommendedIds={fornSuggestRecommendedIds} onApply={applyFornSuggestions} />
 
       <AlertDialog open={cancelCotacaoOpen} onOpenChange={setCancelCotacaoOpen}>
         <AlertDialogContent>

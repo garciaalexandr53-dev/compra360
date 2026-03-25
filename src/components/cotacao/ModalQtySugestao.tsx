@@ -1,12 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Wand2, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Wand2, Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface QtySuggestion {
   cotacao_produto_id: string;
   nome: string;
   quantidade_sugerida: number;
   justificativa: string;
+  tendencia?: "crescente" | "estável" | "diminuindo" | "sem_historico";
 }
 
 interface ModalQtySugestaoProps {
@@ -16,6 +18,21 @@ interface ModalQtySugestaoProps {
   loading: boolean;
   onApply: () => void;
 }
+
+const trendIcon = (t?: string) => {
+  if (t === "crescente") return <TrendingUp className="h-3.5 w-3.5 text-green-500" />;
+  if (t === "diminuindo") return <TrendingDown className="h-3.5 w-3.5 text-red-500" />;
+  if (t === "estável") return <Minus className="h-3.5 w-3.5 text-blue-500" />;
+  return null;
+};
+
+const trendBadge = (t?: string) => {
+  if (t === "crescente") return <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">↑ Crescente</Badge>;
+  if (t === "diminuindo") return <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800">↓ Diminuindo</Badge>;
+  if (t === "estável") return <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800">— Estável</Badge>;
+  if (t === "sem_historico") return <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Sem histórico</Badge>;
+  return null;
+};
 
 const ModalQtySugestao = ({ open, onOpenChange, suggestions, loading, onApply }: ModalQtySugestaoProps) => {
   return (
@@ -31,7 +48,7 @@ const ModalQtySugestao = ({ open, onOpenChange, suggestions, loading, onApply }:
           {loading && (
             <div className="flex items-center justify-center gap-3 py-12 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span className="text-sm">Analisando histórico...</span>
+              <span className="text-sm">Analisando histórico de 5 cotações...</span>
             </div>
           )}
           {!loading && suggestions.length === 0 && (
@@ -41,9 +58,15 @@ const ModalQtySugestao = ({ open, onOpenChange, suggestions, loading, onApply }:
             <div className="space-y-2">
               {suggestions.map((s, i) => (
                 <div key={i} className="border rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">{s.nome}</span>
-                    <span className="text-primary font-bold text-sm">Qtd: {s.quantidade_sugerida}</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {trendIcon(s.tendencia)}
+                      <span className="font-medium text-sm truncate">{s.nome}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {trendBadge(s.tendencia)}
+                      <span className="text-primary font-bold text-sm">Qtd: {s.quantidade_sugerida}</span>
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">{s.justificativa}</p>
                 </div>

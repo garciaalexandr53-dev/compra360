@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ClipboardList, FileSpreadsheet, Pencil, Send, Users, Eye, Trophy, RefreshCw, Smartphone, CheckCircle2, Clock } from "lucide-react";
+import { ClipboardList, FileSpreadsheet, Pencil, Send, Users, Eye, Trophy, RefreshCw, Smartphone, CheckCircle2, Clock, Target, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { formatBRL } from "@/lib/format";
@@ -19,6 +19,7 @@ import DashboardHistorico from "@/components/dashboard/DashboardHistorico";
 import SendQueueModal from "@/components/dashboard/SendQueueModal";
 import ImportErpModal from "@/components/ImportErpModal";
 import ModalFornecedores from "@/components/cotacao/ModalFornecedores";
+import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugestao";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -31,6 +32,11 @@ const DashboardPage = () => {
   const [sendQueueOpen, setSendQueueOpen] = useState(false);
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
   const [selectedSuppliers, setSelectedSuppliers] = useState<Record<string, boolean>>({});
+  const [fornSuggestOpen, setFornSuggestOpen] = useState(false);
+  const [fornSuggestText, setFornSuggestText] = useState("");
+  const [fornSuggestLoading, setFornSuggestLoading] = useState(false);
+  const [fornSuggestHasHistory, setFornSuggestHasHistory] = useState(false);
+  const [fornSuggestRecommendedIds, setFornSuggestRecommendedIds] = useState<string[]>([]);
 
   // Realtime
   useEffect(() => {
@@ -203,7 +209,28 @@ const DashboardPage = () => {
     window.open(url, "_blank");
   };
 
-  // ── Determine state ──
+  const runFornSuggestion = async () => {
+    if (!cotacaoAtiva?.id) return;
+    setFornSuggestLoading(true); setFornSuggestOpen(true); setFornSuggestText(""); setFornSuggestHasHistory(false); setFornSuggestRecommendedIds([]);
+    try {
+      const resp = await supabase.functions.invoke("ai-automacao", { body: { type: "suggest-fornecedores", cotacao_id: cotacaoAtiva.id, loja_id: lojaAtiva?.id || null } });
+      if (resp.error) throw new Error(resp.error.message);
+      setFornSuggestText(resp.data?.text || "");
+      setFornSuggestHasHistory(resp.data?.has_history ?? false);
+      setFornSuggestRecommendedIds(resp.data?.recommended_supplier_ids || []);
+    } catch (e: any) { toast.error(e.message || "Erro ao sugerir fornecedores"); }
+    setFornSuggestLoading(false);
+  };
+
+  const applyFornSuggestions = () => {
+    if (!fornSuggestRecommendedIds.length) return;
+    const updated: Record<string, boolean> = {};
+    filteredFornecedores.forEach((f) => { updated[f.id] = fornSuggestRecommendedIds.includes(f.id); });
+    setSelectedSuppliers(updated);
+    setFornSuggestOpen(false);
+    toast.success(`${fornSuggestRecommendedIds.length} fornecedores recomendados selecionados!`);
+  };
+
   type DashState = 1 | 2 | 3 | 4 | 5;
   const state: DashState = !cotacaoAtiva
     ? 1
@@ -301,6 +328,15 @@ const DashboardPage = () => {
               <Users className="h-4 w-4" /> Gerenciar fornecedores
             </Button>
             <DashboardProgress currentStep={2} />
+            <Card className="border-dashed border-primary/30 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors" onClick={runFornSuggestion}>
+              <CardContent className="p-3 flex items-center gap-3">
+                <Lightbulb className="h-4 w-4 text-primary shrink-0" />
+                <div className="text-xs text-muted-foreground">
+                  💡 Quer sugestões de fornecedores baseadas no histórico?
+                </div>
+                <Button size="sm" variant="ghost" className="shrink-0 text-xs text-primary">Ver sugestões</Button>
+              </CardContent>
+            </Card>
           </div>
         )}
 
@@ -385,6 +421,7 @@ const DashboardPage = () => {
         }}
         onSave={saveSupplierSelection}
       />
+      <ModalFornecedorSugestao open={fornSuggestOpen} onOpenChange={setFornSuggestOpen} text={fornSuggestText} loading={fornSuggestLoading} hasHistory={fornSuggestHasHistory} recommendedIds={fornSuggestRecommendedIds} onApply={applyFornSuggestions} />
     </div>
   );
 };
