@@ -525,6 +525,7 @@ const CotacaoPage = () => {
             <DropdownMenuItem onClick={runAiAnalysis} disabled={aiAnalysisLoading}><Sparkles className="h-4 w-4 mr-2" /> Análise IA</DropdownMenuItem>
             <DropdownMenuItem onClick={runQtySuggestion} disabled={qtySuggestLoading}><Wand2 className="h-4 w-4 mr-2" /> Sugerir quantidades</DropdownMenuItem>
             <DropdownMenuItem onClick={runFornSuggestion} disabled={fornSuggestLoading}><Target className="h-4 w-4 mr-2" /> Fornecedores recomendados</DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => queryClient.invalidateQueries()}><RefreshCw className="h-4 w-4 mr-2" /> Atualizar dados</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setNovaCotacaoOpen(true)}><RotateCcw className="h-4 w-4 mr-2" /> Nova cotação</DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -630,6 +631,7 @@ const CotacaoPage = () => {
       <ModalAiAnalise open={aiAnalysisOpen} onOpenChange={setAiAnalysisOpen} text={aiAnalysisText} loading={aiAnalysisLoading} onReanalisar={runAiAnalysis} />
       <ModalQtySugestao open={qtySuggestOpen} onOpenChange={setQtySuggestOpen} suggestions={qtySuggestions} loading={qtySuggestLoading} onApply={applyQtySuggestions} />
       <ImportErpModal open={erpImportOpen} onOpenChange={setErpImportOpen} cotacaoId={cotacaoAtiva.id} />
+      <ModalFornecedorSugestao open={fornSuggestOpen} onOpenChange={setFornSuggestOpen} text={fornSuggestText} loading={fornSuggestLoading} hasHistory={fornSuggestHasHistory} recommendedIds={fornSuggestRecommendedIds} onApply={applyFornSuggestions} />
 
       <AlertDialog open={cancelCotacaoOpen} onOpenChange={setCancelCotacaoOpen}>
         <AlertDialogContent>
