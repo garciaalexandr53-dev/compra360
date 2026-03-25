@@ -421,6 +421,7 @@ const DashboardPage = () => {
         }}
         onSave={saveSupplierSelection}
       />
+      <ModalFornecedorSugestao open={fornSuggestOpen} onOpenChange={setFornSuggestOpen} text={fornSuggestText} loading={fornSuggestLoading} hasHistory={fornSuggestHasHistory} recommendedIds={fornSuggestRecommendedIds} onApply={applyFornSuggestions} />
     </div>
   );
 };
