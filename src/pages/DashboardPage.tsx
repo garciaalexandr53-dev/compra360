@@ -1,23 +1,44 @@
-import { useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
-import { formatBRL } from "@/lib/format";
 import { useNavigate } from "react-router-dom";
-import { Package, Users, BarChart3, ShoppingCart, AlertCircle, CheckCircle2, Clock, History, Trophy, MessageSquare, Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { ClipboardList, FileSpreadsheet, Pencil, Send, Users, Eye, Trophy, RefreshCw, Smartphone, CheckCircle2, Clock } from "lucide-react";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { formatBRL } from "@/lib/format";
+import type { Tables } from "@/integrations/supabase/types";
+
+import DashboardAlerts from "@/components/dashboard/DashboardAlerts";
+import DashboardProgress from "@/components/dashboard/DashboardProgress";
+import DashboardHistorico from "@/components/dashboard/DashboardHistorico";
+import SendQueueModal from "@/components/dashboard/SendQueueModal";
+import ImportErpModal from "@/components/ImportErpModal";
+import ModalFornecedores from "@/components/cotacao/ModalFornecedores";
+
+type Fornecedor = Tables<"fornecedores">;
 
 const DashboardPage = () => {
   const { lojaAtiva } = useLojaAtiva();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Realtime — atualiza contadores quando precos ou cotacao_produtos mudam
+  const [erpImportOpen, setErpImportOpen] = useState(false);
+  const [sendQueueOpen, setSendQueueOpen] = useState(false);
+  const [supplierModalOpen, setSupplierModalOpen] = useState(false);
+  const [selectedSuppliers, setSelectedSuppliers] = useState<Record<string, boolean>>({});
+
+  // Realtime
   useEffect(() => {
     const channel = supabase.channel('dashboard-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'precos' }, () => {
         queryClient.invalidateQueries({ queryKey: ["resposta-count"] });
         queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores-count"] });
+        queryClient.invalidateQueries({ queryKey: ["dash-respondidos"] });
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cotacao_produtos' }, () => {
         queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
@@ -26,6 +47,7 @@ const DashboardPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
 
+  // ── Core queries ──
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
@@ -46,35 +68,59 @@ const DashboardPage = () => {
     },
   });
 
-  const { data: fornecedorCount = 0 } = useQuery({
-    queryKey: ["fornecedor-count"],
-    queryFn: async () => {
-      const { count } = await supabase.from("fornecedores").select("*", { count: "exact", head: true });
-      return count || 0;
-    },
+  const { data: fornecedorLojas = [] } = useQuery({
+    queryKey: ["fornecedor-lojas"],
+    queryFn: async () => { const { data } = await supabase.from("fornecedor_lojas").select("*"); return data || []; },
   });
 
-  const { data: respostaCount = 0 } = useQuery({
-    queryKey: ["resposta-count", cotacaoAtiva?.id],
-    enabled: !!cotacaoAtiva?.id,
-    queryFn: async () => {
-      const cpIds = await supabase.from("cotacao_produtos").select("id").eq("cotacao_id", cotacaoAtiva!.id);
-      if (!cpIds.data?.length) return 0;
-      const ids = cpIds.data.map((cp) => cp.id);
-      const { data } = await supabase.from("precos").select("fornecedor_id").in("cotacao_produto_id", ids).not("preco", "is", null);
-      if (!data) return 0;
-      return new Set(data.map((p) => p.fornecedor_id)).size;
-    },
+  const { data: allFornecedores = [] } = useQuery({
+    queryKey: ["fornecedores"],
+    queryFn: async () => { const { data } = await supabase.from("fornecedores").select("*").order("nome"); return (data || []) as Fornecedor[]; },
   });
 
-  const { data: selectedSupplierCount = 0 } = useQuery({
-    queryKey: ["cotacao-fornecedores-count", cotacaoAtiva?.id],
+  const filteredFornecedores = useMemo(() => {
+    if (!lojaAtiva?.id) return allFornecedores;
+    const linkedToStore = new Set(fornecedorLojas.filter((fl: any) => fl.loja_id === lojaAtiva.id).map((fl: any) => fl.fornecedor_id));
+    const allLinked = new Set(fornecedorLojas.map((fl: any) => fl.fornecedor_id));
+    return allFornecedores.filter((f) => linkedToStore.has(f.id) || !allLinked.has(f.id));
+  }, [allFornecedores, fornecedorLojas, lojaAtiva?.id]);
+
+  const { data: cotacaoFornecedores = [] } = useQuery({
+    queryKey: ["cotacao-fornecedores", cotacaoAtiva?.id],
+    enabled: !!cotacaoAtiva?.id,
+    queryFn: async () => { const { data } = await supabase.from("cotacao_fornecedores").select("fornecedor_id").eq("cotacao_id", cotacaoAtiva!.id); return data || []; },
+  });
+
+  // Sync selected suppliers from DB
+  useEffect(() => {
+    if (!filteredFornecedores.length || !cotacaoAtiva?.id) return;
+    if (cotacaoFornecedores.length > 0) {
+      const sel: Record<string, boolean> = {};
+      filteredFornecedores.forEach((f) => { sel[f.id] = false; });
+      cotacaoFornecedores.forEach((cf: any) => { sel[cf.fornecedor_id] = true; });
+      setSelectedSuppliers(sel);
+    }
+  }, [filteredFornecedores, cotacaoFornecedores, cotacaoAtiva?.id]);
+
+  const selectedFornecedores = useMemo(
+    () => filteredFornecedores.filter(f => selectedSuppliers[f.id]),
+    [filteredFornecedores, selectedSuppliers]
+  );
+  const selectedSupplierCount = selectedFornecedores.length;
+
+  // Respondidos — set of fornecedor_ids who responded
+  const { data: respondidosSet = new Set<string>() } = useQuery({
+    queryKey: ["dash-respondidos", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
     queryFn: async () => {
-      const { count } = await supabase.from("cotacao_fornecedores").select("*", { count: "exact", head: true }).eq("cotacao_id", cotacaoAtiva!.id);
-      return count || 0;
+      const { data: cps } = await supabase.from("cotacao_produtos").select("id").eq("cotacao_id", cotacaoAtiva!.id);
+      if (!cps?.length) return new Set<string>();
+      const cpIds = cps.map(cp => cp.id);
+      const { data } = await supabase.from("precos").select("fornecedor_id").in("cotacao_produto_id", cpIds).not("preco", "is", null);
+      return new Set((data || []).map(p => p.fornecedor_id));
     },
   });
+  const respostaCount = respondidosSet.size;
 
   const { data: itensFaltantes = 0 } = useQuery({
     queryKey: ["itens-faltantes-count", lojaAtiva?.id],
@@ -94,239 +140,251 @@ const DashboardPage = () => {
     },
   });
 
-  // === Métricas históricas ===
-
-  const { data: totalCotacoes = 0 } = useQuery({
-    queryKey: ["hist-total-cotacoes", lojaAtiva?.id],
+  // Last finalized quote (for state 1)
+  const { data: lastCotacao } = useQuery({
+    queryKey: ["last-cotacao", lojaAtiva?.id],
     queryFn: async () => {
-      let q = supabase.from("cotacoes").select("*", { count: "exact", head: true }).neq("status", "ativa");
+      let q = supabase.from("cotacoes").select("nome, finalizada_at").neq("status", "ativa").order("finalizada_at", { ascending: false }).limit(1);
       if (lojaAtiva?.id) q = q.eq("loja_id", lojaAtiva.id);
-      const { count } = await q;
-      return count || 0;
+      const { data } = await q.maybeSingle();
+      return data;
     },
   });
 
-  const { data: fornecedorMaisCompetitivo } = useQuery({
-    queryKey: ["hist-fornecedor-competitivo", lojaAtiva?.id],
+  // Economy estimate for state 5
+  const { data: economyEstimate } = useQuery({
+    queryKey: ["economy-estimate", cotacaoAtiva?.id],
+    enabled: !!cotacaoAtiva?.id && respostaCount > 1,
     queryFn: async () => {
-      // Últimas 3 cotações encerradas
-      let q = supabase.from("cotacoes").select("id").neq("status", "ativa").order("created_at", { ascending: false }).limit(3);
-      if (lojaAtiva?.id) q = q.eq("loja_id", lojaAtiva.id);
-      const { data: cots } = await q;
-      if (!cots?.length) return null;
-      const cotIds = cots.map(c => c.id);
-
-      // Buscar cotacao_produtos dessas cotações
-      const { data: cps } = await supabase.from("cotacao_produtos").select("id, cotacao_id").in("cotacao_id", cotIds);
+      const { data: cps } = await supabase.from("cotacao_produtos").select("id, quantidade").eq("cotacao_id", cotacaoAtiva!.id);
       if (!cps?.length) return null;
       const cpIds = cps.map(cp => cp.id);
-
-      // Buscar todos os preços
-      const { data: precos } = await supabase.from("precos").select("cotacao_produto_id, fornecedor_id, preco").in("cotacao_produto_id", cpIds).not("preco", "is", null);
+      const { data: precos } = await supabase.from("precos").select("cotacao_produto_id, preco").in("cotacao_produto_id", cpIds).not("preco", "is", null);
       if (!precos?.length) return null;
-
-      // Para cada cotacao_produto, achar o menor preço
-      const byCP: Record<string, { fornecedor_id: string; preco: number }[]> = {};
-      for (const p of precos) {
-        if (!byCP[p.cotacao_produto_id]) byCP[p.cotacao_produto_id] = [];
-        byCP[p.cotacao_produto_id].push({ fornecedor_id: p.fornecedor_id, preco: Number(p.preco) });
+      
+      let totalMin = 0, totalMax = 0;
+      for (const cp of cps) {
+        const cpPrecos = precos.filter(p => p.cotacao_produto_id === cp.id).map(p => Number(p.preco)).filter(v => v > 0);
+        if (cpPrecos.length < 2) continue;
+        const qty = cp.quantity || 1;
+        totalMin += Math.min(...cpPrecos) * qty;
+        totalMax += Math.max(...cpPrecos) * qty;
       }
-
-      const wins: Record<string, number> = {};
-      for (const cpId of Object.keys(byCP)) {
-        const sorted = byCP[cpId].sort((a, b) => a.preco - b.preco);
-        if (sorted.length > 0) {
-          wins[sorted[0].fornecedor_id] = (wins[sorted[0].fornecedor_id] || 0) + 1;
-        }
-      }
-
-      const winnerId = Object.entries(wins).sort((a, b) => b[1] - a[1])[0]?.[0];
-      if (!winnerId) return null;
-
-      const { data: forn } = await supabase.from("fornecedores").select("nome").eq("id", winnerId).single();
-      return forn?.nome || null;
+      return totalMax > totalMin ? totalMax - totalMin : null;
     },
   });
 
-  const { data: mediaRespostas } = useQuery({
-    queryKey: ["hist-media-respostas", lojaAtiva?.id],
-    queryFn: async () => {
-      let q = supabase.from("cotacoes").select("id").neq("status", "ativa").order("created_at", { ascending: false }).limit(5);
-      if (lojaAtiva?.id) q = q.eq("loja_id", lojaAtiva.id);
-      const { data: cots } = await q;
-      if (!cots?.length) return null;
+  // Save supplier selection
+  const saveSupplierSelection = async () => {
+    if (!cotacaoAtiva?.id) return;
+    const selected = filteredFornecedores.filter(f => selectedSuppliers[f.id]);
+    await supabase.from("cotacao_fornecedores").delete().eq("cotacao_id", cotacaoAtiva.id);
+    if (selected.length > 0) {
+      await supabase.from("cotacao_fornecedores").insert(selected.map(f => ({ cotacao_id: cotacaoAtiva.id, fornecedor_id: f.id })));
+    }
+    queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
+    setSupplierModalOpen(false);
+    toast.success(`${selected.length} fornecedor(es) selecionado(s)`);
+  };
 
-      let totalRespondentes = 0;
-      for (const cot of cots) {
-        const { data: cps } = await supabase.from("cotacao_produtos").select("id").eq("cotacao_id", cot.id);
-        if (!cps?.length) continue;
-        const cpIds = cps.map(cp => cp.id);
-        const { data: precos } = await supabase.from("precos").select("fornecedor_id").in("cotacao_produto_id", cpIds).not("preco", "is", null);
-        if (precos) totalRespondentes += new Set(precos.map(p => p.fornecedor_id)).size;
-      }
-      return (totalRespondentes / cots.length).toFixed(1);
-    },
-  });
+  // Get link for a supplier
+  const getLink = (f: Fornecedor) => {
+    const base = `${window.location.origin}/fornecedor/${f.token}`;
+    return lojaAtiva?.id ? `${base}?loja=${lojaAtiva.id}` : base;
+  };
 
-  const { data: produtosMaisCotados } = useQuery({
-    queryKey: ["hist-produtos-top", lojaAtiva?.id],
-    queryFn: async () => {
-      let q = supabase.from("cotacoes").select("id").neq("status", "ativa");
-      if (lojaAtiva?.id) q = q.eq("loja_id", lojaAtiva.id);
-      const { data: cots } = await q;
-      if (!cots?.length) return null;
-      const cotIds = cots.map(c => c.id);
+  const resendWhatsApp = (f: Fornecedor) => {
+    const link = getLink(f);
+    const msg = `Olá ${f.nome}! Segue o link para cotação de preços:\n\n${link}\n\nPreencha os preços e envie. Obrigado!`;
+    const phone = f.telefone?.replace(/\D/g, "");
+    const url = phone
+      ? `https://api.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(msg)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
+  };
 
-      const { data: cps } = await supabase.from("cotacao_produtos").select("produto_id").in("cotacao_id", cotIds);
-      if (!cps?.length) return null;
+  // ── Determine state ──
+  type DashState = 1 | 2 | 3 | 4 | 5;
+  const state: DashState = !cotacaoAtiva
+    ? 1
+    : itemCount === 0
+    ? 2
+    : respostaCount === 0
+    ? 3
+    : respostaCount > 0 && respostaCount < selectedSupplierCount
+    ? 4
+    : respostaCount >= selectedSupplierCount && selectedSupplierCount > 0
+    ? 5
+    : 3;
 
-      const freq: Record<string, number> = {};
-      for (const cp of cps) freq[cp.produto_id] = (freq[cp.produto_id] || 0) + 1;
-
-      const top3Ids = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
-      const { data: prods } = await supabase.from("produtos").select("id, nome").in("id", top3Ids);
-      if (!prods) return null;
-
-      return top3Ids.map(id => prods.find(p => p.id === id)?.nome).filter(Boolean) as string[];
-    },
-  });
-  const steps = [
-    {
-      num: 1,
-      label: "Produtos",
-      desc: `${itemCount} itens na cotação`,
-      done: itemCount > 0,
-      action: () => navigate("/produtos"),
-      icon: Package,
-    },
-    {
-      num: 2,
-      label: "Fornecedores",
-      desc: `${selectedSupplierCount} selecionados de ${fornecedorCount}`,
-      done: selectedSupplierCount > 0,
-      action: () => navigate("/fornecedores"),
-      icon: Users,
-    },
-    {
-      num: 3,
-      label: "Cotação",
-      desc: `${respostaCount} respostas recebidas`,
-      done: respostaCount > 0,
-      action: () => navigate("/cotacao"),
-      icon: BarChart3,
-    },
-    {
-      num: 4,
-      label: "Pedidos",
-      desc: respostaCount > 0 ? "Pronto para analisar" : "Aguardando respostas",
-      done: pedidosPendentes > 0,
-      action: () => navigate("/analise"),
-      icon: ShoppingCart,
-    },
-  ];
+  // ── Action buttons shared across states 1 & 2 ──
+  const ActionButtons = () => (
+    <div className="space-y-2">
+      {itensFaltantes > 0 && (
+        <Button variant="outline" className="w-full justify-start gap-3 h-12" onClick={() => navigate("/funcionarios")}>
+          <ClipboardList className="h-5 w-5 text-primary" />
+          <div className="text-left"><div className="text-sm font-semibold">Importar itens faltantes</div><div className="text-xs text-muted-foreground">{itensFaltantes} item(ns) pendente(s)</div></div>
+        </Button>
+      )}
+      <Button variant="outline" className="w-full justify-start gap-3 h-12" onClick={() => {
+        if (cotacaoAtiva?.id) setErpImportOpen(true);
+        else { toast.info("Crie uma cotação primeiro na aba Cotação"); navigate("/cotacao"); }
+      }}>
+        <FileSpreadsheet className="h-5 w-5 text-primary" />
+        <div className="text-left"><div className="text-sm font-semibold">Importar do ERP</div><div className="text-xs text-muted-foreground">Planilha Excel/CSV</div></div>
+      </Button>
+      <Button variant="outline" className="w-full justify-start gap-3 h-12" onClick={() => navigate("/produtos")}>
+        <Pencil className="h-5 w-5 text-primary" />
+        <div className="text-left"><div className="text-sm font-semibold">Montar manualmente</div><div className="text-xs text-muted-foreground">Adicionar produtos um a um</div></div>
+      </Button>
+    </div>
+  );
 
   return (
     <div className="p-5 max-w-2xl mx-auto">
-      {/* Status */}
-      <p className="text-sm text-muted-foreground mb-4">
-        {cotacaoAtiva
-          ? `Cotação ativa: ${cotacaoAtiva.nome}`
-          : "Nenhuma cotação ativa — crie uma na aba Cotação"}
-      </p>
+      <DashboardAlerts itensFaltantes={itensFaltantes} pedidosPendentes={pedidosPendentes} />
 
-      {/* Steps */}
-      <div className="space-y-2 mb-5">
-        {steps.map((step) => (
-          <button
-            key={step.num}
-            onClick={step.action}
-            className="w-full flex items-center gap-3 p-3 bg-card border rounded-lg hover:bg-muted/50 transition-colors text-left group"
-          >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-              step.done ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
-            }`}>
-              {step.done ? <CheckCircle2 className="h-4 w-4" /> : step.num}
+      <div className="animate-fade-in">
+        {/* ── STATE 1: No active quote ── */}
+        {state === 1 && (
+          <div className="space-y-5">
+            <div>
+              <h1 className="text-xl font-bold text-foreground">Pronto para uma nova cotação?</h1>
+              <p className="text-sm text-muted-foreground mt-1">Escolha como deseja começar</p>
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-foreground">{step.label}</div>
-              <div className="text-xs text-muted-foreground">{step.desc}</div>
+            <ActionButtons />
+            {lastCotacao && (
+              <Card className="mt-4">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="text-xs text-muted-foreground">
+                    Última cotação: <span className="font-semibold text-foreground">{lastCotacao.nome}</span>
+                    {lastCotacao.finalizada_at && <> · {format(new Date(lastCotacao.finalizada_at), "dd/MM/yyyy")}</>}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {/* ── STATE 2: Active quote, no products ── */}
+        {state === 2 && (
+          <div className="space-y-5">
+            <div>
+              <Badge variant="secondary" className="mb-2 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800">🟡 Cotação em andamento</Badge>
+              <h1 className="text-xl font-bold text-foreground">Adicione os produtos à cotação</h1>
+              <p className="text-sm text-muted-foreground mt-1">A lista está vazia. Importe ou adicione manualmente.</p>
             </div>
-            <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-          </button>
-        ))}
+            <ActionButtons />
+            <DashboardProgress currentStep={1} />
+          </div>
+        )}
+
+        {/* ── STATE 3: Products added, awaiting send ── */}
+        {state === 3 && (
+          <div className="space-y-5">
+            <div>
+              <Badge variant="secondary" className="mb-2 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800">🟡 Aguardando envio</Badge>
+              <h1 className="text-xl font-bold text-foreground">Cotação pronta! Envie para os fornecedores</h1>
+            </div>
+            <Card>
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  <span className="font-bold text-foreground text-lg">{itemCount}</span> produtos · <span className="font-bold text-foreground text-lg">{selectedSupplierCount}</span> fornecedores
+                </div>
+              </CardContent>
+            </Card>
+            <Button className="w-full h-12 text-base gap-2" onClick={() => setSendQueueOpen(true)}>
+              <Send className="h-5 w-5" /> Enviar para todos
+            </Button>
+            <Button variant="outline" className="w-full gap-2" onClick={() => setSupplierModalOpen(true)}>
+              <Users className="h-4 w-4" /> Gerenciar fornecedores
+            </Button>
+            <DashboardProgress currentStep={2} />
+          </div>
+        )}
+
+        {/* ── STATE 4: Receiving responses ── */}
+        {state === 4 && (
+          <div className="space-y-5">
+            <div>
+              <Badge variant="secondary" className="mb-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800">🔵 Recebendo respostas</Badge>
+              <h1 className="text-xl font-bold text-foreground">{respostaCount} de {selectedSupplierCount} fornecedores responderam</h1>
+            </div>
+            <Progress value={(respostaCount / selectedSupplierCount) * 100} className="h-2" />
+            <div className="space-y-2">
+              {selectedFornecedores.map(f => {
+                const responded = respondidosSet.has(f.id);
+                return (
+                  <div key={f.id} className={`flex items-center gap-3 p-3 rounded-lg border ${responded ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/20" : "border-border"}`}>
+                    {responded ? <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" /> : <Clock className="h-4 w-4 text-muted-foreground shrink-0" />}
+                    <span className="text-sm font-medium text-foreground flex-1 truncate">{f.nome}</span>
+                    {!responded && (
+                      <Button size="sm" variant="ghost" className="text-xs gap-1" onClick={() => resendWhatsApp(f)}>
+                        <RefreshCw className="h-3 w-3" /> Reenviar
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <Button variant="outline" className="w-full gap-2" onClick={() => navigate("/cotacao")}>
+              <Eye className="h-4 w-4" /> Ver cotação parcial
+            </Button>
+            <DashboardProgress currentStep={3} />
+          </div>
+        )}
+
+        {/* ── STATE 5: All responded ── */}
+        {state === 5 && (
+          <div className="space-y-5">
+            <div>
+              <Badge variant="secondary" className="mb-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800">🟢 Pronto para decidir!</Badge>
+              <h1 className="text-xl font-bold text-foreground">Todos os fornecedores responderam</h1>
+            </div>
+            {economyEstimate && economyEstimate > 0 && (
+              <Card className="border-primary/30 bg-primary/5">
+                <CardContent className="p-4 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Economia estimada entre o maior e menor preço</p>
+                  <p className="text-2xl font-bold text-primary">{formatBRL(economyEstimate)}</p>
+                </CardContent>
+              </Card>
+            )}
+            <Button className="w-full h-12 text-base gap-2" onClick={() => navigate("/analise")}>
+              <Trophy className="h-5 w-5" /> Ver análise e gerar pedidos
+            </Button>
+            <Button variant="outline" className="w-full gap-2" onClick={() => navigate("/cotacao")}>
+              <Eye className="h-4 w-4" /> Ver cotação completa
+            </Button>
+            <DashboardProgress currentStep={4} />
+          </div>
+        )}
       </div>
 
-      {/* Alerts */}
-      {(itensFaltantes > 0 || pedidosPendentes > 0) && (
-        <div className="space-y-2">
-          {itensFaltantes > 0 && (
-            <button onClick={() => navigate("/funcionarios")} className="w-full flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-left hover:shadow-sm transition-shadow">
-              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
-              <span className="text-sm text-amber-800">{itensFaltantes} item(ns) faltantes aguardando importação</span>
-            </button>
+      <DashboardHistorico />
+
+      {/* Modals */}
+      {cotacaoAtiva?.id && (
+        <ImportErpModal open={erpImportOpen} onOpenChange={setErpImportOpen} cotacaoId={cotacaoAtiva.id} />
       )}
-
-      {/* Métricas históricas */}
-      <div className="mt-6">
-        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Histórico</h2>
-        <div className="grid grid-cols-2 gap-3">
-          <Card>
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <History className="h-4 w-4 text-primary shrink-0" />
-                <span className="text-xs font-medium text-muted-foreground">Cotações realizadas</span>
-              </div>
-              <p className="text-lg font-bold text-foreground">{totalCotacoes > 0 ? totalCotacoes : <span className="text-sm font-normal text-muted-foreground">Sem dados ainda</span>}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <Trophy className="h-4 w-4 text-primary shrink-0" />
-                <span className="text-xs font-medium text-muted-foreground">Mais competitivo</span>
-              </div>
-              <p className="text-sm font-bold text-foreground truncate">{fornecedorMaisCompetitivo || <span className="font-normal text-muted-foreground">Sem dados ainda</span>}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <MessageSquare className="h-4 w-4 text-primary shrink-0" />
-                <span className="text-xs font-medium text-muted-foreground">Média respostas/cotação</span>
-              </div>
-              <p className="text-lg font-bold text-foreground">{mediaRespostas || <span className="text-sm font-normal text-muted-foreground">Sem dados ainda</span>}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <Star className="h-4 w-4 text-primary shrink-0" />
-                <span className="text-xs font-medium text-muted-foreground">Mais cotados</span>
-              </div>
-              {produtosMaisCotados?.length ? (
-                <ul className="space-y-0.5">
-                  {produtosMaisCotados.map((nome, i) => (
-                    <li key={i} className="text-xs text-foreground truncate">• {nome}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-muted-foreground">Sem dados ainda</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-          {pedidosPendentes > 0 && (
-            <button onClick={() => navigate("/analise")} className="w-full flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-left hover:shadow-sm transition-shadow">
-              <Clock className="h-4 w-4 text-blue-600 shrink-0" />
-              <span className="text-sm text-blue-800">{pedidosPendentes} pedido(s) aguardando confirmação</span>
-            </button>
-          )}
-        </div>
-      )}
+      <SendQueueModal
+        open={sendQueueOpen}
+        onOpenChange={setSendQueueOpen}
+        fornecedores={selectedFornecedores}
+      />
+      <ModalFornecedores
+        open={supplierModalOpen}
+        onOpenChange={setSupplierModalOpen}
+        fornecedores={filteredFornecedores}
+        selectedSuppliers={selectedSuppliers}
+        onToggle={(id) => setSelectedSuppliers(prev => ({ ...prev, [id]: !prev[id] }))}
+        onSelectAll={(val) => {
+          const next: Record<string, boolean> = {};
+          filteredFornecedores.forEach(f => { next[f.id] = val; });
+          setSelectedSuppliers(next);
+        }}
+        onSave={saveSupplierSelection}
+      />
     </div>
   );
 };
