@@ -412,6 +412,28 @@ const CotacaoPage = () => {
     setQtySuggestLoading(false);
   };
 
+  const runFornSuggestion = async () => {
+    if (!cotacaoAtiva?.id) return;
+    setFornSuggestLoading(true); setFornSuggestOpen(true); setFornSuggestText(""); setFornSuggestHasHistory(false); setFornSuggestRecommendedIds([]);
+    try {
+      const resp = await supabase.functions.invoke("ai-automacao", { body: { type: "suggest-fornecedores", cotacao_id: cotacaoAtiva.id, loja_id: lojaAtiva?.id || null } });
+      if (resp.error) throw new Error(resp.error.message);
+      setFornSuggestText(resp.data?.text || "");
+      setFornSuggestHasHistory(resp.data?.has_history ?? false);
+      setFornSuggestRecommendedIds(resp.data?.recommended_supplier_ids || []);
+    } catch (e: any) { toast.error(e.message || "Erro ao sugerir fornecedores"); }
+    setFornSuggestLoading(false);
+  };
+
+  const applyFornSuggestions = () => {
+    if (!fornSuggestRecommendedIds.length) return;
+    const updated: Record<string, boolean> = {};
+    allFornecedores.forEach((f) => { updated[f.id] = fornSuggestRecommendedIds.includes(f.id); });
+    setSelectedSuppliers(updated);
+    setFornSuggestOpen(false);
+    toast.success(`${fornSuggestRecommendedIds.length} fornecedores recomendados selecionados!`);
+  };
+
   const applyQtySuggestions = async () => {
     let applied = 0;
     for (const s of qtySuggestions) { if (s.cotacao_produto_id && s.quantidade_sugerida) { const { error } = await supabase.from("cotacao_produtos").update({ quantidade: s.quantidade_sugerida }).eq("id", s.cotacao_produto_id); if (!error) applied++; } }
