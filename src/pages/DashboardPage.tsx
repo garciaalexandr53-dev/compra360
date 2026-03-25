@@ -32,6 +32,11 @@ const DashboardPage = () => {
   const [sendQueueOpen, setSendQueueOpen] = useState(false);
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
   const [selectedSuppliers, setSelectedSuppliers] = useState<Record<string, boolean>>({});
+  const [fornSuggestOpen, setFornSuggestOpen] = useState(false);
+  const [fornSuggestText, setFornSuggestText] = useState("");
+  const [fornSuggestLoading, setFornSuggestLoading] = useState(false);
+  const [fornSuggestHasHistory, setFornSuggestHasHistory] = useState(false);
+  const [fornSuggestRecommendedIds, setFornSuggestRecommendedIds] = useState<string[]>([]);
 
   // Realtime
   useEffect(() => {
