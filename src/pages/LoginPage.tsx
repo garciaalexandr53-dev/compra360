@@ -16,7 +16,7 @@ const LoginPage = () => {
   const navigate = useNavigate();
 
   if (user) {
-    navigate("/cotacao", { replace: true });
+    navigate("/dashboard", { replace: true });
     return null;
   }
 
@@ -36,7 +36,7 @@ const LoginPage = () => {
       if (error) {
         toast.error("Email ou senha incorretos");
       } else {
-        navigate("/cotacao", { replace: true });
+        navigate("/dashboard", { replace: true });
       }
     }
     setLoading(false);
