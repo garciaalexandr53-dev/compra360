@@ -189,7 +189,7 @@ const DashboardPage = () => {
   // Pedidos for conclusion screen
   const { data: pedidosEnviados = [] } = useQuery({
     queryKey: ["pedidos-enviados-cotacao", cotacaoAtiva?.id],
-    enabled: !!cotacaoAtiva?.id && state === 5,
+    enabled: !!cotacaoAtiva?.id && respostaCount >= selectedSupplierCount && selectedSupplierCount > 0,
     queryFn: async () => {
       const { data } = await supabase
         .from("pedidos")
