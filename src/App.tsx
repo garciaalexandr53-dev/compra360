@@ -8,24 +8,34 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { LojaProvider } from "@/hooks/useLojaAtiva";
 import { ThemeProvider } from "@/hooks/useTheme";
 import LandingSkeleton from "./components/LandingSkeleton";
-const LandingPage = lazy(() => import("./pages/LandingPage"));
 
-const AppLayout = lazy(() => import("./components/AppLayout"));
-const LoginPage = lazy(() => import("./pages/LoginPage"));
-const CotacaoPage = lazy(() => import("./pages/CotacaoPage"));
-const ProdutosPage = lazy(() => import("./pages/ProdutosPage"));
-const FornecedoresPage = lazy(() => import("./pages/FornecedoresPage"));
-const HistoricoPage = lazy(() => import("./pages/HistoricoPage"));
-const DashboardPage = lazy(() => import("./pages/DashboardPage"));
-const AnalisePage = lazy(() => import("./pages/AnalisePage"));
-const FornecedorCotacaoPage = lazy(() => import("./pages/FornecedorCotacaoPage"));
-const FuncionariosPage = lazy(() => import("./pages/FuncionariosPage"));
-const AppFuncionariosPublic = lazy(() => import("./pages/AppFuncionariosPublic"));
-const ConferenciasPage = lazy(() => import("./pages/ConferenciasPage"));
-const LojasPage = lazy(() => import("./pages/LojasPage"));
-const AddProdutosCotacaoPage = lazy(() => import("./pages/AddProdutosCotacaoPage"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const PriceNotificationListener = lazy(() => import("./components/PriceNotificationListener"));
+function retryImport(factory: () => Promise<any>, retries = 1): Promise<any> {
+  return factory().catch((err) => {
+    if (retries > 0) {
+      return retryImport(factory, retries - 1);
+    }
+    window.location.reload();
+    throw err;
+  });
+}
+
+const LandingPage = lazy(() => retryImport(() => import("./pages/LandingPage")));
+const AppLayout = lazy(() => retryImport(() => import("./components/AppLayout")));
+const LoginPage = lazy(() => retryImport(() => import("./pages/LoginPage")));
+const CotacaoPage = lazy(() => retryImport(() => import("./pages/CotacaoPage")));
+const ProdutosPage = lazy(() => retryImport(() => import("./pages/ProdutosPage")));
+const FornecedoresPage = lazy(() => retryImport(() => import("./pages/FornecedoresPage")));
+const HistoricoPage = lazy(() => retryImport(() => import("./pages/HistoricoPage")));
+const DashboardPage = lazy(() => retryImport(() => import("./pages/DashboardPage")));
+const AnalisePage = lazy(() => retryImport(() => import("./pages/AnalisePage")));
+const FornecedorCotacaoPage = lazy(() => retryImport(() => import("./pages/FornecedorCotacaoPage")));
+const FuncionariosPage = lazy(() => retryImport(() => import("./pages/FuncionariosPage")));
+const AppFuncionariosPublic = lazy(() => retryImport(() => import("./pages/AppFuncionariosPublic")));
+const ConferenciasPage = lazy(() => retryImport(() => import("./pages/ConferenciasPage")));
+const LojasPage = lazy(() => retryImport(() => import("./pages/LojasPage")));
+const AddProdutosCotacaoPage = lazy(() => retryImport(() => import("./pages/AddProdutosCotacaoPage")));
+const NotFound = lazy(() => retryImport(() => import("./pages/NotFound")));
+const PriceNotificationListener = lazy(() => retryImport(() => import("./components/PriceNotificationListener")));
 
 const queryClient = new QueryClient();
 
