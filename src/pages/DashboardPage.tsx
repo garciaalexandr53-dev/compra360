@@ -45,6 +45,16 @@ const DashboardPage = () => {
   const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "manter_precos" | "zerar" | null>(null);
   const [novaCotacaoLoading, setNovaCotacaoLoading] = useState(false);
 
+  // Detect return from cotação review
+  useEffect(() => {
+    if (cotacaoAtiva?.id) {
+      const key = `cotacao_revisada_${cotacaoAtiva.id}`;
+      if (localStorage.getItem(key) === "true") {
+        setCotacaoRevisada(true);
+      }
+    }
+  }, [cotacaoAtiva?.id]);
+
   // Realtime
   useEffect(() => {
     const channel = supabase.channel('dashboard-realtime')
