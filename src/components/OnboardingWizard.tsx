@@ -85,7 +85,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
     } else {
       toast({ title: "🎉 Bem-vindo ao Compra360!", description: "Seu ambiente está pronto. Boas compras!" });
       onClose();
-      navigate("/cotacao");
+      navigate("/dashboard");
     }
   };
 
