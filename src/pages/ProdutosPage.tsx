@@ -23,6 +23,7 @@ const emptyForm = { nome: "", categoria_id: "", embalagem: "" };
 const PAGE_SIZE = 80;
 
 const ProdutosPage = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
@@ -36,6 +37,8 @@ const ProdutosPage = () => {
   const [catSidebarOpen, setCatSidebarOpen] = useState(false);
   const [newCatModalOpen, setNewCatModalOpen] = useState(false);
   const [newCatName, setNewCatName] = useState("");
+  const [showFooter, setShowFooter] = useState(false);
+  const [prevCotacaoCount, setPrevCotacaoCount] = useState<number | null>(null);
 
   const [inlineEditing, setInlineEditing] = useState<Record<string, { nome?: string; embalagem?: string }>>({});
   const [classifying, setClassifying] = useState(false);
