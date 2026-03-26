@@ -186,7 +186,94 @@ const DashboardPage = () => {
     },
   });
 
-  // Save supplier selection
+  // Pedidos for conclusion screen
+  const { data: pedidosEnviados = [] } = useQuery({
+    queryKey: ["pedidos-enviados-cotacao", cotacaoAtiva?.id],
+    enabled: !!cotacaoAtiva?.id && state === 5,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("pedidos")
+        .select("fornecedor_id, total, status, fornecedores(nome)")
+        .eq("cotacao_id", cotacaoAtiva!.id);
+      return (data || []) as any[];
+    },
+  });
+
+  // Check if all pedidos are sent → show conclusion
+  const allPedidosSent = useMemo(() => {
+    if (!pedidosEnviados.length || !cotacaoAtiva?.id) return false;
+    return pedidosEnviados.every((p: any) => p.status === "enviado" || p.status === "confirmado" || p.status === "recebido");
+  }, [pedidosEnviados, cotacaoAtiva?.id]);
+
+  const conclusionDismissKey = `conclusao-vista-${cotacaoAtiva?.id}`;
+  useEffect(() => {
+    if (allPedidosSent && cotacaoAtiva?.id) {
+      try {
+        const dismissed = localStorage.getItem(conclusionDismissKey);
+        if (!dismissed) setShowConclusao(true);
+      } catch {}
+    }
+  }, [allPedidosSent, cotacaoAtiva?.id, conclusionDismissKey]);
+
+  const dismissConclusao = () => {
+    setShowConclusao(false);
+    try { localStorage.setItem(conclusionDismissKey, "true"); } catch {}
+  };
+
+  const pedidoResumos = useMemo(() => 
+    pedidosEnviados.map((p: any) => ({
+      fornecedorNome: p.fornecedores?.nome || "Fornecedor",
+      total: Number(p.total) || 0,
+    })),
+    [pedidosEnviados]
+  );
+
+  // Nova cotação handler
+  const handleNovaCotacao = async () => {
+    if (!cotacaoAtiva?.id || !novaCotacaoOpt) return;
+    setNovaCotacaoLoading(true);
+    try {
+      // Finalize current
+      await supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: new Date().toISOString() }).eq("id", cotacaoAtiva.id);
+      
+      // Create new
+      const nome = `Cotação ${format(new Date(), "dd/MM/yyyy HH:mm")}`;
+      const { data: newCot } = await supabase.from("cotacoes").insert({ nome, loja_id: lojaAtiva?.id || null, created_by: (await supabase.auth.getUser()).data.user?.id }).select().single();
+      
+      if (newCot && novaCotacaoOpt !== "zerar") {
+        const { data: oldCps } = await supabase.from("cotacao_produtos").select("*").eq("cotacao_id", cotacaoAtiva.id);
+        if (oldCps?.length) {
+          const newCps = oldCps.map(cp => ({ cotacao_id: newCot.id, produto_id: cp.produto_id, quantidade: cp.quantidade }));
+          const { data: insertedCps } = await supabase.from("cotacao_produtos").insert(newCps).select();
+          
+          if (novaCotacaoOpt === "manter_precos" && insertedCps?.length) {
+            const oldIds = oldCps.map(cp => cp.id);
+            const { data: oldPrecos } = await supabase.from("precos").select("*").in("cotacao_produto_id", oldIds);
+            if (oldPrecos?.length) {
+              const cpMap = new Map(oldCps.map((old, i) => [old.id, insertedCps[i]?.id]));
+              const newPrecos = oldPrecos.filter(p => cpMap.has(p.cotacao_produto_id)).map(p => ({
+                cotacao_produto_id: cpMap.get(p.cotacao_produto_id)!,
+                fornecedor_id: p.fornecedor_id,
+                preco: p.preco,
+              }));
+              if (newPrecos.length) await supabase.from("precos").insert(newPrecos);
+            }
+          }
+        }
+      }
+      
+      queryClient.invalidateQueries();
+      setNovaCotacaoOpen(false);
+      setNovaCotacaoOpt(null);
+      setShowConclusao(false);
+      toast.success("Nova cotação criada!");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao criar cotação");
+    }
+    setNovaCotacaoLoading(false);
+  };
+
+
   const saveSupplierSelection = async () => {
     if (!cotacaoAtiva?.id) return;
     const selected = filteredFornecedores.filter(f => selectedSuppliers[f.id]);
