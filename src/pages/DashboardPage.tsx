@@ -17,9 +17,11 @@ import DashboardAlerts from "@/components/dashboard/DashboardAlerts";
 import DashboardProgress from "@/components/dashboard/DashboardProgress";
 import DashboardHistorico from "@/components/dashboard/DashboardHistorico";
 import SendQueueModal from "@/components/dashboard/SendQueueModal";
+import ConclusaoScreen from "@/components/dashboard/ConclusaoScreen";
 import ImportErpModal from "@/components/ImportErpModal";
 import ModalFornecedores from "@/components/cotacao/ModalFornecedores";
 import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugestao";
+import ModalNovaCotacao from "@/components/cotacao/ModalNovaCotacao";
 
 type Fornecedor = Tables<"fornecedores">;
 
