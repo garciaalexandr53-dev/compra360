@@ -1,23 +1,36 @@
 import { useMemo, useState, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL } from "@/lib/format";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Sparkles, Loader2, RefreshCw, TrendingUp, TrendingDown, Users } from "lucide-react";
+import { ChevronDown, Sparkles, Loader2, RefreshCw, TrendingUp, TrendingDown, Users, Zap, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import { useAuth } from "@/hooks/useAuth";
 
 type Fornecedor = Tables<"fornecedores">;
 
+interface DistResult {
+  totalAntes: number;
+  totalDepois: number;
+  economia: number;
+  fornecedorPedidos: { fornecedor: Fornecedor; items: { produto: string; embalagem: string; quantidade: number; preco: number; total: number; cpId: string }[]; total: number; minimoOk: boolean }[];
+  semPreco: number;
+}
+
 const ResumoDistribuicaoContent = () => {
   const { lojaAtiva } = useLojaAtiva();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [suppliersOpen, setSuppliersOpen] = useState(true);
   const [distOpen, setDistOpen] = useState(false);
   const [analysisText, setAnalysisText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [autoLoading, setAutoLoading] = useState(false);
+  const [autoResult, setAutoResult] = useState<DistResult | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // ---- Data fetching (shared) ----
