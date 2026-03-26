@@ -262,6 +262,22 @@ const CotacaoPage = () => {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] }); queryClient.invalidateQueries({ queryKey: ["produtos"] }); },
   });
 
+  const deleteCpMutation = useMutation({
+    mutationFn: async (cpId: string) => {
+      await supabase.from("precos").delete().eq("cotacao_produto_id", cpId);
+      const { error } = await supabase.from("cotacao_produtos").delete().eq("id", cpId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
+      queryClient.invalidateQueries({ queryKey: ["precos"] });
+      toast.success("Produto removido da cotação");
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao remover produto"),
+  });
+
+  const handleDeleteItem = (cpId: string) => { deleteCpMutation.mutate(cpId); };
+
   // ── Price analysis helpers ──
   const analyzePrices = (cpId: string) => {
     const prices: { fId: string; val: number }[] = [];
@@ -624,6 +640,7 @@ const CotacaoPage = () => {
         onPriceChange={handlePriceChange}
         onPriceBlur={handlePriceBlur}
         onFieldBlur={handleFieldBlur}
+        onDeleteItem={handleDeleteItem}
       />
 
       <ModalFornecedores open={supplierModalOpen} onOpenChange={setSupplierModalOpen} fornecedores={allFornecedores} selectedSuppliers={selectedSuppliers} onToggle={toggleSupplier} onSelectAll={selectAllSuppliers} onSave={saveSupplierSelection} />
