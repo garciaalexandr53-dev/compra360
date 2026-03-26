@@ -496,11 +496,11 @@ const DashboardPage = () => {
                 </CardContent>
               </Card>
             )}
-            <Button className="w-full h-14 text-base gap-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg" onClick={() => navigate("/analise")}>
-              <Trophy className="h-5 w-5" /> 🏆 Ver pedidos prontos para envio
+            <Button className="w-full h-14 text-base gap-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg" onClick={() => navigate("/cotacao")}>
+              <Eye className="h-5 w-5" /> 📋 Revisar cotação completa
             </Button>
-            <Button variant="outline" className="w-full gap-2" onClick={() => navigate("/cotacao")}>
-              <Eye className="h-4 w-4" /> Ver cotação completa
+            <Button variant="outline" className="w-full h-12 gap-2" onClick={() => navigate("/analise")}>
+              <Trophy className="h-4 w-4" /> 🏆 Ver pedidos prontos para envio
             </Button>
             <DashboardProgress currentStep={4} />
           </div>
