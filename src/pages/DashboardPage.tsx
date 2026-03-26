@@ -39,6 +39,10 @@ const DashboardPage = () => {
   const [fornSuggestLoading, setFornSuggestLoading] = useState(false);
   const [fornSuggestHasHistory, setFornSuggestHasHistory] = useState(false);
   const [fornSuggestRecommendedIds, setFornSuggestRecommendedIds] = useState<string[]>([]);
+  const [showConclusao, setShowConclusao] = useState(false);
+  const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);
+  const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "manter_precos" | "zerar" | null>(null);
+  const [novaCotacaoLoading, setNovaCotacaoLoading] = useState(false);
 
   // Realtime
   useEffect(() => {
