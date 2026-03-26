@@ -337,6 +337,25 @@ const DashboardPage = () => {
     ? 5
     : 3;
 
+  // Detect return from cotação review (sub-state for State 5)
+  useEffect(() => {
+    if (cotacaoAtiva?.id) {
+      const key = `cotacao_revisada_${cotacaoAtiva.id}`;
+      if (localStorage.getItem(key) === "true") {
+        setCotacaoRevisada(true);
+      } else {
+        setCotacaoRevisada(false);
+      }
+    }
+  }, [cotacaoAtiva?.id]);
+
+  const handleRevisarCotacao = () => {
+    if (cotacaoAtiva?.id) {
+      localStorage.setItem(`cotacao_revisada_${cotacaoAtiva.id}`, "true");
+    }
+    navigate("/cotacao");
+  };
+
   // ── Action buttons shared across states 1 & 2 ──
   const ActionButtons = () => (
     <div className="space-y-2">
