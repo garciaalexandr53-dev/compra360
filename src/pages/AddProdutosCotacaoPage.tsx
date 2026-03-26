@@ -35,13 +35,29 @@ const AddProdutosCotacaoPage = () => {
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch existing produtos for matching
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce search term
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(nome.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [nome]);
+
+  // Fetch produtos matching search term (server-side filter)
   const { data: existingProdutos = [] } = useQuery({
-    queryKey: ["produtos-all"],
+    queryKey: ["produtos-search", debouncedSearch],
     queryFn: async () => {
-      const { data } = await supabase.from("produtos").select("id, nome").eq("ativo", true).order("nome");
+      if (debouncedSearch.length < 2) return [];
+      const { data } = await supabase
+        .from("produtos")
+        .select("id, nome")
+        .eq("ativo", true)
+        .ilike("nome", `%${debouncedSearch}%`)
+        .order("nome")
+        .limit(20);
       return data || [];
     },
+    enabled: debouncedSearch.length >= 2,
   });
 
   // Fetch active cotacao
