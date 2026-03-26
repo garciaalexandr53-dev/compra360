@@ -501,11 +501,13 @@ const DashboardPage = () => {
           </div>
         )}
 
-        {/* ── STATE 5: All responded ── */}
+        {/* ── STATE 5: All responded — sub-states ── */}
         {state === 5 && (
           <div className="space-y-5">
             <div>
-              <Badge variant="secondary" className="mb-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800">🟢 Pronto para decidir!</Badge>
+              <Badge variant="secondary" className="mb-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800">
+                🟢 Pronto para decidir!
+              </Badge>
               <h1 className="text-xl font-bold text-foreground">Todos os fornecedores responderam</h1>
             </div>
             {economyEstimate && economyEstimate > 0 && (
@@ -517,12 +519,38 @@ const DashboardPage = () => {
                 </CardContent>
               </Card>
             )}
-            <Button className="w-full h-14 text-base gap-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg" onClick={() => navigate("/cotacao")}>
-              <Eye className="h-5 w-5" /> 📋 Revisar cotação completa
+
+            {/* Sub-state A: Revisar cotação (primary) */}
+            <Button
+              className={`w-full h-14 text-base gap-2 ${
+                !cotacaoRevisada
+                  ? "bg-gradient-to-r from-primary to-primary/80 shadow-lg"
+                  : "border-green-500 text-green-700 dark:text-green-400"
+              }`}
+              variant={cotacaoRevisada ? "outline" : "default"}
+              onClick={handleRevisarCotacao}
+            >
+              {cotacaoRevisada ? (
+                <><CheckCircle2 className="h-5 w-5" /> Cotação revisada ✓</>
+              ) : (
+                <><Eye className="h-5 w-5" /> 1. Revisar cotação completa</>
+              )}
             </Button>
-            <Button variant="outline" className="w-full h-12 gap-2" onClick={() => navigate("/analise")}>
-              <Trophy className="h-4 w-4" /> 🏆 Ver pedidos prontos para envio
+
+            {/* Sub-state B: Ver pedidos (becomes primary after review) */}
+            <Button
+              className={`w-full gap-2 ${
+                cotacaoRevisada
+                  ? "h-14 text-base bg-gradient-to-r from-primary to-primary/80 shadow-lg animate-fade-in"
+                  : "h-12"
+              }`}
+              variant={cotacaoRevisada ? "default" : "outline"}
+              onClick={() => navigate("/analise")}
+            >
+              <Trophy className={cotacaoRevisada ? "h-5 w-5" : "h-4 w-4"} />
+              {cotacaoRevisada ? "2. Ver pedidos prontos para envio 🏆" : "2. Ver pedidos prontos para envio"}
             </Button>
+
             <DashboardProgress currentStep={4} />
           </div>
         )}
