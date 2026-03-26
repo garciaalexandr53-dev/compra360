@@ -412,11 +412,29 @@ const DashboardPage = () => {
                 </div>
               </CardContent>
             </Card>
-            <Button variant="outline" className="w-full h-12 gap-2 text-base" onClick={() => setSupplierModalOpen(true)}>
-              <Users className="h-5 w-5" /> Selecionar fornecedores
+            <Button
+              variant={selectedSupplierCount > 0 ? "outline" : "default"}
+              className={`w-full h-12 gap-2 text-base transition-all ${
+                selectedSupplierCount > 0
+                  ? "border-green-500 dark:border-green-600 text-green-700 dark:text-green-400"
+                  : ""
+              }`}
+              onClick={() => setSupplierModalOpen(true)}
+            >
+              {selectedSupplierCount > 0 ? <CheckCircle2 className="h-5 w-5" /> : <Users className="h-5 w-5" />}
+              {selectedSupplierCount > 0 ? `${selectedSupplierCount} fornecedor(es) selecionado(s) ✓` : "1. Selecionar fornecedores"}
             </Button>
-            <Button className="w-full h-12 text-base gap-2" onClick={() => setSendQueueOpen(true)} disabled={selectedSupplierCount === 0}>
-              <Send className="h-5 w-5" /> Enviar para todos
+            <Button
+              className={`w-full h-12 text-base gap-2 transition-all ${
+                selectedSupplierCount > 0
+                  ? "bg-gradient-to-r from-primary to-primary/80 shadow-lg"
+                  : ""
+              }`}
+              variant={selectedSupplierCount > 0 ? "default" : "outline"}
+              disabled={selectedSupplierCount === 0}
+              onClick={() => setSendQueueOpen(true)}
+            >
+              <Send className="h-5 w-5" /> 2. Enviar para todos
             </Button>
             <DashboardProgress currentStep={2} />
             <Card className="border-dashed border-primary/30 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors" onClick={runFornSuggestion}>
