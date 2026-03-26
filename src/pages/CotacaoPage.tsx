@@ -39,6 +39,9 @@ const CotacaoPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const isReviewMode = searchParams.get("review") === "1";
   const [search, setSearch] = useState("");
   const [localPrices, setLocalPrices] = useState<Record<string, Record<string, string>>>({});
   const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);
