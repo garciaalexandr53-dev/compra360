@@ -30,6 +30,7 @@ const AddProdutosCotacaoPage = () => {
   const { user } = useAuth();
 
   const [items, setItems] = useState<LocalItem[]>([]);
+  const [qtyDrafts, setQtyDrafts] = useState<Record<string, string>>({});
   const [nome, setNome] = useState("");
   const [quantidade, setQuantidade] = useState(1);
   const [saving, setSaving] = useState(false);
