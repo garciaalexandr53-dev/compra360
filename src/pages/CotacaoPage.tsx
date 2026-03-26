@@ -526,6 +526,21 @@ const CotacaoPage = () => {
   return (
     <TooltipProvider>
     <div className="flex flex-col h-[calc(100vh-3.5rem)]">
+      {/* Review mode banner */}
+      {isReviewMode && (
+        <div className="px-4 py-2.5 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-primary/20 flex items-center gap-3">
+          <Button variant="ghost" size="sm" className="gap-1.5 text-xs shrink-0" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="h-3.5 w-3.5" /> Voltar
+          </Button>
+          <div className="flex-1 text-center">
+            <span className="text-xs font-semibold text-primary">📋 Revisão da cotação</span>
+            <span className="text-[10px] text-muted-foreground ml-2">Confira os preços e faça ajustes se necessário</span>
+          </div>
+          <Button size="sm" className="gap-1.5 text-xs bg-gradient-to-r from-primary to-primary/80 shrink-0" onClick={() => navigate("/analise")}>
+            Próximo passo <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
       {/* Toolbar — simplified */}
       <div className="p-3 border-b bg-card flex items-center gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[140px] max-w-xs">
