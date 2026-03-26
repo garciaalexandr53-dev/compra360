@@ -412,11 +412,11 @@ const DashboardPage = () => {
                 </div>
               </CardContent>
             </Card>
-            <Button className="w-full h-12 text-base gap-2" onClick={() => setSendQueueOpen(true)}>
-              <Send className="h-5 w-5" /> Enviar para todos
+            <Button variant="outline" className="w-full h-12 gap-2 text-base" onClick={() => setSupplierModalOpen(true)}>
+              <Users className="h-5 w-5" /> Selecionar fornecedores
             </Button>
-            <Button variant="outline" className="w-full gap-2" onClick={() => setSupplierModalOpen(true)}>
-              <Users className="h-4 w-4" /> Gerenciar fornecedores
+            <Button className="w-full h-12 text-base gap-2" onClick={() => setSendQueueOpen(true)} disabled={selectedSupplierCount === 0}>
+              <Send className="h-5 w-5" /> Enviar para todos
             </Button>
             <DashboardProgress currentStep={2} />
             <Card className="border-dashed border-primary/30 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors" onClick={runFornSuggestion}>
