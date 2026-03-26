@@ -1,13 +1,15 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, ChevronRight, Sparkles, Loader2, MoreHorizontal } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, ChevronRight, Sparkles, Loader2, MoreHorizontal, ArrowRight, Package, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
@@ -21,6 +23,7 @@ const emptyForm = { nome: "", categoria_id: "", embalagem: "" };
 const PAGE_SIZE = 80;
 
 const ProdutosPage = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
@@ -34,6 +37,8 @@ const ProdutosPage = () => {
   const [catSidebarOpen, setCatSidebarOpen] = useState(false);
   const [newCatModalOpen, setNewCatModalOpen] = useState(false);
   const [newCatName, setNewCatName] = useState("");
+  const [showFooter, setShowFooter] = useState(false);
+  const [prevCotacaoCount, setPrevCotacaoCount] = useState<number | null>(null);
 
   const [inlineEditing, setInlineEditing] = useState<Record<string, { nome?: string; embalagem?: string }>>({});
   const [classifying, setClassifying] = useState(false);
@@ -94,6 +99,31 @@ const ProdutosPage = () => {
       return data;
     },
   });
+
+  // Count products in active cotacao
+  const { data: cotacaoItemCount = 0 } = useQuery({
+    queryKey: ["cotacao-item-count", cotacaoAtiva?.id],
+    enabled: !!cotacaoAtiva?.id,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("cotacao_produtos")
+        .select("id", { count: "exact", head: true })
+        .eq("cotacao_id", cotacaoAtiva!.id);
+      return count ?? 0;
+    },
+  });
+
+  // Show/hide footer with animation
+  useEffect(() => {
+    if (cotacaoItemCount > 0 && !showFooter) {
+      setShowFooter(true);
+    }
+    // Show first-product toast
+    if (prevCotacaoCount === 0 && cotacaoItemCount === 1) {
+      toast.success("🎉 Primeiro produto adicionado! Continue selecionando.");
+    }
+    setPrevCotacaoCount(cotacaoItemCount);
+  }, [cotacaoItemCount]);
 
   const produtos = useMemo(
     () => produtosData?.pages.flatMap((p) => p.products) ?? [],
@@ -380,7 +410,37 @@ const ProdutosPage = () => {
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <div className="p-3 border-b bg-card space-y-2">
+        <div className="p-3 border-b bg-card/80 space-y-3">
+          {/* Title */}
+          <div>
+            <h1 className="text-lg font-bold text-foreground">Adicionar produtos</h1>
+            <p className="text-xs text-muted-foreground">Monte sua lista para cotação</p>
+          </div>
+
+          {/* Progress stepper */}
+          <div className="flex items-center gap-2 text-xs">
+            <Badge variant="default" className="text-[10px] px-2 py-0.5 gap-1">
+              <CheckCircle2 className="h-3 w-3" />1. Produtos
+            </Badge>
+            <div className="h-px flex-1 bg-border" />
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-muted-foreground">2. Fornecedores</Badge>
+            <div className="h-px flex-1 bg-border" />
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-muted-foreground">3. Resultado</Badge>
+          </div>
+
+          {/* Cotacao item counter */}
+          <div className="flex items-center gap-2">
+            {cotacaoItemCount > 0 ? (
+              <Badge variant="secondary" className="text-[10px] gap-1 bg-primary/10 text-primary border-primary/20">
+                <Check className="h-3 w-3" />
+                {cotacaoItemCount} produto{cotacaoItemCount !== 1 ? "s" : ""} na cotação
+              </Badge>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">Adicione produtos para iniciar a cotação</p>
+            )}
+          </div>
+
+          {/* Search + actions */}
           <div className="flex items-center gap-3">
             {!catSidebarOpen && (
               <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0" onClick={() => setCatSidebarOpen(true)} title="Mostrar categorias">
@@ -438,7 +498,7 @@ const ProdutosPage = () => {
           </div>
         </div>
 
-        <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto">
+        <div ref={scrollRef} onScroll={handleScroll} className={`flex-1 overflow-y-auto ${cotacaoItemCount > 0 ? "pb-24" : ""}`}>
           {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
           ) : filtered.length === 0 ? (
@@ -453,7 +513,12 @@ const ProdutosPage = () => {
                     </div>
                   )}
                   {prods.map((p) => (
-                    <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted/30 transition-colors">
+                    <div
+                      key={p.id}
+                      className={`flex items-center gap-3 px-4 py-3 border-b hover:bg-muted/30 transition-all ${
+                        p.ativo ? "border-l-2 border-l-primary bg-primary/5" : ""
+                      }`}
+                    >
                       <div className="flex-1 min-w-0">
                         {editMode ? (
                           <div className="flex items-center gap-2 flex-wrap">
@@ -493,7 +558,7 @@ const ProdutosPage = () => {
                         <Button
                           size="sm"
                           variant={p.ativo ? "outline" : "default"}
-                          className={p.ativo ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100" : "bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"}
+                          className={`transition-all ${p.ativo ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20" : "bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"}`}
                           onClick={() => toggleCotacaoMutation.mutate({ id: p.id, ativo: !p.ativo, produtoId: p.id })}
                         >
                           {p.ativo ? "✓ Na cotação" : "+ Adicionar"}
@@ -516,6 +581,24 @@ const ProdutosPage = () => {
             </>
           )}
         </div>
+
+        {/* Fixed footer — next step */}
+        {cotacaoItemCount > 0 && (
+          <div className={`fixed bottom-14 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border z-50 ${showFooter ? "animate-fade-in" : ""}`}>
+            <Button
+              className="w-full h-12 text-base font-bold gap-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg hover:shadow-xl transition-all"
+              onClick={() => navigate("/fornecedores")}
+            >
+              <Check className="h-5 w-5" />
+              Pronto! Selecionar fornecedores
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+            <p className="text-[11px] text-muted-foreground text-center mt-1.5">
+              <Package className="h-3 w-3 inline mr-1" />
+              {cotacaoItemCount} produto{cotacaoItemCount !== 1 ? "s" : ""} selecionado{cotacaoItemCount !== 1 ? "s" : ""} para cotação
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Product Modal */}
