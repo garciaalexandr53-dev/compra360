@@ -498,7 +498,7 @@ const ProdutosPage = () => {
           </div>
         </div>
 
-        <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto">
+        <div ref={scrollRef} onScroll={handleScroll} className={`flex-1 overflow-y-auto ${cotacaoItemCount > 0 ? "pb-24" : ""}`}>
           {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
           ) : filtered.length === 0 ? (
@@ -513,7 +513,12 @@ const ProdutosPage = () => {
                     </div>
                   )}
                   {prods.map((p) => (
-                    <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted/30 transition-colors">
+                    <div
+                      key={p.id}
+                      className={`flex items-center gap-3 px-4 py-3 border-b hover:bg-muted/30 transition-all ${
+                        p.ativo ? "border-l-2 border-l-primary bg-primary/5" : ""
+                      }`}
+                    >
                       <div className="flex-1 min-w-0">
                         {editMode ? (
                           <div className="flex items-center gap-2 flex-wrap">
@@ -553,7 +558,7 @@ const ProdutosPage = () => {
                         <Button
                           size="sm"
                           variant={p.ativo ? "outline" : "default"}
-                          className={p.ativo ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100" : "bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"}
+                          className={`transition-all ${p.ativo ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20" : "bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"}`}
                           onClick={() => toggleCotacaoMutation.mutate({ id: p.id, ativo: !p.ativo, produtoId: p.id })}
                         >
                           {p.ativo ? "✓ Na cotação" : "+ Adicionar"}
@@ -576,6 +581,24 @@ const ProdutosPage = () => {
             </>
           )}
         </div>
+
+        {/* Fixed footer — next step */}
+        {cotacaoItemCount > 0 && (
+          <div className={`fixed bottom-14 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border z-50 ${showFooter ? "animate-fade-in" : ""}`}>
+            <Button
+              className="w-full h-12 text-base font-bold gap-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg hover:shadow-xl transition-all"
+              onClick={() => navigate("/fornecedores")}
+            >
+              <Check className="h-5 w-5" />
+              Pronto! Selecionar fornecedores
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+            <p className="text-[11px] text-muted-foreground text-center mt-1.5">
+              <Package className="h-3 w-3 inline mr-1" />
+              {cotacaoItemCount} produto{cotacaoItemCount !== 1 ? "s" : ""} selecionado{cotacaoItemCount !== 1 ? "s" : ""} para cotação
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Product Modal */}
