@@ -269,12 +269,236 @@ const ResumoDistribuicaoContent = () => {
     }
   };
 
+  // ---- Auto Distribution (1-click) ----
+  const runAutoDistribution = async () => {
+    if (!cotacaoAtiva?.id || !user?.id) return;
+    setAutoLoading(true);
+    try {
+      // Build distribution: for each product, pick cheapest supplier
+      const supplierTotals: Record<string, { items: { produto: string; embalagem: string; quantidade: number; preco: number; total: number; cpId: string; fornecedorId: string }[]; total: number }> = {};
+      let semPreco = 0;
+      let worstTotal = 0;
+
+      cotacaoProdutos.forEach((cp: any) => {
+        const prod = cp.produtos;
+        const cpPrecos = precos
+          .filter((p: any) => p.cotacao_produto_id === cp.id && p.preco !== null && p.preco > 0)
+          .sort((a: any, b: any) => a.preco - b.preco);
+
+        if (!cpPrecos.length) { semPreco++; return; }
+
+        // Track worst total for economia calc
+        const maxPrice = Math.max(...cpPrecos.map((p: any) => Number(p.preco)));
+        worstTotal += maxPrice * (cp.quantidade || 1);
+
+        const qty = cp.quantidade || 1;
+        const chosen = cpPrecos[0]; // cheapest
+        const fId = chosen.fornecedor_id;
+
+        if (!supplierTotals[fId]) supplierTotals[fId] = { items: [], total: 0 };
+        const itemTotal = Number(chosen.preco) * qty;
+        supplierTotals[fId].items.push({
+          produto: prod?.nome || "?",
+          embalagem: prod?.embalagem || "",
+          quantidade: qty,
+          preco: Number(chosen.preco),
+          total: itemTotal,
+          cpId: cp.id,
+          fornecedorId: fId,
+        });
+        supplierTotals[fId].total += itemTotal;
+      });
+
+      // Check minimum orders and try redistribution
+      const fornecedorMap = Object.fromEntries(fornecedores.map(f => [f.id, f]));
+      
+      for (const [fId, data] of Object.entries(supplierTotals)) {
+        const f = fornecedorMap[fId];
+        const minimo = Number(f?.pedido_minimo || 0);
+        if (minimo > 0 && data.total < minimo) {
+          // Try moving items to this supplier from others to meet minimum
+          // Find products where this supplier also quoted (but wasn't cheapest)
+          for (const cp of cotacaoProdutos) {
+            if (data.total >= minimo) break;
+            const alreadyHere = data.items.find(i => i.cpId === (cp as any).id);
+            if (alreadyHere) continue;
+
+            const thisSupplierPrice = precos.find((p: any) => p.cotacao_produto_id === (cp as any).id && p.fornecedor_id === fId && p.preco > 0);
+            if (!thisSupplierPrice) continue;
+
+            // Find which supplier currently has this item
+            const currentSupplier = Object.entries(supplierTotals).find(([, d]) => d.items.some(i => i.cpId === (cp as any).id));
+            if (!currentSupplier) continue;
+
+            const [currentFId, currentData] = currentSupplier;
+            const itemIdx = currentData.items.findIndex(i => i.cpId === (cp as any).id);
+            if (itemIdx === -1) continue;
+
+            const item = currentData.items[itemIdx];
+            const newPrice = Number(thisSupplierPrice.preco);
+            const qty = item.quantidade;
+            const priceDiff = (newPrice - item.preco) * qty;
+
+            // Only move if cost increase is reasonable (< 20% more per item)
+            if (priceDiff > 0 && (newPrice / item.preco) > 1.2) continue;
+
+            // Move item
+            currentData.items.splice(itemIdx, 1);
+            currentData.total -= item.total;
+            const newTotal = newPrice * qty;
+            data.items.push({ ...item, preco: newPrice, total: newTotal, fornecedorId: fId });
+            data.total += newTotal;
+          }
+        }
+      }
+
+      // Remove suppliers with no items
+      for (const [fId, data] of Object.entries(supplierTotals)) {
+        if (data.items.length === 0) delete supplierTotals[fId];
+      }
+
+      // Build result
+      let totalDepois = 0;
+      const fornecedorPedidos = Object.entries(supplierTotals).map(([fId, data]) => {
+        const f = fornecedorMap[fId];
+        totalDepois += data.total;
+        return {
+          fornecedor: f,
+          items: data.items,
+          total: data.total,
+          minimoOk: !f?.pedido_minimo || data.total >= Number(f.pedido_minimo),
+        };
+      }).sort((a, b) => b.total - a.total);
+
+      const result: DistResult = {
+        totalAntes: worstTotal,
+        totalDepois,
+        economia: worstTotal - totalDepois,
+        fornecedorPedidos,
+        semPreco,
+      };
+
+      // Create pedidos in Supabase
+      for (const fp of fornecedorPedidos) {
+        if (!fp.fornecedor?.id) continue;
+        // Check if pedido already exists for this cotação+fornecedor
+        const { data: existing } = await supabase
+          .from("pedidos")
+          .select("id")
+          .eq("cotacao_id", cotacaoAtiva.id)
+          .eq("fornecedor_id", fp.fornecedor.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase.from("pedidos").update({ total: fp.total, status: "rascunho" as any }).eq("id", existing.id);
+        } else {
+          await supabase.from("pedidos").insert({
+            cotacao_id: cotacaoAtiva.id,
+            fornecedor_id: fp.fornecedor.id,
+            total: fp.total,
+            created_by: user.id,
+            loja_id: lojaAtiva?.id || null,
+            status: "rascunho" as any,
+          });
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["pedidos"] });
+      setAutoResult(result);
+      toast.success(`Compra otimizada aplicada com sucesso ✅`);
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao otimizar compra");
+    } finally {
+      setAutoLoading(false);
+    }
+  };
+
   if (!cotacaoAtiva) {
     return <div className="py-10 text-center text-muted-foreground">Nenhuma cotação ativa.</div>;
   }
 
   return (
     <div className="space-y-4">
+      {/* Auto Distribution Button */}
+      {stats.itensCotados > 0 && !autoResult && (
+        <div className="bg-gradient-to-r from-[hsl(var(--brand))] to-[hsl(var(--brand-dark))] rounded-xl p-5 text-white shadow-lg">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="flex-1 text-center sm:text-left">
+              <h3 className="text-base font-bold flex items-center gap-2 justify-center sm:justify-start">
+                <Zap className="h-5 w-5" /> Comprar mais barato automaticamente
+              </h3>
+              <p className="text-xs opacity-75 mt-1">
+                Distribui os pedidos entre os fornecedores com menor preço, respeitando pedidos mínimos
+              </p>
+            </div>
+            <Button
+              onClick={runAutoDistribution}
+              disabled={autoLoading}
+              size="lg"
+              className="bg-white text-[hsl(var(--brand-dark))] hover:bg-white/90 font-bold shadow-md shrink-0"
+            >
+              {autoLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
+              {autoLoading ? "Otimizando..." : "Otimizar compra"}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Auto Distribution Result */}
+      {autoResult && (
+        <div className="space-y-3 animate-fade-in">
+          {/* Economia card */}
+          <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="flex-1">
+                <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Você economizou</div>
+                <div className="text-2xl font-extrabold font-mono text-green-700 dark:text-green-400">
+                  {formatBRL(autoResult.economia)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  comparado ao fornecedor mais caro · Total: {formatBRL(autoResult.totalDepois)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Pedidos por fornecedor */}
+          <div className="space-y-2">
+            {autoResult.fornecedorPedidos.map((fp) => (
+              <div key={fp.fornecedor?.id} className={`bg-card border rounded-xl p-4 shadow-sm ${fp.minimoOk ? "" : "border-amber-500/50"}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold text-foreground">{fp.fornecedor?.nome}</span>
+                  <span className="text-sm font-extrabold font-mono text-green-700 dark:text-green-400">{formatBRL(fp.total)}</span>
+                </div>
+                {!fp.minimoOk && (
+                  <div className="text-[10px] text-amber-600 dark:text-amber-400 mb-2">
+                    ⚠️ Abaixo do pedido mínimo ({formatBRL(Number(fp.fornecedor?.pedido_minimo || 0))})
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground">
+                  {fp.items.length} {fp.items.length === 1 ? "produto" : "produtos"}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {autoResult.semPreco > 0 && (
+            <div className="text-xs text-muted-foreground text-center">
+              {autoResult.semPreco} {autoResult.semPreco === 1 ? "produto" : "produtos"} sem cotação (não incluídos)
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setAutoResult(null)} className="flex-1">
+              Recalcular
+            </Button>
+          </div>
+        </div>
+      )}
       {/* KPI Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-gradient-to-br from-[hsl(var(--brand))] to-[hsl(var(--brand-dark))] text-white rounded-xl p-4 shadow-lg">
