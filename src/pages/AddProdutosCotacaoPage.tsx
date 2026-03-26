@@ -30,6 +30,7 @@ const AddProdutosCotacaoPage = () => {
   const { user } = useAuth();
 
   const [items, setItems] = useState<LocalItem[]>([]);
+  const [qtyDrafts, setQtyDrafts] = useState<Record<string, string>>({});
   const [nome, setNome] = useState("");
   const [quantidade, setQuantidade] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -315,10 +316,13 @@ const AddProdutosCotacaoPage = () => {
                     <Input
                       type="number"
                       min={1}
-                      value={item.quantidade}
-                      onChange={e => {
+                      value={qtyDrafts[item.id] ?? String(item.quantidade)}
+                      onFocus={() => setQtyDrafts(s => ({ ...s, [item.id]: "" }))}
+                      onChange={e => setQtyDrafts(s => ({ ...s, [item.id]: e.target.value }))}
+                      onBlur={e => {
                         const val = Math.max(1, Number(e.target.value) || 1);
                         setItems(prev => prev.map(i => i.id === item.id ? { ...i, quantidade: val } : i));
+                        setQtyDrafts(s => { const n = { ...s }; delete n[item.id]; return n; });
                       }}
                       className="w-14 h-7 text-center text-sm font-semibold px-1 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     />
