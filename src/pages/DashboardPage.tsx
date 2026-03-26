@@ -353,7 +353,7 @@ const DashboardPage = () => {
         <FileSpreadsheet className="h-5 w-5 text-primary" />
         <div className="text-left"><div className="text-sm font-semibold">Importar do ERP</div><div className="text-xs text-muted-foreground">Planilha Excel/CSV</div></div>
       </Button>
-      <Button variant="outline" className="w-full justify-start gap-3 h-12" onClick={() => navigate("/produtos")}>
+      <Button variant="outline" className="w-full justify-start gap-3 h-12" onClick={() => navigate("/add-produtos")}>
         <Pencil className="h-5 w-5 text-primary" />
         <div className="text-left"><div className="text-sm font-semibold">Montar manualmente</div><div className="text-xs text-muted-foreground">Adicionar produtos um a um</div></div>
       </Button>

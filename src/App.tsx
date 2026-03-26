@@ -23,6 +23,7 @@ const FuncionariosPage = lazy(() => import("./pages/FuncionariosPage"));
 const AppFuncionariosPublic = lazy(() => import("./pages/AppFuncionariosPublic"));
 const ConferenciasPage = lazy(() => import("./pages/ConferenciasPage"));
 const LojasPage = lazy(() => import("./pages/LojasPage"));
+const AddProdutosCotacaoPage = lazy(() => import("./pages/AddProdutosCotacaoPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PriceNotificationListener = lazy(() => import("./components/PriceNotificationListener"));
 
@@ -56,6 +57,7 @@ const App = () => (
                   <Route path="/analise" element={<Suspense fallback={null}><AnalisePage /></Suspense>} />
                   <Route path="/conferencias" element={<Suspense fallback={null}><ConferenciasPage /></Suspense>} />
                   <Route path="/lojas" element={<Suspense fallback={null}><LojasPage /></Suspense>} />
+                  <Route path="/add-produtos" element={<Suspense fallback={null}><AddProdutosCotacaoPage /></Suspense>} />
                 </Route>
 
                 {/* Legacy redirects */}
