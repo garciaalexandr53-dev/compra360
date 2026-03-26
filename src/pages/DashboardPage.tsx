@@ -472,15 +472,16 @@ const DashboardPage = () => {
               <h1 className="text-xl font-bold text-foreground">Todos os fornecedores responderam</h1>
             </div>
             {economyEstimate && economyEstimate > 0 && (
-              <Card className="border-primary/30 bg-primary/5">
+              <Card className="border-green-500/30 bg-green-950/10 dark:bg-green-950/20 shadow-[0_0_15px_rgba(16,185,129,0.08)]">
                 <CardContent className="p-4 text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Economia estimada entre o maior e menor preço</p>
-                  <p className="text-2xl font-bold text-primary">{formatBRL(economyEstimate)}</p>
+                  <p className="text-xs text-muted-foreground mb-1">💰 Economia estimada</p>
+                  <p className="text-2xl font-bold text-green-500 dark:text-green-400">{formatBRL(economyEstimate)}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">comparado ao fornecedor mais caro</p>
                 </CardContent>
               </Card>
             )}
-            <Button className="w-full h-12 text-base gap-2" onClick={() => navigate("/analise")}>
-              <Trophy className="h-5 w-5" /> Ver análise e gerar pedidos
+            <Button className="w-full h-14 text-base gap-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg" onClick={() => navigate("/analise")}>
+              <Trophy className="h-5 w-5" /> 🏆 Ver pedidos prontos para envio
             </Button>
             <Button variant="outline" className="w-full gap-2" onClick={() => navigate("/cotacao")}>
               <Eye className="h-4 w-4" /> Ver cotação completa
@@ -491,6 +492,16 @@ const DashboardPage = () => {
       </div>
 
       <DashboardHistorico />
+
+      {/* Conclusion Screen */}
+      {showConclusao && (
+        <ConclusaoScreen
+          economyEstimate={economyEstimate || null}
+          pedidos={pedidoResumos}
+          onNewCotacao={() => setNovaCotacaoOpen(true)}
+          onDismiss={dismissConclusao}
+        />
+      )}
 
       {/* Modals */}
       {cotacaoAtiva?.id && (
@@ -515,6 +526,7 @@ const DashboardPage = () => {
         onSave={saveSupplierSelection}
       />
       <ModalFornecedorSugestao open={fornSuggestOpen} onOpenChange={setFornSuggestOpen} text={fornSuggestText} loading={fornSuggestLoading} hasHistory={fornSuggestHasHistory} recommendedIds={fornSuggestRecommendedIds} onApply={applyFornSuggestions} />
+      <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} loading={novaCotacaoLoading} />
     </div>
   );
 };
