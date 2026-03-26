@@ -1,6 +1,7 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Trash2 } from "lucide-react";
 import { formatBRL, formatNumber } from "@/lib/format";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
@@ -47,6 +48,7 @@ interface TabelaCotacaoProps {
   onPriceChange: (cpId: string, fornecedorId: string, value: string) => void;
   onPriceBlur: (cpId: string, fornecedorId: string) => void;
   onFieldBlur: (cpId: string, field: string, value: string, original: string) => void;
+  onDeleteItem: (cpId: string) => void;
 }
 
 const TabelaCotacao = ({
@@ -65,9 +67,10 @@ const TabelaCotacao = ({
   onPriceChange,
   onPriceBlur,
   onFieldBlur,
+  onDeleteItem,
 }: TabelaCotacaoProps) => {
-  // Track which low-price toasts we already showed to avoid spamming
   const toastedRef = useRef<Set<string>>(new Set());
+  const [qtyDrafts, setQtyDrafts] = useState<Record<string, string>>({});
 
   return (
     <>
@@ -99,11 +102,14 @@ const TabelaCotacao = ({
         <table className="w-full text-sm border-collapse">
           <thead className="sticky top-0 z-10">
             <tr className="bg-muted">
+              <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-8">
+                <Trash2 className="h-3 w-3 mx-auto text-muted-foreground/50" />
+              </th>
               <th className="px-2 py-2 text-left text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border whitespace-nowrap sticky left-0 bg-muted z-20">
                 Produto
               </th>
               <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-14">Emb</th>
-              <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-12">Qt</th>
+              <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-16">Qt</th>
               {fornecedores.map((f) => {
                 const hasPrice = precos.some((p) => p.fornecedor_id === f.id && p.preco !== null && p.preco > 0);
                 return (
@@ -121,15 +127,25 @@ const TabelaCotacao = ({
           </thead>
           <tbody>
             {filteredItems.length === 0 ? (
-              <tr><td colSpan={fornecedores.length + 5} className="text-center py-10 text-muted-foreground">
+              <tr><td colSpan={fornecedores.length + 6} className="text-center py-10 text-muted-foreground">
                 {filterAnomalies ? "Nenhum item com anomalia de preço detectada." : cotacaoProdutosCount === 0 ? "Nenhum produto na cotação. Adicione produtos pelo Banco de Produtos." : "Nenhum produto encontrado."}
               </td></tr>
             ) : filteredItems.map((cp) => {
               const info = analyzePrices(cp.id);
               const totalLine = info.minVal !== null ? info.minVal * (cp.quantidade || 1) : null;
+              const qtyValue = qtyDrafts[cp.id] ?? String(cp.quantidade || 1);
 
               return (
-                <tr key={cp.id} className="hover:bg-muted/30 transition-colors">
+                <tr key={cp.id} className="hover:bg-muted/30 transition-colors group">
+                  <td className="px-1 py-1.5 border-b border-border/50 text-center">
+                    <button
+                      onClick={() => onDeleteItem(cp.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                      title="Remover produto"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </td>
                   <td className="px-2 py-1.5 border-b border-border/50 font-medium text-foreground sticky left-0 bg-card z-10">
                     <Input
                       className="h-6 text-xs font-medium border-transparent hover:border-input focus:border-input bg-transparent w-full min-w-[100px] rounded-none shadow-none ring-0 focus-visible:ring-1 placeholder:text-muted-foreground"
@@ -146,10 +162,17 @@ const TabelaCotacao = ({
                   </td>
                   <td className="px-1 py-1.5 border-b border-border/50 text-center">
                     <Input
-                      className="h-6 text-[11px] text-center border-transparent hover:border-input focus:border-input bg-transparent w-12 mx-auto rounded-none shadow-none ring-0 focus-visible:ring-1 text-muted-foreground"
+                      className="h-6 text-[11px] text-center border-transparent hover:border-input focus:border-input bg-transparent w-16 mx-auto rounded-none shadow-none ring-0 focus-visible:ring-1 text-muted-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       type="number"
-                      defaultValue={cp.quantidade || 1}
-                      onBlur={(e) => onFieldBlur(cp.id, "quantidade", e.target.value, String(cp.quantidade || 1))}
+                      min={1}
+                      value={qtyValue}
+                      onFocus={() => setQtyDrafts(s => ({ ...s, [cp.id]: "" }))}
+                      onChange={(e) => setQtyDrafts(s => ({ ...s, [cp.id]: e.target.value }))}
+                      onBlur={(e) => {
+                        const val = Math.max(1, Number(e.target.value) || cp.quantidade || 1);
+                        onFieldBlur(cp.id, "quantidade", String(val), String(cp.quantidade || 1));
+                        setQtyDrafts(s => { const n = { ...s }; delete n[cp.id]; return n; });
+                      }}
                     />
                   </td>
                   {fornecedores.map((f) => {
@@ -160,7 +183,6 @@ const TabelaCotacao = ({
                     const isSecond = info.second === f.id;
                     const histAlert = numVal !== null ? getHistAlert(cp.produto_id, numVal) : null;
 
-                    // Show toast for suspiciously low prices (only once per cell)
                     const cellKey = `${cp.id}-${f.id}`;
                     if (histAlert === "low" && !toastedRef.current.has(cellKey)) {
                       toastedRef.current.add(cellKey);
