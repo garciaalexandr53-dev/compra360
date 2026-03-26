@@ -296,9 +296,16 @@ const AddProdutosCotacaoPage = () => {
                     >
                       <Minus className="h-3 w-3" />
                     </Button>
-                    <span className="text-sm font-semibold w-8 text-center text-foreground">
-                      {item.quantidade}
-                    </span>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={item.quantidade}
+                      onChange={e => {
+                        const val = Math.max(1, Number(e.target.value) || 1);
+                        setItems(prev => prev.map(i => i.id === item.id ? { ...i, quantidade: val } : i));
+                      }}
+                      className="w-14 h-7 text-center text-sm font-semibold px-1 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    />
                     <Button
                       variant="outline"
                       size="icon"
