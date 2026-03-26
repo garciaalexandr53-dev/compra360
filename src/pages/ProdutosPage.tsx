@@ -100,6 +100,31 @@ const ProdutosPage = () => {
     },
   });
 
+  // Count products in active cotacao
+  const { data: cotacaoItemCount = 0 } = useQuery({
+    queryKey: ["cotacao-item-count", cotacaoAtiva?.id],
+    enabled: !!cotacaoAtiva?.id,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("cotacao_produtos")
+        .select("id", { count: "exact", head: true })
+        .eq("cotacao_id", cotacaoAtiva!.id);
+      return count ?? 0;
+    },
+  });
+
+  // Show/hide footer with animation
+  useEffect(() => {
+    if (cotacaoItemCount > 0 && !showFooter) {
+      setShowFooter(true);
+    }
+    // Show first-product toast
+    if (prevCotacaoCount === 0 && cotacaoItemCount === 1) {
+      toast.success("🎉 Primeiro produto adicionado! Continue selecionando.");
+    }
+    setPrevCotacaoCount(cotacaoItemCount);
+  }, [cotacaoItemCount]);
+
   const produtos = useMemo(
     () => produtosData?.pages.flatMap((p) => p.products) ?? [],
     [produtosData]
