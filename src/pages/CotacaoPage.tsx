@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Wand2, MoreHorizontal, FileSpreadsheet, RotateCcw, Copy, HelpCircle, ClipboardCopy, Trash2, Target } from "lucide-react";
+import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Wand2, MoreHorizontal, FileSpreadsheet, RotateCcw, Copy, HelpCircle, ClipboardCopy, Trash2, Target, ArrowLeft, ArrowRight } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
@@ -23,6 +23,7 @@ import TabelaCotacao from "@/components/cotacao/TabelaCotacao";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 type Fornecedor = Tables<"fornecedores">;
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
@@ -38,6 +39,9 @@ const CotacaoPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const isReviewMode = searchParams.get("review") === "1";
   const [search, setSearch] = useState("");
   const [localPrices, setLocalPrices] = useState<Record<string, Record<string, string>>>({});
   const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);
@@ -144,8 +148,8 @@ const CotacaoPage = () => {
   });
 
   const { data: precos = [] } = useQuery({
-    queryKey: ["precos", cotacaoAtiva?.id],
-    enabled: !!cotacaoAtiva?.id,
+    queryKey: ["precos", cotacaoAtiva?.id, cotacaoProdutos.map(cp => cp.id).join(",")],
+    enabled: !!cotacaoAtiva?.id && cotacaoProdutos.length > 0,
     queryFn: async () => {
       const cpIds = cotacaoProdutos.map((cp) => cp.id);
       if (!cpIds.length) return [];
@@ -522,6 +526,21 @@ const CotacaoPage = () => {
   return (
     <TooltipProvider>
     <div className="flex flex-col h-[calc(100vh-3.5rem)]">
+      {/* Review mode banner */}
+      {isReviewMode && (
+        <div className="px-4 py-2.5 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-primary/20 flex items-center gap-3">
+          <Button variant="ghost" size="sm" className="gap-1.5 text-xs shrink-0" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="h-3.5 w-3.5" /> Voltar
+          </Button>
+          <div className="flex-1 text-center">
+            <span className="text-xs font-semibold text-primary">📋 Revisão da cotação</span>
+            <span className="text-[10px] text-muted-foreground ml-2">Confira os preços e faça ajustes se necessário</span>
+          </div>
+          <Button size="sm" className="gap-1.5 text-xs bg-gradient-to-r from-primary to-primary/80 shrink-0" onClick={() => navigate("/analise")}>
+            Próximo passo <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
       {/* Toolbar — simplified */}
       <div className="p-3 border-b bg-card flex items-center gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[140px] max-w-xs">

@@ -353,7 +353,7 @@ const DashboardPage = () => {
     if (cotacaoAtiva?.id) {
       localStorage.setItem(`cotacao_revisada_${cotacaoAtiva.id}`, "true");
     }
-    navigate("/cotacao");
+    navigate("/cotacao?review=1");
   };
 
   // ── Action buttons shared across states 1 & 2 ──
