@@ -144,8 +144,8 @@ const CotacaoPage = () => {
   });
 
   const { data: precos = [] } = useQuery({
-    queryKey: ["precos", cotacaoAtiva?.id],
-    enabled: !!cotacaoAtiva?.id,
+    queryKey: ["precos", cotacaoAtiva?.id, cotacaoProdutos.map(cp => cp.id).join(",")],
+    enabled: !!cotacaoAtiva?.id && cotacaoProdutos.length > 0,
     queryFn: async () => {
       const cpIds = cotacaoProdutos.map((cp) => cp.id);
       if (!cpIds.length) return [];
