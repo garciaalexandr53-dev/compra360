@@ -410,7 +410,37 @@ const ProdutosPage = () => {
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <div className="p-3 border-b bg-card space-y-2">
+        <div className="p-3 border-b bg-card/80 space-y-3">
+          {/* Title */}
+          <div>
+            <h1 className="text-lg font-bold text-foreground">Adicionar produtos</h1>
+            <p className="text-xs text-muted-foreground">Monte sua lista para cotação</p>
+          </div>
+
+          {/* Progress stepper */}
+          <div className="flex items-center gap-2 text-xs">
+            <Badge variant="default" className="text-[10px] px-2 py-0.5 gap-1">
+              <CheckCircle2 className="h-3 w-3" />1. Produtos
+            </Badge>
+            <div className="h-px flex-1 bg-border" />
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-muted-foreground">2. Fornecedores</Badge>
+            <div className="h-px flex-1 bg-border" />
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-muted-foreground">3. Resultado</Badge>
+          </div>
+
+          {/* Cotacao item counter */}
+          <div className="flex items-center gap-2">
+            {cotacaoItemCount > 0 ? (
+              <Badge variant="secondary" className="text-[10px] gap-1 bg-primary/10 text-primary border-primary/20">
+                <Check className="h-3 w-3" />
+                {cotacaoItemCount} produto{cotacaoItemCount !== 1 ? "s" : ""} na cotação
+              </Badge>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">Adicione produtos para iniciar a cotação</p>
+            )}
+          </div>
+
+          {/* Search + actions */}
           <div className="flex items-center gap-3">
             {!catSidebarOpen && (
               <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0" onClick={() => setCatSidebarOpen(true)} title="Mostrar categorias">
