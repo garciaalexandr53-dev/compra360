@@ -651,7 +651,13 @@ const CotacaoPage = () => {
         onPriceBlur={handlePriceBlur}
         onFieldBlur={handleFieldBlur}
         onDeleteItem={handleDeleteItem}
+        isReviewMode={isReviewMode}
       />
+
+      {/* Review mode fixed footer */}
+      {isReviewMode && (
+        <ReviewFooter itemCount={cotacaoProdutos.length} supplierCount={fornecedores.length} />
+      )}
 
       <ModalFornecedores open={supplierModalOpen} onOpenChange={setSupplierModalOpen} fornecedores={allFornecedores} selectedSuppliers={selectedSuppliers} onToggle={toggleSupplier} onSelectAll={selectAllSuppliers} onSave={saveSupplierSelection} />
       <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} />
