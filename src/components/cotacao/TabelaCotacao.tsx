@@ -1,7 +1,9 @@
 import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Trash2, Phone, Mail } from "lucide-react";
 import { formatBRL, formatNumber } from "@/lib/format";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
@@ -49,6 +51,7 @@ interface TabelaCotacaoProps {
   onPriceBlur: (cpId: string, fornecedorId: string) => void;
   onFieldBlur: (cpId: string, field: string, value: string, original: string) => void;
   onDeleteItem: (cpId: string) => void;
+  isReviewMode?: boolean;
 }
 
 const TabelaCotacao = ({
@@ -68,9 +71,22 @@ const TabelaCotacao = ({
   onPriceBlur,
   onFieldBlur,
   onDeleteItem,
+  isReviewMode = false,
 }: TabelaCotacaoProps) => {
   const toastedRef = useRef<Set<string>>(new Set());
   const [qtyDrafts, setQtyDrafts] = useState<Record<string, string>>({});
+  const [deleteConfirm, setDeleteConfirm] = useState<{ cpId: string; nome: string } | null>(null);
+
+  const supplierHasResponded = (fId: string) =>
+    precos.some((p) => p.fornecedor_id === fId && p.preco !== null && p.preco > 0);
+
+  const handleDeleteClick = (cpId: string, nome: string) => {
+    if (isReviewMode) {
+      setDeleteConfirm({ cpId, nome });
+    } else {
+      onDeleteItem(cpId);
+    }
+  };
 
   return (
     <>
@@ -111,13 +127,43 @@ const TabelaCotacao = ({
               <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-14">Emb</th>
               <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-16">Qt</th>
               {fornecedores.map((f) => {
-                const hasPrice = precos.some((p) => p.fornecedor_id === f.id && p.preco !== null && p.preco > 0);
+                const hasPrice = supplierHasResponded(f.id);
                 return (
                   <th key={f.id} className="px-1 py-2 text-center text-[9px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border whitespace-nowrap min-w-[80px]">
-                    <div className="flex items-center justify-center gap-1">
-                      <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${hasPrice ? "bg-green-500" : "bg-muted-foreground/30"}`} />
-                      <span className="truncate max-w-[70px]">{f.nome}</span>
-                    </div>
+                    {isReviewMode ? (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button className="flex items-center justify-center gap-1 w-full hover:text-foreground transition-colors">
+                            <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${hasPrice ? "bg-green-500" : "bg-muted-foreground/30"}`} />
+                            <span className="truncate max-w-[70px]">{f.nome}</span>
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-56 p-3" align="center">
+                          <p className="font-semibold text-sm text-foreground">{f.nome}</p>
+                          {f.telefone && (
+                            <p className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+                              <Phone className="h-3.5 w-3.5" /> {f.telefone}
+                            </p>
+                          )}
+                          {f.email && (
+                            <p className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                              <Mail className="h-3.5 w-3.5" /> {f.email}
+                            </p>
+                          )}
+                          <div className="mt-2 pt-2 border-t">
+                            <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${hasPrice ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+                              <span className={`w-2 h-2 rounded-full ${hasPrice ? "bg-green-500" : "bg-muted-foreground/30"}`} />
+                              {hasPrice ? "Respondeu" : "Aguardando resposta"}
+                            </span>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    ) : (
+                      <div className="flex items-center justify-center gap-1">
+                        <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${hasPrice ? "bg-green-500" : "bg-muted-foreground/30"}`} />
+                        <span className="truncate max-w-[70px]">{f.nome}</span>
+                      </div>
+                    )}
                   </th>
                 );
               })}
@@ -128,45 +174,60 @@ const TabelaCotacao = ({
           <tbody>
             {filteredItems.length === 0 ? (
               <tr><td colSpan={fornecedores.length + 6} className="text-center py-10 text-muted-foreground">
-                {filterAnomalies ? "Nenhum item com anomalia de preço detectada." : cotacaoProdutosCount === 0 ? "Nenhum produto na cotação. Adicione produtos pelo Banco de Produtos." : "Nenhum produto encontrado."}
+                {filterAnomalies ? "Nenhum item com anomalia de preço detectada." : cotacaoProdutosCount === 0 ? (
+                  isReviewMode ? (
+                    <div className="py-16 flex flex-col items-center gap-3">
+                      <div className="text-4xl">📦</div>
+                      <p className="text-base font-semibold text-foreground">Nenhum item na cotação</p>
+                      <p className="text-sm text-muted-foreground">Volte para adicionar produtos antes de revisar.</p>
+                    </div>
+                  ) : "Nenhum produto na cotação. Adicione produtos pelo Banco de Produtos."
+                ) : "Nenhum produto encontrado."}
               </td></tr>
-            ) : filteredItems.map((cp) => {
+            ) : filteredItems.map((cp, rowIndex) => {
               const info = analyzePrices(cp.id);
               const totalLine = info.minVal !== null ? info.minVal * (cp.quantidade || 1) : null;
               const qtyValue = qtyDrafts[cp.id] ?? String(cp.quantidade || 1);
 
               return (
-                <tr key={cp.id} className="hover:bg-muted/30 transition-colors group">
+                <tr
+                  key={cp.id}
+                  className="hover:bg-muted/30 transition-colors group"
+                  style={isReviewMode ? { animation: `fadeInUp 0.3s ease-out ${rowIndex * 0.04}s both` } : undefined}
+                >
                   <td className="px-1 py-1.5 border-b border-border/50 text-center">
                     <button
-                      onClick={() => onDeleteItem(cp.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                      onClick={() => handleDeleteClick(cp.id, cp.produto?.nome || "produto")}
+                      className={`${isReviewMode ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive min-h-[44px] min-w-[44px] flex items-center justify-center`}
                       title="Remover produto"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </td>
                   <td className="px-2 py-1.5 border-b border-border/50 font-medium text-foreground sticky left-0 bg-card z-10">
                     <Input
-                      className="h-6 text-xs font-medium border-transparent hover:border-input focus:border-input bg-transparent w-full min-w-[100px] rounded-none shadow-none ring-0 focus-visible:ring-1 placeholder:text-muted-foreground"
+                      className="h-8 text-xs font-medium border-transparent hover:border-input focus:border-input bg-transparent w-full min-w-[100px] rounded-none shadow-none ring-0 focus-visible:ring-1 placeholder:text-muted-foreground"
                       defaultValue={cp.produto?.nome || ""}
                       onBlur={(e) => onFieldBlur(cp.id, "nome", e.target.value, cp.produto?.nome || "")}
                     />
                   </td>
                   <td className="px-1 py-1.5 border-b border-border/50 text-center">
                     <Input
-                      className="h-6 text-[11px] text-center border-transparent hover:border-input focus:border-input bg-transparent w-14 mx-auto rounded-none shadow-none ring-0 focus-visible:ring-1 text-muted-foreground"
+                      className="h-8 text-[11px] text-center border-transparent hover:border-input focus:border-input bg-transparent w-14 mx-auto rounded-none shadow-none ring-0 focus-visible:ring-1 text-muted-foreground"
                       defaultValue={cp.produto?.embalagem || "un"}
                       onBlur={(e) => onFieldBlur(cp.id, "embalagem", e.target.value, cp.produto?.embalagem || "un")}
                     />
                   </td>
                   <td className="px-1 py-1.5 border-b border-border/50 text-center">
                     <Input
-                      className="h-6 text-[11px] text-center border-transparent hover:border-input focus:border-input bg-transparent w-16 mx-auto rounded-none shadow-none ring-0 focus-visible:ring-1 text-muted-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className={`${isReviewMode ? "h-10 text-sm font-semibold bg-muted/30 border-primary/20 focus:border-primary" : "h-8 text-[11px] border-transparent hover:border-input focus:border-input bg-transparent"} text-center w-16 mx-auto rounded-md shadow-none ring-0 focus-visible:ring-1 text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                       type="number"
                       min={1}
                       value={qtyValue}
-                      onFocus={() => setQtyDrafts(s => ({ ...s, [cp.id]: "" }))}
+                      onFocus={(e) => {
+                        setQtyDrafts(s => ({ ...s, [cp.id]: "" }));
+                        e.target.select();
+                      }}
                       onChange={(e) => setQtyDrafts(s => ({ ...s, [cp.id]: e.target.value }))}
                       onBlur={(e) => {
                         const val = Math.max(1, Number(e.target.value) || cp.quantidade || 1);
@@ -183,6 +244,7 @@ const TabelaCotacao = ({
                     const isSecond = info.second === f.id;
                     const histAlert = numVal !== null ? getHistAlert(cp.produto_id, numVal) : null;
 
+                    // Check if this price was manually edited (exists in DB vs what's shown)
                     const cellKey = `${cp.id}-${f.id}`;
                     if (histAlert === "low" && !toastedRef.current.has(cellKey)) {
                       toastedRef.current.add(cellKey);
@@ -191,7 +253,7 @@ const TabelaCotacao = ({
                       }, 100);
                     }
 
-                    let inputClass = "w-20 text-right font-mono text-xs h-7 px-1 border-transparent bg-transparent rounded-none shadow-none ring-0 focus-visible:ring-1 focus-visible:ring-ring focus-visible:bg-muted/30";
+                    let inputClass = "w-20 text-right font-mono text-xs h-8 px-1 border-transparent bg-transparent rounded-none shadow-none ring-0 focus-visible:ring-1 focus-visible:ring-ring focus-visible:bg-muted/30";
                     if (isMin) inputClass += " price-best";
                     else if (isSecond && !isMin) inputClass += " price-second";
                     else if (numVal !== null) inputClass += " text-foreground";
@@ -208,7 +270,9 @@ const TabelaCotacao = ({
                             value={localPrices[cp.id]?.[f.id] || ""}
                             onChange={(e) => onPriceChange(cp.id, f.id, e.target.value)}
                             onBlur={() => onPriceBlur(cp.id, f.id)}
+                            onFocus={(e) => e.target.select()}
                             className={inputClass}
+                            title={isReviewMode ? "Toque para corrigir o preço" : undefined}
                           />
                           {isTieMin && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white text-[6.5px] font-extrabold px-1 rounded">EMP</span>}
                           {isSecond && <span className="absolute -top-1.5 -right-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[6px] font-extrabold px-1 rounded">2º</span>}
@@ -257,11 +321,37 @@ const TabelaCotacao = ({
         </table>
       </div>
 
-      {/* Total bar */}
-      <div className="border-t bg-card px-5 py-3 flex items-center justify-end gap-4 shadow-[0_-4px_20px_rgba(15,20,34,.08)]">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total da Compra</span>
-        <span className="text-xl font-extrabold text-blue-600 font-mono tracking-tight">{formatBRL(grandTotal)}</span>
-      </div>
+      {/* Total bar — hidden in review mode since ReviewFooter replaces it */}
+      {!isReviewMode && (
+        <div className="border-t bg-card px-5 py-3 flex items-center justify-end gap-4 shadow-[0_-4px_20px_rgba(15,20,34,.08)]">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total da Compra</span>
+          <span className="text-xl font-extrabold text-blue-600 font-mono tracking-tight">{formatBRL(grandTotal)}</span>
+        </div>
+      )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover produto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja remover <strong>{deleteConfirm?.nome}</strong> da cotação? Essa ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Não</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteConfirm) onDeleteItem(deleteConfirm.cpId);
+                setDeleteConfirm(null);
+              }}
+            >
+              Sim, remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

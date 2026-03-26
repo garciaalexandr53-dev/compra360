@@ -20,6 +20,8 @@ import ModalAiAnalise from "@/components/cotacao/ModalAiAnalise";
 import ModalQtySugestao from "@/components/cotacao/ModalQtySugestao";
 import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugestao";
 import TabelaCotacao from "@/components/cotacao/TabelaCotacao";
+import ReviewHeader from "@/components/cotacao/ReviewHeader";
+import ReviewFooter from "@/components/cotacao/ReviewFooter";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
@@ -526,20 +528,9 @@ const CotacaoPage = () => {
   return (
     <TooltipProvider>
     <div className="flex flex-col h-[calc(100vh-3.5rem)]">
-      {/* Review mode banner */}
+      {/* Review mode header */}
       {isReviewMode && (
-        <div className="px-4 py-2.5 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-primary/20 flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="gap-1.5 text-xs shrink-0" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="h-3.5 w-3.5" /> Voltar
-          </Button>
-          <div className="flex-1 text-center">
-            <span className="text-xs font-semibold text-primary">📋 Revisão da cotação</span>
-            <span className="text-[10px] text-muted-foreground ml-2">Confira os preços e faça ajustes se necessário</span>
-          </div>
-          <Button size="sm" className="gap-1.5 text-xs bg-gradient-to-r from-primary to-primary/80 shrink-0" onClick={() => navigate("/analise")}>
-            Próximo passo <ArrowRight className="h-3.5 w-3.5" />
-          </Button>
-        </div>
+        <ReviewHeader itemCount={cotacaoProdutos.length} supplierCount={fornecedores.length} />
       )}
       {/* Toolbar — simplified */}
       <div className="p-3 border-b bg-card flex items-center gap-2 flex-wrap">
@@ -660,7 +651,13 @@ const CotacaoPage = () => {
         onPriceBlur={handlePriceBlur}
         onFieldBlur={handleFieldBlur}
         onDeleteItem={handleDeleteItem}
+        isReviewMode={isReviewMode}
       />
+
+      {/* Review mode fixed footer */}
+      {isReviewMode && (
+        <ReviewFooter itemCount={cotacaoProdutos.length} supplierCount={fornecedores.length} />
+      )}
 
       <ModalFornecedores open={supplierModalOpen} onOpenChange={setSupplierModalOpen} fornecedores={allFornecedores} selectedSuppliers={selectedSuppliers} onToggle={toggleSupplier} onSelectAll={selectAllSuppliers} onSave={saveSupplierSelection} />
       <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} />
