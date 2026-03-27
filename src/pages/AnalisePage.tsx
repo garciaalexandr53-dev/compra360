@@ -31,6 +31,7 @@ interface DistResult {
 }
 
 const AnalisePage = () => {
+  const navigate = useNavigate();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -375,6 +376,13 @@ const AnalisePage = () => {
 
   return (
     <div className="p-5 space-y-4 pb-24">
+      {/* Back to dashboard */}
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" className="gap-1 text-xs h-8" onClick={() => navigate("/dashboard")}>
+          <ArrowLeft className="h-4 w-4" /> Dashboard
+        </Button>
+        <span className="text-xs text-muted-foreground">Análise de pedidos</span>
+      </div>
       {/* 1. RESUMO FINANCEIRO */}
       <div className="bg-card border rounded-xl p-4 shadow-sm">
         <div className="flex items-center justify-between">
