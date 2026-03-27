@@ -102,7 +102,22 @@ const DashboardPage = () => {
   const { data: cotacaoFornecedores = [] } = useQuery({
     queryKey: ["cotacao-fornecedores", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
-    queryFn: async () => { const { data } = await supabase.from("cotacao_fornecedores").select("fornecedor_id").eq("cotacao_id", cotacaoAtiva!.id); return data || []; },
+    queryFn: async () => { const { data } = await supabase.from("cotacao_fornecedores").select("fornecedor_id, created_at").eq("cotacao_id", cotacaoAtiva!.id); return data || []; },
+  });
+
+  // Price count per supplier for State 4
+  const { data: precosCountMap = new Map<string, number>() } = useQuery({
+    queryKey: ["dash-precos-count", cotacaoAtiva?.id],
+    enabled: !!cotacaoAtiva?.id,
+    queryFn: async () => {
+      const { data: cps } = await supabase.from("cotacao_produtos").select("id").eq("cotacao_id", cotacaoAtiva!.id);
+      if (!cps?.length) return new Map<string, number>();
+      const cpIds = cps.map(cp => cp.id);
+      const { data } = await supabase.from("precos").select("fornecedor_id").in("cotacao_produto_id", cpIds).not("preco", "is", null);
+      const counts = new Map<string, number>();
+      (data || []).forEach(p => counts.set(p.fornecedor_id, (counts.get(p.fornecedor_id) || 0) + 1));
+      return counts;
+    },
   });
 
   // Sync selected suppliers from DB
