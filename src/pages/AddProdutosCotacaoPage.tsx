@@ -140,7 +140,7 @@ const AddProdutosCotacaoPage = () => {
 
   const handleContinue = async () => {
     if (items.length === 0) {
-      navigate("/fornecedores");
+      navigate("/dashboard");
       return;
     }
     setSaving(true);
@@ -194,7 +194,7 @@ const AddProdutosCotacaoPage = () => {
 
       queryClient.invalidateQueries();
       toast.success(`${toInsert.length} produto(s) adicionado(s) à cotação!`);
-      navigate("/fornecedores");
+      navigate("/dashboard");
     } catch (e: any) {
       toast.error(e.message || "Erro ao salvar produtos");
     } finally {
