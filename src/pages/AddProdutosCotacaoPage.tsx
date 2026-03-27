@@ -242,6 +242,8 @@ const AddProdutosCotacaoPage = () => {
             </div>
           </div>
 
+          <DashboardProgress currentStep={1} />
+
           <div className="min-h-6">
             {hasAnyProduct ? (
               <div className="inline-flex min-h-10 items-center gap-2 rounded-full border border-primary/20 bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground animate-in fade-in-0 zoom-in-95 duration-300">
@@ -308,7 +310,7 @@ const AddProdutosCotacaoPage = () => {
       </div>
 
       {/* Product list */}
-      <div className="flex-1 overflow-y-auto px-4 pb-28">
+      <div className="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom,0px)+80px)]">
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-3">
@@ -396,7 +398,7 @@ const AddProdutosCotacaoPage = () => {
 
       {/* Counter + CTA */}
       {hasAnyProduct && (
-        <div className="fixed bottom-16 left-0 right-0 z-40 border-t border-border bg-background/95 px-4 py-3 backdrop-blur animate-in slide-in-from-bottom-6 fade-in-0 duration-300">
+        <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+64px)] left-0 right-0 z-40 border-t border-border bg-background/95 px-4 py-3 backdrop-blur animate-in slide-in-from-bottom-6 fade-in-0 duration-300">
           <Button
             className="h-14 w-full gap-2 bg-gradient-to-r from-primary to-primary/80 text-base font-semibold shadow-lg"
             onClick={handleContinue}
@@ -406,8 +408,8 @@ const AddProdutosCotacaoPage = () => {
               "Salvando..."
             ) : (
               <span className="flex flex-col items-center leading-tight">
-                <span>✅ Pronto! Continuar cotação</span>
-                <span className="text-xs font-normal opacity-80">{totalItems} produto{totalItems === 1 ? "" : "s"} selecionado{totalItems === 1 ? "" : "s"}</span>
+                <span>✅ Pronto! Selecionar fornecedores →</span>
+                <span className="text-xs font-normal opacity-80">{totalItems} produto{totalItems === 1 ? "" : "s"} adicionado{totalItems === 1 ? "" : "s"} à cotação</span>
               </span>
             )}
           </Button>
