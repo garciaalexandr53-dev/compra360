@@ -293,6 +293,17 @@ const AddProdutosCotacaoPage = () => {
             ))}
           </div>
         )}
+
+        {/* Show "cadastrar novo" when typed name doesn't match any existing product */}
+        {nome.trim().length >= 2 && !existingProdutos.some(p => p.nome.toLowerCase() === nome.trim().toLowerCase()) && (
+          <button
+            onClick={handleAdd}
+            className="flex items-center gap-2 w-full rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-2.5 text-sm text-primary hover:bg-primary/10 transition-colors"
+          >
+            <PlusCircle className="h-4 w-4 shrink-0" />
+            <span>Cadastrar <strong>"{nome.trim()}"</strong> como novo produto</span>
+          </button>
+        )}
       </div>
 
       {/* Product list */}
