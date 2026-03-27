@@ -3,18 +3,17 @@ import App from "./App.tsx";
 import "./index.css";
 
 // Auto-recover from stale chunk errors after deploys
-window.addEventListener('error', (e) => {
-  const msg = String((e as ErrorEvent).message || '');
+const recoverLazyChunk = (msg: string) => {
   if (
-    (msg.includes('Failed to fetch dynamically imported module') ||
-     msg.includes('Loading chunk') ||
-     msg.includes('Loading CSS chunk')) &&
+    (/Failed to fetch dynamically imported module|Loading chunk|Loading CSS chunk/i.test(msg)) &&
     !sessionStorage.getItem('lazy-reloaded')
   ) {
     sessionStorage.setItem('lazy-reloaded', '1');
-    window.location.reload();
+    location.reload();
   }
-});
+};
+window.addEventListener('error', (e) => recoverLazyChunk((e as ErrorEvent).message || ''));
+window.addEventListener('unhandledrejection', (e) => recoverLazyChunk(String((e as PromiseRejectionEvent).reason?.message || (e as PromiseRejectionEvent).reason || '')));
 window.addEventListener('load', () => sessionStorage.removeItem('lazy-reloaded'));
 
 createRoot(document.getElementById("root")!).render(<App />);
