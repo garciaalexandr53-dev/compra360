@@ -646,7 +646,7 @@ const DashboardPage = () => {
         )}
       </div>
 
-      <DashboardHistorico />
+      {state !== 4 && <DashboardHistorico />}
 
       {/* Conclusion Screen */}
       {showConclusao && (
