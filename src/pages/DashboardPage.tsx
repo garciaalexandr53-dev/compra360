@@ -489,35 +489,107 @@ const DashboardPage = () => {
         )}
 
         {/* ── STATE 4: Receiving responses ── */}
-        {state === 4 && (
-          <div className="space-y-5">
-            <div>
-              <Badge variant="secondary" className="mb-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800">🔵 Recebendo respostas</Badge>
-              <h1 className="text-xl font-bold text-foreground">{respostaCount} de {selectedSupplierCount} fornecedores responderam</h1>
+        {state === 4 && (() => {
+          const pct = selectedSupplierCount > 0 ? Math.round((respostaCount / selectedSupplierCount) * 100) : 0;
+          const statusMsg = pct === 0 ? "⏳ Aguardando respostas..." : pct <= 50 ? "🔵 Chegando respostas!" : pct < 100 ? "🟢 Quase lá! Falta pouco..." : "✅ Todas recebidas!";
+          const cfMap = new Map(cotacaoFornecedores.map((cf: any) => [cf.fornecedor_id, cf.created_at]));
+          const pendingOver2h = selectedFornecedores.filter(f => {
+            if (respondidosSet.has(f.id)) return false;
+            const sentAt = cfMap.get(f.id);
+            if (!sentAt) return false;
+            return Date.now() - new Date(sentAt).getTime() > 2 * 60 * 60 * 1000;
+          });
+
+          return (
+            <div className="space-y-4">
+              {/* Header */}
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">{statusMsg}</p>
+                <h1 className="text-xl font-bold text-foreground">{respostaCount} de {selectedSupplierCount} fornecedores responderam</h1>
+              </div>
+
+              {/* Progress bar */}
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-xs text-muted-foreground">{respostaCount} de {selectedSupplierCount} respostas</span>
+                  <span className={`text-sm font-bold ${pct >= 100 ? "text-green-500" : "text-primary"}`}>{pct}%</span>
+                </div>
+                <div className="w-full h-3 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${pct >= 100 ? "bg-green-500" : "bg-primary"}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Supplier list */}
+              <div className="space-y-2">
+                {selectedFornecedores.map(f => {
+                  const responded = respondidosSet.has(f.id);
+                  const sentAt = cfMap.get(f.id);
+                  const priceCount = precosCountMap.get(f.id) || 0;
+                  const timeAgo = sentAt ? formatDistanceToNow(new Date(sentAt), { addSuffix: true, locale: ptBR }) : null;
+
+                  return (
+                    <Card key={f.id} className={`transition-all ${responded ? "border-green-500/30 bg-green-50/50 dark:bg-green-950/10" : "border-border"}`}>
+                      <CardContent className="p-3">
+                        <div className="flex items-center gap-3">
+                          {responded
+                            ? <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                            : <Clock className="h-5 w-5 text-muted-foreground shrink-0 animate-pulse" />}
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-semibold text-foreground block truncate">{f.nome}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {responded
+                                ? `Respondeu · ${priceCount} preço${priceCount !== 1 ? "s" : ""} enviado${priceCount !== 1 ? "s" : ""}`
+                                : timeAgo ? `Enviado ${timeAgo} · Aguardando` : "Aguardando resposta"}
+                            </span>
+                          </div>
+                          <Button size="sm" variant="ghost" className="text-xs gap-1 shrink-0 text-primary" onClick={() => resendWhatsApp(f)}>
+                            <RefreshCw className="h-3 w-3" /> Reenviar
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Hint cards for suppliers pending > 2h */}
+              {pendingOver2h.length > 0 && (
+                <div className="space-y-2">
+                  {pendingOver2h.map(f => {
+                    const sentAt = cfMap.get(f.id);
+                    const timeAgo = sentAt ? formatDistanceToNow(new Date(sentAt), { addSuffix: true, locale: ptBR }) : "";
+                    return (
+                      <Card key={`hint-${f.id}`} className="border-amber-300/50 dark:border-amber-700/50 bg-amber-50/50 dark:bg-amber-950/10">
+                        <CardContent className="p-3 flex items-start gap-3">
+                          <Lightbulb className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                          <div className="text-xs text-muted-foreground">
+                            <span className="font-semibold text-foreground">{f.nome}</span> ainda não respondeu ({timeAgo}).
+                            <span className="block mt-0.5">Que tal ligar ou mandar uma mensagem?</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 h-11 gap-2 text-sm" onClick={() => navigate("/cotacao?from=dashboard")}>
+                  <Eye className="h-4 w-4" /> Ver cotação parcial
+                </Button>
+                <Button variant="secondary" className="h-11 gap-2 text-sm" onClick={() => setSendQueueOpen(true)}>
+                  <Send className="h-4 w-4" /> Reenviar
+                </Button>
+              </div>
+
+              <DashboardProgress currentStep={3} />
             </div>
-            <Progress value={(respostaCount / selectedSupplierCount) * 100} className="h-2" />
-            <div className="space-y-2">
-              {selectedFornecedores.map(f => {
-                const responded = respondidosSet.has(f.id);
-                return (
-                  <div key={f.id} className={`flex items-center gap-3 p-3 rounded-lg border ${responded ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/20" : "border-border"}`}>
-                    {responded ? <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" /> : <Clock className="h-4 w-4 text-muted-foreground shrink-0" />}
-                    <span className="text-sm font-medium text-foreground flex-1 truncate">{f.nome}</span>
-                    {!responded && (
-                      <Button size="sm" variant="ghost" className="text-xs gap-1" onClick={() => resendWhatsApp(f)}>
-                        <RefreshCw className="h-3 w-3" /> Reenviar
-                      </Button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <Button variant="outline" className="w-full gap-2" onClick={() => navigate("/cotacao?from=dashboard")}>
-              <Eye className="h-4 w-4" /> Ver cotação parcial
-            </Button>
-            <DashboardProgress currentStep={3} />
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── STATE 5: All responded — sub-states ── */}
         {state === 5 && (
