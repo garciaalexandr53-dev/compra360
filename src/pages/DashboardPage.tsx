@@ -494,7 +494,7 @@ const DashboardPage = () => {
                 );
               })}
             </div>
-            <Button variant="outline" className="w-full gap-2" onClick={() => navigate("/cotacao")}>
+            <Button variant="outline" className="w-full gap-2" onClick={() => navigate("/cotacao?from=dashboard")}>
               <Eye className="h-4 w-4" /> Ver cotação parcial
             </Button>
             <DashboardProgress currentStep={3} />
@@ -576,6 +576,11 @@ const DashboardPage = () => {
         open={sendQueueOpen}
         onOpenChange={setSendQueueOpen}
         fornecedores={selectedFornecedores}
+        onConclude={() => {
+          queryClient.invalidateQueries({ queryKey: ["dash-respondidos"] });
+          queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
+          toast.success("Cotação enviada! Aguardando respostas dos fornecedores.");
+        }}
       />
       <ModalFornecedores
         open={supplierModalOpen}
