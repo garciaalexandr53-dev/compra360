@@ -44,6 +44,7 @@ const CotacaoPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isReviewMode = searchParams.get("review") === "1";
+  const isFromDashboard = searchParams.get("from") === "dashboard" || isReviewMode;
   const [search, setSearch] = useState("");
   const [localPrices, setLocalPrices] = useState<Record<string, Record<string, string>>>({});
   const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);
@@ -531,6 +532,15 @@ const CotacaoPage = () => {
       {/* Review mode header */}
       {isReviewMode && (
         <ReviewHeader itemCount={cotacaoProdutos.length} supplierCount={fornecedores.length} />
+      )}
+      {/* Back to dashboard banner (when from dashboard but not review mode) */}
+      {isFromDashboard && !isReviewMode && (
+        <div className="px-3 py-2 bg-primary/5 border-b flex items-center gap-2">
+          <Button variant="ghost" size="sm" className="gap-1 text-xs h-8" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="h-4 w-4" /> Voltar ao Dashboard
+          </Button>
+          <span className="text-xs text-muted-foreground flex-1 text-center">Visualização da cotação</span>
+        </div>
       )}
       {/* Toolbar — simplified */}
       <div className="p-3 border-b bg-card flex items-center gap-2 flex-wrap">
