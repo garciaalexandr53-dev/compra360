@@ -551,10 +551,18 @@ const AnalisePage = () => {
         </Button>
       )}
 
-      <SendQueueModal
+      <SendOrdersModal
         open={sendQueueOpen}
         onOpenChange={setSendQueueOpen}
-        fornecedores={fornecedoresComPedido.map(o => o.fornecedor)}
+        orders={fornecedoresComPedido.map(o => ({
+          fornecedor: o.fornecedor,
+          items: o.items,
+          total: o.total,
+        }))}
+        onSendOrder={(f) => sendWhatsApp(f)}
+        onConclude={() => {
+          navigate("/dashboard");
+        }}
       />
 
       {/* Receipt Dialog */}
