@@ -41,6 +41,7 @@ const DashboardPage = () => {
   const [fornSuggestRecommendedIds, setFornSuggestRecommendedIds] = useState<string[]>([]);
   const [showConclusao, setShowConclusao] = useState(false);
   const [cotacaoRevisada, setCotacaoRevisada] = useState(false);
+  const [sendCompleted, setSendCompleted] = useState(false);
   const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);
   const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "manter_precos" | "zerar" | null>(null);
   const [novaCotacaoLoading, setNovaCotacaoLoading] = useState(false);
@@ -329,9 +330,9 @@ const DashboardPage = () => {
     ? 1
     : itemCount === 0
     ? 2
-    : respostaCount === 0
+    : (respostaCount === 0 && !sendCompleted)
     ? 3
-    : respostaCount > 0 && respostaCount < selectedSupplierCount
+    : (respostaCount === 0 && sendCompleted) || (respostaCount > 0 && respostaCount < selectedSupplierCount)
     ? 4
     : respostaCount >= selectedSupplierCount && selectedSupplierCount > 0
     ? 5
