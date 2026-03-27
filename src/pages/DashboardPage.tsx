@@ -579,6 +579,10 @@ const DashboardPage = () => {
         onOpenChange={setSendQueueOpen}
         fornecedores={selectedFornecedores}
         onConclude={() => {
+          if (cotacaoAtiva?.id) {
+            localStorage.setItem(`send_completed_${cotacaoAtiva.id}`, "true");
+          }
+          setSendCompleted(true);
           queryClient.invalidateQueries({ queryKey: ["dash-respondidos"] });
           queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
           toast.success("Cotação enviada! Aguardando respostas dos fornecedores.");
