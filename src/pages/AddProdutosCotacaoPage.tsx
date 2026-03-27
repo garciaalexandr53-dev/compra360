@@ -7,8 +7,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Plus, Minus, Trash2, ArrowRight, ShoppingCart, Package, ArrowLeft, Check } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -87,6 +85,9 @@ const AddProdutosCotacaoPage = () => {
   });
 
   const alreadyCount = alreadyInCotacao.length;
+  const stagedCount = items.length;
+  const totalItems = stagedCount + alreadyCount;
+  const hasAnyProduct = totalItems > 0;
 
   const handleAdd = () => {
     const trimmed = nome.trim();
@@ -101,6 +102,8 @@ const AddProdutosCotacaoPage = () => {
     // Try to match existing produto
     const match = existingProdutos.find(p => p.nome.toLowerCase() === trimmed.toLowerCase());
 
+    const isFirstProduct = items.length === 0 && alreadyCount === 0;
+
     setItems(prev => [...prev, {
       id: genId(),
       nome: trimmed,
@@ -111,7 +114,11 @@ const AddProdutosCotacaoPage = () => {
     setNome("");
     setQuantidade(1);
     inputRef.current?.focus();
-    toast.success("Produto adicionado ✔", { duration: 1500 });
+    if (isFirstProduct) {
+      toast.success("🎉 Primeiro produto adicionado! Continue selecionando.");
+    } else {
+      toast.success("Produto adicionado ✔", { duration: 1500 });
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -132,7 +139,10 @@ const AddProdutosCotacaoPage = () => {
   };
 
   const handleContinue = async () => {
-    if (items.length === 0) return;
+    if (items.length === 0) {
+      navigate("/fornecedores");
+      return;
+    }
     setSaving(true);
 
     try {
@@ -184,15 +194,13 @@ const AddProdutosCotacaoPage = () => {
 
       queryClient.invalidateQueries();
       toast.success(`${toInsert.length} produto(s) adicionado(s) à cotação!`);
-      navigate("/dashboard");
+      navigate("/fornecedores");
     } catch (e: any) {
       toast.error(e.message || "Erro ao salvar produtos");
     } finally {
       setSaving(false);
     }
   };
-
-  const totalItems = items.length + alreadyCount;
 
   // Suggestions from existing products
   const suggestions = useMemo(() => {
@@ -205,33 +213,75 @@ const AddProdutosCotacaoPage = () => {
   }, [nome, existingProdutos, items]);
 
   const pickSuggestion = (p: { id: string; nome: string }) => {
+    const isFirstProduct = items.length === 0 && alreadyCount === 0;
+
     setItems(prev => [...prev, { id: genId(), nome: p.nome, quantidade: Math.max(1, quantidade), produtoId: p.id }]);
     setNome("");
     setQuantidade(1);
     inputRef.current?.focus();
-    toast.success("Produto adicionado ✔", { duration: 1500 });
+    if (isFirstProduct) {
+      toast.success("🎉 Primeiro produto adicionado! Continue selecionando.");
+    } else {
+      toast.success("Produto adicionado ✔", { duration: 1500 });
+    }
   };
+
+  const progressSteps = [
+    { label: "Produtos", state: "current" },
+    { label: "Cotação", state: "upcoming" },
+    { label: "Resultado", state: "upcoming" },
+  ] as const;
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
       {/* Header */}
-      <div className="p-4 pb-2 border-b border-border">
-        <div className="flex items-center gap-2 mb-3">
-          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => navigate("/dashboard")}>
+      <div className="border-b border-border bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+        <div className="p-4 pb-3">
+          <div className="flex items-center gap-2 mb-4">
+            <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-lg font-bold text-foreground">Adicionar produtos</h1>
-            <p className="text-xs text-muted-foreground">Monte sua lista para cotação</p>
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Adicionar produtos</h1>
+              <p className="text-sm text-muted-foreground">Monte sua lista para cotação</p>
+            </div>
           </div>
-        </div>
-        {/* Progress indicator */}
-        <div className="flex items-center gap-2 text-xs">
-          <Badge variant="default" className="text-[10px] px-2 py-0.5">1. Produtos</Badge>
-          <div className="h-px flex-1 bg-border" />
-          <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-muted-foreground">2. Cotação</Badge>
-          <div className="h-px flex-1 bg-border" />
-          <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-muted-foreground">3. Resultado</Badge>
+
+          <div className="rounded-2xl border border-border bg-background/80 p-3">
+            <div className="flex items-start gap-2">
+              {progressSteps.map((step, index) => (
+                <React.Fragment key={step.label}>
+                  <div className="flex min-w-0 flex-1 flex-col items-center gap-2 text-center">
+                    <div
+                      className={[
+                        "flex h-10 w-10 items-center justify-center rounded-full border text-sm font-bold transition-all",
+                        step.state === "current"
+                          ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                          : "border-border bg-muted text-muted-foreground",
+                      ].join(" ")}
+                    >
+                      {index + 1}
+                    </div>
+                    <span className={step.state === "current" ? "text-xs font-semibold text-foreground" : "text-xs text-muted-foreground"}>
+                      {step.label}
+                    </span>
+                  </div>
+                  {index < progressSteps.length - 1 && <div className="mt-5 h-px flex-1 bg-border" />}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-3 min-h-6">
+            {hasAnyProduct ? (
+              <div className="inline-flex min-h-10 items-center gap-2 rounded-full border border-primary/20 bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground animate-in fade-in-0 zoom-in-95 duration-300">
+                <Check className="h-4 w-4 text-primary" />
+                {totalItems} produto{totalItems === 1 ? "" : "s"} na cotação
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Adicione produtos para iniciar a cotação</p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -245,17 +295,17 @@ const AddProdutosCotacaoPage = () => {
             onChange={e => setNome(e.target.value)}
             onKeyDown={handleKeyDown}
             autoFocus
-            className="flex-1"
+            className="h-12 flex-1"
           />
           <Input
             type="number"
             min={1}
             value={quantidade}
             onChange={e => setQuantidade(Math.max(1, Number(e.target.value) || 1))}
-            className="w-16 text-center"
+            className="h-12 w-20 text-center"
             placeholder="Qtd"
           />
-          <Button size="icon" onClick={handleAdd} disabled={!nome.trim()}>
+          <Button size="icon" className="h-12 w-12" onClick={handleAdd} disabled={!nome.trim()}>
             <Plus className="h-4 w-4" />
           </Button>
         </div>
@@ -277,26 +327,36 @@ const AddProdutosCotacaoPage = () => {
       </div>
 
       {/* Product list */}
-      <div className="flex-1 overflow-y-auto px-4 pb-24">
+      <div className="flex-1 overflow-y-auto px-4 pb-28">
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-3">
               <ShoppingCart className="h-7 w-7 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium text-muted-foreground">Nenhum produto ainda</p>
-            <p className="text-xs text-muted-foreground mt-1">Adicione itens para começar sua cotação</p>
+            <p className="text-sm font-medium text-foreground">
+              {alreadyCount > 0 ? "Sua cotação já tem produtos" : "Nenhum produto ainda"}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {alreadyCount > 0
+                ? `${alreadyCount} produto(s) já estão prontos para seguir ao próximo passo`
+                : "Adicione itens para começar sua cotação"}
+            </p>
           </div>
         ) : (
           <div className="space-y-2">
             {alreadyCount > 0 && (
-              <p className="text-xs text-muted-foreground mb-2">
+              <p className="mb-2 text-xs text-muted-foreground">
                 <Check className="h-3 w-3 inline mr-1" />
                 {alreadyCount} produto(s) já na cotação
               </p>
             )}
-            {items.map(item => (
-              <Card key={item.id} className="border-border">
-                <CardContent className="p-3 flex items-center gap-3">
+            {items.map((item, index) => (
+              <Card
+                key={item.id}
+                className="border-border border-l-4 border-l-primary bg-card/90 animate-in fade-in-0 slide-in-from-bottom-2 duration-300"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <CardContent className="flex items-center gap-3 p-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{item.nome}</p>
                     {item.produtoId && (
@@ -307,7 +367,7 @@ const AddProdutosCotacaoPage = () => {
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-7 w-7"
+                      className="h-11 w-11"
                       onClick={() => updateQty(item.id, -1)}
                       disabled={item.quantidade <= 1}
                     >
@@ -317,19 +377,22 @@ const AddProdutosCotacaoPage = () => {
                       type="number"
                       min={1}
                       value={qtyDrafts[item.id] ?? String(item.quantidade)}
-                      onFocus={() => setQtyDrafts(s => ({ ...s, [item.id]: "" }))}
+                      onFocus={(e) => {
+                        e.target.select();
+                        setQtyDrafts(s => ({ ...s, [item.id]: "" }));
+                      }}
                       onChange={e => setQtyDrafts(s => ({ ...s, [item.id]: e.target.value }))}
                       onBlur={e => {
                         const val = Math.max(1, Number(e.target.value) || 1);
                         setItems(prev => prev.map(i => i.id === item.id ? { ...i, quantidade: val } : i));
                         setQtyDrafts(s => { const n = { ...s }; delete n[item.id]; return n; });
                       }}
-                      className="w-14 h-7 text-center text-sm font-semibold px-1 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      className="h-11 w-16 px-1 text-center text-base font-semibold [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     />
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-7 w-7"
+                      className="h-11 w-11"
                       onClick={() => updateQty(item.id, 1)}
                     >
                       <Plus className="h-3 w-3" />
@@ -338,7 +401,7 @@ const AddProdutosCotacaoPage = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 text-destructive/70 hover:text-destructive shrink-0"
+                    className="h-11 w-11 shrink-0 text-destructive/70 hover:text-destructive"
                     onClick={() => removeItem(item.id)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -351,14 +414,14 @@ const AddProdutosCotacaoPage = () => {
       </div>
 
       {/* Counter + CTA */}
-      {items.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border z-50">
-          <p className="text-xs text-muted-foreground text-center mb-2">
+      {hasAnyProduct && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 p-4 backdrop-blur animate-in slide-in-from-bottom-6 fade-in-0 duration-300">
+          <p className="mb-2 text-center text-xs text-muted-foreground">
             <Package className="h-3 w-3 inline mr-1" />
-            {items.length} produto(s) para adicionar{alreadyCount > 0 ? ` · ${alreadyCount} já na cotação` : ""}
+            {totalItems} produto{totalItems === 1 ? "" : "s"} selecionado{totalItems === 1 ? "" : "s"} para cotação
           </p>
           <Button
-            className="w-full h-12 text-base gap-2"
+            className="h-14 w-full gap-2 bg-gradient-to-r from-primary to-primary/80 text-base font-semibold shadow-lg"
             onClick={handleContinue}
             disabled={saving}
           >
@@ -366,7 +429,7 @@ const AddProdutosCotacaoPage = () => {
               "Salvando..."
             ) : (
               <>
-                Continuar para cotação
+                ✅ Pronto! Selecionar fornecedores
                 <ArrowRight className="h-5 w-5" />
               </>
             )}
