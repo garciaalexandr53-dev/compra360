@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Loader2, Zap, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft } from "lucide-react";
-import SendQueueModal from "@/components/dashboard/SendQueueModal";
+import SendOrdersModal from "@/components/dashboard/SendOrdersModal";
 
 type Fornecedor = Tables<"fornecedores">;
 
