@@ -338,15 +338,16 @@ const DashboardPage = () => {
     ? 5
     : 3;
 
-  // Detect return from cotação review (sub-state for State 5)
+  // Detect send completed and cotação review from localStorage
   useEffect(() => {
     if (cotacaoAtiva?.id) {
-      const key = `cotacao_revisada_${cotacaoAtiva.id}`;
-      if (localStorage.getItem(key) === "true") {
-        setCotacaoRevisada(true);
-      } else {
-        setCotacaoRevisada(false);
-      }
+      const reviewKey = `cotacao_revisada_${cotacaoAtiva.id}`;
+      setCotacaoRevisada(localStorage.getItem(reviewKey) === "true");
+      const sendKey = `send_completed_${cotacaoAtiva.id}`;
+      setSendCompleted(localStorage.getItem(sendKey) === "true");
+    } else {
+      setCotacaoRevisada(false);
+      setSendCompleted(false);
     }
   }, [cotacaoAtiva?.id]);
 
