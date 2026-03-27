@@ -41,6 +41,7 @@ const DashboardPage = () => {
   const [fornSuggestRecommendedIds, setFornSuggestRecommendedIds] = useState<string[]>([]);
   const [showConclusao, setShowConclusao] = useState(false);
   const [cotacaoRevisada, setCotacaoRevisada] = useState(false);
+  const [sendCompleted, setSendCompleted] = useState(false);
   const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);
   const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "manter_precos" | "zerar" | null>(null);
   const [novaCotacaoLoading, setNovaCotacaoLoading] = useState(false);
@@ -329,23 +330,24 @@ const DashboardPage = () => {
     ? 1
     : itemCount === 0
     ? 2
-    : respostaCount === 0
+    : (respostaCount === 0 && !sendCompleted)
     ? 3
-    : respostaCount > 0 && respostaCount < selectedSupplierCount
+    : (respostaCount === 0 && sendCompleted) || (respostaCount > 0 && respostaCount < selectedSupplierCount)
     ? 4
     : respostaCount >= selectedSupplierCount && selectedSupplierCount > 0
     ? 5
     : 3;
 
-  // Detect return from cotação review (sub-state for State 5)
+  // Detect send completed and cotação review from localStorage
   useEffect(() => {
     if (cotacaoAtiva?.id) {
-      const key = `cotacao_revisada_${cotacaoAtiva.id}`;
-      if (localStorage.getItem(key) === "true") {
-        setCotacaoRevisada(true);
-      } else {
-        setCotacaoRevisada(false);
-      }
+      const reviewKey = `cotacao_revisada_${cotacaoAtiva.id}`;
+      setCotacaoRevisada(localStorage.getItem(reviewKey) === "true");
+      const sendKey = `send_completed_${cotacaoAtiva.id}`;
+      setSendCompleted(localStorage.getItem(sendKey) === "true");
+    } else {
+      setCotacaoRevisada(false);
+      setSendCompleted(false);
     }
   }, [cotacaoAtiva?.id]);
 
@@ -577,6 +579,10 @@ const DashboardPage = () => {
         onOpenChange={setSendQueueOpen}
         fornecedores={selectedFornecedores}
         onConclude={() => {
+          if (cotacaoAtiva?.id) {
+            localStorage.setItem(`send_completed_${cotacaoAtiva.id}`, "true");
+          }
+          setSendCompleted(true);
           queryClient.invalidateQueries({ queryKey: ["dash-respondidos"] });
           queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
           toast.success("Cotação enviada! Aguardando respostas dos fornecedores.");
