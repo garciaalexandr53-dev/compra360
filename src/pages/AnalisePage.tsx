@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL, formatNumber } from "@/lib/format";
@@ -8,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, Zap, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone } from "lucide-react";
+import { Loader2, Zap, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft } from "lucide-react";
 import SendQueueModal from "@/components/dashboard/SendQueueModal";
 
 type Fornecedor = Tables<"fornecedores">;
@@ -30,6 +31,7 @@ interface DistResult {
 }
 
 const AnalisePage = () => {
+  const navigate = useNavigate();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -374,6 +376,13 @@ const AnalisePage = () => {
 
   return (
     <div className="p-5 space-y-4 pb-24">
+      {/* Back to dashboard */}
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" className="gap-1 text-xs h-8" onClick={() => navigate("/dashboard")}>
+          <ArrowLeft className="h-4 w-4" /> Dashboard
+        </Button>
+        <span className="text-xs text-muted-foreground">Análise de pedidos</span>
+      </div>
       {/* 1. RESUMO FINANCEIRO */}
       <div className="bg-card border rounded-xl p-4 shadow-sm">
         <div className="flex items-center justify-between">

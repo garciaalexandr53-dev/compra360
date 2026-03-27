@@ -18,7 +18,7 @@ type Status = "pending" | "sent" | "skipped";
 
 const STORAGE_KEY = "send-queue-state";
 
-const SendQueueModal = ({ open, onOpenChange, fornecedores }: Props) => {
+const SendQueueModal = ({ open, onOpenChange, fornecedores, onConclude }: Props & { onConclude?: () => void }) => {
   const { lojaAtiva } = useLojaAtiva();
 
   const [statuses, setStatuses] = useState<Record<string, Status>>(() => {
@@ -78,6 +78,7 @@ const SendQueueModal = ({ open, onOpenChange, fornecedores }: Props) => {
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
     setStatuses({});
     onOpenChange(false);
+    onConclude?.();
   };
 
   return (
