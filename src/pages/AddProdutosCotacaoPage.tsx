@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Minus, Trash2, ArrowRight, ShoppingCart, Package, ArrowLeft, Check } from "lucide-react";
+import { Plus, Minus, Trash2, ArrowRight, ShoppingCart, Package, ArrowLeft, Check, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
