@@ -501,29 +501,26 @@ const DashboardPage = () => {
           });
 
           return (
-            <div className="space-y-4">
+            <div className="space-y-2">
               {/* Header */}
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">{statusMsg}</p>
-                <h1 className="text-xl font-bold text-foreground">{respostaCount} de {selectedSupplierCount} fornecedores responderam</h1>
+                <Badge variant="secondary" className="mb-1 text-xs px-2 py-0.5 bg-primary/10 text-primary border-primary/20">{statusMsg}</Badge>
+                <h1 className="text-2xl font-bold text-foreground">{respostaCount} de {selectedSupplierCount} fornecedores responderam</h1>
               </div>
 
-              {/* Progress bar */}
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-xs text-muted-foreground">{respostaCount} de {selectedSupplierCount} respostas</span>
-                  <span className={`text-sm font-bold ${pct >= 100 ? "text-green-500" : "text-primary"}`}>{pct}%</span>
-                </div>
-                <div className="w-full h-3 rounded-full bg-muted overflow-hidden">
+              {/* Progress bar — thin & elegant */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-700 ${pct >= 100 ? "bg-green-500" : "bg-primary"}`}
-                    style={{ width: `${pct}%` }}
+                    style={{ width: `${Math.max(pct, 2)}%` }}
                   />
                 </div>
+                <span className={`text-xs font-bold tabular-nums ${pct >= 100 ? "text-green-500" : "text-primary"}`}>{pct}%</span>
               </div>
 
-              {/* Supplier list */}
-              <div className="space-y-2">
+              {/* Supplier list — compact single-line cards */}
+              <div className="space-y-1.5">
                 {selectedFornecedores.map(f => {
                   const responded = respondidosSet.has(f.id);
                   const sentAt = cfMap.get(f.id);
@@ -531,60 +528,57 @@ const DashboardPage = () => {
                   const timeAgo = sentAt ? formatDistanceToNow(new Date(sentAt), { addSuffix: true, locale: ptBR }) : null;
 
                   return (
-                    <Card key={f.id} className={`transition-all ${responded ? "border-green-500/30 bg-green-50/50 dark:bg-green-950/10" : "border-border"}`}>
-                      <CardContent className="p-3">
-                        <div className="flex items-center gap-3">
-                          {responded
-                            ? <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-                            : <Clock className="h-5 w-5 text-muted-foreground shrink-0 animate-pulse" />}
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm font-semibold text-foreground block truncate">{f.nome}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {responded
-                                ? `Respondeu · ${priceCount} preço${priceCount !== 1 ? "s" : ""} enviado${priceCount !== 1 ? "s" : ""}`
-                                : timeAgo ? `Enviado ${timeAgo} · Aguardando` : "Aguardando resposta"}
-                            </span>
-                          </div>
-                          <Button size="sm" variant="ghost" className="text-xs gap-1 shrink-0 text-primary" onClick={() => resendWhatsApp(f)}>
-                            <RefreshCw className="h-3 w-3" /> Reenviar
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <div
+                      key={f.id}
+                      className={`flex items-center gap-2.5 rounded-lg border py-2.5 px-3 transition-all ${
+                        responded
+                          ? "border-l-2 border-l-green-500 border-t-border border-r-border border-b-border"
+                          : "border-border"
+                      }`}
+                    >
+                      {responded
+                        ? <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                        : <Clock className="h-4 w-4 text-muted-foreground shrink-0" />}
+                      <span className="text-sm font-semibold text-foreground truncate">{f.nome}</span>
+                      <span className="text-xs text-muted-foreground truncate ml-auto mr-1">
+                        {responded
+                          ? `Respondeu · ${priceCount} preço${priceCount !== 1 ? "s" : ""}`
+                          : timeAgo ? `Enviado ${timeAgo}` : "Aguardando"}
+                      </span>
+                      <button
+                        onClick={() => resendWhatsApp(f)}
+                        className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        title="Reenviar via WhatsApp"
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   );
                 })}
               </div>
 
               {/* Hint cards for suppliers pending > 2h */}
               {pendingOver2h.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {pendingOver2h.map(f => {
                     const sentAt = cfMap.get(f.id);
                     const timeAgo = sentAt ? formatDistanceToNow(new Date(sentAt), { addSuffix: true, locale: ptBR }) : "";
                     return (
-                      <Card key={`hint-${f.id}`} className="border-amber-300/50 dark:border-amber-700/50 bg-amber-50/50 dark:bg-amber-950/10">
-                        <CardContent className="p-3 flex items-start gap-3">
-                          <Lightbulb className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                          <div className="text-xs text-muted-foreground">
-                            <span className="font-semibold text-foreground">{f.nome}</span> ainda não respondeu ({timeAgo}).
-                            <span className="block mt-0.5">Que tal ligar ou mandar uma mensagem?</span>
-                          </div>
-                        </CardContent>
-                      </Card>
+                      <div key={`hint-${f.id}`} className="flex items-start gap-2 rounded-lg border border-amber-300/40 dark:border-amber-700/40 bg-amber-50/40 dark:bg-amber-950/10 py-2 px-3">
+                        <Lightbulb className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                        <p className="text-xs text-muted-foreground">
+                          <span className="font-semibold text-foreground">{f.nome}</span> sem resposta ({timeAgo}). Que tal entrar em contato?
+                        </p>
+                      </div>
                     );
                   })}
                 </div>
               )}
 
-              {/* Action buttons */}
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 h-11 gap-2 text-sm" onClick={() => navigate("/cotacao?from=dashboard")}>
-                  <Eye className="h-4 w-4" /> Ver cotação parcial
-                </Button>
-                <Button variant="secondary" className="h-11 gap-2 text-sm" onClick={() => setSendQueueOpen(true)}>
-                  <Send className="h-4 w-4" /> Reenviar
-                </Button>
-              </div>
+              {/* Single action button — outline compact */}
+              <Button variant="outline" className="gap-2 text-sm h-10" onClick={() => navigate("/cotacao?from=dashboard")}>
+                <Eye className="h-4 w-4" /> Ver cotação parcial
+              </Button>
 
               <DashboardProgress currentStep={3} />
             </div>
