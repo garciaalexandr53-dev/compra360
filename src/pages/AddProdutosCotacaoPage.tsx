@@ -226,20 +226,14 @@ const AddProdutosCotacaoPage = () => {
     }
   };
 
-  const progressSteps = [
-    { label: "Produtos", state: "current" },
-    { label: "Cotação", state: "upcoming" },
-    { label: "Resultado", state: "upcoming" },
-  ] as const;
-
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
       {/* Header */}
       <div className="border-b border-border bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="p-4 pb-3">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-3">
             <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-foreground">Adicionar produtos</h1>
@@ -247,32 +241,7 @@ const AddProdutosCotacaoPage = () => {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-background/80 p-3">
-            <div className="flex items-start gap-2">
-              {progressSteps.map((step, index) => (
-                <React.Fragment key={step.label}>
-                  <div className="flex min-w-0 flex-1 flex-col items-center gap-2 text-center">
-                    <div
-                      className={[
-                        "flex h-10 w-10 items-center justify-center rounded-full border text-sm font-bold transition-all",
-                        step.state === "current"
-                          ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                          : "border-border bg-muted text-muted-foreground",
-                      ].join(" ")}
-                    >
-                      {index + 1}
-                    </div>
-                    <span className={step.state === "current" ? "text-xs font-semibold text-foreground" : "text-xs text-muted-foreground"}>
-                      {step.label}
-                    </span>
-                  </div>
-                  {index < progressSteps.length - 1 && <div className="mt-5 h-px flex-1 bg-border" />}
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-3 min-h-6">
+          <div className="min-h-6">
             {hasAnyProduct ? (
               <div className="inline-flex min-h-10 items-center gap-2 rounded-full border border-primary/20 bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground animate-in fade-in-0 zoom-in-95 duration-300">
                 <Check className="h-4 w-4 text-primary" />
@@ -415,11 +384,7 @@ const AddProdutosCotacaoPage = () => {
 
       {/* Counter + CTA */}
       {hasAnyProduct && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 p-4 backdrop-blur animate-in slide-in-from-bottom-6 fade-in-0 duration-300">
-          <p className="mb-2 text-center text-xs text-muted-foreground">
-            <Package className="h-3 w-3 inline mr-1" />
-            {totalItems} produto{totalItems === 1 ? "" : "s"} selecionado{totalItems === 1 ? "" : "s"} para cotação
-          </p>
+        <div className="fixed bottom-16 left-0 right-0 z-40 border-t border-border bg-background/95 px-4 py-3 backdrop-blur animate-in slide-in-from-bottom-6 fade-in-0 duration-300">
           <Button
             className="h-14 w-full gap-2 bg-gradient-to-r from-primary to-primary/80 text-base font-semibold shadow-lg"
             onClick={handleContinue}
@@ -428,10 +393,10 @@ const AddProdutosCotacaoPage = () => {
             {saving ? (
               "Salvando..."
             ) : (
-              <>
-                ✅ Pronto! Selecionar fornecedores
-                <ArrowRight className="h-5 w-5" />
-              </>
+              <span className="flex flex-col items-center leading-tight">
+                <span>✅ Pronto! Continuar cotação</span>
+                <span className="text-xs font-normal opacity-80">{totalItems} produto{totalItems === 1 ? "" : "s"} selecionado{totalItems === 1 ? "" : "s"}</span>
+              </span>
             )}
           </Button>
         </div>
