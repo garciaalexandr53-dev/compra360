@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Loader2, Zap, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft } from "lucide-react";
-import SendQueueModal from "@/components/dashboard/SendQueueModal";
+import SendOrdersModal from "@/components/dashboard/SendOrdersModal";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -551,10 +551,18 @@ const AnalisePage = () => {
         </Button>
       )}
 
-      <SendQueueModal
+      <SendOrdersModal
         open={sendQueueOpen}
         onOpenChange={setSendQueueOpen}
-        fornecedores={fornecedoresComPedido.map(o => o.fornecedor)}
+        orders={fornecedoresComPedido.map(o => ({
+          fornecedor: o.fornecedor,
+          items: o.items,
+          total: o.total,
+        }))}
+        onSendOrder={(f) => sendWhatsApp(f)}
+        onConclude={() => {
+          navigate("/dashboard");
+        }}
       />
 
       {/* Receipt Dialog */}
