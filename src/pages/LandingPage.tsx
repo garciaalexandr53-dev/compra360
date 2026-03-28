@@ -167,7 +167,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ── HERO ── */}
-      <section ref={hero.ref} className="py-24 px-5">
+      <section ref={hero.ref} className="pt-20 pb-10 px-5">
         <div className="max-w-6xl mx-auto">
           <div className="max-w-3xl">
             <p className={`text-teal-400 text-sm font-medium mb-6 ${anim(hero.visible)}`}>
@@ -253,18 +253,18 @@ export default function LandingPage() {
           <p className={`text-slate-400 text-center mb-10 ${anim(chatSection.visible)}`} style={{ transitionDelay: "100ms" }}>
             Clique em uma pergunta
           </p>
-          <div className={`bg-slate-900 border border-white/5 rounded-2xl p-5 space-y-3 ${anim(chatSection.visible)}`} style={{ transitionDelay: "200ms" }}>
+          <div className={`bg-slate-900 border border-white/5 rounded-2xl p-4 space-y-2 ${anim(chatSection.visible)}`} style={{ transitionDelay: "200ms" }}>
             {chatFaq.map((item, i) => (
               <div key={i}>
                 <button
                   onClick={() => setOpenChat(openChat === i ? null : i)}
-                  className="flex items-center gap-2 text-left w-full group"
+                  className="flex items-center gap-3 text-left w-full group py-4 px-5 border border-white/10 rounded-xl hover:bg-white/5 transition-colors"
                 >
-                  <MessageCircle className="h-4 w-4 text-teal-400 shrink-0" />
-                  <span className="text-sm text-teal-300 font-medium group-hover:text-teal-200 transition-colors">
+                  <MessageCircle className="h-5 w-5 text-teal-400 shrink-0" />
+                  <span className="text-base text-teal-300 font-medium group-hover:text-teal-200 transition-colors">
                     {item.q}
                   </span>
-                  <ChevronRight className={`h-3.5 w-3.5 text-slate-500 ml-auto shrink-0 transition-transform ${openChat === i ? "rotate-90" : ""}`} />
+                  <ArrowRight className={`h-4 w-4 text-slate-500 ml-auto shrink-0 transition-transform ${openChat === i ? "rotate-90" : ""}`} />
                 </button>
                 {openChat === i && (
                   <div className="ml-6 mt-2 bg-slate-800/50 rounded-xl px-4 py-3 text-sm text-slate-300 leading-relaxed animate-fade-in">
@@ -296,9 +296,14 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <p className="text-slate-300 text-sm leading-relaxed mb-5">"{t.text}"</p>
-                <div>
-                  <p className="text-white font-semibold text-sm">{t.name}</p>
-                  <p className="text-slate-500 text-xs">{t.role} · {t.company}</p>
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 ${i === 0 ? "bg-teal-500" : "bg-emerald-500"}`}>
+                    {t.name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-white font-semibold text-sm">{t.name}</p>
+                    <p className="text-slate-500 text-xs">{t.role} · {t.company}</p>
+                  </div>
                 </div>
               </div>
             ))}
@@ -320,7 +325,7 @@ export default function LandingPage() {
               <div
                 key={plan.name}
                 className={`relative bg-slate-900 border rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex flex-col ${
-                  plan.highlight ? "border-teal-500/40 shadow-[0_0_12px_rgba(20,184,166,0.15)]" : "border-white/5"
+                  plan.highlight ? "border-teal-500/40 shadow-[0_0_12px_rgba(20,184,166,0.15)]" : plan.name === "Business" ? "border-white/20" : "border-white/5"
                 } ${anim(plansSection.visible)}`}
                 style={{ transitionDelay: `${i * 120}ms` }}
               >
@@ -329,7 +334,7 @@ export default function LandingPage() {
                     {plan.badge}
                   </div>
                 )}
-                <h3 className="text-white font-bold text-lg mb-1">{plan.name}</h3>
+                <h3 className="text-white font-bold text-lg mb-1">{plan.name === "Business" ? "👑 " : ""}{plan.name}</h3>
                 <div className="mb-5">
                   <span className="text-3xl font-bold text-white">{plan.price}</span>
                   <span className="text-slate-500 text-sm">{plan.period}</span>
@@ -370,11 +375,11 @@ export default function LandingPage() {
           </h2>
           <Accordion type="single" collapsible className="space-y-2">
             {faqItems.map((item, i) => (
-              <AccordionItem key={i} value={`faq-${i}`} className="border border-white/5 rounded-xl px-4 bg-slate-900">
-                <AccordionTrigger className="text-sm text-slate-200 font-medium hover:no-underline py-4">
+              <AccordionItem key={i} value={`faq-${i}`} className="border border-white/5 border-b border-b-white/10 rounded-xl px-5 bg-slate-900">
+                <AccordionTrigger className="text-base text-slate-200 font-medium hover:no-underline py-5">
                   {item.q}
                 </AccordionTrigger>
-                <AccordionContent className="text-sm text-slate-400 leading-relaxed">
+                <AccordionContent className="text-sm text-slate-400 leading-relaxed pb-5">
                   {item.a}
                 </AccordionContent>
               </AccordionItem>
