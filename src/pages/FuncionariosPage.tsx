@@ -36,6 +36,9 @@ const FuncionariosPage = () => {
       const itemsToImport = pendentes.filter((i: any) => !i.importado);
       if (!itemsToImport.length) throw new Error("Nenhum item pendente");
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
       // Check for existing products to avoid duplicates
       const { data: existingProducts } = await supabase.from("produtos").select("nome");
       const existingNames = new Set((existingProducts || []).map((p) => p.nome.toLowerCase().trim()));
@@ -43,11 +46,12 @@ const FuncionariosPage = () => {
       const newItems = itemsToImport.filter((i: any) => !existingNames.has(i.nome.toLowerCase().trim()));
       const dupCount = itemsToImport.length - newItems.length;
 
-      // Insert each unique item into produtos with ativo=true
+      // Insert each unique item into produtos with ativo=true and user_id
       const inserts = newItems.map((item: any) => ({
         nome: item.nome,
         embalagem: item.observacao?.replace("Embalagem: ", "") || "un",
         ativo: true,
+        user_id: user.id,
       }));
 
       if (inserts.length) {
