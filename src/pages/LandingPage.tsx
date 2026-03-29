@@ -137,13 +137,10 @@ export default function LandingPage() {
 
   const hero = useInView();
   const stepsSection = useInView();
-  const chatSection = useInView();
   const socialSection = useInView();
   const plansSection = useInView();
   const faqSection = useInView();
   const ctaSection = useInView();
-
-  const [openChat, setOpenChat] = useState<number | null>(null);
 
   useEffect(() => {
     if (user) navigate("/dashboard", { replace: true });
@@ -236,7 +233,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── 3 PASSOS ── */}
-      <section ref={stepsSection.ref} className="py-24 px-5 border-t border-white/5">
+      <section ref={stepsSection.ref} className="py-12 px-5 border-t border-white/5">
         <div className="max-w-6xl mx-auto">
           <h2 className={`text-2xl sm:text-3xl font-bold text-white text-center mb-12 ${anim(stepsSection.visible)}`}>
             Economize em 3 passos simples
@@ -262,61 +259,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── CHAT CONCIERGE ── */}
-      <section ref={chatSection.ref} className="py-24 px-5 border-t border-white/5">
-        <div className="max-w-2xl mx-auto">
-          <h2 className={`text-2xl sm:text-3xl font-bold text-white text-center mb-3 ${anim(chatSection.visible)}`}>
-            Dúvidas rápidas antes de começar
-          </h2>
-          <p className={`text-slate-400 text-center mb-10 ${anim(chatSection.visible)}`} style={{ transitionDelay: "100ms" }}>
-            Respostas rápidas, direto ao ponto:
-          </p>
-          <div className={`bg-slate-900 border border-white/5 rounded-2xl p-4 space-y-2 ${anim(chatSection.visible)}`} style={{ transitionDelay: "200ms" }}>
-            {chatFaq.map((item, i) => {
-              const isOpen = openChat === i || (openChat === null && item.defaultOpen);
-              return (
-                <div key={i}>
-                  <button
-                    onClick={() => setOpenChat(openChat === i ? -1 : i)}
-                    className={`flex items-center gap-3 text-left w-full group py-4 px-5 rounded-xl transition-all duration-200 ${
-                      isOpen ? "border-2 border-teal-500/40 bg-white/5" : "border border-white/10 hover:bg-white/5"
-                    }`}
-                  >
-                    <MessageCircle className="h-5 w-5 text-teal-400 shrink-0" />
-                    <span className="text-base text-teal-300 font-medium group-hover:text-teal-200 transition-colors">
-                      {item.q}
-                    </span>
-                    <ArrowRight className={`h-4 w-4 text-slate-500 ml-auto shrink-0 transition-transform duration-300 ${isOpen ? "rotate-90" : ""}`} />
-                  </button>
-                  <div
-                    className={`overflow-hidden transition-all duration-300 ease-out ${
-                      isOpen ? "max-h-40 opacity-100 mt-2" : "max-h-0 opacity-0"
-                    }`}
-                  >
-                    <div className="ml-6 bg-slate-800/50 rounded-xl px-4 py-3 text-sm text-slate-300 leading-relaxed">
-                      {item.a}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* CTA final da seção */}
-          <div className={`text-center mt-10 ${anim(chatSection.visible)}`} style={{ transitionDelay: "400ms" }}>
-            <p className="text-slate-400 text-sm mb-4">Ainda com dúvida? Comece grátis e teste na prática.</p>
-            <button
-              onClick={goLogin}
-              className="inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold px-8 py-3 rounded-full transition-colors"
-            >
-              Começar grátis agora <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </section>
 
       {/* ── PROVA SOCIAL ── */}
-      <section ref={socialSection.ref} className="py-24 px-5 border-t border-white/5">
+      <section ref={socialSection.ref} className="py-12 px-5 border-t border-white/5">
         <div className="max-w-6xl mx-auto">
           <h2 className={`text-2xl sm:text-3xl font-bold text-white text-center mb-12 ${anim(socialSection.visible)}`}>
             O que dizem quem já usa
@@ -350,7 +295,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── PLANOS ── */}
-      <section ref={plansSection.ref} className="py-24 px-5 border-t border-white/5">
+      <section ref={plansSection.ref} className="py-12 px-5 border-t border-white/5">
         <div className="max-w-6xl mx-auto">
           <h2 className={`text-2xl sm:text-3xl font-bold text-white text-center mb-3 ${anim(plansSection.visible)}`}>
             Planos para todo tipo de negócio
@@ -406,12 +351,12 @@ export default function LandingPage() {
       </section>
 
       {/* ── FAQ ── */}
-      <section ref={faqSection.ref} className="pt-24 pb-10 px-5 border-t border-white/5">
+      <section ref={faqSection.ref} className="py-12 px-5 border-t border-white/5">
         <div className={`max-w-2xl mx-auto ${anim(faqSection.visible)}`}>
           <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-3">
-            Ainda está em dúvida? Veja isso:
+            Perguntas frequentes
           </h2>
-          <p className="text-slate-400 text-center text-sm mb-10">Respostas rápidas para suas principais dúvidas</p>
+          <p className="text-slate-400 text-center text-sm mb-10">Tudo que você precisa saber antes de começar</p>
           <Accordion type="single" collapsible defaultValue="faq-0" className="space-y-2">
             {faqItems.map((item, i) => (
               <AccordionItem key={i} value={`faq-${i}`} className="border-b border-white/10 rounded-none px-4 last:border-b-0">
@@ -428,7 +373,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA FINAL ── */}
-      <section ref={ctaSection.ref} className="py-24 px-5 border-t border-white/5">
+      <section ref={ctaSection.ref} className="py-12 px-5 border-t border-white/5">
         <div className={`max-w-2xl mx-auto text-center ${anim(ctaSection.visible)}`}>
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
             Comece a economizar hoje
