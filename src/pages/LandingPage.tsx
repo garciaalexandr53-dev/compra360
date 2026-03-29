@@ -392,7 +392,7 @@ export default function LandingPage() {
             Ainda está em dúvida? Veja isso:
           </h2>
           <p className="text-slate-400 text-center text-sm mb-10">Respostas rápidas para suas principais dúvidas</p>
-          <Accordion type="multiple" defaultValue={["faq-0", "faq-1", "faq-3"]} className="space-y-2">
+          <Accordion type="single" collapsible defaultValue="faq-0" className="space-y-2">
             {faqItems.map((item, i) => (
               <AccordionItem key={i} value={`faq-${i}`} className="border-b border-white/10 rounded-none px-4 last:border-b-0">
                 <AccordionTrigger className="text-base text-white font-medium hover:no-underline py-5">
