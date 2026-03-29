@@ -194,29 +194,29 @@ export default function LandingPage() {
           <div className={`mt-12 max-w-sm relative ${anim(hero.visible)}`} style={{ transitionDelay: "400ms" }}>
             <div className="absolute -inset-4 bg-gradient-to-b from-emerald-500/10 to-transparent rounded-3xl blur-xl pointer-events-none" />
             <div className="relative bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5">
-              <p className="text-xs text-slate-400 font-medium mb-3">Detergente Ypê 500ml</p>
+              <p className="text-xs text-slate-400 font-medium mb-3">Detergente Ypê 500ml — Caixa c/ 24un</p>
               <div className="space-y-2">
                 <div className="flex items-center justify-between py-1.5 px-3 rounded-lg">
                   <span className="text-sm text-slate-300">Fornecedor A</span>
-                  <span className="text-sm text-slate-300 font-mono">R$ 2,29</span>
+                  <span className="text-sm text-slate-300 font-mono">R$ 54,90</span>
                 </div>
                 <div className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-teal-500/20 border border-teal-500/30">
                   <span className="text-sm text-white font-medium">Fornecedor B</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-teal-300 font-mono font-bold">R$ 1,89</span>
+                    <span className="text-sm text-teal-300 font-mono font-bold">R$ 43,90</span>
                     <span className="text-xs bg-teal-500/30 text-teal-200 px-1.5 py-0.5 rounded font-medium">🏆 Melhor</span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between py-1.5 px-3 rounded-lg">
                   <span className="text-sm text-slate-300">Fornecedor C</span>
-                  <span className="text-sm text-slate-300 font-mono">R$ 2,15</span>
+                  <span className="text-sm text-slate-300 font-mono">R$ 47,76</span>
                 </div>
               </div>
               <div className="mt-4 pt-3 border-t border-white/10 space-y-1 text-center">
-                <p className="text-slate-500 text-xs">Você pagaria <span className="line-through text-slate-400">R$ 2,29</span></p>
-                <p className="text-white text-sm font-semibold">Agora paga <span className="text-teal-300">R$ 1,89</span></p>
-                <p className="text-emerald-400 font-bold text-sm mt-1">💰 Economia: R$ 0,40/un</p>
-                <p className="text-slate-500 text-xs">× 48 unidades = <span className="text-emerald-400 font-semibold">R$ 19,20 economizados</span></p>
+                <p className="text-slate-500 text-xs">Você pagaria <span className="line-through text-slate-400">R$ 54,90</span></p>
+                <p className="text-white text-sm font-semibold">Agora paga <span className="text-teal-300">R$ 43,90</span></p>
+                <p className="text-emerald-400 font-bold text-sm mt-1">💰 Economia: R$ 11,00/cx</p>
+                <p className="text-slate-500 text-xs">× 10 caixas/mês = <span className="text-emerald-400 font-semibold">R$ 110,00 economizados</span></p>
               </div>
             </div>
           </div>
