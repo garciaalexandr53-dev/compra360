@@ -349,7 +349,7 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 {plan.note && (
-                  <p className="text-xs text-slate-500 italic mb-4">{plan.note}</p>
+                  <p className="text-sm text-teal-400 font-semibold mb-4">{plan.note}</p>
                 )}
                 <Button
                   variant={plan.ctaVariant}
