@@ -116,12 +116,18 @@ const plans = [
 ];
 
 const faqItems = [
-  { q: "O fornecedor precisa criar conta?", a: "Não. Ele apenas abre o link e preenche os valores. Sem instalar nada." },
-  { q: "Funciona em qualquer celular?", a: "Sim. O sistema é 100% focado em mobilidade." },
-  { q: "Vou precisar mudar meu jeito de trabalhar?", a: "Não. Só fica mais rápido e organizado." },
-  { q: "Posso cancelar quando quiser?", a: "Sim. Sem fidelidade, multas ou burocracia." },
-  { q: "Meus dados estão seguros?", a: "Sim. Suas cotações e preços são privados e criptografados." },
-  { q: "Funciona para meu tipo de negócio?", a: "Sim. Qualquer empresa que compra de fornecedores — supermercados, pet shops, farmácias, restaurantes e mais." },
+  { q: "Meus fornecedores vão aceitar?", a: "Sim. Eles recebem um link pelo WhatsApp e só preenchem o preço. É mais simples que planilha.", defaultOpen: true },
+  { q: "Precisa instalar algum aplicativo?", a: "Não. Funciona direto no navegador do celular. Se quiser, pode salvar como app.", defaultOpen: true },
+  { q: "Vou precisar mudar meu jeito de comprar?", a: "Não. Você continua comprando como sempre — só que mais rápido e organizado." },
+  { q: "Isso realmente ajuda a economizar?", a: "Sim. Você vê todos os preços lado a lado e já sabe na hora quem está mais barato.", defaultOpen: true },
+  { q: "E se o fornecedor não souber usar?", a: "Mesmo quem não tem muita prática consegue. É só abrir o link e digitar o preço." },
+  { q: "Como evitar erro no preço do produto?", a: "Você pode usar código de barras (EAN) e descrição para garantir que é o item certo." },
+  { q: "Funciona no meu tipo de negócio?", a: "Sim. Supermercados, pet shops, farmácias e qualquer empresa que compra de fornecedores pode usar." },
+  { q: "Meus dados ficam seguros?", a: "Sim. Cada empresa vê apenas seus dados. Tudo protegido e organizado." },
+  { q: "Preciso cadastrar meus fornecedores?", a: "Sim, mas é rápido. Depois disso você nunca mais precisa pedir preço manualmente." },
+  { q: "Posso cancelar quando quiser?", a: "Sim. Sem fidelidade. Cancele a qualquer momento." },
+  { q: "Quanto custa?", a: "Você pode começar grátis. O plano completo custa R$97/mês — só vale a pena se te fizer economizar." },
+  { q: "Quanto tempo leva para começar?", a: "Menos de 2 minutos. Você já pode enviar a primeira cotação no mesmo dia." },
 ];
 
 /* ── component ── */
@@ -382,13 +388,14 @@ export default function LandingPage() {
       {/* ── FAQ ── */}
       <section ref={faqSection.ref} className="py-24 px-5 border-t border-white/5">
         <div className={`max-w-2xl mx-auto ${anim(faqSection.visible)}`}>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-10">
-            Perguntas frequentes
+          <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-3">
+            Ainda está em dúvida? Veja isso:
           </h2>
-          <Accordion type="single" collapsible className="space-y-2">
+          <p className="text-slate-400 text-center text-sm mb-10">Respostas rápidas para suas principais dúvidas</p>
+          <Accordion type="multiple" defaultValue={["faq-0", "faq-1", "faq-3"]} className="space-y-2">
             {faqItems.map((item, i) => (
-              <AccordionItem key={i} value={`faq-${i}`} className="border border-white/5 border-b border-b-white/10 rounded-xl px-5 bg-slate-900">
-                <AccordionTrigger className="text-base text-slate-200 font-medium hover:no-underline py-5">
+              <AccordionItem key={i} value={`faq-${i}`} className="border-b border-white/10 rounded-none px-4 last:border-b-0">
+                <AccordionTrigger className="text-base text-white font-medium hover:no-underline py-5">
                   {item.q}
                 </AccordionTrigger>
                 <AccordionContent className="text-sm text-slate-400 leading-relaxed pb-5">
