@@ -405,7 +405,10 @@ export default function LandingPage() {
           >
             Começar a economizar agora <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
-          <p className="text-xs text-slate-500 mt-6">
+          <p className="text-sm text-slate-400 mt-4">
+            Leva menos de 2 minutos para começar
+          </p>
+          <p className="text-xs text-slate-500 mt-4">
             Já usado por compradores de supermercados, pet shops, farmácias e muito mais.
           </p>
         </div>
