@@ -408,6 +408,9 @@ export default function LandingPage() {
           <p className="text-sm text-slate-400 mt-4">
             Leva menos de 2 minutos para começar
           </p>
+          <p className="text-teal-400 font-semibold text-sm mt-3">
+            🔒 Risco zero — Teste grátis por 30 dias. Sem compromisso.
+          </p>
           <p className="text-xs text-slate-500 mt-4">
             Já usado por compradores de supermercados, pet shops, farmácias e muito mais.
           </p>
