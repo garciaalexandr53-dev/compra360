@@ -115,9 +115,6 @@ const TabelaCotacao = ({
         <table className="w-full text-sm border-collapse">
           <thead className="sticky top-0 z-10">
             <tr className="bg-muted">
-              <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-8">
-                <Trash2 className="h-3 w-3 mx-auto text-muted-foreground/50" />
-              </th>
               <th className="px-2 py-2 text-left text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border whitespace-nowrap sticky left-0 bg-muted z-20">
                 Produto
               </th>
