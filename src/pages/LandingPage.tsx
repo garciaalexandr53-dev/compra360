@@ -386,7 +386,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── FAQ ── */}
-      <section ref={faqSection.ref} className="py-24 px-5 border-t border-white/5">
+      <section ref={faqSection.ref} className="pt-24 pb-10 px-5 border-t border-white/5">
         <div className={`max-w-2xl mx-auto ${anim(faqSection.visible)}`}>
           <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-3">
             Ainda está em dúvida? Veja isso:
