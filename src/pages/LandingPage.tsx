@@ -15,7 +15,6 @@ import {
   Star,
   Check,
   ArrowRight,
-  MessageCircle,
   ChevronRight,
   CheckCircle2,
 } from "lucide-react";
