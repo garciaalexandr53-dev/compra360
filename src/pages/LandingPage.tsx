@@ -234,8 +234,11 @@ export default function LandingPage() {
                 className={`bg-slate-900 border border-white/5 rounded-2xl p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-200 ${anim(stepsSection.visible)}`}
                 style={{ transitionDelay: `${i * 120}ms` }}
               >
-                <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center mb-4">
-                  <s.icon className="h-5 w-5 text-teal-400" />
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-3xl font-black text-teal-400">{i + 1}</span>
+                  <div className="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-500/30 flex items-center justify-center">
+                    <s.icon className="h-5 w-5 text-teal-300" />
+                  </div>
                 </div>
                 <h3 className="font-bold text-white mb-1.5">{s.title}</h3>
                 <p className="text-sm text-slate-400 leading-relaxed">{s.desc}</p>
