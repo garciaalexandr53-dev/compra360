@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Trash2, Phone, Mail } from "lucide-react";
 import { formatBRL, formatNumber } from "@/lib/format";
@@ -81,11 +82,7 @@ const TabelaCotacao = ({
     precos.some((p) => p.fornecedor_id === fId && p.preco !== null && p.preco > 0);
 
   const handleDeleteClick = (cpId: string, nome: string) => {
-    if (isReviewMode) {
-      setDeleteConfirm({ cpId, nome });
-    } else {
-      onDeleteItem(cpId);
-    }
+    setDeleteConfirm({ cpId, nome });
   };
 
   return (
@@ -118,9 +115,6 @@ const TabelaCotacao = ({
         <table className="w-full text-sm border-collapse">
           <thead className="sticky top-0 z-10">
             <tr className="bg-muted">
-              <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-8">
-                <Trash2 className="h-3 w-3 mx-auto text-muted-foreground/50" />
-              </th>
               <th className="px-2 py-2 text-left text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border whitespace-nowrap sticky left-0 bg-muted z-20">
                 Produto
               </th>
@@ -173,7 +167,7 @@ const TabelaCotacao = ({
           </thead>
           <tbody>
             {filteredItems.length === 0 ? (
-              <tr><td colSpan={fornecedores.length + 6} className="text-center py-10 text-muted-foreground">
+              <tr><td colSpan={fornecedores.length + 5} className="text-center py-10 text-muted-foreground">
                 {filterAnomalies ? "Nenhum item com anomalia de preço detectada." : cotacaoProdutosCount === 0 ? (
                   isReviewMode ? (
                     <div className="py-16 flex flex-col items-center gap-3">
@@ -195,21 +189,23 @@ const TabelaCotacao = ({
                   className="hover:bg-muted/30 transition-colors group"
                   style={isReviewMode ? { animation: `fadeInUp 0.3s ease-out ${rowIndex * 0.04}s both` } : undefined}
                 >
-                  <td className="px-1 py-1.5 border-b border-border/50 text-center">
-                    <button
-                      onClick={() => handleDeleteClick(cp.id, cp.produto?.nome || "produto")}
-                      className={`${isReviewMode ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive min-h-[44px] min-w-[44px] flex items-center justify-center`}
-                      title="Remover produto"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </td>
                   <td className="px-2 py-1.5 border-b border-border/50 font-medium text-foreground sticky left-0 bg-card z-10">
-                    <Input
-                      className="h-8 text-xs font-medium border-transparent hover:border-input focus:border-input bg-transparent w-full min-w-[200px] rounded-none shadow-none ring-0 focus-visible:ring-1 placeholder:text-muted-foreground"
-                      defaultValue={cp.produto?.nome || ""}
-                      onBlur={(e) => onFieldBlur(cp.id, "nome", e.target.value, cp.produto?.nome || "")}
-                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="h-8 text-xs font-medium text-left w-full min-w-[200px] px-2 rounded hover:bg-muted/50 transition-colors truncate cursor-pointer">
+                          {cp.produto?.nome || "Produto"}
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-48">
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => handleDeleteClick(cp.id, cp.produto?.nome || "produto")}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Excluir item
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                   <td className="px-1 py-1.5 border-b border-border/50 text-center">
                     <Input

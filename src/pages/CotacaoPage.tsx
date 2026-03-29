@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -269,8 +269,22 @@ const CotacaoPage = () => {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] }); queryClient.invalidateQueries({ queryKey: ["produtos"] }); },
   });
 
+  const lastDeletedRef = useRef<{ cpId: string; produto_id: string; cotacao_id: string; quantidade: number | null; precos: { cotacao_produto_id: string; fornecedor_id: string; preco: number | null }[] } | null>(null);
+
   const deleteCpMutation = useMutation({
     mutationFn: async (cpId: string) => {
+      // Save data for undo
+      const cp = cotacaoProdutos?.find((c: any) => c.id === cpId);
+      const cpPrecos = precos?.filter((p: any) => p.cotacao_produto_id === cpId) || [];
+      if (cp) {
+        lastDeletedRef.current = {
+          cpId: cp.id,
+          produto_id: cp.produto_id,
+          cotacao_id: cp.cotacao_id,
+          quantidade: cp.quantidade,
+          precos: cpPrecos.map((p: any) => ({ cotacao_produto_id: p.cotacao_produto_id, fornecedor_id: p.fornecedor_id, preco: p.preco })),
+        };
+      }
       await supabase.from("precos").delete().eq("cotacao_produto_id", cpId);
       const { error } = await supabase.from("cotacao_produtos").delete().eq("id", cpId);
       if (error) throw error;
@@ -278,7 +292,32 @@ const CotacaoPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
       queryClient.invalidateQueries({ queryKey: ["precos"] });
-      toast.success("Produto removido da cotação");
+      toast.success("Produto removido da cotação", {
+        action: {
+          label: "Desfazer",
+          onClick: async () => {
+            const saved = lastDeletedRef.current;
+            if (!saved) return;
+            const { error: cpErr } = await supabase.from("cotacao_produtos").insert({
+              id: saved.cpId,
+              produto_id: saved.produto_id,
+              cotacao_id: saved.cotacao_id,
+              quantidade: saved.quantidade,
+            });
+            if (cpErr) { toast.error("Erro ao desfazer"); return; }
+            if (saved.precos.length) {
+              await supabase.from("precos").insert(
+                saved.precos.map((p) => ({ cotacao_produto_id: saved.cpId, fornecedor_id: p.fornecedor_id, preco: p.preco }))
+              );
+            }
+            lastDeletedRef.current = null;
+            queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
+            queryClient.invalidateQueries({ queryKey: ["precos"] });
+            toast.success("Produto restaurado!");
+          },
+        },
+        duration: 8000,
+      });
     },
     onError: (e: any) => toast.error(e.message || "Erro ao remover produto"),
   });
