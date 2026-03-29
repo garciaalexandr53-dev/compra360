@@ -15,7 +15,6 @@ import {
   Star,
   Check,
   ArrowRight,
-  MessageCircle,
   ChevronRight,
   CheckCircle2,
 } from "lucide-react";
@@ -45,17 +44,6 @@ const steps = [
   { icon: Send, title: "Monte e Envie", desc: "Crie sua lista e mande o link via WhatsApp" },
   { icon: Zap, title: "Receba os Preços", desc: "Os fornecedores preenchem sem precisar de conta ou app" },
   { icon: Trophy, title: "Compre Melhor", desc: "O sistema destaca a melhor oferta para você fechar o pedido" },
-];
-
-const chatFaq = [
-  { q: "Meus fornecedores vão aceitar?", a: "Sim. Eles recebem um link pelo WhatsApp, abrem no celular e só digitam o preço. Mais fácil que planilha.", defaultOpen: true },
-  { q: "É difícil de usar?", a: "Não. Você aprende em minutos. Se sabe usar WhatsApp, sabe usar o Compra360.", defaultOpen: true },
-  { q: "Como evita erros?", a: "Cada produto tem descrição exata e código. O fornecedor vê o item correto e você recebe exatamente o preço que pediu." },
-  { q: "Funciona no meu celular?", a: "Sim. Funciona direto no navegador, sem instalar nada. Android, iPhone, computador — qualquer um." },
-  { q: "E se eu não tiver muitos fornecedores?", a: "Com 2 ou 3 já funciona. O sistema mostra quem está mais barato e você economiza mesmo com poucos." },
-  { q: "Quanto tempo leva pra montar uma cotação?", a: "Menos de 5 minutos. Você monta a lista, envia o link e espera os preços chegarem." },
-  { q: "Os fornecedores precisam criar conta?", a: "Não. Eles só abrem o link e preenchem. Sem cadastro, sem senha, sem complicação." },
-  { q: "E se eu já uso planilha?", a: "Melhor ainda. O Compra360 faz tudo que a planilha faz — só que automático, sem erro e no celular." },
 ];
 
 const testimonials = [
@@ -121,18 +109,24 @@ const plans = [
 ];
 
 const faqItems = [
-  { q: "Meus fornecedores vão aceitar?", a: "Sim. Eles recebem um link pelo WhatsApp e só preenchem o preço. É mais simples que planilha.", defaultOpen: true },
-  { q: "Precisa instalar algum aplicativo?", a: "Não. Funciona direto no navegador do celular. Se quiser, pode salvar como app.", defaultOpen: true },
-  { q: "Vou precisar mudar meu jeito de comprar?", a: "Não. Você continua comprando como sempre — só que mais rápido e organizado." },
-  { q: "Isso realmente ajuda a economizar?", a: "Sim. Você vê todos os preços lado a lado e já sabe na hora quem está mais barato.", defaultOpen: true },
+  { q: "Precisa instalar algum aplicativo?", a: "Não. Funciona direto no navegador do celular. Se quiser, pode salvar como app." },
+  { q: "É difícil de usar?", a: "Não. Você aprende em minutos. Se sabe usar WhatsApp, sabe usar o Compra360." },
+  { q: "Funciona no meu celular?", a: "Sim. Funciona direto no navegador, sem instalar nada. Android, iPhone, computador — qualquer um." },
+  { q: "Meus fornecedores vão aceitar?", a: "Sim. Eles recebem um link pelo WhatsApp, abrem no celular e só digitam o preço. Mais fácil que planilha." },
+  { q: "Os fornecedores precisam criar conta?", a: "Não. Eles só abrem o link e preenchem. Sem cadastro, sem senha, sem complicação." },
   { q: "E se o fornecedor não souber usar?", a: "Mesmo quem não tem muita prática consegue. É só abrir o link e digitar o preço." },
-  { q: "Como evitar erro no preço do produto?", a: "Você pode usar código de barras (EAN) e descrição para garantir que é o item certo." },
+  { q: "Quanto tempo leva pra montar uma cotação?", a: "Menos de 5 minutos. Você monta a lista, envia o link e espera os preços chegarem." },
+  { q: "Quanto tempo leva para começar?", a: "Menos de 2 minutos. Você já pode enviar a primeira cotação no mesmo dia." },
+  { q: "Isso realmente ajuda a economizar?", a: "Sim. Você vê todos os preços lado a lado e já sabe na hora quem está mais barato." },
+  { q: "Como evita erros?", a: "Cada produto tem descrição exata e código. O fornecedor vê o item correto e você recebe exatamente o preço que pediu." },
+  { q: "E se eu não tiver muitos fornecedores?", a: "Com 2 ou 3 já funciona. O sistema mostra quem está mais barato e você economiza mesmo com poucos." },
+  { q: "Vou precisar mudar meu jeito de comprar?", a: "Não. Você continua comprando como sempre — só que mais rápido e organizado." },
+  { q: "E se eu já uso planilha?", a: "Melhor ainda. O Compra360 faz tudo que a planilha faz — só que automático, sem erro e no celular." },
   { q: "Funciona no meu tipo de negócio?", a: "Sim. Supermercados, pet shops, farmácias e qualquer empresa que compra de fornecedores pode usar." },
-  { q: "Meus dados ficam seguros?", a: "Sim. Cada empresa vê apenas seus dados. Tudo protegido e organizado." },
   { q: "Preciso cadastrar meus fornecedores?", a: "Sim, mas é rápido. Depois disso você nunca mais precisa pedir preço manualmente." },
+  { q: "Meus dados ficam seguros?", a: "Sim. Cada empresa vê apenas seus dados. Tudo protegido e organizado." },
   { q: "Posso cancelar quando quiser?", a: "Sim. Sem fidelidade. Cancele a qualquer momento." },
   { q: "Quanto custa?", a: "Você pode começar grátis. O plano completo custa R$97/mês — só vale a pena se te fizer economizar." },
-  { q: "Quanto tempo leva para começar?", a: "Menos de 2 minutos. Você já pode enviar a primeira cotação no mesmo dia." },
 ];
 
 /* ── component ── */
@@ -142,13 +136,10 @@ export default function LandingPage() {
 
   const hero = useInView();
   const stepsSection = useInView();
-  const chatSection = useInView();
   const socialSection = useInView();
   const plansSection = useInView();
   const faqSection = useInView();
   const ctaSection = useInView();
-
-  const [openChat, setOpenChat] = useState<number | null>(null);
 
   useEffect(() => {
     if (user) navigate("/dashboard", { replace: true });
@@ -241,7 +232,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── 3 PASSOS ── */}
-      <section ref={stepsSection.ref} className="py-24 px-5 border-t border-white/5">
+      <section ref={stepsSection.ref} className="py-12 px-5 border-t border-white/5">
         <div className="max-w-6xl mx-auto">
           <h2 className={`text-2xl sm:text-3xl font-bold text-white text-center mb-12 ${anim(stepsSection.visible)}`}>
             Economize em 3 passos simples
@@ -267,61 +258,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── CHAT CONCIERGE ── */}
-      <section ref={chatSection.ref} className="py-24 px-5 border-t border-white/5">
-        <div className="max-w-2xl mx-auto">
-          <h2 className={`text-2xl sm:text-3xl font-bold text-white text-center mb-3 ${anim(chatSection.visible)}`}>
-            Dúvidas rápidas antes de começar
-          </h2>
-          <p className={`text-slate-400 text-center mb-10 ${anim(chatSection.visible)}`} style={{ transitionDelay: "100ms" }}>
-            Respostas rápidas, direto ao ponto:
-          </p>
-          <div className={`bg-slate-900 border border-white/5 rounded-2xl p-4 space-y-2 ${anim(chatSection.visible)}`} style={{ transitionDelay: "200ms" }}>
-            {chatFaq.map((item, i) => {
-              const isOpen = openChat === i || (openChat === null && item.defaultOpen);
-              return (
-                <div key={i}>
-                  <button
-                    onClick={() => setOpenChat(openChat === i ? -1 : i)}
-                    className={`flex items-center gap-3 text-left w-full group py-4 px-5 rounded-xl transition-all duration-200 ${
-                      isOpen ? "border-2 border-teal-500/40 bg-white/5" : "border border-white/10 hover:bg-white/5"
-                    }`}
-                  >
-                    <MessageCircle className="h-5 w-5 text-teal-400 shrink-0" />
-                    <span className="text-base text-teal-300 font-medium group-hover:text-teal-200 transition-colors">
-                      {item.q}
-                    </span>
-                    <ArrowRight className={`h-4 w-4 text-slate-500 ml-auto shrink-0 transition-transform duration-300 ${isOpen ? "rotate-90" : ""}`} />
-                  </button>
-                  <div
-                    className={`overflow-hidden transition-all duration-300 ease-out ${
-                      isOpen ? "max-h-40 opacity-100 mt-2" : "max-h-0 opacity-0"
-                    }`}
-                  >
-                    <div className="ml-6 bg-slate-800/50 rounded-xl px-4 py-3 text-sm text-slate-300 leading-relaxed">
-                      {item.a}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* CTA final da seção */}
-          <div className={`text-center mt-10 ${anim(chatSection.visible)}`} style={{ transitionDelay: "400ms" }}>
-            <p className="text-slate-400 text-sm mb-4">Ainda com dúvida? Comece grátis e teste na prática.</p>
-            <button
-              onClick={goLogin}
-              className="inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold px-8 py-3 rounded-full transition-colors"
-            >
-              Começar grátis agora <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </section>
 
       {/* ── PROVA SOCIAL ── */}
-      <section ref={socialSection.ref} className="py-24 px-5 border-t border-white/5">
+      <section ref={socialSection.ref} className="py-12 px-5 border-t border-white/5">
         <div className="max-w-6xl mx-auto">
           <h2 className={`text-2xl sm:text-3xl font-bold text-white text-center mb-12 ${anim(socialSection.visible)}`}>
             O que dizem quem já usa
@@ -355,7 +294,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── PLANOS ── */}
-      <section ref={plansSection.ref} className="py-24 px-5 border-t border-white/5">
+      <section ref={plansSection.ref} className="py-12 px-5 border-t border-white/5">
         <div className="max-w-6xl mx-auto">
           <h2 className={`text-2xl sm:text-3xl font-bold text-white text-center mb-3 ${anim(plansSection.visible)}`}>
             Planos para todo tipo de negócio
@@ -411,12 +350,12 @@ export default function LandingPage() {
       </section>
 
       {/* ── FAQ ── */}
-      <section ref={faqSection.ref} className="pt-24 pb-10 px-5 border-t border-white/5">
+      <section ref={faqSection.ref} className="py-12 px-5 border-t border-white/5">
         <div className={`max-w-2xl mx-auto ${anim(faqSection.visible)}`}>
           <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-3">
-            Ainda está em dúvida? Veja isso:
+            Perguntas frequentes
           </h2>
-          <p className="text-slate-400 text-center text-sm mb-10">Respostas rápidas para suas principais dúvidas</p>
+          <p className="text-slate-400 text-center text-sm mb-10">Tudo que você precisa saber antes de começar</p>
           <Accordion type="single" collapsible defaultValue="faq-0" className="space-y-2">
             {faqItems.map((item, i) => (
               <AccordionItem key={i} value={`faq-${i}`} className="border-b border-white/10 rounded-none px-4 last:border-b-0">
@@ -433,7 +372,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA FINAL ── */}
-      <section ref={ctaSection.ref} className="py-24 px-5 border-t border-white/5">
+      <section ref={ctaSection.ref} className="py-12 px-5 border-t border-white/5">
         <div className={`max-w-2xl mx-auto text-center ${anim(ctaSection.visible)}`}>
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
             Comece a economizar hoje
