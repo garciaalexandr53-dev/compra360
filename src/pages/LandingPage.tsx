@@ -94,7 +94,7 @@ const plans = [
     ],
     cta: "Começar 30 dias grátis",
     ctaVariant: "default" as const,
-    note: "Se não gerar economia, não faz sentido usar.",
+    note: "🔒 Se não gerar economia, não faz sentido usar. Cancele quando quiser.",
   },
   {
     name: "Business",
