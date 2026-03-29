@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Trash2, Phone, Mail } from "lucide-react";
 import { formatBRL, formatNumber } from "@/lib/format";
@@ -81,11 +82,7 @@ const TabelaCotacao = ({
     precos.some((p) => p.fornecedor_id === fId && p.preco !== null && p.preco > 0);
 
   const handleDeleteClick = (cpId: string, nome: string) => {
-    if (isReviewMode) {
-      setDeleteConfirm({ cpId, nome });
-    } else {
-      onDeleteItem(cpId);
-    }
+    setDeleteConfirm({ cpId, nome });
   };
 
   return (
