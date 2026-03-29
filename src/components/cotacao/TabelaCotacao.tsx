@@ -189,21 +189,23 @@ const TabelaCotacao = ({
                   className="hover:bg-muted/30 transition-colors group"
                   style={isReviewMode ? { animation: `fadeInUp 0.3s ease-out ${rowIndex * 0.04}s both` } : undefined}
                 >
-                  <td className="px-1 py-1.5 border-b border-border/50 text-center">
-                    <button
-                      onClick={() => handleDeleteClick(cp.id, cp.produto?.nome || "produto")}
-                      className={`${isReviewMode ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive min-h-[44px] min-w-[44px] flex items-center justify-center`}
-                      title="Remover produto"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </td>
                   <td className="px-2 py-1.5 border-b border-border/50 font-medium text-foreground sticky left-0 bg-card z-10">
-                    <Input
-                      className="h-8 text-xs font-medium border-transparent hover:border-input focus:border-input bg-transparent w-full min-w-[200px] rounded-none shadow-none ring-0 focus-visible:ring-1 placeholder:text-muted-foreground"
-                      defaultValue={cp.produto?.nome || ""}
-                      onBlur={(e) => onFieldBlur(cp.id, "nome", e.target.value, cp.produto?.nome || "")}
-                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="h-8 text-xs font-medium text-left w-full min-w-[200px] px-2 rounded hover:bg-muted/50 transition-colors truncate cursor-pointer">
+                          {cp.produto?.nome || "Produto"}
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-48">
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => handleDeleteClick(cp.id, cp.produto?.nome || "produto")}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Excluir item
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                   <td className="px-1 py-1.5 border-b border-border/50 text-center">
                     <Input
