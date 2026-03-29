@@ -109,24 +109,13 @@ const plans = [
 ];
 
 const faqItems = [
-  { q: "Precisa instalar algum aplicativo?", a: "Não. Funciona direto no navegador do celular. Se quiser, pode salvar como app." },
-  { q: "É difícil de usar?", a: "Não. Você aprende em minutos. Se sabe usar WhatsApp, sabe usar o Compra360." },
-  { q: "Funciona no meu celular?", a: "Sim. Funciona direto no navegador, sem instalar nada. Android, iPhone, computador — qualquer um." },
-  { q: "Meus fornecedores vão aceitar?", a: "Sim. Eles recebem um link pelo WhatsApp, abrem no celular e só digitam o preço. Mais fácil que planilha." },
-  { q: "Os fornecedores precisam criar conta?", a: "Não. Eles só abrem o link e preenchem. Sem cadastro, sem senha, sem complicação." },
-  { q: "E se o fornecedor não souber usar?", a: "Mesmo quem não tem muita prática consegue. É só abrir o link e digitar o preço." },
-  { q: "Quanto tempo leva pra montar uma cotação?", a: "Menos de 5 minutos. Você monta a lista, envia o link e espera os preços chegarem." },
-  { q: "Quanto tempo leva para começar?", a: "Menos de 2 minutos. Você já pode enviar a primeira cotação no mesmo dia." },
-  { q: "Isso realmente ajuda a economizar?", a: "Sim. Você vê todos os preços lado a lado e já sabe na hora quem está mais barato." },
-  { q: "Como evita erros?", a: "Cada produto tem descrição exata e código. O fornecedor vê o item correto e você recebe exatamente o preço que pediu." },
-  { q: "E se eu não tiver muitos fornecedores?", a: "Com 2 ou 3 já funciona. O sistema mostra quem está mais barato e você economiza mesmo com poucos." },
-  { q: "Vou precisar mudar meu jeito de comprar?", a: "Não. Você continua comprando como sempre — só que mais rápido e organizado." },
-  { q: "E se eu já uso planilha?", a: "Melhor ainda. O Compra360 faz tudo que a planilha faz — só que automático, sem erro e no celular." },
-  { q: "Funciona no meu tipo de negócio?", a: "Sim. Supermercados, pet shops, farmácias e qualquer empresa que compra de fornecedores pode usar." },
-  { q: "Preciso cadastrar meus fornecedores?", a: "Sim, mas é rápido. Depois disso você nunca mais precisa pedir preço manualmente." },
-  { q: "Meus dados ficam seguros?", a: "Sim. Cada empresa vê apenas seus dados. Tudo protegido e organizado." },
-  { q: "Posso cancelar quando quiser?", a: "Sim. Sem fidelidade. Cancele a qualquer momento." },
-  { q: "Quanto custa?", a: "Você pode começar grátis. O plano completo custa R$97/mês — só vale a pena se te fizer economizar." },
+  { q: "Precisa instalar algum aplicativo?", a: "Não. Funciona direto no navegador do celular. Se quiser, pode salvar como app na tela inicial." },
+  { q: "Os fornecedores precisam criar conta?", a: "Não. Eles recebem um link pelo WhatsApp e preenchem os preços sem instalar nada." },
+  { q: "É difícil de usar?", a: "Não. Se você sabe usar WhatsApp, sabe usar o Compra360. Você aprende em minutos." },
+  { q: "Funciona para meu tipo de negócio?", a: "Sim. Qualquer empresa que compra de fornecedores — supermercados, pet shops, farmácias, restaurantes e mais." },
+  { q: "Isso realmente ajuda a economizar?", a: "Sim. Com os preços lado a lado você compra sempre do mais barato, sem esforço e sem achismo." },
+  { q: "Meus dados ficam seguros?", a: "Sim. Suas cotações e preços são privados e criptografados. Nenhum fornecedor vê o preço do concorrente." },
+  { q: "Posso cancelar quando quiser?", a: "Sim. Sem fidelidade, sem multa. Cancele quando quiser." },
 ];
 
 /* ── component ── */
