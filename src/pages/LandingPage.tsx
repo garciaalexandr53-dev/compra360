@@ -191,8 +191,9 @@ export default function LandingPage() {
           </div>
 
           {/* Glass Card */}
-          <div className={`mt-12 max-w-sm ${anim(hero.visible)}`} style={{ transitionDelay: "400ms" }}>
-            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5">
+          <div className={`mt-12 max-w-sm relative ${anim(hero.visible)}`} style={{ transitionDelay: "400ms" }}>
+            <div className="absolute -inset-4 bg-gradient-to-b from-emerald-500/10 to-transparent rounded-3xl blur-xl pointer-events-none" />
+            <div className="relative bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5">
               <p className="text-xs text-slate-400 font-medium mb-3">Detergente Ypê 500ml</p>
               <div className="space-y-2">
                 <div className="flex items-center justify-between py-1.5 px-3 rounded-lg">
