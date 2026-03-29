@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,14 +6,45 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { Download } from "lucide-react";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+      return;
+    }
+
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('appinstalled', () => setIsInstalled(true));
+
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setIsInstalled(true);
+    }
+    setDeferredPrompt(null);
+  };
 
   if (user) {
     navigate("/dashboard", { replace: true });
@@ -76,6 +107,7 @@ const LoginPage = () => {
               {loading ? "Aguarde..." : isSignUp ? "Criar Conta" : "Entrar"}
             </Button>
           </form>
+
           <div className="mt-4 text-center">
             <button
               type="button"
@@ -85,6 +117,24 @@ const LoginPage = () => {
               {isSignUp ? "Já tem conta? Entre aqui" : "Não tem conta? Cadastre-se"}
             </button>
           </div>
+
+          {!isInstalled && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2 text-sm"
+                onClick={handleInstall}
+                disabled={!deferredPrompt}
+              >
+                <Download className="w-4 h-4" />
+                {deferredPrompt ? "Instalar aplicativo" : "Abra no navegador para instalar"}
+              </Button>
+              <p className="text-[11px] text-muted-foreground text-center mt-1.5">
+                Instale para acesso rápido na tela inicial
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
