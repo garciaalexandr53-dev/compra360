@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -275,7 +275,7 @@ const CotacaoPage = () => {
     mutationFn: async (cpId: string) => {
       // Save data for undo
       const cp = cotacaoProdutos?.find((c: any) => c.id === cpId);
-      const cpPrecos = allPrecos?.filter((p: any) => p.cotacao_produto_id === cpId) || [];
+      const cpPrecos = precos?.filter((p: any) => p.cotacao_produto_id === cpId) || [];
       if (cp) {
         lastDeletedRef.current = {
           cpId: cp.id,
