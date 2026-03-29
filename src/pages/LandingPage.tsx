@@ -152,7 +152,7 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-5 h-14">
           <div className="flex items-center gap-2">
-            <img src="/logo-compra360-128.png" alt="Compra360" width="28" height="28" className="w-7 h-7 rounded-lg" />
+            <img src="/compra360-icon.png" alt="Compra360" width="28" height="28" className="w-7 h-7 rounded-lg" />
             <span className="font-bold text-white text-lg">Compra360</span>
           </div>
           <div className="flex items-center gap-2">
@@ -414,7 +414,7 @@ export default function LandingPage() {
       <footer className="border-t border-white/5 py-10 px-5">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src="/logo-compra360-128.png" alt="Compra360" width="24" height="24" className="w-6 h-6 rounded-md" />
+            <img src="/compra360-icon.png" alt="Compra360" width="24" height="24" className="w-6 h-6 rounded-md" />
             <span className="font-semibold text-white text-sm">Compra360</span>
           </div>
           <div className="flex items-center gap-4 text-sm text-slate-500">
