@@ -1,8 +1,7 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Trash2, Phone, Mail } from "lucide-react";
 import { formatBRL, formatNumber } from "@/lib/format";
@@ -77,6 +76,7 @@ const TabelaCotacao = ({
   const toastedRef = useRef<Set<string>>(new Set());
   const [qtyDrafts, setQtyDrafts] = useState<Record<string, string>>({});
   const [deleteConfirm, setDeleteConfirm] = useState<{ cpId: string; nome: string } | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const supplierHasResponded = (fId: string) =>
     precos.some((p) => p.fornecedor_id === fId && p.preco !== null && p.preco > 0);
@@ -84,6 +84,20 @@ const TabelaCotacao = ({
   const handleDeleteClick = (cpId: string, nome: string) => {
     setDeleteConfirm({ cpId, nome });
   };
+
+  const handleLongPressStart = useCallback((cpId: string, nome: string) => {
+    longPressTimerRef.current = setTimeout(() => {
+      if (navigator.vibrate) navigator.vibrate(30);
+      handleDeleteClick(cpId, nome);
+    }, 600);
+  }, []);
+
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
 
   return (
     <>
@@ -190,22 +204,18 @@ const TabelaCotacao = ({
                   style={isReviewMode ? { animation: `fadeInUp 0.3s ease-out ${rowIndex * 0.04}s both` } : undefined}
                 >
                   <td className="px-2 py-1.5 border-b border-border/50 font-medium text-foreground sticky left-0 bg-card z-10">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className="h-8 text-xs font-medium text-left w-full min-w-[200px] px-2 rounded hover:bg-muted/50 transition-colors truncate cursor-pointer">
-                          {cp.produto?.nome || "Produto"}
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-48">
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => handleDeleteClick(cp.id, cp.produto?.nome || "produto")}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Excluir item
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <button
+                      className="h-auto min-h-[32px] text-xs font-medium text-left w-full min-w-[175px] sm:min-w-[200px] px-2 rounded hover:bg-muted/50 active:bg-muted/70 transition-colors cursor-default select-none whitespace-normal break-words leading-tight py-1"
+                      onTouchStart={() => handleLongPressStart(cp.id, cp.produto?.nome || "produto")}
+                      onTouchEnd={handleLongPressEnd}
+                      onTouchCancel={handleLongPressEnd}
+                      onMouseDown={() => handleLongPressStart(cp.id, cp.produto?.nome || "produto")}
+                      onMouseUp={handleLongPressEnd}
+                      onMouseLeave={handleLongPressEnd}
+                      onContextMenu={(e) => e.preventDefault()}
+                    >
+                      {cp.produto?.nome || "Produto"}
+                    </button>
                   </td>
                   <td className="px-1 py-1.5 border-b border-border/50 text-center">
                     <Input
