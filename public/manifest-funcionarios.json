@@ -9,12 +9,7 @@
   "theme_color": "#16a34a",
   "icons": [
     {
-      "src": "/logo-compra360-128.png",
-      "sizes": "128x128",
-      "type": "image/png"
-    },
-    {
-      "src": "/logo-compra360.png",
+      "src": "/compra360-icon.png",
       "sizes": "512x512",
       "type": "image/png"
     }
