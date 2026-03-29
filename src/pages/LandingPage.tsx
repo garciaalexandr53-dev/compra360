@@ -359,7 +359,7 @@ export default function LandingPage() {
           <Accordion type="single" collapsible defaultValue="faq-0" className="space-y-2">
             {faqItems.map((item, i) => (
               <AccordionItem key={i} value={`faq-${i}`} className="border-b border-white/10 rounded-none px-4 last:border-b-0">
-                <AccordionTrigger className="text-base text-white font-medium hover:no-underline py-5">
+                <AccordionTrigger className="text-base text-white font-medium hover:no-underline py-5 text-left">
                   {item.q}
                 </AccordionTrigger>
                 <AccordionContent className="text-sm text-slate-400 leading-relaxed pb-5">
