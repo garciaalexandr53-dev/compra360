@@ -174,12 +174,17 @@ export default function LandingPage() {
               Usado por compradores de supermercados, pet shops, farmácias e muito mais
             </p>
             <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-6 ${anim(hero.visible)}`} style={{ transitionDelay: "100ms" }}>
-              Você está perdendo tempo e dinheiro todos os dias com cotações lentas
+              Você está perdendo tempo e dinheiro todos os dias com cotações lentas e demoradas
               <span className="text-slate-500"> — e nem percebe.</span>
             </h1>
-            <p className={`text-lg text-slate-400 leading-relaxed mb-8 max-w-2xl ${anim(hero.visible)}`} style={{ transitionDelay: "200ms" }}>
+            <p className={`text-lg text-slate-400 leading-relaxed mb-4 max-w-2xl ${anim(hero.visible)}`} style={{ transitionDelay: "200ms" }}>
               O Compra360 reúne seus fornecedores em uma única tela. Compare preços em tempo real e feche o melhor pedido em minutos, direto do celular.
             </p>
+            <ul className={`space-y-2 mb-8 ${anim(hero.visible)}`} style={{ transitionDelay: "250ms" }}>
+              <li className="flex items-center gap-2 text-slate-300 text-sm sm:text-base"><CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" /> Compare preços em segundos</li>
+              <li className="flex items-center gap-2 text-slate-300 text-sm sm:text-base"><CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" /> Descubra o fornecedor mais barato</li>
+              <li className="flex items-center gap-2 text-slate-300 text-sm sm:text-base"><CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" /> Evite pagar mais caro sem perceber</li>
+            </ul>
             <Button
               size="lg"
               className={`bg-emerald-500 hover:bg-emerald-400 text-white text-base px-8 h-12 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:scale-105 transition-all duration-200 ${anim(hero.visible)}`}
