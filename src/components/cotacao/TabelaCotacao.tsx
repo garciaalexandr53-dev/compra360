@@ -206,7 +206,7 @@ const TabelaCotacao = ({
                   </td>
                   <td className="px-2 py-1.5 border-b border-border/50 font-medium text-foreground sticky left-0 bg-card z-10">
                     <Input
-                      className="h-8 text-xs font-medium border-transparent hover:border-input focus:border-input bg-transparent w-full min-w-[100px] rounded-none shadow-none ring-0 focus-visible:ring-1 placeholder:text-muted-foreground"
+                      className="h-8 text-xs font-medium border-transparent hover:border-input focus:border-input bg-transparent w-full min-w-[200px] rounded-none shadow-none ring-0 focus-visible:ring-1 placeholder:text-muted-foreground"
                       defaultValue={cp.produto?.nome || ""}
                       onBlur={(e) => onFieldBlur(cp.id, "nome", e.target.value, cp.produto?.nome || "")}
                     />
