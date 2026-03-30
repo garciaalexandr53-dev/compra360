@@ -474,7 +474,7 @@ const AnalisePage = () => {
           </div>
           {economiaDisponivel > 0 && !autoResult && (
             <div className="text-right">
-              <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">💸 Economia disponível</div>
+              <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">💸 Economia vs pior preço</div>
               <div className="text-lg font-extrabold font-mono text-green-600 dark:text-green-400 mt-1">
                 {formatBRL(economiaDisponivel)}
               </div>
@@ -483,23 +483,25 @@ const AnalisePage = () => {
         </div>
       </div>
 
-      {/* 2. BLOCO IA / 3. FEEDBACK */}
-      {hasPrecos && !autoResult && economiaDisponivel > 0 && (
+      {/* 2. BLOCO CRIAR PEDIDOS */}
+      {hasPrecos && !autoResult && (
         <div className="bg-card border border-primary/20 rounded-xl p-5 shadow-sm animate-fade-in">
           <div className="flex items-center gap-3 mb-3">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
               <Zap className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <div className="text-sm font-bold text-foreground">🤖 Economia automática disponível</div>
+              <div className="text-sm font-bold text-foreground">🤖 Distribuição inteligente</div>
               <div className="text-xs text-muted-foreground">
-                Você pode economizar {formatBRL(economiaDisponivel)} nesta compra
+                {hasMinimumIssues
+                  ? "Distribui itens pelos melhores preços respeitando pedidos mínimos"
+                  : "Gerar pedidos com os melhores preços por fornecedor"}
               </div>
             </div>
           </div>
           <Button onClick={runAutoDistribution} disabled={autoLoading} className="w-full" size="lg">
             {autoLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
-            {autoLoading ? "Aplicando..." : "Aplicar economia automática"}
+            {autoLoading ? "Otimizando..." : "Gerar pedidos otimizados"}
           </Button>
         </div>
       )}
