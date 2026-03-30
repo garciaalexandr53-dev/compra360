@@ -249,7 +249,7 @@ export default function LandingPage() {
 
 
       {/* ── PROVA SOCIAL ── */}
-      <section ref={socialSection.ref} className="py-12 px-5 border-t border-white/5">
+      <section ref={socialSection.ref} className="py-10 px-5 border-t border-white/5">
         <div className="max-w-6xl mx-auto">
           <h2 className={`text-2xl sm:text-3xl font-bold text-white text-center mb-12 ${anim(socialSection.visible)}`}>
             O que dizem quem já usa
@@ -323,10 +323,10 @@ export default function LandingPage() {
                 )}
                 <Button
                   variant={plan.ctaVariant}
-                  className={`w-full rounded-xl ${
+                  className={`w-full rounded-lg py-3 px-6 font-medium ${
                     plan.highlight
                       ? "bg-emerald-500 hover:bg-emerald-400 text-white hover:scale-105 transition-all"
-                      : "border-white/10 text-slate-300 hover:bg-white/5"
+                      : "border border-white/40 text-white hover:bg-white/10 transition-colors"
                   }`}
                   onClick={goLogin}
                 >
