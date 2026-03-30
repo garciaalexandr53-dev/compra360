@@ -460,6 +460,15 @@ const CotacaoPage = () => {
           if (priceInserts.length) await supabase.from("precos").insert(priceInserts);
           toast.success("Nova cotação com preços importados!");
         } else { toast.success("Nova cotação iniciada — preços limpos!"); }
+      } else if (novaCotacaoOpt === "zerar" && newCot) {
+        // Auto-transfer items that had no price from any supplier
+        const semPrecoItems = cotacaoProdutos.filter((cp) => hasNoPrice(cp.id));
+        if (semPrecoItems.length > 0) {
+          await supabase.from("cotacao_produtos").insert(semPrecoItems.map((cp) => ({ cotacao_id: newCot.id, produto_id: cp.produto_id, quantidade: cp.quantidade })));
+          toast.success(`Cotação zerada — ${semPrecoItems.length} item(ns) sem preço transferido(s) automaticamente!`);
+        } else {
+          toast.success("Cotação reiniciada — lista zerada!");
+        }
       } else { toast.success("Cotação reiniciada — lista zerada!"); }
       queryClient.invalidateQueries(); setNovaCotacaoOpen(false); setNovaCotacaoOpt(null);
     } catch (e: any) { toast.error(e.message); }
