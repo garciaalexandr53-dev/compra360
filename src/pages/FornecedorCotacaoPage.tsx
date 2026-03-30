@@ -26,6 +26,8 @@ const FornecedorCotacaoPage = () => {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
+  const hasAnyPrice = Object.values(prices).some(v => v.trim().length > 0);
+
   useEffect(() => {
     if (!token) return;
     loadData();
