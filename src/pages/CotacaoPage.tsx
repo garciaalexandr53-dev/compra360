@@ -49,9 +49,7 @@ const CotacaoPage = () => {
   const [localPrices, setLocalPrices] = useState<Record<string, Record<string, string>>>({});
   const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);
   const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "manter_precos" | "zerar" | null>(null);
-  const [legendVisible, setLegendVisible] = useState(() => {
-    try { return localStorage.getItem("cotacao-legend") !== "hidden"; } catch { return false; }
-  });
+  const [legendVisible, setLegendVisible] = useState(false);
   const [filterAnomalies, setFilterAnomalies] = useState(false);
   const [filterSemPreco, setFilterSemPreco] = useState(false);
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
