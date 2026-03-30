@@ -33,20 +33,18 @@ const FornecedorCotacaoPage = () => {
 
   const loadData = async () => {
     try {
-      // Get fornecedor from token using RPC
-      const { data: fId, error: fErr } = await supabase.rpc("get_supplier_id_from_token", { _token: token! });
-      if (fErr || !fId) { setLoading(false); return; }
-      setFornecedorId(fId);
-
-      // Get fornecedor name
-      const { data: fData } = await supabase.from("fornecedores").select("nome").eq("id", fId).single();
-      if (fData) setFornecedorNome(fData.nome);
+      // Get fornecedor info from token using secure RPC (no token exposure)
+      const { data: supplierInfo, error: fErr } = await supabase.rpc("get_supplier_info", { _token: token! });
+      const supplier = supplierInfo?.[0];
+      if (fErr || !supplier) { setLoading(false); return; }
+      setFornecedorId(supplier.id);
+      setFornecedorNome(supplier.nome);
 
       // Get lojas this supplier serves
       const { data: fornecedorLojas } = await supabase
         .from("fornecedor_lojas")
         .select("loja_id")
-        .eq("fornecedor_id", fId);
+        .eq("fornecedor_id", supplier.id);
       const lojaIds = (fornecedorLojas || []).map((fl: any) => fl.loja_id);
 
       // Get active cotação - prefer loja from URL param, then supplier's lojas
@@ -91,7 +89,7 @@ const FornecedorCotacaoPage = () => {
         const { data: existingPrices } = await supabase
           .from("precos")
           .select("cotacao_produto_id, preco")
-          .eq("fornecedor_id", fId)
+          .eq("fornecedor_id", supplier.id)
           .in("cotacao_produto_id", cpIds);
 
         if (existingPrices) {
@@ -126,28 +124,19 @@ const FornecedorCotacaoPage = () => {
   const handleSend = async () => {
     setSending(true);
     try {
-      const upserts = Object.entries(prices)
+      const priceEntries = Object.entries(prices)
         .filter(([, val]) => val.trim())
         .map(([cpId, val]) => ({
           cotacao_produto_id: cpId,
-          fornecedor_id: fornecedorId,
-          preco: parseFloat(val.replace(",", ".").replace(/[^0-9.]/g, "")),
+          preco: parseFloat(val.replace(/\./g, "").replace(",", ".")),
         }));
 
-      for (const u of upserts) {
-        // Check if exists
-        const { data: existing } = await supabase
-          .from("precos")
-          .select("id")
-          .eq("cotacao_produto_id", u.cotacao_produto_id)
-          .eq("fornecedor_id", u.fornecedor_id)
-          .maybeSingle();
+      const { data, error } = await supabase.functions.invoke("submit-precos", {
+        body: { token, prices: priceEntries },
+      });
 
-        if (existing) {
-          await supabase.from("precos").update({ preco: u.preco }).eq("id", existing.id);
-        } else {
-          await supabase.from("precos").insert(u);
-        }
+      if (error || data?.error) {
+        throw new Error(data?.error || error?.message || "Erro ao enviar");
       }
 
       setSent(true);
