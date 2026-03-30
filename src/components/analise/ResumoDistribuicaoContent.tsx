@@ -10,16 +10,9 @@ import { ChevronDown, Sparkles, Loader2, RefreshCw, TrendingUp, TrendingDown, Us
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/hooks/useAuth";
+import { generateScenarios, type Scenario } from "@/lib/scenarios";
 
 type Fornecedor = Tables<"fornecedores">;
-
-interface DistResult {
-  totalAntes: number;
-  totalDepois: number;
-  economia: number;
-  fornecedorPedidos: { fornecedor: Fornecedor; items: { produto: string; embalagem: string; quantidade: number; preco: number; total: number; cpId: string }[]; total: number; minimoOk: boolean }[];
-  semPreco: number;
-}
 
 const ResumoDistribuicaoContent = () => {
   const { lojaAtiva } = useLojaAtiva();
