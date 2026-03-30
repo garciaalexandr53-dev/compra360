@@ -25,6 +25,7 @@ interface PedidoWithDetails {
   fornecedor_id: string;
   total: number;
   created_at: string;
+  loja_id: string | null;
   items: ConferenciaItem[];
 }
 
