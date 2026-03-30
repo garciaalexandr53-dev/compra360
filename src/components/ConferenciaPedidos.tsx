@@ -179,7 +179,7 @@ const ConferenciaPedidos = () => {
     queryFn: async () => {
       const { data: pedidosData, error } = await supabase
         .from("pedidos")
-        .select("id, numero, total, created_at, fornecedor_id, fornecedores(nome)")
+        .select("id, numero, total, created_at, fornecedor_id, loja_id, fornecedores(nome)")
         .eq("status", "enviado")
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -190,6 +190,7 @@ const ConferenciaPedidos = () => {
         fornecedor_id: p.fornecedor_id,
         total: p.total || 0,
         created_at: p.created_at,
+        loja_id: p.loja_id || null,
       }));
     },
   });
