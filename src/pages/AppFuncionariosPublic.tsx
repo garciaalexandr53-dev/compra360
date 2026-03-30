@@ -94,14 +94,11 @@ const AppFuncionariosPublic = () => {
   const { data: lojas = [] } = useQuery({
     queryKey: ["lojas-public", urlLojaId],
     queryFn: async () => {
-      if (urlLojaId) {
-        const { data, error } = await supabase.from("lojas").select("id, nome").eq("id", urlLojaId);
-        if (error) throw error;
-        return data || [];
-      }
-      const { data, error } = await supabase.from("lojas").select("id, nome").order("nome");
+      const { data, error } = await supabase.rpc("get_lojas_public", {
+        _loja_id: urlLojaId || undefined,
+      });
       if (error) throw error;
-      return data || [];
+      return (data || []) as { id: string; nome: string }[];
     },
   });
 
@@ -122,8 +119,8 @@ const AppFuncionariosPublic = () => {
       // If a loja is selected, find products owned by that loja's owner
       let ownerUserId: string | null = null;
       if (selectedLojaId) {
-        const { data: lojaData } = await supabase.from("lojas").select("user_id").eq("id", selectedLojaId).maybeSingle();
-        ownerUserId = lojaData?.user_id || null;
+        const { data: ownerId } = await supabase.rpc("get_loja_owner", { _loja_id: selectedLojaId });
+        ownerUserId = ownerId || null;
       }
 
       let query = supabase

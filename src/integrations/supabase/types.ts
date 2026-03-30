@@ -525,6 +525,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_loja_owner: { Args: { _loja_id: string }; Returns: string }
+      get_lojas_public: {
+        Args: { _loja_id?: string }
+        Returns: {
+          id: string
+          nome: string
+        }[]
+      }
       get_supplier_id_from_token: { Args: { _token: string }; Returns: string }
       get_supplier_info: {
         Args: { _token: string }

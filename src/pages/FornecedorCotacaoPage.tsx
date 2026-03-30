@@ -66,8 +66,8 @@ const FornecedorCotacaoPage = () => {
 
       // Get loja name if linked
       if (cotacao.loja_id) {
-        const { data: lojaData } = await supabase.from("lojas").select("nome").eq("id", cotacao.loja_id).single();
-        if (lojaData) setLojaNome((lojaData as any).nome);
+        const { data: lojaData } = await supabase.rpc("get_lojas_public", { _loja_id: cotacao.loja_id });
+        if (lojaData?.[0]) setLojaNome(lojaData[0].nome);
       }
 
       const { data: cpData } = await supabase
