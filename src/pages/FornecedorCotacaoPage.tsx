@@ -124,28 +124,19 @@ const FornecedorCotacaoPage = () => {
   const handleSend = async () => {
     setSending(true);
     try {
-      const upserts = Object.entries(prices)
+      const priceEntries = Object.entries(prices)
         .filter(([, val]) => val.trim())
         .map(([cpId, val]) => ({
           cotacao_produto_id: cpId,
-          fornecedor_id: fornecedorId,
-          preco: parseFloat(val.replace(",", ".").replace(/[^0-9.]/g, "")),
+          preco: parseFloat(val.replace(/\./g, "").replace(",", ".")),
         }));
 
-      for (const u of upserts) {
-        // Check if exists
-        const { data: existing } = await supabase
-          .from("precos")
-          .select("id")
-          .eq("cotacao_produto_id", u.cotacao_produto_id)
-          .eq("fornecedor_id", u.fornecedor_id)
-          .maybeSingle();
+      const { data, error } = await supabase.functions.invoke("submit-precos", {
+        body: { token, prices: priceEntries },
+      });
 
-        if (existing) {
-          await supabase.from("precos").update({ preco: u.preco }).eq("id", existing.id);
-        } else {
-          await supabase.from("precos").insert(u);
-        }
+      if (error || data?.error) {
+        throw new Error(data?.error || error?.message || "Erro ao enviar");
       }
 
       setSent(true);
