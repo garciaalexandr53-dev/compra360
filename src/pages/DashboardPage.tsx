@@ -52,19 +52,7 @@ const DashboardPage = () => {
   const removeSupplierMutation = useMutation({
     mutationFn: async (fornecedorId: string) => {
       if (!cotacaoAtiva?.id) return;
-      // Remove prices for this supplier in this quote
-      const { data: cps } = await supabase
-        .from("cotacao_produtos")
-        .select("id")
-        .eq("cotacao_id", cotacaoAtiva.id);
-      if (cps && cps.length > 0) {
-        await supabase
-          .from("precos")
-          .delete()
-          .eq("fornecedor_id", fornecedorId)
-          .in("cotacao_produto_id", cps.map(cp => cp.id));
-      }
-      // Remove from cotacao_fornecedores
+      // Only remove from cotacao_fornecedores — prices are preserved for re-addition
       const { error } = await supabase
         .from("cotacao_fornecedores")
         .delete()
@@ -75,6 +63,24 @@ const DashboardPage = () => {
     onSuccess: () => {
       toast.success(`${removeSupplier?.nome} removido da cotação`);
       setRemoveSupplier(null);
+      queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-respondidos"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-precos-count"] });
+      queryClient.invalidateQueries({ queryKey: ["precos"] });
+    },
+  });
+
+  const reAddSupplierMutation = useMutation({
+    mutationFn: async (fornecedorId: string) => {
+      if (!cotacaoAtiva?.id) return;
+      await supabase.from("cotacao_fornecedores").insert({
+        cotacao_id: cotacaoAtiva.id,
+        fornecedor_id: fornecedorId,
+      });
+    },
+    onSuccess: (_, fornecedorId) => {
+      const f = allFornecedores.find(f => f.id === fornecedorId);
+      toast.success(`${f?.nome || "Fornecedor"} re-adicionado à cotação`);
       queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
       queryClient.invalidateQueries({ queryKey: ["dash-respondidos"] });
       queryClient.invalidateQueries({ queryKey: ["dash-precos-count"] });
