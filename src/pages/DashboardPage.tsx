@@ -47,7 +47,40 @@ const DashboardPage = () => {
   const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);
   const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "manter_precos" | "zerar" | null>(null);
   const [novaCotacaoLoading, setNovaCotacaoLoading] = useState(false);
+  const [removeSupplier, setRemoveSupplier] = useState<Fornecedor | null>(null);
 
+  const removeSupplierMutation = useMutation({
+    mutationFn: async (fornecedorId: string) => {
+      if (!cotacaoAtiva?.id) return;
+      // Remove prices for this supplier in this quote
+      const { data: cps } = await supabase
+        .from("cotacao_produtos")
+        .select("id")
+        .eq("cotacao_id", cotacaoAtiva.id);
+      if (cps && cps.length > 0) {
+        await supabase
+          .from("precos")
+          .delete()
+          .eq("fornecedor_id", fornecedorId)
+          .in("cotacao_produto_id", cps.map(cp => cp.id));
+      }
+      // Remove from cotacao_fornecedores
+      const { error } = await supabase
+        .from("cotacao_fornecedores")
+        .delete()
+        .eq("cotacao_id", cotacaoAtiva.id)
+        .eq("fornecedor_id", fornecedorId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(`${removeSupplier?.nome} removido da cotação`);
+      setRemoveSupplier(null);
+      queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-respondidos"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-precos-count"] });
+      queryClient.invalidateQueries({ queryKey: ["precos"] });
+    },
+  });
 
   // Realtime
   useEffect(() => {
