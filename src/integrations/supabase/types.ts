@@ -526,6 +526,13 @@ export type Database = {
     }
     Functions: {
       get_supplier_id_from_token: { Args: { _token: string }; Returns: string }
+      get_supplier_info: {
+        Args: { _token: string }
+        Returns: {
+          id: string
+          nome: string
+        }[]
+      }
       is_buyer: { Args: never; Returns: boolean }
     }
     Enums: {
