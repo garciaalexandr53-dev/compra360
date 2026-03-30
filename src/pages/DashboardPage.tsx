@@ -595,14 +595,22 @@ const DashboardPage = () => {
                       }`}
                     >
                       {responded
-                        ? <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                        ? (semItensSet.has(f.id)
+                          ? <X className="h-4 w-4 text-destructive shrink-0" />
+                          : <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />)
                         : <Clock className="h-4 w-4 text-muted-foreground shrink-0" />}
                       <span className="text-sm font-semibold text-foreground truncate">{f.nome}</span>
-                      <span className="text-xs text-muted-foreground truncate ml-auto mr-1">
-                        {responded
-                          ? `Respondeu · ${priceCount} preço${priceCount !== 1 ? "s" : ""}`
-                          : timeAgo ? `Enviado ${timeAgo}` : "Aguardando"}
-                      </span>
+                      {responded && semItensSet.has(f.id) ? (
+                        <span className="text-xs font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full ml-auto mr-1">
+                          Sem itens
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground truncate ml-auto mr-1">
+                          {responded
+                            ? `Respondeu · ${priceCount} preço${priceCount !== 1 ? "s" : ""}`
+                            : timeAgo ? `Enviado ${timeAgo}` : "Aguardando"}
+                        </span>
+                      )}
                       <button
                         onClick={() => resendWhatsApp(f)}
                         className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
