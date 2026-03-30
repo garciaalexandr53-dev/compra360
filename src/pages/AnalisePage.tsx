@@ -480,16 +480,34 @@ const AnalisePage = () => {
       )}
 
       {autoResult && (
-        <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl p-5 shadow-sm animate-fade-in">
+        <div className={`${autoResult.economia >= 0 ? "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800" : "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800"} border rounded-xl p-5 shadow-sm animate-fade-in`}>
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <div className={`h-10 w-10 rounded-full ${autoResult.economia >= 0 ? "bg-green-100 dark:bg-green-900" : "bg-amber-100 dark:bg-amber-900"} flex items-center justify-center shrink-0`}>
+              <CheckCircle2 className={`h-5 w-5 ${autoResult.economia >= 0 ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"}`} />
             </div>
             <div>
-              <div className="text-sm font-bold text-foreground">✅ Economia aplicada com sucesso</div>
-              <div className="text-xs text-muted-foreground">
-                Você economizou <span className="font-bold text-green-600 dark:text-green-400">{formatBRL(autoResult.economia)}</span> nesta compra
-              </div>
+              {autoResult.economia > 0 ? (
+                <>
+                  <div className="text-sm font-bold text-foreground">✅ Economia aplicada com sucesso</div>
+                  <div className="text-xs text-muted-foreground">
+                    Você economizou <span className="font-bold text-green-600 dark:text-green-400">{formatBRL(autoResult.economia)}</span> nesta compra
+                  </div>
+                </>
+              ) : autoResult.economia === 0 ? (
+                <>
+                  <div className="text-sm font-bold text-foreground">✅ Compra já otimizada</div>
+                  <div className="text-xs text-muted-foreground">
+                    Os pedidos já estão distribuídos pelo menor preço
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-sm font-bold text-foreground">⚠️ Distribuição ajustada</div>
+                  <div className="text-xs text-muted-foreground">
+                    Custo adicional de <span className="font-bold text-amber-600 dark:text-amber-400">{formatBRL(Math.abs(autoResult.economia))}</span> para atingir pedidos mínimos
+                  </div>
+                </>
+              )}
             </div>
           </div>
           {autoResult.semPreco > 0 && (
