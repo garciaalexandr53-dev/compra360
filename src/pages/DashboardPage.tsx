@@ -48,6 +48,7 @@ const DashboardPage = () => {
   const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "manter_precos" | "zerar" | null>(null);
   const [novaCotacaoLoading, setNovaCotacaoLoading] = useState(false);
   const [removeSupplier, setRemoveSupplier] = useState<Fornecedor | null>(null);
+  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
 
   const removeSupplierMutation = useMutation({
     mutationFn: async (fornecedorId: string) => {
