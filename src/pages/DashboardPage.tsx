@@ -590,7 +590,9 @@ const DashboardPage = () => {
                       key={f.id}
                       className={`flex items-center gap-2.5 rounded-lg border py-2.5 px-3 transition-all ${
                         responded
-                          ? "border-l-2 border-l-green-500 border-t-border border-r-border border-b-border"
+                          ? semItensSet.has(f.id)
+                            ? "border-l-2 border-l-destructive border-t-border border-r-border border-b-border bg-destructive/5"
+                            : "border-l-2 border-l-green-500 border-t-border border-r-border border-b-border"
                           : "border-border"
                       }`}
                     >
