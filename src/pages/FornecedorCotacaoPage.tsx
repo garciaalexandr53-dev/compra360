@@ -33,14 +33,12 @@ const FornecedorCotacaoPage = () => {
 
   const loadData = async () => {
     try {
-      // Get fornecedor from token using RPC
-      const { data: fId, error: fErr } = await supabase.rpc("get_supplier_id_from_token", { _token: token! });
-      if (fErr || !fId) { setLoading(false); return; }
-      setFornecedorId(fId);
-
-      // Get fornecedor name
-      const { data: fData } = await supabase.from("fornecedores").select("nome").eq("id", fId).single();
-      if (fData) setFornecedorNome(fData.nome);
+      // Get fornecedor info from token using secure RPC (no token exposure)
+      const { data: supplierInfo, error: fErr } = await supabase.rpc("get_supplier_info", { _token: token! });
+      const supplier = supplierInfo?.[0];
+      if (fErr || !supplier) { setLoading(false); return; }
+      setFornecedorId(supplier.id);
+      setFornecedorNome(supplier.nome);
 
       // Get lojas this supplier serves
       const { data: fornecedorLojas } = await supabase
