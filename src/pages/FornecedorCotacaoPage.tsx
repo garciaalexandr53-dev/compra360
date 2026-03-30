@@ -209,7 +209,7 @@ const FornecedorCotacaoPage = () => {
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="bg-gradient-to-r from-[hsl(var(--brand-dark))] via-[hsl(var(--brand))] to-[hsl(var(--brand-light))] text-white p-5 sticky top-0 z-10 shadow-lg">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between">
           <div>
             <h1 className="text-lg font-bold">📋 Cotação de Preços</h1>
             <p className="text-sm opacity-80">{fornecedorNome} · {produtos.length} produtos</p>
@@ -218,13 +218,13 @@ const FornecedorCotacaoPage = () => {
           <button
             onClick={handleNoItems}
             disabled={sending || hasAnyPrice}
-            className={`text-[10px] px-2 py-1 rounded border transition-colors shrink-0 ${
+            className={`text-[10px] px-2 py-1 rounded border transition-colors shrink-0 mt-0.5 ${
               hasAnyPrice || sending
-                ? "border-white/20 text-white/30 cursor-not-allowed"
-                : "border-white/40 text-white/70 hover:bg-white/10"
+                ? "border-destructive/20 text-destructive/30 cursor-not-allowed"
+                : "border-destructive/40 text-destructive hover:bg-destructive/10"
             }`}
           >
-            Não tenho itens
+            ❌ Não tenho itens
           </button>
         </div>
       </div>
