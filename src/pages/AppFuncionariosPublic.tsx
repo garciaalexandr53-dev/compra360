@@ -119,8 +119,8 @@ const AppFuncionariosPublic = () => {
       // If a loja is selected, find products owned by that loja's owner
       let ownerUserId: string | null = null;
       if (selectedLojaId) {
-        const { data: lojaData } = await supabase.from("lojas").select("user_id").eq("id", selectedLojaId).maybeSingle();
-        ownerUserId = lojaData?.user_id || null;
+        const { data: ownerId } = await supabase.rpc("get_loja_owner", { _loja_id: selectedLojaId });
+        ownerUserId = ownerId || null;
       }
 
       let query = supabase
