@@ -63,8 +63,8 @@ const DashboardPage = () => {
     },
     onSuccess: () => {
       toast.success(`${removeSupplier?.nome} removido da cotação`);
+      if (removeSupplier) setRemovedIds(prev => new Set(prev).add(removeSupplier.id));
       setRemoveSupplier(null);
-      queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
       queryClient.invalidateQueries({ queryKey: ["dash-respondidos"] });
       queryClient.invalidateQueries({ queryKey: ["dash-precos-count"] });
       queryClient.invalidateQueries({ queryKey: ["precos"] });
