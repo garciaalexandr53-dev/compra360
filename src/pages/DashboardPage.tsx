@@ -776,9 +776,9 @@ const DashboardPage = () => {
       <AlertDialog open={!!removeSupplier} onOpenChange={(open) => { if (!open) setRemoveSupplier(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover fornecedor da cotação?</AlertDialogTitle>
+            <AlertDialogTitle>Deseja excluir o fornecedor da cotação?</AlertDialogTitle>
             <AlertDialogDescription>
-              <span className="font-semibold">{removeSupplier?.nome}</span> será removido desta cotação e seus preços apagados. O cadastro do fornecedor não será afetado.
+              <span className="font-semibold">{removeSupplier?.nome}</span> será removido desta cotação. Os preços já enviados serão preservados e poderão ser recuperados ao re-adicioná-lo. O cadastro do fornecedor não será afetado.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
