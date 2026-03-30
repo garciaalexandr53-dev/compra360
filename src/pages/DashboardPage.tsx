@@ -535,7 +535,7 @@ const DashboardPage = () => {
           const statusMsg = pct === 0 ? "⏳ Aguardando respostas..." : pct <= 50 ? "🔵 Chegando respostas!" : pct < 100 ? "🟢 Quase lá! Falta pouco..." : "✅ Todas recebidas!";
           const cfMap = new Map(cotacaoFornecedores.map((cf: any) => [cf.fornecedor_id, cf.created_at]));
           const selectedIds = new Set(cotacaoFornecedores.map((cf: any) => cf.fornecedor_id));
-          const removedSuppliers = allFornecedores.filter(f => !selectedIds.has(f.id));
+          const removedSuppliers = allFornecedores.filter(f => !selectedIds.has(f.id) && removedIds.has(f.id));
           const pendingOver2h = selectedFornecedores.filter(f => {
             if (respondidosSet.has(f.id)) return false;
             const sentAt = cfMap.get(f.id);
