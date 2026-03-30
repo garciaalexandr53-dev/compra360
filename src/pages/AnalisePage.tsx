@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { Loader2, Zap, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft } from "lucide-react";
 import SendOrdersModal from "@/components/dashboard/SendOrdersModal";
+import { generateScenarios, type Scenario } from "@/lib/scenarios";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -20,14 +21,6 @@ interface OrderItem {
   quantidade: number;
   preco: number;
   total: number;
-}
-
-interface DistResult {
-  totalAntes: number;
-  totalDepois: number;
-  economia: number;
-  fornecedorPedidos: { fornecedor: Fornecedor; items: (OrderItem & { cpId: string; fornecedorId: string })[]; total: number; minimoOk: boolean }[];
-  semPreco: number;
 }
 
 const AnalisePage = () => {
