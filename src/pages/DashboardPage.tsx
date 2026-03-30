@@ -82,6 +82,7 @@ const DashboardPage = () => {
     onSuccess: (_, fornecedorId) => {
       const f = allFornecedores.find(f => f.id === fornecedorId);
       toast.success(`${f?.nome || "Fornecedor"} re-adicionado à cotação`);
+      setRemovedIds(prev => { const next = new Set(prev); next.delete(fornecedorId); return next; });
       queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
       queryClient.invalidateQueries({ queryKey: ["dash-respondidos"] });
       queryClient.invalidateQueries({ queryKey: ["dash-precos-count"] });
