@@ -237,13 +237,21 @@ const FornecedorCotacaoPage = () => {
       </div>
 
       {/* Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-4 shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-4 shadow-lg space-y-2">
         <Button
           onClick={handleSend}
           disabled={sending || Object.values(prices).filter((v) => v.trim()).length === 0}
           className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-base py-6 font-bold"
         >
           {sending ? "Enviando..." : `✅ Enviar ${Object.values(prices).filter((v) => v.trim()).length} Preços`}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={handleNoItems}
+          disabled={sending}
+          className="w-full text-sm text-destructive border-destructive/30 hover:bg-destructive/10"
+        >
+          ❌ Não tenho nenhum item desta lista
         </Button>
       </div>
     </div>
