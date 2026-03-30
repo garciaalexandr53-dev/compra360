@@ -586,6 +586,13 @@ const DashboardPage = () => {
                       >
                         <RefreshCw className="h-3.5 w-3.5" />
                       </button>
+                      <button
+                        onClick={() => setRemoveSupplier(f)}
+                        className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        title="Remover da cotação"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   );
                 })}
