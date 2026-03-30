@@ -637,6 +637,31 @@ const DashboardPage = () => {
                 </div>
               )}
 
+              {/* Re-add removed suppliers */}
+              {removedSuppliers.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted-foreground font-medium mt-2">Fornecedores removidos</p>
+                  {removedSuppliers.map(f => (
+                    <div
+                      key={`removed-${f.id}`}
+                      className="flex items-center gap-2.5 rounded-lg border border-dashed border-muted-foreground/30 py-2 px-3 opacity-60 hover:opacity-100 transition-all"
+                    >
+                      <UserPlus className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-sm text-foreground truncate">{f.nome}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="ml-auto shrink-0 text-xs text-primary hover:bg-primary/10 h-7 px-2"
+                        onClick={() => reAddSupplierMutation.mutate(f.id)}
+                        disabled={reAddSupplierMutation.isPending}
+                      >
+                        Re-adicionar
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Single action button — outline compact */}
               <Button variant="outline" className="gap-2 text-sm h-10" onClick={() => navigate("/cotacao?from=dashboard")}>
                 <Eye className="h-4 w-4" /> Ver cotação parcial
