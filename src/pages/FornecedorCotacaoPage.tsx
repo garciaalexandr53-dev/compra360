@@ -147,6 +147,30 @@ const FornecedorCotacaoPage = () => {
     setSending(false);
   };
 
+  const handleNoItems = async () => {
+    setSending(true);
+    try {
+      const priceEntries = produtos.map(p => ({
+        cotacao_produto_id: p.cotacao_produto_id,
+        preco: 0,
+      }));
+
+      const { data, error } = await supabase.functions.invoke("submit-precos", {
+        body: { token, prices: priceEntries },
+      });
+
+      if (error || data?.error) {
+        throw new Error(data?.error || error?.message || "Erro ao enviar");
+      }
+
+      setSent(true);
+      toast.success("Resposta enviada! Obrigado.");
+    } catch (e: any) {
+      toast.error("Erro ao enviar: " + e.message);
+    }
+    setSending(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
