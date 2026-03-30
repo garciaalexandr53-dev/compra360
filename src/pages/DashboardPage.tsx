@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useNavigate } from "react-router-dom";
@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ClipboardList, FileSpreadsheet, Pencil, Send, Users, Eye, Trophy, RefreshCw, Smartphone, CheckCircle2, Clock, Target, Lightbulb, MessageCircle } from "lucide-react";
+import { ClipboardList, FileSpreadsheet, Pencil, Send, Users, Eye, Trophy, RefreshCw, Smartphone, CheckCircle2, Clock, Target, Lightbulb, MessageCircle, X } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -46,7 +47,40 @@ const DashboardPage = () => {
   const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);
   const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "manter_precos" | "zerar" | null>(null);
   const [novaCotacaoLoading, setNovaCotacaoLoading] = useState(false);
+  const [removeSupplier, setRemoveSupplier] = useState<Fornecedor | null>(null);
 
+  const removeSupplierMutation = useMutation({
+    mutationFn: async (fornecedorId: string) => {
+      if (!cotacaoAtiva?.id) return;
+      // Remove prices for this supplier in this quote
+      const { data: cps } = await supabase
+        .from("cotacao_produtos")
+        .select("id")
+        .eq("cotacao_id", cotacaoAtiva.id);
+      if (cps && cps.length > 0) {
+        await supabase
+          .from("precos")
+          .delete()
+          .eq("fornecedor_id", fornecedorId)
+          .in("cotacao_produto_id", cps.map(cp => cp.id));
+      }
+      // Remove from cotacao_fornecedores
+      const { error } = await supabase
+        .from("cotacao_fornecedores")
+        .delete()
+        .eq("cotacao_id", cotacaoAtiva.id)
+        .eq("fornecedor_id", fornecedorId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(`${removeSupplier?.nome} removido da cotação`);
+      setRemoveSupplier(null);
+      queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-respondidos"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-precos-count"] });
+      queryClient.invalidateQueries({ queryKey: ["precos"] });
+    },
+  });
 
   // Realtime
   useEffect(() => {
@@ -552,6 +586,13 @@ const DashboardPage = () => {
                       >
                         <RefreshCw className="h-3.5 w-3.5" />
                       </button>
+                      <button
+                        onClick={() => setRemoveSupplier(f)}
+                        className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        title="Remover da cotação"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   );
                 })}
@@ -698,6 +739,26 @@ const DashboardPage = () => {
       />
       <ModalFornecedorSugestao open={fornSuggestOpen} onOpenChange={setFornSuggestOpen} text={fornSuggestText} loading={fornSuggestLoading} hasHistory={fornSuggestHasHistory} recommendedIds={fornSuggestRecommendedIds} onApply={applyFornSuggestions} />
       <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} loading={novaCotacaoLoading} />
+
+      <AlertDialog open={!!removeSupplier} onOpenChange={(open) => { if (!open) setRemoveSupplier(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover fornecedor da cotação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <span className="font-semibold">{removeSupplier?.nome}</span> será removido desta cotação e seus preços apagados. O cadastro do fornecedor não será afetado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => removeSupplier && removeSupplierMutation.mutate(removeSupplier.id)}
+            >
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
