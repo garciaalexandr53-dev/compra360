@@ -108,7 +108,7 @@ const AnalisePage = () => {
   });
 
   // ---- Compute current total (best price per product) ----
-  const { grandTotal, worstTotal, economiaDisponivel } = useMemo(() => {
+  const { grandTotal, worstTotal, economiaDisponivel, hasMinimumIssues } = useMemo(() => {
     let best = 0;
     let worst = 0;
     cotacaoProdutos.forEach((cp: any) => {
@@ -119,8 +119,27 @@ const AnalisePage = () => {
       best += Math.min(...prices) * qty;
       worst += Math.max(...prices) * qty;
     });
-    return { grandTotal: best, worstTotal: worst, economiaDisponivel: worst - best };
-  }, [cotacaoProdutos, precos]);
+    // Check if any supplier with items is below minimum
+    const supplierTotals: Record<string, number> = {};
+    cotacaoProdutos.forEach((cp: any) => {
+      const cpPrecos = precos
+        .filter((p: any) => p.cotacao_produto_id === cp.id && p.preco !== null && p.preco > 0)
+        .sort((a: any, b: any) => a.preco - b.preco);
+      if (!cpPrecos.length) return;
+      const fId = cpPrecos[0].fornecedor_id;
+      const qty = cp.quantidade || 1;
+      supplierTotals[fId] = (supplierTotals[fId] || 0) + Number(cpPrecos[0].preco) * qty;
+    });
+    let hasMinIssue = false;
+    for (const [fId, total] of Object.entries(supplierTotals)) {
+      const f = fornecedores.find(ff => ff.id === fId);
+      if (f?.pedido_minimo && Number(f.pedido_minimo) > 0 && total < Number(f.pedido_minimo)) {
+        hasMinIssue = true;
+        break;
+      }
+    }
+    return { grandTotal: best, worstTotal: worst, economiaDisponivel: worst - best, hasMinimumIssues: hasMinIssue };
+  }, [cotacaoProdutos, precos, fornecedores]);
 
   // ---- Orders by supplier (best price wins) ----
   const orders = useMemo(() => {
