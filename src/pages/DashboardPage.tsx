@@ -147,20 +147,34 @@ const DashboardPage = () => {
     queryFn: async () => { const { data } = await supabase.from("cotacao_fornecedores").select("fornecedor_id, created_at").eq("cotacao_id", cotacaoAtiva!.id); return data || []; },
   });
 
-  // Price count per supplier for State 4
-  const { data: precosCountMap = new Map<string, number>() } = useQuery({
+  // Price count per supplier for State 4 + detect all-zero (sem itens) suppliers
+  const { data: supplierPriceInfo = { counts: new Map<string, number>(), semItens: new Set<string>() } } = useQuery({
     queryKey: ["dash-precos-count", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
     queryFn: async () => {
       const { data: cps } = await supabase.from("cotacao_produtos").select("id").eq("cotacao_id", cotacaoAtiva!.id);
-      if (!cps?.length) return new Map<string, number>();
+      if (!cps?.length) return { counts: new Map<string, number>(), semItens: new Set<string>() };
       const cpIds = cps.map(cp => cp.id);
-      const { data } = await supabase.from("precos").select("fornecedor_id").in("cotacao_produto_id", cpIds).not("preco", "is", null);
+      const totalProducts = cpIds.length;
+      const { data } = await supabase.from("precos").select("fornecedor_id, preco").in("cotacao_produto_id", cpIds).not("preco", "is", null);
       const counts = new Map<string, number>();
-      (data || []).forEach(p => counts.set(p.fornecedor_id, (counts.get(p.fornecedor_id) || 0) + 1));
-      return counts;
+      const zeroCounts = new Map<string, number>();
+      const totalCounts = new Map<string, number>();
+      (data || []).forEach(p => {
+        counts.set(p.fornecedor_id, (counts.get(p.fornecedor_id) || 0) + 1);
+        totalCounts.set(p.fornecedor_id, (totalCounts.get(p.fornecedor_id) || 0) + 1);
+        if (Number(p.preco) === 0) zeroCounts.set(p.fornecedor_id, (zeroCounts.get(p.fornecedor_id) || 0) + 1);
+      });
+      // A supplier is "sem itens" if all their prices are 0
+      const semItens = new Set<string>();
+      totalCounts.forEach((total, fId) => {
+        if (total > 0 && zeroCounts.get(fId) === total) semItens.add(fId);
+      });
+      return { counts, semItens };
     },
   });
+  const precosCountMap = supplierPriceInfo.counts;
+  const semItensSet = supplierPriceInfo.semItens;
 
   // Sync selected suppliers from DB
   useEffect(() => {
