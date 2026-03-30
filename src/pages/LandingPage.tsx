@@ -324,9 +324,7 @@ export default function LandingPage() {
                 <Button
                   variant={plan.ctaVariant}
                   className={`w-full rounded-lg py-3 px-6 font-medium ${
-                    plan.highlight
-                      ? "bg-emerald-500 hover:bg-emerald-400 text-white hover:scale-105 transition-all"
-                      : "border border-white/40 text-white hover:bg-white/10 transition-colors"
+                    "bg-emerald-500 hover:bg-emerald-400 text-white hover:scale-105 transition-all"
                   }`}
                   onClick={goLogin}
                 >
