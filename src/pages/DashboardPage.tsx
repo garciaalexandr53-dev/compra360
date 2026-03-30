@@ -147,20 +147,34 @@ const DashboardPage = () => {
     queryFn: async () => { const { data } = await supabase.from("cotacao_fornecedores").select("fornecedor_id, created_at").eq("cotacao_id", cotacaoAtiva!.id); return data || []; },
   });
 
-  // Price count per supplier for State 4
-  const { data: precosCountMap = new Map<string, number>() } = useQuery({
+  // Price count per supplier for State 4 + detect all-zero (sem itens) suppliers
+  const { data: supplierPriceInfo = { counts: new Map<string, number>(), semItens: new Set<string>() } } = useQuery({
     queryKey: ["dash-precos-count", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
     queryFn: async () => {
       const { data: cps } = await supabase.from("cotacao_produtos").select("id").eq("cotacao_id", cotacaoAtiva!.id);
-      if (!cps?.length) return new Map<string, number>();
+      if (!cps?.length) return { counts: new Map<string, number>(), semItens: new Set<string>() };
       const cpIds = cps.map(cp => cp.id);
-      const { data } = await supabase.from("precos").select("fornecedor_id").in("cotacao_produto_id", cpIds).not("preco", "is", null);
+      const totalProducts = cpIds.length;
+      const { data } = await supabase.from("precos").select("fornecedor_id, preco").in("cotacao_produto_id", cpIds).not("preco", "is", null);
       const counts = new Map<string, number>();
-      (data || []).forEach(p => counts.set(p.fornecedor_id, (counts.get(p.fornecedor_id) || 0) + 1));
-      return counts;
+      const zeroCounts = new Map<string, number>();
+      const totalCounts = new Map<string, number>();
+      (data || []).forEach(p => {
+        counts.set(p.fornecedor_id, (counts.get(p.fornecedor_id) || 0) + 1);
+        totalCounts.set(p.fornecedor_id, (totalCounts.get(p.fornecedor_id) || 0) + 1);
+        if (Number(p.preco) === 0) zeroCounts.set(p.fornecedor_id, (zeroCounts.get(p.fornecedor_id) || 0) + 1);
+      });
+      // A supplier is "sem itens" if all their prices are 0
+      const semItens = new Set<string>();
+      totalCounts.forEach((total, fId) => {
+        if (total > 0 && zeroCounts.get(fId) === total) semItens.add(fId);
+      });
+      return { counts, semItens };
     },
   });
+  const precosCountMap = supplierPriceInfo.counts;
+  const semItensSet = supplierPriceInfo.semItens;
 
   // Sync selected suppliers from DB
   useEffect(() => {
@@ -576,19 +590,29 @@ const DashboardPage = () => {
                       key={f.id}
                       className={`flex items-center gap-2.5 rounded-lg border py-2.5 px-3 transition-all ${
                         responded
-                          ? "border-l-2 border-l-green-500 border-t-border border-r-border border-b-border"
+                          ? semItensSet.has(f.id)
+                            ? "border-l-2 border-l-destructive border-t-border border-r-border border-b-border bg-destructive/5"
+                            : "border-l-2 border-l-green-500 border-t-border border-r-border border-b-border"
                           : "border-border"
                       }`}
                     >
                       {responded
-                        ? <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                        ? (semItensSet.has(f.id)
+                          ? <X className="h-4 w-4 text-destructive shrink-0" />
+                          : <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />)
                         : <Clock className="h-4 w-4 text-muted-foreground shrink-0" />}
                       <span className="text-sm font-semibold text-foreground truncate">{f.nome}</span>
-                      <span className="text-xs text-muted-foreground truncate ml-auto mr-1">
-                        {responded
-                          ? `Respondeu · ${priceCount} preço${priceCount !== 1 ? "s" : ""}`
-                          : timeAgo ? `Enviado ${timeAgo}` : "Aguardando"}
-                      </span>
+                      {responded && semItensSet.has(f.id) ? (
+                        <span className="text-xs font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full ml-auto mr-1">
+                          Sem itens
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground truncate ml-auto mr-1">
+                          {responded
+                            ? `Respondeu · ${priceCount} preço${priceCount !== 1 ? "s" : ""}`
+                            : timeAgo ? `Enviado ${timeAgo}` : "Aguardando"}
+                        </span>
+                      )}
                       <button
                         onClick={() => resendWhatsApp(f)}
                         className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"

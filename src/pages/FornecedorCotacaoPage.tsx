@@ -147,6 +147,30 @@ const FornecedorCotacaoPage = () => {
     setSending(false);
   };
 
+  const handleNoItems = async () => {
+    setSending(true);
+    try {
+      const priceEntries = produtos.map(p => ({
+        cotacao_produto_id: p.cotacao_produto_id,
+        preco: 0,
+      }));
+
+      const { data, error } = await supabase.functions.invoke("submit-precos", {
+        body: { token, prices: priceEntries },
+      });
+
+      if (error || data?.error) {
+        throw new Error(data?.error || error?.message || "Erro ao enviar");
+      }
+
+      setSent(true);
+      toast.success("Resposta enviada! Obrigado.");
+    } catch (e: any) {
+      toast.error("Erro ao enviar: " + e.message);
+    }
+    setSending(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -180,7 +204,7 @@ const FornecedorCotacaoPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-36">
       {/* Header */}
       <div className="bg-gradient-to-r from-[hsl(var(--brand-dark))] via-[hsl(var(--brand))] to-[hsl(var(--brand-light))] text-white p-5 sticky top-0 z-10 shadow-lg">
         <h1 className="text-lg font-bold">📋 Cotação de Preços</h1>
@@ -213,13 +237,21 @@ const FornecedorCotacaoPage = () => {
       </div>
 
       {/* Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-4 shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-4 shadow-lg space-y-2">
         <Button
           onClick={handleSend}
           disabled={sending || Object.values(prices).filter((v) => v.trim()).length === 0}
           className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-base py-6 font-bold"
         >
           {sending ? "Enviando..." : `✅ Enviar ${Object.values(prices).filter((v) => v.trim()).length} Preços`}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={handleNoItems}
+          disabled={sending}
+          className="w-full text-sm text-destructive border-destructive/30 hover:bg-destructive/10"
+        >
+          ❌ Não tenho nenhum item desta lista
         </Button>
       </div>
     </div>
