@@ -460,6 +460,15 @@ const CotacaoPage = () => {
           if (priceInserts.length) await supabase.from("precos").insert(priceInserts);
           toast.success("Nova cotação com preços importados!");
         } else { toast.success("Nova cotação iniciada — preços limpos!"); }
+      } else if (novaCotacaoOpt === "zerar" && newCot) {
+        // Auto-transfer items that had no price from any supplier
+        const semPrecoItems = cotacaoProdutos.filter((cp) => hasNoPrice(cp.id));
+        if (semPrecoItems.length > 0) {
+          await supabase.from("cotacao_produtos").insert(semPrecoItems.map((cp) => ({ cotacao_id: newCot.id, produto_id: cp.produto_id, quantidade: cp.quantidade })));
+          toast.success(`Cotação zerada — ${semPrecoItems.length} item(ns) sem preço transferido(s) automaticamente!`);
+        } else {
+          toast.success("Cotação reiniciada — lista zerada!");
+        }
       } else { toast.success("Cotação reiniciada — lista zerada!"); }
       queryClient.invalidateQueries(); setNovaCotacaoOpen(false); setNovaCotacaoOpt(null);
     } catch (e: any) { toast.error(e.message); }
@@ -664,12 +673,23 @@ const CotacaoPage = () => {
           >
             Todos
           </button>
-          <button
-            onClick={() => setFilterSemPreco(true)}
-            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${filterSemPreco ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
-          >
-            Sem preço
-          </button>
+          {(() => {
+            const semPrecoCount = cotacaoProdutos.filter((cp) => hasNoPrice(cp.id)).length;
+            return (
+              <button
+                onClick={() => setFilterSemPreco(true)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  filterSemPreco
+                    ? "bg-background shadow-sm text-foreground"
+                    : semPrecoCount > 0
+                      ? "text-destructive font-bold"
+                      : "text-muted-foreground"
+                }`}
+              >
+                Sem preço{semPrecoCount > 0 && ` (${semPrecoCount})`}
+              </button>
+            );
+          })()}
         </div>
         <div className="flex-1" />
         <button
