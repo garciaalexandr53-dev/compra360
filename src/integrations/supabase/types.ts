@@ -222,6 +222,13 @@ export type Database = {
             referencedRelation: "lojas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cotacoes_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fornecedor_lojas: {
@@ -256,6 +263,13 @@ export type Database = {
             columns: ["loja_id"]
             isOneToOne: false
             referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fornecedor_lojas_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas_public"
             referencedColumns: ["id"]
           },
         ]
@@ -342,6 +356,13 @@ export type Database = {
             columns: ["loja_id"]
             isOneToOne: false
             referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itens_faltantes_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas_public"
             referencedColumns: ["id"]
           },
         ]
@@ -438,6 +459,13 @@ export type Database = {
             referencedRelation: "lojas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pedidos_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       precos: {
@@ -522,9 +550,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      lojas_public: {
+        Row: {
+          id: string | null
+          nome: string | null
+        }
+        Insert: {
+          id?: string | null
+          nome?: string | null
+        }
+        Update: {
+          id?: string | null
+          nome?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      get_loja_owner: { Args: { _loja_id: string }; Returns: string }
       get_supplier_id_from_token: { Args: { _token: string }; Returns: string }
       get_supplier_info: {
         Args: { _token: string }
