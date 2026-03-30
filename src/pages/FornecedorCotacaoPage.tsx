@@ -26,6 +26,8 @@ const FornecedorCotacaoPage = () => {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
+  const hasAnyPrice = Object.values(prices).some(v => v.trim().length > 0);
+
   useEffect(() => {
     if (!token) return;
     loadData();
@@ -204,12 +206,27 @@ const FornecedorCotacaoPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-36">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="bg-gradient-to-r from-[hsl(var(--brand-dark))] via-[hsl(var(--brand))] to-[hsl(var(--brand-light))] text-white p-5 sticky top-0 z-10 shadow-lg">
-        <h1 className="text-lg font-bold">📋 Cotação de Preços</h1>
-        <p className="text-sm opacity-80">{fornecedorNome} · {produtos.length} produtos</p>
-        {lojaNome && <p className="text-xs opacity-70 mt-0.5">🏪 Loja: {lojaNome}</p>}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-bold">📋 Cotação de Preços</h1>
+            <p className="text-sm opacity-80">{fornecedorNome} · {produtos.length} produtos</p>
+            {lojaNome && <p className="text-xs opacity-70 mt-0.5">🏪 Loja: {lojaNome}</p>}
+          </div>
+          <button
+            onClick={handleNoItems}
+            disabled={sending || hasAnyPrice}
+            className={`text-[10px] px-2 py-1 rounded border transition-colors shrink-0 ${
+              hasAnyPrice || sending
+                ? "border-white/20 text-white/30 cursor-not-allowed"
+                : "border-white/40 text-white/70 hover:bg-white/10"
+            }`}
+          >
+            Não tenho itens
+          </button>
+        </div>
       </div>
 
       {/* Products */}
@@ -237,21 +254,13 @@ const FornecedorCotacaoPage = () => {
       </div>
 
       {/* Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-4 shadow-lg space-y-2">
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-4 shadow-lg">
         <Button
           onClick={handleSend}
           disabled={sending || Object.values(prices).filter((v) => v.trim()).length === 0}
           className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-base py-6 font-bold"
         >
           {sending ? "Enviando..." : `✅ Enviar ${Object.values(prices).filter((v) => v.trim()).length} Preços`}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={handleNoItems}
-          disabled={sending}
-          className="w-full text-sm text-destructive border-destructive/30 hover:bg-destructive/10"
-        >
-          ❌ Não tenho nenhum item desta lista
         </Button>
       </div>
     </div>
