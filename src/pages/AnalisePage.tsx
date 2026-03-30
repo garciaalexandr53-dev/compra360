@@ -108,7 +108,7 @@ const AnalisePage = () => {
   });
 
   // ---- Compute current total (best price per product) ----
-  const { grandTotal, worstTotal, economiaDisponivel } = useMemo(() => {
+  const { grandTotal, worstTotal, economiaDisponivel, hasMinimumIssues } = useMemo(() => {
     let best = 0;
     let worst = 0;
     cotacaoProdutos.forEach((cp: any) => {
@@ -119,8 +119,27 @@ const AnalisePage = () => {
       best += Math.min(...prices) * qty;
       worst += Math.max(...prices) * qty;
     });
-    return { grandTotal: best, worstTotal: worst, economiaDisponivel: worst - best };
-  }, [cotacaoProdutos, precos]);
+    // Check if any supplier with items is below minimum
+    const supplierTotals: Record<string, number> = {};
+    cotacaoProdutos.forEach((cp: any) => {
+      const cpPrecos = precos
+        .filter((p: any) => p.cotacao_produto_id === cp.id && p.preco !== null && p.preco > 0)
+        .sort((a: any, b: any) => a.preco - b.preco);
+      if (!cpPrecos.length) return;
+      const fId = cpPrecos[0].fornecedor_id;
+      const qty = cp.quantidade || 1;
+      supplierTotals[fId] = (supplierTotals[fId] || 0) + Number(cpPrecos[0].preco) * qty;
+    });
+    let hasMinIssue = false;
+    for (const [fId, total] of Object.entries(supplierTotals)) {
+      const f = fornecedores.find(ff => ff.id === fId);
+      if (f?.pedido_minimo && Number(f.pedido_minimo) > 0 && total < Number(f.pedido_minimo)) {
+        hasMinIssue = true;
+        break;
+      }
+    }
+    return { grandTotal: best, worstTotal: worst, economiaDisponivel: worst - best, hasMinimumIssues: hasMinIssue };
+  }, [cotacaoProdutos, precos, fornecedores]);
 
   // ---- Orders by supplier (best price wins) ----
   const orders = useMemo(() => {
@@ -277,6 +296,14 @@ const AnalisePage = () => {
       }).sort((a, b) => b.total - a.total);
 
       const economia = bestTotal - totalDepois;
+      
+      // GUARD: If optimized total is MORE expensive than pure cheapest, don't apply
+      if (totalDepois > bestTotal) {
+        toast.error(`Economia automática não aplicada: resultado ficaria R$ ${formatNumber(totalDepois - bestTotal)} mais caro por causa de pedidos mínimos.`);
+        setAutoLoading(false);
+        return;
+      }
+
       const result: DistResult = { totalAntes: bestTotal, totalDepois, economia, fornecedorPedidos, semPreco };
 
       // Create/update pedidos
@@ -294,10 +321,8 @@ const AnalisePage = () => {
       setAutoResult(result);
       if (economia > 0) {
         toast.success(`Economia de ${formatBRL(economia)} aplicada! ✅`);
-      } else if (economia === 0) {
-        toast.success("Distribuição otimizada aplicada! A compra já estava no melhor preço. ✅");
       } else {
-        toast.info(`Distribuição aplicada. Custo adicional de ${formatBRL(Math.abs(economia))} para atingir pedidos mínimos.`);
+        toast.success("Pedidos criados com os melhores preços! ✅");
       }
     } catch (e: any) {
       toast.error(e.message || "Erro ao otimizar compra");
@@ -449,7 +474,7 @@ const AnalisePage = () => {
           </div>
           {economiaDisponivel > 0 && !autoResult && (
             <div className="text-right">
-              <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">💸 Economia disponível</div>
+              <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">💸 Economia vs pior preço</div>
               <div className="text-lg font-extrabold font-mono text-green-600 dark:text-green-400 mt-1">
                 {formatBRL(economiaDisponivel)}
               </div>
@@ -458,23 +483,25 @@ const AnalisePage = () => {
         </div>
       </div>
 
-      {/* 2. BLOCO IA / 3. FEEDBACK */}
-      {hasPrecos && !autoResult && economiaDisponivel > 0 && (
+      {/* 2. BLOCO CRIAR PEDIDOS */}
+      {hasPrecos && !autoResult && (
         <div className="bg-card border border-primary/20 rounded-xl p-5 shadow-sm animate-fade-in">
           <div className="flex items-center gap-3 mb-3">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
               <Zap className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <div className="text-sm font-bold text-foreground">🤖 Economia automática disponível</div>
+              <div className="text-sm font-bold text-foreground">🤖 Distribuição inteligente</div>
               <div className="text-xs text-muted-foreground">
-                Você pode economizar {formatBRL(economiaDisponivel)} nesta compra
+                {hasMinimumIssues
+                  ? "Distribui itens pelos melhores preços respeitando pedidos mínimos"
+                  : "Gerar pedidos com os melhores preços por fornecedor"}
               </div>
             </div>
           </div>
           <Button onClick={runAutoDistribution} disabled={autoLoading} className="w-full" size="lg">
             {autoLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
-            {autoLoading ? "Aplicando..." : "Aplicar economia automática"}
+            {autoLoading ? "Otimizando..." : "Gerar pedidos otimizados"}
           </Button>
         </div>
       )}
