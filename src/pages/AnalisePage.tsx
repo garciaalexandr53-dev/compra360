@@ -173,156 +173,43 @@ const AnalisePage = () => {
     return result;
   }, [cotacaoProdutos, precos, fornecedores]);
 
-  // ---- Auto Distribution (1-click) ----
-  const runAutoDistribution = async () => {
-    if (!cotacaoAtiva?.id || !user?.id) return;
-    setAutoLoading(true);
+  // ---- Generate Scenarios ----
+  const runScenarios = () => {
+    if (!cotacaoAtiva?.id) return;
+    setScenarioLoading(true);
     try {
-      const supplierTotals: Record<string, { items: (OrderItem & { cpId: string; fornecedorId: string })[]; total: number }> = {};
-      let semPreco = 0;
-
-      // Step 1: Assign each product to its cheapest supplier
-      cotacaoProdutos.forEach((cp: any) => {
-        const prod = cp.produtos;
-        const cpPrecos = precos
-          .filter((p: any) => p.cotacao_produto_id === cp.id && p.preco !== null && p.preco > 0)
-          .sort((a: any, b: any) => a.preco - b.preco);
-        if (!cpPrecos.length) { semPreco++; return; }
-        const qty = cp.quantidade || 1;
-        const chosen = cpPrecos[0];
-        const fId = chosen.fornecedor_id;
-        if (!supplierTotals[fId]) supplierTotals[fId] = { items: [], total: 0 };
-        const itemTotal = Number(chosen.preco) * qty;
-        supplierTotals[fId].items.push({
-          produto: prod?.nome || "?", embalagem: prod?.embalagem || "", quantidade: qty,
-          preco: Number(chosen.preco), total: itemTotal, cpId: cp.id, fornecedorId: fId,
-        });
-        supplierTotals[fId].total += itemTotal;
-      });
-
-      // bestTotal = pure cheapest (our baseline — this is the REAL reference)
-      const bestTotal = Object.values(supplierTotals).reduce((s, d) => s + d.total, 0);
-
-      // Step 2: Handle suppliers below minimum order
-      const fornecedorMap = Object.fromEntries(fornecedores.map(f => [f.id, f]));
-      
-      // Iterate until stable (a supplier dropped may affect others)
-      let changed = true;
-      while (changed) {
-        changed = false;
-        for (const [fId, data] of Object.entries(supplierTotals)) {
-          const f = fornecedorMap[fId];
-          const minimo = Number(f?.pedido_minimo || 0);
-          if (minimo <= 0 || data.total >= minimo) continue;
-
-          // Try moving items TO this supplier to meet minimum
-          // Calculate cost of redistribution
-          let redistCost = 0;
-          const moveCandidates: { cpId: string; currentFId: string; currentPrice: number; newPrice: number; qty: number }[] = [];
-          
-          for (const cp of cotacaoProdutos) {
-            if (data.total + redistCost >= minimo) break;
-            const alreadyHere = data.items.find(i => i.cpId === (cp as any).id);
-            if (alreadyHere) continue;
-            const thisPrice = precos.find((p: any) => p.cotacao_produto_id === (cp as any).id && p.fornecedor_id === fId && p.preco > 0);
-            if (!thisPrice) continue;
-            const currentSupplier = Object.entries(supplierTotals).find(([, d]) => d.items.some(i => i.cpId === (cp as any).id));
-            if (!currentSupplier) continue;
-            const currentItem = currentSupplier[1].items.find(i => i.cpId === (cp as any).id);
-            if (!currentItem) continue;
-            const newPrice = Number(thisPrice.preco);
-            const priceDiff = (newPrice - currentItem.preco) * currentItem.quantidade;
-            moveCandidates.push({ cpId: (cp as any).id, currentFId: currentSupplier[0], currentPrice: currentItem.preco, newPrice, qty: currentItem.quantidade });
-            redistCost += newPrice * currentItem.quantidade;
-          }
-
-          const canMeetMinimum = (data.total + redistCost) >= minimo;
-          const totalRedistCostIncrease = moveCandidates.reduce((s, c) => s + (c.newPrice - c.currentPrice) * c.qty, 0);
-
-          // Decision: if redistribution cost > value of items in this supplier, DROP this supplier instead
-          if (!canMeetMinimum || totalRedistCostIncrease > data.total * 0.15) {
-            // DROP: move all items from this supplier back to their next cheapest supplier
-            for (const item of [...data.items]) {
-              const cpPrecos = precos
-                .filter((p: any) => p.cotacao_produto_id === item.cpId && p.preco !== null && p.preco > 0 && p.fornecedor_id !== fId)
-                .sort((a: any, b: any) => a.preco - b.preco);
-              if (cpPrecos.length > 0) {
-                const nextBest = cpPrecos[0];
-                const nextFId = nextBest.fornecedor_id;
-                if (!supplierTotals[nextFId]) supplierTotals[nextFId] = { items: [], total: 0 };
-                const newTotal = Number(nextBest.preco) * item.quantidade;
-                supplierTotals[nextFId].items.push({ ...item, preco: Number(nextBest.preco), total: newTotal, fornecedorId: nextFId });
-                supplierTotals[nextFId].total += newTotal;
-              }
-            }
-            delete supplierTotals[fId];
-            changed = true;
-            break;
-          } else {
-            // MOVE items to meet minimum (only if cost-effective)
-            for (const candidate of moveCandidates) {
-              if (data.total >= minimo) break;
-              const srcData = supplierTotals[candidate.currentFId];
-              if (!srcData) continue;
-              const itemIdx = srcData.items.findIndex(i => i.cpId === candidate.cpId);
-              if (itemIdx === -1) continue;
-              const item = srcData.items[itemIdx];
-              srcData.items.splice(itemIdx, 1);
-              srcData.total -= item.total;
-              const newTotal = candidate.newPrice * candidate.qty;
-              data.items.push({ ...item, preco: candidate.newPrice, total: newTotal, fornecedorId: fId });
-              data.total += newTotal;
-            }
-          }
-        }
-      }
-
-      // Remove suppliers with no items
-      for (const [fId, data] of Object.entries(supplierTotals)) {
-        if (data.items.length === 0) delete supplierTotals[fId];
-      }
-
-      // Build result
-      let totalDepois = 0;
-      const fornecedorPedidos = Object.entries(supplierTotals).map(([fId, data]) => {
-        const f = fornecedorMap[fId];
-        totalDepois += data.total;
-        return { fornecedor: f, items: data.items, total: data.total, minimoOk: !f?.pedido_minimo || data.total >= Number(f.pedido_minimo) };
-      }).sort((a, b) => b.total - a.total);
-
-      const economia = bestTotal - totalDepois;
-      
-      // GUARD: If optimized total is MORE expensive than pure cheapest, don't apply
-      if (totalDepois > bestTotal) {
-        toast.error(`Economia automática não aplicada: resultado ficaria R$ ${formatNumber(totalDepois - bestTotal)} mais caro por causa de pedidos mínimos.`);
-        setAutoLoading(false);
-        return;
-      }
-
-      const result: DistResult = { totalAntes: bestTotal, totalDepois, economia, fornecedorPedidos, semPreco };
-
-      // Create/update pedidos
-      for (const fp of fornecedorPedidos) {
-        if (!fp.fornecedor?.id) continue;
-        const { data: existing } = await supabase.from("pedidos").select("id").eq("cotacao_id", cotacaoAtiva.id).eq("fornecedor_id", fp.fornecedor.id).limit(1).maybeSingle();
-        if (existing) {
-          await supabase.from("pedidos").update({ total: fp.total, status: "rascunho" as any }).eq("id", existing.id);
-        } else {
-          await supabase.from("pedidos").insert({ cotacao_id: cotacaoAtiva.id, fornecedor_id: fp.fornecedor.id, total: fp.total, created_by: user.id, loja_id: lojaAtiva?.id || null, status: "rascunho" as any });
-        }
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["pedidos"] });
-      setAutoResult(result);
-      if (economia > 0) {
-        toast.success(`Economia de ${formatBRL(economia)} aplicada! ✅`);
-      } else {
-        toast.success("Pedidos criados com os melhores preços! ✅");
-      }
+      const result = generateScenarios(cotacaoProdutos, precos, fornecedores);
+      setScenarios(result);
+      setSelectedScenario(null);
+      toast.success(`${result.length} cenário(s) gerado(s) para comparação`);
     } catch (e: any) {
-      toast.error(e.message || "Erro ao otimizar compra");
+      toast.error(e.message || "Erro ao gerar cenários");
     } finally {
-      setAutoLoading(false);
+      setScenarioLoading(false);
+    }
+  };
+
+  // ---- Apply selected scenario (create pedidos) ----
+  const applyScenario = async (scenario: Scenario) => {
+    if (!cotacaoAtiva?.id || !user?.id) return;
+    setApplyingScenario(true);
+    try {
+      for (const sf of scenario.fornecedores) {
+        const fId = sf.fornecedorId;
+        const { data: existing } = await supabase.from("pedidos").select("id").eq("cotacao_id", cotacaoAtiva.id).eq("fornecedor_id", fId).limit(1).maybeSingle();
+        if (existing) {
+          await supabase.from("pedidos").update({ total: sf.total, status: "rascunho" as any }).eq("id", existing.id);
+        } else {
+          await supabase.from("pedidos").insert({ cotacao_id: cotacaoAtiva.id, fornecedor_id: fId, total: sf.total, created_by: user.id, loja_id: lojaAtiva?.id || null, status: "rascunho" as any });
+        }
+      }
+      queryClient.invalidateQueries({ queryKey: ["pedidos"] });
+      setSelectedScenario(scenario);
+      toast.success("Cenário aplicado! Pedidos criados. ✅");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao aplicar cenário");
+    } finally {
+      setApplyingScenario(false);
     }
   };
 
