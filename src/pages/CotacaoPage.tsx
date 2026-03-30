@@ -664,12 +664,23 @@ const CotacaoPage = () => {
           >
             Todos
           </button>
-          <button
-            onClick={() => setFilterSemPreco(true)}
-            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${filterSemPreco ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}
-          >
-            Sem preço
-          </button>
+          {(() => {
+            const semPrecoCount = cotacaoProdutos.filter((cp) => hasNoPrice(cp.id)).length;
+            return (
+              <button
+                onClick={() => setFilterSemPreco(true)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  filterSemPreco
+                    ? "bg-background shadow-sm text-foreground"
+                    : semPrecoCount > 0
+                      ? "text-destructive font-bold"
+                      : "text-muted-foreground"
+                }`}
+              >
+                Sem preço{semPrecoCount > 0 && ` (${semPrecoCount})`}
+              </button>
+            );
+          })()}
         </div>
         <div className="flex-1" />
         <button
