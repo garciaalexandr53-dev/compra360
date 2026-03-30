@@ -296,6 +296,14 @@ const AnalisePage = () => {
       }).sort((a, b) => b.total - a.total);
 
       const economia = bestTotal - totalDepois;
+      
+      // GUARD: If optimized total is MORE expensive than pure cheapest, don't apply
+      if (totalDepois > bestTotal) {
+        toast.error(`Economia automática não aplicada: resultado ficaria R$ ${formatNumber(totalDepois - bestTotal)} mais caro por causa de pedidos mínimos.`);
+        setAutoLoading(false);
+        return;
+      }
+
       const result: DistResult = { totalAntes: bestTotal, totalDepois, economia, fornecedorPedidos, semPreco };
 
       // Create/update pedidos
@@ -313,10 +321,8 @@ const AnalisePage = () => {
       setAutoResult(result);
       if (economia > 0) {
         toast.success(`Economia de ${formatBRL(economia)} aplicada! ✅`);
-      } else if (economia === 0) {
-        toast.success("Distribuição otimizada aplicada! A compra já estava no melhor preço. ✅");
       } else {
-        toast.info(`Distribuição aplicada. Custo adicional de ${formatBRL(Math.abs(economia))} para atingir pedidos mínimos.`);
+        toast.success("Pedidos criados com os melhores preços! ✅");
       }
     } catch (e: any) {
       toast.error(e.message || "Erro ao otimizar compra");
