@@ -28,8 +28,10 @@ const AnalisePage = () => {
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [autoLoading, setAutoLoading] = useState(false);
-  const [autoResult, setAutoResult] = useState<DistResult | null>(null);
+  const [scenarios, setScenarios] = useState<Scenario[] | null>(null);
+  const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
+  const [scenarioLoading, setScenarioLoading] = useState(false);
+  const [applyingScenario, setApplyingScenario] = useState(false);
   const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
   const [sendQueueOpen, setSendQueueOpen] = useState(false);
 
