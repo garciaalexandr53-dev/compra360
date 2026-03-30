@@ -48,6 +48,7 @@ const DashboardPage = () => {
   const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "manter_precos" | "zerar" | null>(null);
   const [novaCotacaoLoading, setNovaCotacaoLoading] = useState(false);
   const [removeSupplier, setRemoveSupplier] = useState<Fornecedor | null>(null);
+  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
 
   const removeSupplierMutation = useMutation({
     mutationFn: async (fornecedorId: string) => {
@@ -62,8 +63,8 @@ const DashboardPage = () => {
     },
     onSuccess: () => {
       toast.success(`${removeSupplier?.nome} removido da cotação`);
+      if (removeSupplier) setRemovedIds(prev => new Set(prev).add(removeSupplier.id));
       setRemoveSupplier(null);
-      queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
       queryClient.invalidateQueries({ queryKey: ["dash-respondidos"] });
       queryClient.invalidateQueries({ queryKey: ["dash-precos-count"] });
       queryClient.invalidateQueries({ queryKey: ["precos"] });
@@ -81,6 +82,7 @@ const DashboardPage = () => {
     onSuccess: (_, fornecedorId) => {
       const f = allFornecedores.find(f => f.id === fornecedorId);
       toast.success(`${f?.nome || "Fornecedor"} re-adicionado à cotação`);
+      setRemovedIds(prev => { const next = new Set(prev); next.delete(fornecedorId); return next; });
       queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
       queryClient.invalidateQueries({ queryKey: ["dash-respondidos"] });
       queryClient.invalidateQueries({ queryKey: ["dash-precos-count"] });
@@ -534,7 +536,7 @@ const DashboardPage = () => {
           const statusMsg = pct === 0 ? "⏳ Aguardando respostas..." : pct <= 50 ? "🔵 Chegando respostas!" : pct < 100 ? "🟢 Quase lá! Falta pouco..." : "✅ Todas recebidas!";
           const cfMap = new Map(cotacaoFornecedores.map((cf: any) => [cf.fornecedor_id, cf.created_at]));
           const selectedIds = new Set(cotacaoFornecedores.map((cf: any) => cf.fornecedor_id));
-          const removedSuppliers = allFornecedores.filter(f => !selectedIds.has(f.id));
+          const removedSuppliers = allFornecedores.filter(f => !selectedIds.has(f.id) && removedIds.has(f.id));
           const pendingOver2h = selectedFornecedores.filter(f => {
             if (respondidosSet.has(f.id)) return false;
             const sentAt = cfMap.get(f.id);
