@@ -25,6 +25,7 @@ interface PedidoWithDetails {
   fornecedor_id: string;
   total: number;
   created_at: string;
+  loja_id: string | null;
   items: ConferenciaItem[];
 }
 
@@ -178,7 +179,7 @@ const ConferenciaPedidos = () => {
     queryFn: async () => {
       const { data: pedidosData, error } = await supabase
         .from("pedidos")
-        .select("id, numero, total, created_at, fornecedor_id, fornecedores(nome)")
+        .select("id, numero, total, created_at, fornecedor_id, loja_id, fornecedores(nome)")
         .eq("status", "enviado")
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -189,6 +190,7 @@ const ConferenciaPedidos = () => {
         fornecedor_id: p.fornecedor_id,
         total: p.total || 0,
         created_at: p.created_at,
+        loja_id: p.loja_id || null,
       }));
     },
   });
@@ -303,40 +305,27 @@ const ConferenciaPedidos = () => {
     }
 
     try {
-      const { data: conf, error: confError } = await supabase
-        .from("conferencias")
-        .insert({
-          pedido_id: selectedPedido.id,
-          conferido_por: nome.trim(),
-          observacoes: totalDivergencias > 0 ? `${totalDivergencias} divergência(s) encontrada(s)` : "Sem divergências",
-        })
-        .select("id")
-        .single();
-
-      if (confError) throw confError;
-
-      const insertItems = items.map((item) => ({
-        conferencia_id: conf.id,
+      const conferenceItems = items.map((item) => ({
         produto_nome: item.produto_nome,
         embalagem: item.embalagem,
         quantidade_pedida: item.quantidade_pedida,
         quantidade_recebida: item.quantidade_recebida,
         preco_cotado: item.preco_cotado,
         preco_nf: item.preco_nf,
-        divergencia_qtd: item.quantidade_recebida !== item.quantidade_pedida,
-        divergencia_preco: item.preco_nf != null && item.preco_cotado != null && item.preco_nf !== item.preco_cotado,
       }));
 
-      const { error: itensError } = await supabase
-        .from("conferencia_itens")
-        .insert(insertItems);
+      const { data, error } = await supabase.functions.invoke("complete-conferencia", {
+        body: {
+          pedido_id: selectedPedido.id,
+          conferido_por: nome.trim(),
+          observacoes: totalDivergencias > 0 ? `${totalDivergencias} divergência(s) encontrada(s)` : "Sem divergências",
+          items: conferenceItems,
+          loja_id: selectedPedido.loja_id || null,
+        },
+      });
 
-      if (itensError) throw itensError;
-
-      await supabase
-        .from("pedidos")
-        .update({ status: "recebido" as any })
-        .eq("id", selectedPedido.id);
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       const itemsFaltantes = items
         .filter((item) => item.quantidade_recebida < item.quantidade_pedida)
