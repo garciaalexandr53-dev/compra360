@@ -22,8 +22,9 @@ const ResumoDistribuicaoContent = () => {
   const [distOpen, setDistOpen] = useState(false);
   const [analysisText, setAnalysisText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [autoLoading, setAutoLoading] = useState(false);
-  const [autoResult, setAutoResult] = useState<DistResult | null>(null);
+  const [scenarios, setScenarios] = useState<Scenario[] | null>(null);
+  const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
+  const [scenarioLoading, setScenarioLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // ---- Data fetching (shared) ----
