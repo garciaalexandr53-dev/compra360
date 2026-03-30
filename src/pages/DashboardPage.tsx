@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ClipboardList, FileSpreadsheet, Pencil, Send, Users, Eye, Trophy, RefreshCw, Smartphone, CheckCircle2, Clock, Target, Lightbulb, MessageCircle, X } from "lucide-react";
+import { ClipboardList, FileSpreadsheet, Pencil, Send, Users, Eye, Trophy, RefreshCw, Smartphone, CheckCircle2, Clock, Target, Lightbulb, MessageCircle, X, UserPlus } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
@@ -52,19 +52,7 @@ const DashboardPage = () => {
   const removeSupplierMutation = useMutation({
     mutationFn: async (fornecedorId: string) => {
       if (!cotacaoAtiva?.id) return;
-      // Remove prices for this supplier in this quote
-      const { data: cps } = await supabase
-        .from("cotacao_produtos")
-        .select("id")
-        .eq("cotacao_id", cotacaoAtiva.id);
-      if (cps && cps.length > 0) {
-        await supabase
-          .from("precos")
-          .delete()
-          .eq("fornecedor_id", fornecedorId)
-          .in("cotacao_produto_id", cps.map(cp => cp.id));
-      }
-      // Remove from cotacao_fornecedores
+      // Only remove from cotacao_fornecedores — prices are preserved for re-addition
       const { error } = await supabase
         .from("cotacao_fornecedores")
         .delete()
@@ -75,6 +63,24 @@ const DashboardPage = () => {
     onSuccess: () => {
       toast.success(`${removeSupplier?.nome} removido da cotação`);
       setRemoveSupplier(null);
+      queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-respondidos"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-precos-count"] });
+      queryClient.invalidateQueries({ queryKey: ["precos"] });
+    },
+  });
+
+  const reAddSupplierMutation = useMutation({
+    mutationFn: async (fornecedorId: string) => {
+      if (!cotacaoAtiva?.id) return;
+      await supabase.from("cotacao_fornecedores").insert({
+        cotacao_id: cotacaoAtiva.id,
+        fornecedor_id: fornecedorId,
+      });
+    },
+    onSuccess: (_, fornecedorId) => {
+      const f = allFornecedores.find(f => f.id === fornecedorId);
+      toast.success(`${f?.nome || "Fornecedor"} re-adicionado à cotação`);
       queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
       queryClient.invalidateQueries({ queryKey: ["dash-respondidos"] });
       queryClient.invalidateQueries({ queryKey: ["dash-precos-count"] });
@@ -527,6 +533,8 @@ const DashboardPage = () => {
           const pct = selectedSupplierCount > 0 ? Math.round((respostaCount / selectedSupplierCount) * 100) : 0;
           const statusMsg = pct === 0 ? "⏳ Aguardando respostas..." : pct <= 50 ? "🔵 Chegando respostas!" : pct < 100 ? "🟢 Quase lá! Falta pouco..." : "✅ Todas recebidas!";
           const cfMap = new Map(cotacaoFornecedores.map((cf: any) => [cf.fornecedor_id, cf.created_at]));
+          const selectedIds = new Set(cotacaoFornecedores.map((cf: any) => cf.fornecedor_id));
+          const removedSuppliers = allFornecedores.filter(f => !selectedIds.has(f.id));
           const pendingOver2h = selectedFornecedores.filter(f => {
             if (respondidosSet.has(f.id)) return false;
             const sentAt = cfMap.get(f.id);
@@ -626,6 +634,31 @@ const DashboardPage = () => {
                       </button>
                     );
                   })}
+                </div>
+              )}
+
+              {/* Re-add removed suppliers */}
+              {removedSuppliers.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted-foreground font-medium mt-2">Fornecedores removidos</p>
+                  {removedSuppliers.map(f => (
+                    <div
+                      key={`removed-${f.id}`}
+                      className="flex items-center gap-2.5 rounded-lg border border-dashed border-muted-foreground/30 py-2 px-3 opacity-60 hover:opacity-100 transition-all"
+                    >
+                      <UserPlus className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-sm text-foreground truncate">{f.nome}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="ml-auto shrink-0 text-xs text-primary hover:bg-primary/10 h-7 px-2"
+                        onClick={() => reAddSupplierMutation.mutate(f.id)}
+                        disabled={reAddSupplierMutation.isPending}
+                      >
+                        Re-adicionar
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -743,9 +776,9 @@ const DashboardPage = () => {
       <AlertDialog open={!!removeSupplier} onOpenChange={(open) => { if (!open) setRemoveSupplier(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover fornecedor da cotação?</AlertDialogTitle>
+            <AlertDialogTitle>Deseja excluir o fornecedor da cotação?</AlertDialogTitle>
             <AlertDialogDescription>
-              <span className="font-semibold">{removeSupplier?.nome}</span> será removido desta cotação e seus preços apagados. O cadastro do fornecedor não será afetado.
+              <span className="font-semibold">{removeSupplier?.nome}</span> será removido desta cotação. Os preços já enviados serão preservados e poderão ser recuperados ao re-adicioná-lo. O cadastro do fornecedor não será afetado.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
