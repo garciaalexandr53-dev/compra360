@@ -44,7 +44,7 @@ const FornecedorCotacaoPage = () => {
       const { data: fornecedorLojas } = await supabase
         .from("fornecedor_lojas")
         .select("loja_id")
-        .eq("fornecedor_id", fId);
+        .eq("fornecedor_id", supplier.id);
       const lojaIds = (fornecedorLojas || []).map((fl: any) => fl.loja_id);
 
       // Get active cotação - prefer loja from URL param, then supplier's lojas
@@ -89,7 +89,7 @@ const FornecedorCotacaoPage = () => {
         const { data: existingPrices } = await supabase
           .from("precos")
           .select("cotacao_produto_id, preco")
-          .eq("fornecedor_id", fId)
+          .eq("fornecedor_id", supplier.id)
           .in("cotacao_produto_id", cpIds);
 
         if (existingPrices) {
