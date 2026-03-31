@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,8 +8,9 @@ import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Loader2, Zap, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft } from "lucide-react";
+import { Loader2, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft } from "lucide-react";
 import SendOrdersModal from "@/components/dashboard/SendOrdersModal";
 import { generateScenarios, type Scenario } from "@/lib/scenarios";
 
@@ -30,9 +31,8 @@ const AnalisePage = () => {
   const queryClient = useQueryClient();
   const [scenarios, setScenarios] = useState<Scenario[] | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
-  const [scenarioLoading, setScenarioLoading] = useState(false);
   const [applyingScenario, setApplyingScenario] = useState(false);
-  const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
+  const [ordersOpen, setOrdersOpen] = useState(false);
   const [sendQueueOpen, setSendQueueOpen] = useState(false);
 
   // Receipt dialog
@@ -102,8 +102,8 @@ const AnalisePage = () => {
     },
   });
 
-  // ---- Compute current total (best price per product) ----
-  const { grandTotal, worstTotal, economiaDisponivel, hasMinimumIssues } = useMemo(() => {
+  // ---- Compute totals ----
+  const { grandTotal, worstTotal, economiaDisponivel } = useMemo(() => {
     let best = 0;
     let worst = 0;
     cotacaoProdutos.forEach((cp: any) => {
@@ -114,27 +114,8 @@ const AnalisePage = () => {
       best += Math.min(...prices) * qty;
       worst += Math.max(...prices) * qty;
     });
-    // Check if any supplier with items is below minimum
-    const supplierTotals: Record<string, number> = {};
-    cotacaoProdutos.forEach((cp: any) => {
-      const cpPrecos = precos
-        .filter((p: any) => p.cotacao_produto_id === cp.id && p.preco !== null && p.preco > 0)
-        .sort((a: any, b: any) => a.preco - b.preco);
-      if (!cpPrecos.length) return;
-      const fId = cpPrecos[0].fornecedor_id;
-      const qty = cp.quantidade || 1;
-      supplierTotals[fId] = (supplierTotals[fId] || 0) + Number(cpPrecos[0].preco) * qty;
-    });
-    let hasMinIssue = false;
-    for (const [fId, total] of Object.entries(supplierTotals)) {
-      const f = fornecedores.find(ff => ff.id === fId);
-      if (f?.pedido_minimo && Number(f.pedido_minimo) > 0 && total < Number(f.pedido_minimo)) {
-        hasMinIssue = true;
-        break;
-      }
-    }
-    return { grandTotal: best, worstTotal: worst, economiaDisponivel: worst - best, hasMinimumIssues: hasMinIssue };
-  }, [cotacaoProdutos, precos, fornecedores]);
+    return { grandTotal: best, worstTotal: worst, economiaDisponivel: worst - best };
+  }, [cotacaoProdutos, precos]);
 
   // ---- Orders by supplier (best price wins) ----
   const orders = useMemo(() => {
@@ -173,21 +154,19 @@ const AnalisePage = () => {
     return result;
   }, [cotacaoProdutos, precos, fornecedores]);
 
-  // ---- Generate Scenarios ----
-  const runScenarios = () => {
-    if (!cotacaoAtiva?.id) return;
-    setScenarioLoading(true);
-    try {
-      const result = generateScenarios(cotacaoProdutos, precos, fornecedores);
-      setScenarios(result);
-      setSelectedScenario(null);
-      toast.success(`${result.length} cenário(s) gerado(s) para comparação`);
-    } catch (e: any) {
-      toast.error(e.message || "Erro ao gerar cenários");
-    } finally {
-      setScenarioLoading(false);
+  // ---- Auto-generate scenarios when data is ready ----
+  const hasPrecos = precos.some((p: any) => p.preco !== null && p.preco > 0);
+
+  useEffect(() => {
+    if (hasPrecos && cotacaoProdutos.length > 0 && fornecedores.length > 0 && !scenarios) {
+      try {
+        const result = generateScenarios(cotacaoProdutos, precos, fornecedores);
+        setScenarios(result);
+      } catch (e) {
+        console.error("Error generating scenarios:", e);
+      }
     }
-  };
+  }, [hasPrecos, cotacaoProdutos, precos, fornecedores, scenarios]);
 
   // ---- Apply selected scenario (create pedidos) ----
   const applyScenario = async (scenario: Scenario) => {
@@ -205,7 +184,8 @@ const AnalisePage = () => {
       }
       queryClient.invalidateQueries({ queryKey: ["pedidos"] });
       setSelectedScenario(scenario);
-      toast.success("Cenário aplicado! Pedidos criados. ✅");
+      setOrdersOpen(true);
+      toast.success("Estratégia aplicada! Pedidos prontos para envio. ✅");
     } catch (e: any) {
       toast.error(e.message || "Erro ao aplicar cenário");
     } finally {
@@ -301,8 +281,7 @@ const AnalisePage = () => {
     setReceiptOpen(true);
   };
 
-  const toggleCard = (id: string) => setOpenCards((prev) => ({ ...prev, [id]: !prev[id] }));
-
+  // ---- Active orders (from scenario or default) ----
   const activeOrders = useMemo(() => {
     if (selectedScenario) {
       return selectedScenario.fornecedores.map(sf => ({
@@ -320,125 +299,230 @@ const AnalisePage = () => {
   }, [selectedScenario, orders, fornecedores]);
 
   const fornecedoresComPedido = activeOrders.filter(o => o.items.length > 0);
-  const fornecedoresSemPedido = activeOrders.filter(o => o.items.length === 0);
   const totalGeral = fornecedoresComPedido.reduce((s, o) => s + o.total, 0);
 
   if (!cotacaoAtiva) return <div className="p-5 py-10 text-center text-muted-foreground">Nenhuma cotação ativa.</div>;
 
-  const hasPrecos = precos.some((p: any) => p.preco !== null && p.preco > 0);
+  if (!hasPrecos) return (
+    <div className="p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" className="gap-1 text-xs h-8" onClick={() => navigate("/dashboard")}><ArrowLeft className="h-4 w-4" /> Dashboard</Button>
+      </div>
+      <div className="text-center py-10 text-muted-foreground text-sm">Nenhum preço recebido ainda. Aguarde os fornecedores responderem.</div>
+    </div>
+  );
+
+  // Find scenario helpers
+  const scenarioEconomia = scenarios?.find(s => s.id === "sem-minimo-abaixo") || scenarios?.find(s => s.id === "melhor-preco");
+  const scenarioMelhorPreco = scenarios?.find(s => s.id === "melhor-preco");
+  const scenarioConsolidado = scenarios?.find(s => s.id === "consolidado");
+  const melhorPrecoMinIssues = scenarioMelhorPreco?.fornecedores.filter(s => !s.minimoOk).length || 0;
 
   return (
-    <div className="p-5 space-y-4 pb-24">
+    <div className="p-5 space-y-5 pb-28">
+      {/* NAV */}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" className="gap-1 text-xs h-8" onClick={() => navigate("/dashboard")}><ArrowLeft className="h-4 w-4" /> Dashboard</Button>
         <span className="text-xs text-muted-foreground">Análise de pedidos</span>
       </div>
 
+      {/* 1. HEADER */}
       <div className="bg-card border rounded-xl p-4 shadow-sm">
-        <div className="flex items-center justify-between">
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">💰 Total da compra</div>
-            <div className="text-2xl font-extrabold font-mono text-foreground mt-1">{formatBRL(selectedScenario ? selectedScenario.totalGeral : grandTotal)}</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">💰 Total da compra</div>
+            <div className="text-2xl font-extrabold font-mono text-foreground mt-1">
+              {formatBRL(selectedScenario ? selectedScenario.totalGeral : grandTotal)}
+            </div>
           </div>
-          {economiaDisponivel > 0 && !selectedScenario && (
-            <div className="text-right">
-              <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">💸 Economia vs pior preço</div>
-              <div className="text-lg font-extrabold font-mono text-green-600 dark:text-green-400 mt-1">{formatBRL(economiaDisponivel)}</div>
+          <div className="text-right">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">🏆 Economia vs pior preço</div>
+            <div className="text-xl font-extrabold font-mono text-green-600 dark:text-green-400 mt-1">
+              {formatBRL(economiaDisponivel)}
+            </div>
+          </div>
+        </div>
+        <p className="text-center text-xs font-medium text-primary mt-3">
+          O Compra360 encontrou a melhor forma de comprar para você
+        </p>
+      </div>
+
+      {/* 2. CENÁRIOS */}
+      {scenarios && scenarios.length > 0 && !selectedScenario && (
+        <div className="space-y-4 animate-fade-in">
+          <h3 className="text-sm font-bold text-foreground">Escolha como você quer comprar:</h3>
+
+          {/* Card 1 — Economia Inteligente */}
+          {scenarioEconomia && (
+            <div className="bg-card border border-green-500/50 rounded-xl p-4 shadow-sm shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all hover:shadow-[0_0_16px_rgba(16,185,129,0.4)]">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-green-500/15 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.4)]">
+                  ✨ RECOMENDADO
+                </span>
+              </div>
+              <div className="text-base font-bold text-foreground">Economia Inteligente</div>
+              <div className="text-2xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioEconomia.totalGeral)}</div>
+              {scenarioEconomia.diffVsBaseline !== 0 && (
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {scenarioEconomia.diffVsBaseline > 0 ? "+" : ""}{formatBRL(scenarioEconomia.diffVsBaseline)} vs melhor preço puro
+                </div>
+              )}
+              <div className="text-xs text-muted-foreground mt-1">{scenarioEconomia.numFornecedores} fornecedor(es)</div>
+              <p className="text-xs text-muted-foreground mt-2">Menor custo respeitando o pedido mínimo de cada fornecedor</p>
+              <Button 
+                onClick={() => applyScenario(scenarioEconomia)} 
+                disabled={applyingScenario} 
+                className="w-full mt-3 h-12 text-sm font-bold bg-green-600 hover:bg-green-700 text-white"
+              >
+                {applyingScenario ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                ✅ Usar esta estratégia
+              </Button>
+            </div>
+          )}
+
+          {/* Card 2 — Melhor Preço */}
+          {scenarioMelhorPreco && scenarioMelhorPreco.id !== scenarioEconomia?.id && (
+            <div className="bg-card border rounded-xl p-4 shadow-sm transition-all hover:shadow-md">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full">
+                  💰 MENOR CUSTO
+                </span>
+              </div>
+              <div className="text-base font-bold text-foreground">Melhor Preço</div>
+              <div className="text-xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioMelhorPreco.totalGeral)}</div>
+              <p className="text-xs text-muted-foreground mt-2">Preço mais baixo possível — pode haver fornecedores abaixo do mínimo</p>
+              {melhorPrecoMinIssues > 0 && (
+                <div className="flex items-center gap-1.5 mt-2 bg-amber-500/10 rounded-lg px-3 py-2">
+                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                    ⚠️ {melhorPrecoMinIssues} fornecedor(es) abaixo do pedido mínimo
+                  </span>
+                </div>
+              )}
+              <Button 
+                variant="outline"
+                onClick={() => applyScenario(scenarioMelhorPreco)} 
+                disabled={applyingScenario} 
+                className="w-full mt-3 h-12 text-sm font-bold"
+              >
+                {applyingScenario ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Usar esta estratégia
+              </Button>
+            </div>
+          )}
+
+          {/* Card 3 — Menos Fornecedores */}
+          {scenarioConsolidado && (
+            <div className="bg-card border rounded-xl p-4 shadow-sm transition-all hover:shadow-md">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
+                  📦 MAIS SIMPLES
+                </span>
+              </div>
+              <div className="text-base font-bold text-foreground">Menos Fornecedores</div>
+              <div className="text-xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioConsolidado.totalGeral)}</div>
+              <div className="text-xs mt-1">
+                <span className="font-bold text-green-600 dark:text-green-400">{scenarioConsolidado.numFornecedores}</span>
+                <span className="text-muted-foreground"> fornecedor(es)</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">Menos pedidos para gerenciar, entrega mais simples</p>
+              <Button 
+                variant="outline"
+                onClick={() => applyScenario(scenarioConsolidado)} 
+                disabled={applyingScenario} 
+                className="w-full mt-3 h-12 text-sm font-bold"
+              >
+                {applyingScenario ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Usar esta estratégia
+              </Button>
+            </div>
+          )}
+
+          {/* Tabela Comparativa */}
+          {scenarios.length > 1 && (
+            <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="px-3 py-2 text-left text-[10px] font-bold uppercase text-muted-foreground">Estratégia</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-bold uppercase text-muted-foreground">Total</th>
+                    <th className="px-3 py-2 text-center text-[10px] font-bold uppercase text-muted-foreground">Forn.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {scenarioEconomia && (
+                    <tr className="bg-green-500/5 border-l-2 border-l-green-500">
+                      <td className="px-3 py-2 text-xs font-bold text-foreground">
+                        Economia inteligente
+                        <span className="ml-1 text-[9px] text-green-600 dark:text-green-400 font-bold">← recomendado</span>
+                      </td>
+                      <td className="px-3 py-2 text-right text-xs font-mono font-bold text-foreground">{formatBRL(scenarioEconomia.totalGeral)}</td>
+                      <td className="px-3 py-2 text-center text-xs font-bold">{scenarioEconomia.numFornecedores}</td>
+                    </tr>
+                  )}
+                  {scenarioMelhorPreco && scenarioMelhorPreco.id !== scenarioEconomia?.id && (
+                    <tr>
+                      <td className="px-3 py-2 text-xs font-medium text-foreground">
+                        Melhor preço
+                        <span className="ml-1 text-[9px] text-muted-foreground">(mais barato)</span>
+                      </td>
+                      <td className="px-3 py-2 text-right text-xs font-mono font-bold text-foreground">{formatBRL(scenarioMelhorPreco.totalGeral)}</td>
+                      <td className="px-3 py-2 text-center text-xs font-bold">{scenarioMelhorPreco.numFornecedores}</td>
+                    </tr>
+                  )}
+                  {scenarioConsolidado && (
+                    <tr>
+                      <td className="px-3 py-2 text-xs font-medium text-foreground">
+                        Menos fornecedores
+                        <span className="ml-1 text-[9px] text-muted-foreground">(mais simples)</span>
+                      </td>
+                      <td className="px-3 py-2 text-right text-xs font-mono font-bold text-foreground">{formatBRL(scenarioConsolidado.totalGeral)}</td>
+                      <td className="px-3 py-2 text-center text-xs font-bold">{scenarioConsolidado.numFornecedores}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
-      </div>
-
-      {hasPrecos && !selectedScenario && (
-        <div className="bg-card border border-primary/20 rounded-xl p-5 shadow-sm animate-fade-in">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0"><Zap className="h-5 w-5 text-primary" /></div>
-            <div>
-              <div className="text-sm font-bold text-foreground">🤖 Simulação de cenários</div>
-              <div className="text-xs text-muted-foreground">Compare diferentes estratégias de compra e escolha a melhor</div>
-            </div>
-          </div>
-          <Button onClick={runScenarios} disabled={scenarioLoading} className="w-full" size="lg">
-            {scenarioLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
-            {scenarioLoading ? "Calculando..." : scenarios ? "Recalcular cenários" : "Simular cenários"}
-          </Button>
-        </div>
       )}
 
-      {scenarios && !selectedScenario && (
-        <div className="space-y-3 animate-fade-in">
-          <h3 className="text-sm font-bold text-foreground">📊 Cenários disponíveis</h3>
-          {scenarios.map((sc) => {
-            const isBaseline = sc.id === "melhor-preco";
-            const hasMinIssues = sc.fornecedores.some(s => !s.minimoOk);
-            return (
-              <div key={sc.id} className={`bg-card border rounded-xl p-4 shadow-sm ${isBaseline ? "border-primary/30" : ""}`}>
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">{sc.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-bold text-foreground">{sc.nome}</span>
-                      {isBaseline && <span className="text-[10px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">REFERÊNCIA</span>}
-                      {hasMinIssues && <span className="text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 px-1.5 py-0.5 rounded-full">⚠️ Ped. mínimo</span>}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">{sc.descricao}</p>
-                    <div className="flex items-center gap-4 mt-2">
-                      <div>
-                        <div className="text-[10px] text-muted-foreground">Total</div>
-                        <div className="text-base font-extrabold font-mono text-foreground">{formatBRL(sc.totalGeral)}</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-muted-foreground">Fornecedores</div>
-                        <div className="text-base font-bold text-foreground">{sc.numFornecedores}</div>
-                      </div>
-                      {sc.diffVsBaseline !== 0 && (
-                        <div>
-                          <div className="text-[10px] text-muted-foreground">Diferença</div>
-                          <div className={`text-sm font-bold font-mono ${sc.diffVsBaseline > 0 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400"}`}>
-                            {sc.diffVsBaseline > 0 ? "+" : ""}{formatBRL(sc.diffVsBaseline)}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-3">
-                      <Button size="sm" onClick={() => applyScenario(sc)} disabled={applyingScenario} variant={isBaseline ? "default" : "outline"}>
-                        {applyingScenario ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
-                        Aplicar este cenário
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
+      {/* Cenário aplicado */}
       {selectedScenario && (
         <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl p-4 shadow-sm animate-fade-in">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
             <div className="flex-1">
-              <div className="text-sm font-bold text-foreground">Cenário "{selectedScenario.nome}" aplicado</div>
+              <div className="text-sm font-bold text-foreground">Estratégia "{selectedScenario.nome}" aplicada</div>
               <div className="text-xs text-muted-foreground">
                 {selectedScenario.numFornecedores} fornecedor(es) · Total: {formatBRL(selectedScenario.totalGeral)}
-                {selectedScenario.diffVsBaseline > 0 && ` (+${formatBRL(selectedScenario.diffVsBaseline)} vs melhor preço)`}
               </div>
             </div>
           </div>
-          {selectedScenario.semPreco > 0 && <div className="text-xs text-muted-foreground mt-2">{selectedScenario.semPreco} produto(s) sem cotação</div>}
-          <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={() => setSelectedScenario(null)}>Trocar cenário</Button>
+          <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={() => { setSelectedScenario(null); setOrdersOpen(false); }}>Trocar estratégia</Button>
         </div>
       )}
 
-      {hasPrecos && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-bold text-foreground">{selectedScenario ? `Pedidos — ${selectedScenario.nome}` : "Pedidos (melhor preço por item)"}</h3>
-          {fornecedoresComPedido.map(({ fornecedor: f, items, total, minimoOk }) => {
-            const isOpen = openCards[f.id] || false;
-            return (
+      {/* 3. BLOCO EXPLICATIVO */}
+      <div className="bg-muted/50 border rounded-xl px-4 py-3">
+        <p className="text-xs text-muted-foreground text-center">
+          🤖 O sistema analisou {cotacaoProdutos.length} produto(s) e {fornecedores.length} fornecedor(es) para encontrar a combinação ideal de preço e operação.
+        </p>
+      </div>
+
+      {/* 4. PEDIDOS — accordion */}
+      {fornecedoresComPedido.length > 0 && (
+        <Collapsible open={ordersOpen} onOpenChange={setOrdersOpen}>
+          <CollapsibleTrigger className="flex items-center justify-between w-full bg-card border rounded-xl px-4 py-3 hover:bg-muted/30 transition-colors">
+            <span className="text-sm font-bold text-foreground flex items-center gap-2">
+              📋 Ver pedidos prontos
+              <span className="text-xs font-normal text-muted-foreground">({fornecedoresComPedido.length})</span>
+            </span>
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${ordersOpen ? "rotate-180" : ""}`} />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2 space-y-2">
+            {fornecedoresComPedido.map(({ fornecedor: f, items, total, minimoOk }) => (
               <div key={f.id} className="bg-card border rounded-xl shadow-sm overflow-hidden">
-                <div className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => toggleCard(f.id)}>
+                <div className="px-4 py-3 flex items-center justify-between">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <span className="text-green-600">✅</span>
                     <span className="font-bold text-foreground text-sm truncate">{f.nome}</span>
@@ -446,66 +530,63 @@ const AnalisePage = () => {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-sm font-extrabold font-mono text-foreground">{formatBRL(total)}</span>
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); sendWhatsApp(f); }}><Smartphone className="h-4 w-4 text-green-600" /></Button>
-                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => sendWhatsApp(f)}>
+                      <Smartphone className="h-4 w-4 text-green-600" />
+                    </Button>
                   </div>
                 </div>
-                {isOpen && (
-                  <div className="border-t">
-                    <table className="w-full text-sm">
-                      <thead><tr className="bg-muted/50">
-                        <th className="px-3 py-1.5 text-left text-[10px] font-bold uppercase text-muted-foreground">Produto</th>
-                        <th className="px-3 py-1.5 text-center text-[10px] font-bold uppercase text-muted-foreground">Qt</th>
-                        <th className="px-3 py-1.5 text-right text-[10px] font-bold uppercase text-muted-foreground">Preço</th>
-                        <th className="px-3 py-1.5 text-right text-[10px] font-bold uppercase text-muted-foreground">Subtotal</th>
-                      </tr></thead>
-                      <tbody>
-                        {items.map((it, i) => (
-                          <tr key={i} className={i % 2 === 0 ? "bg-muted/20" : ""}>
-                            <td className="px-3 py-1.5 text-xs font-medium">{it.produto}</td>
-                            <td className="px-3 py-1.5 text-center text-xs">{it.quantidade}</td>
-                            <td className="px-3 py-1.5 text-right text-xs font-mono">R${formatNumber(it.preco)}</td>
-                            <td className="px-3 py-1.5 text-right text-xs font-mono font-bold">{formatBRL(it.total)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    <div className="px-4 py-2 border-t flex items-center gap-2 justify-end">
-                      <Button size="sm" variant="outline" className="text-xs" onClick={() => openReceipt(f)}><FileText className="h-3 w-3 mr-1" /> Conferência</Button>
-                      <Button size="sm" variant="outline" className="text-xs" onClick={() => sendWhatsAppAi(f)} disabled={whatsappAiLoading === f.id}>
-                        {whatsappAiLoading === f.id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <MessageSquare className="h-3 w-3 mr-1" />} 🤖 IA
-                      </Button>
-                    </div>
+                <div className="border-t">
+                  <table className="w-full text-sm">
+                    <thead><tr className="bg-muted/50">
+                      <th className="px-3 py-1.5 text-left text-[10px] font-bold uppercase text-muted-foreground">Produto</th>
+                      <th className="px-3 py-1.5 text-center text-[10px] font-bold uppercase text-muted-foreground">Qt</th>
+                      <th className="px-3 py-1.5 text-right text-[10px] font-bold uppercase text-muted-foreground">Preço</th>
+                      <th className="px-3 py-1.5 text-right text-[10px] font-bold uppercase text-muted-foreground">Subtotal</th>
+                    </tr></thead>
+                    <tbody>
+                      {items.map((it, i) => (
+                        <tr key={i} className={i % 2 === 0 ? "bg-muted/20" : ""}>
+                          <td className="px-3 py-1.5 text-xs font-medium">{it.produto}</td>
+                          <td className="px-3 py-1.5 text-center text-xs">{it.quantidade}</td>
+                          <td className="px-3 py-1.5 text-right text-xs font-mono">R${formatNumber(it.preco)}</td>
+                          <td className="px-3 py-1.5 text-right text-xs font-mono font-bold">{formatBRL(it.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="px-4 py-2 border-t flex items-center gap-2 justify-end">
+                    <Button size="sm" variant="outline" className="text-xs" onClick={() => openReceipt(f)}><FileText className="h-3 w-3 mr-1" /> Conferência</Button>
+                    <Button size="sm" variant="outline" className="text-xs" onClick={() => sendWhatsAppAi(f)} disabled={whatsappAiLoading === f.id}>
+                      {whatsappAiLoading === f.id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <MessageSquare className="h-3 w-3 mr-1" />} 🤖 IA
+                    </Button>
                   </div>
-                )}
+                </div>
               </div>
-            );
-          })}
-          {fornecedoresSemPedido.map(({ fornecedor: f }) => (
-            <div key={f.id} className="px-4 py-2.5 flex items-center gap-2 bg-card border rounded-xl opacity-50">
-              <span className="text-amber-500">⚠️</span>
-              <span className="text-sm text-muted-foreground">{f.nome} — não incluído nesta compra</span>
-            </div>
-          ))}
-          {fornecedoresComPedido.length > 0 && (
+            ))}
             <div className="bg-card border rounded-xl px-4 py-3 flex items-center justify-between">
               <span className="text-sm font-bold text-muted-foreground">Total geral</span>
               <span className="text-lg font-extrabold font-mono text-foreground">{formatBRL(totalGeral)}</span>
             </div>
-          )}
-        </div>
+          </CollapsibleContent>
+        </Collapsible>
       )}
 
-      {!hasPrecos && <div className="text-center py-10 text-muted-foreground text-sm">Nenhum preço recebido ainda. Aguarde os fornecedores responderem.</div>}
-
-      {fornecedoresComPedido.length > 0 && (
-        <Button onClick={() => setSendQueueOpen(true)} size="lg" className="w-full bg-green-600 hover:bg-green-700 text-white text-base font-bold">
-          <Smartphone className="h-5 w-5 mr-2" /> Finalizar e enviar pedidos
-        </Button>
+      {/* 5. CTA FIXO */}
+      {selectedScenario && fornecedoresComPedido.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t z-50">
+          <Button
+            onClick={() => setSendQueueOpen(true)}
+            size="lg"
+            className="w-full h-12 bg-green-600 hover:bg-green-700 text-white text-base font-bold"
+          >
+            <Smartphone className="h-5 w-5 mr-2" /> 📱 Finalizar e enviar pedidos
+          </Button>
+        </div>
       )}
 
       <SendOrdersModal open={sendQueueOpen} onOpenChange={setSendQueueOpen} orders={fornecedoresComPedido.map(o => ({ fornecedor: o.fornecedor, items: o.items, total: o.total }))} onSendOrder={(f) => sendWhatsApp(f)} onConclude={() => navigate("/dashboard")} />
 
+      {/* Receipt Dialog */}
       <Dialog open={receiptOpen} onOpenChange={setReceiptOpen}>
         <DialogContent className="max-w-lg print:max-w-full print:shadow-none print:border-none">
           <DialogHeader className="print:hidden"><DialogTitle>📋 Ficha de Conferência</DialogTitle></DialogHeader>
