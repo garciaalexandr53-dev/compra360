@@ -573,7 +573,7 @@ const AnalisePage = () => {
 
       {/* 5. CTA FIXO */}
       {selectedScenario && fornecedoresComPedido.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t z-50">
+        <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+64px)] left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t z-50">
           <Button
             onClick={() => setSendQueueOpen(true)}
             size="lg"
