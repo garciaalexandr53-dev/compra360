@@ -319,7 +319,7 @@ const AnalisePage = () => {
   const melhorPrecoMinIssues = scenarioMelhorPreco?.fornecedores.filter(s => !s.minimoOk).length || 0;
 
   return (
-    <div className="p-5 space-y-5 pb-28">
+    <div className="p-5 space-y-5 pb-[calc(env(safe-area-inset-bottom,0px)+140px)]">
       {/* NAV */}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" className="gap-1 text-xs h-8" onClick={() => navigate("/dashboard")}><ArrowLeft className="h-4 w-4" /> Dashboard</Button>
