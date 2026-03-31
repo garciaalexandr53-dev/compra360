@@ -344,16 +344,47 @@ export function generateScenarios(
   }
 
   const priceMap = buildPriceMap(cpInfos, precos);
-  const scenarios: Scenario[] = [];
 
-  const baseline = scenarioMelhorPreco(cpInfos, priceMap, fornecedorMap);
-  scenarios.push(baseline);
+  // Generate all three raw scenarios
+  const melhorPreco = scenarioMelhorPreco(cpInfos, priceMap, fornecedorMap);
+  const economiaInteligente = scenarioSemMinimoAbaixo(cpInfos, priceMap, fornecedorMap, melhorPreco.totalGeral);
+  const consolidado = scenarioConsolidado(cpInfos, priceMap, fornecedorMap, melhorPreco.totalGeral);
 
-  const noMin = scenarioSemMinimoAbaixo(cpInfos, priceMap, fornecedorMap, baseline.totalGeral);
-  if (noMin) scenarios.push(noMin);
+  // Use economia inteligente as reference, fallback to melhor preço
+  const economia = economiaInteligente || melhorPreco;
 
-  const consolidated = scenarioConsolidado(cpInfos, priceMap, fornecedorMap, baseline.totalGeral);
-  if (consolidated) scenarios.push(consolidated);
+  let candidates: Scenario[] = [melhorPreco];
+  if (economiaInteligente) candidates.push(economiaInteligente);
+  if (consolidado) candidates.push(consolidado);
 
-  return scenarios;
+  // 1. Remove dominated scenarios (strictly worse in both total AND supplier count)
+  candidates = candidates.filter(s1 =>
+    !candidates.some(s2 =>
+      s2 !== s1 &&
+      s2.totalGeral <= s1.totalGeral &&
+      s2.numFornecedores <= s1.numFornecedores &&
+      (s2.totalGeral < s1.totalGeral || s2.numFornecedores < s1.numFornecedores)
+    )
+  );
+
+  // 2. Tolerance rule for "menos fornecedores": remove if same/more suppliers or >5% more expensive
+  if (consolidado && candidates.includes(consolidado)) {
+    const aumento = (consolidado.totalGeral - economia.totalGeral) / economia.totalGeral;
+    if (
+      consolidado.numFornecedores >= economia.numFornecedores ||
+      aumento > 0.05
+    ) {
+      candidates = candidates.filter(s => s !== consolidado);
+    }
+  }
+
+  // 3. Mark economia inteligente as recommended (always first if present)
+  const result: Scenario[] = [];
+  const rec = candidates.find(s => s.id === "sem-minimo-abaixo");
+  if (rec) result.push(rec);
+  for (const s of candidates) {
+    if (s.id !== "sem-minimo-abaixo") result.push(s);
+  }
+
+  return result;
 }
