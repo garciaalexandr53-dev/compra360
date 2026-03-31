@@ -411,31 +411,45 @@ const AnalisePage = () => {
           )}
 
           {/* Card 3 — Menos Fornecedores */}
-          {scenarioConsolidado && (
-            <div className="bg-card border rounded-xl p-4 shadow-sm transition-all hover:shadow-md">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
-                  📦 MAIS SIMPLES
-                </span>
+          {(() => {
+            const referenceSuppliers = scenarioEconomia?.numFornecedores ?? scenarioMelhorPreco?.numFornecedores ?? 0;
+            const consolidadoSameCount = scenarioConsolidado && scenarioConsolidado.numFornecedores >= referenceSuppliers;
+            const showUnavailable = !scenarioConsolidado || consolidadoSameCount;
+
+            return (
+              <div className={`bg-card border rounded-xl p-4 shadow-sm transition-all ${showUnavailable ? "opacity-60" : "hover:shadow-md"}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
+                    📦 MAIS SIMPLES
+                  </span>
+                </div>
+                <div className="text-base font-bold text-foreground">Menos Fornecedores</div>
+                {showUnavailable ? (
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Já atingimos o menor número possível de fornecedores nesta compra
+                  </p>
+                ) : (
+                  <>
+                    <div className="text-xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioConsolidado!.totalGeral)}</div>
+                    <div className="text-xs mt-1">
+                      <span className="font-bold text-green-600 dark:text-green-400">{scenarioConsolidado!.numFornecedores}</span>
+                      <span className="text-muted-foreground"> fornecedor(es)</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">Menos pedidos para gerenciar, entrega mais simples</p>
+                    <Button 
+                      variant="outline"
+                      onClick={() => applyScenario(scenarioConsolidado!)} 
+                      disabled={applyingScenario} 
+                      className="w-full mt-3 h-12 text-sm font-bold"
+                    >
+                      {applyingScenario ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      Usar esta estratégia
+                    </Button>
+                  </>
+                )}
               </div>
-              <div className="text-base font-bold text-foreground">Menos Fornecedores</div>
-              <div className="text-xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioConsolidado.totalGeral)}</div>
-              <div className="text-xs mt-1">
-                <span className="font-bold text-green-600 dark:text-green-400">{scenarioConsolidado.numFornecedores}</span>
-                <span className="text-muted-foreground"> fornecedor(es)</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">Menos pedidos para gerenciar, entrega mais simples</p>
-              <Button 
-                variant="outline"
-                onClick={() => applyScenario(scenarioConsolidado)} 
-                disabled={applyingScenario} 
-                className="w-full mt-3 h-12 text-sm font-bold"
-              >
-                {applyingScenario ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Usar esta estratégia
-              </Button>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Tabela Comparativa */}
           {scenarios.length > 1 && (
