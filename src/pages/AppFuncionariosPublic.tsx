@@ -97,11 +97,35 @@ const AppFuncionariosPublic = () => {
   }, []);
   const lojaFromUrl = !!urlLojaId;
 
-  const [selectedLojaId, setSelectedLojaId] = useState<string>(urlLojaId);
+  const [selectedLojaId, setSelectedLojaId] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    const lojaFromLink = new URLSearchParams(window.location.search).get("loja") || "";
+    const lojaPersistida = window.localStorage.getItem("funcionarios_loja_id") || "";
+    return lojaFromLink || lojaPersistida;
+  });
   const [productSearch, setProductSearch] = useState("");
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
   const [productQtds, setProductQtds] = useState<Record<string, number>>({});
   const productsListRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (urlLojaId && urlLojaId !== selectedLojaId) {
+      setSelectedLojaId(urlLojaId);
+    }
+  }, [urlLojaId, selectedLojaId]);
+
+  useEffect(() => {
+    if (!selectedLojaId) return;
+
+    window.localStorage.setItem("funcionarios_loja_id", selectedLojaId);
+
+    const params = new URLSearchParams(window.location.search);
+    if (!params.get("loja")) {
+      params.set("loja", selectedLojaId);
+      const nextSearch = params.toString();
+      window.history.replaceState({}, "", `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}`);
+    }
+  }, [selectedLojaId]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -111,10 +135,10 @@ const AppFuncionariosPublic = () => {
   }, [productSearch]);
 
   const { data: lojas = [] } = useQuery({
-    queryKey: ["lojas-public", urlLojaId],
+    queryKey: ["lojas-public", selectedLojaId],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_lojas_public", {
-        _loja_id: urlLojaId || undefined,
+        _loja_id: selectedLojaId || undefined,
       });
       if (error) throw error;
       return (data || []) as { id: string; nome: string }[];
