@@ -465,21 +465,19 @@ const AppFuncionariosPublic = () => {
                         </div>
                       </div>
 
-                      {/* Quantity controls */}
-                      <div className="flex items-center gap-0.5 shrink-0">
-                        <button
-                          onClick={() => updateProductQtd(productKey, -1)}
-                          className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center active:scale-90 transition-transform"
-                        >
-                          <Minus className="h-4 w-4" />
-                        </button>
-                        <span className="w-8 text-center text-sm font-bold tabular-nums">{qty}</span>
-                        <button
-                          onClick={() => updateProductQtd(productKey, 1)}
-                          className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center active:scale-90 transition-transform"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </button>
+                      {/* Quantity input */}
+                      <div className="shrink-0">
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          value={qty}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 1;
+                            setProductQtds((prev) => ({ ...prev, [productKey]: Math.max(1, val) }));
+                          }}
+                          className="h-10 w-14 text-center text-sm font-bold rounded-lg border border-border bg-muted focus:outline-none focus:ring-2 focus:ring-primary tabular-nums"
+                        />
                       </div>
 
                       {/* Add button */}
