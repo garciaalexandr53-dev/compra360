@@ -258,7 +258,7 @@ const AppFuncionariosPublic = () => {
         ]
           .filter(Boolean)
           .join(" | ") || null,
-        registrado_por: (nome.trim() || "Funcionário") + lojaLabel,
+        registrado_por: "Funcionário" + lojaLabel,
         loja_id: selectedLojaId || (lojas.length === 1 ? lojas[0].id : null),
       }));
 
