@@ -3,31 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script>
-      (() => {
-        const isFuncionarios = window.location.pathname.startsWith("/app-funcionarios");
-        const appTitle = isFuncionarios ? "Compra360 Funcionários" : "Compra360";
-        const manifestHref = isFuncionarios ? "/manifest-funcionarios.json" : "/manifest.json";
-
-        document.title = appTitle;
-
-        let manifest = document.querySelector('link[rel="manifest"]');
-        if (!manifest) {
-          manifest = document.createElement("link");
-          manifest.setAttribute("rel", "manifest");
-          document.head.appendChild(manifest);
-        }
-        manifest.setAttribute("href", manifestHref);
-
-        let appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-        if (!appleTitle) {
-          appleTitle = document.createElement("meta");
-          appleTitle.setAttribute("name", "apple-mobile-web-app-title");
-          document.head.appendChild(appleTitle);
-        }
-        appleTitle.setAttribute("content", appTitle);
-      })();
-    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=optional" />
@@ -39,6 +14,20 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Compra360">
+    <script>
+      (() => {
+        const isFuncionarios = window.location.pathname.startsWith("/app-funcionarios");
+        if (!isFuncionarios) return;
+
+        document.title = "Compra360 Funcionários";
+
+        const manifest = document.querySelector('link[rel="manifest"]');
+        if (manifest) manifest.setAttribute("href", "/manifest-funcionarios.json");
+
+        const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+        if (appleTitle) appleTitle.setAttribute("content", "Compra360 Funcionários");
+      })();
+    </script>
     <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="/icon-192.png" sizes="192x192">
     <meta name="author" content="Lovable" />
