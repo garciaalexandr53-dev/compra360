@@ -478,13 +478,23 @@ const AppFuncionariosPublic = () => {
                       {/* Add button */}
                       <button
                         onClick={() => addFromProduct(product)}
-                        className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-all active:scale-90 ${
+                        className={`h-10 px-3 rounded-xl flex items-center justify-center gap-1.5 shrink-0 transition-all active:scale-90 ${
                           isAdded
                             ? "bg-green-500 text-white"
                             : "bg-primary text-primary-foreground"
                         }`}
                       >
-                        {isAdded ? <Check className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+                        {isAdded ? (
+                          <>
+                            <Check className="h-4 w-4" />
+                            <span className="text-xs font-semibold">OK</span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-4 w-4" />
+                            <span className="text-xs font-semibold">Add</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   );
