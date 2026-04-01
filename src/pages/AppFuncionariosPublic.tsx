@@ -374,29 +374,15 @@ const AppFuncionariosPublic = () => {
         </div>
       ) : (
         <div className="flex flex-col flex-1">
-          {/* Loja indicator or selector */}
-          {lojaFromUrl && selectedLojaName ? (
+          {/* Loja indicator (fixed label only) */}
+          {selectedLojaName && (
             <div className="px-4 pt-3">
               <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                 <MapPin className="h-3.5 w-3.5" />
                 Loja: <span className="font-medium text-foreground">{selectedLojaName}</span>
               </p>
             </div>
-          ) : !lojaFromUrl && lojas.length > 1 ? (
-            <div className="px-4 pt-3">
-              <Select value={selectedLojaId} onValueChange={setSelectedLojaId}>
-                <SelectTrigger className="h-11">
-                  <Store className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <SelectValue placeholder="Selecione a loja" />
-                </SelectTrigger>
-                <SelectContent>
-                  {lojas.map((loja) => (
-                    <SelectItem key={loja.id} value={loja.id}>{loja.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : null}
+          )}
 
 
           {/* Search bar - always visible */}
