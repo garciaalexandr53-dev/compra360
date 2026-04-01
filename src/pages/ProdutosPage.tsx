@@ -234,30 +234,28 @@ const ProdutosPage = () => {
   });
 
   const toggleCotacaoMutation = useMutation({
-    mutationFn: async ({ id, ativo, produtoId }: { id: string; ativo: boolean; produtoId: string }) => {
-      const { error: updateErr } = await supabase.from("produtos").update({ ativo }).eq("id", id);
-      if (updateErr) throw updateErr;
-
-      if (ativo && cotacaoAtiva) {
-        const { error: insertErr } = await supabase.from("cotacao_produtos").insert({
+    mutationFn: async ({ produtoId, adding }: { produtoId: string; adding: boolean }) => {
+      if (adding && cotacaoAtiva) {
+        const { error } = await supabase.from("cotacao_produtos").insert({
           cotacao_id: cotacaoAtiva.id,
           produto_id: produtoId,
           quantidade: 1,
         });
-        if (insertErr) throw insertErr;
-      } else if (!ativo && cotacaoAtiva) {
-        const { error: deleteErr } = await supabase.from("cotacao_produtos")
+        if (error) throw error;
+      } else if (!adding && cotacaoAtiva) {
+        const { error } = await supabase.from("cotacao_produtos")
           .delete()
           .eq("cotacao_id", cotacaoAtiva.id)
           .eq("produto_id", produtoId);
-        if (deleteErr) throw deleteErr;
+        if (error) throw error;
       }
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-produto-ids"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
-      toast.success(variables.ativo ? "Produto adicionado à cotação!" : "Produto removido da cotação");
+      toast.success(variables.adding ? "Produto adicionado à cotação!" : "Produto removido da cotação");
     },
     onError: (e: any) => toast.error(e.message),
   });
