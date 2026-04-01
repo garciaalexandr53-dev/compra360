@@ -3,9 +3,10 @@ import App from "./App.tsx";
 import "./index.css";
 
 const isFuncionariosApp = window.location.pathname.startsWith("/app-funcionarios");
+const FUNCIONARIOS_CACHE_RESET_VERSION = "funcionarios-cache-reset-v1";
 
-if (isFuncionariosApp && sessionStorage.getItem("funcionarios-pwa-cache-reset") !== "1") {
-  sessionStorage.setItem("funcionarios-pwa-cache-reset", "1");
+if (isFuncionariosApp && localStorage.getItem("funcionarios-cache-reset-version") !== FUNCIONARIOS_CACHE_RESET_VERSION) {
+  localStorage.setItem("funcionarios-cache-reset-version", FUNCIONARIOS_CACHE_RESET_VERSION);
 
   const clearPwaState = async () => {
     if ("serviceWorker" in navigator) {
