@@ -45,34 +45,11 @@ const AppFuncionariosPublic = () => {
   const [showNewProduct, setShowNewProduct] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Swap manifest, title & meta to funcionarios version for separate PWA identity
+  // Keep title consistent and capture install prompt
   useEffect(() => {
-    // Set page title
     const originalTitle = document.title;
     document.title = "Compra360 Funcionários";
 
-    // Set apple-mobile-web-app-title
-    let appleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]') as HTMLMetaElement | null;
-    const originalAppleTitle = appleMeta?.getAttribute("content") || "";
-    if (!appleMeta) {
-      appleMeta = document.createElement("meta");
-      appleMeta.name = "apple-mobile-web-app-title";
-      document.head.appendChild(appleMeta);
-    }
-    appleMeta.setAttribute("content", "Compra360 Funcionários");
-
-    // Swap manifest
-    const existing = document.querySelector('link[rel="manifest"]');
-    const originalManifest = existing?.getAttribute("href") || "/manifest.json";
-    if (existing) existing.setAttribute("href", "/manifest-funcionarios.json");
-    else {
-      const link = document.createElement("link");
-      link.rel = "manifest";
-      link.href = "/manifest-funcionarios.json";
-      document.head.appendChild(link);
-    }
-
-    // Listen for install prompt
     const handler = (e: Event) => {
       e.preventDefault();
       setInstallPrompt(e);
@@ -81,10 +58,6 @@ const AppFuncionariosPublic = () => {
 
     return () => {
       document.title = originalTitle;
-      const el = document.querySelector('link[rel="manifest"]');
-      if (el) el.setAttribute("href", originalManifest);
-      const meta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-      if (meta && originalAppleTitle) meta.setAttribute("content", originalAppleTitle);
       window.removeEventListener("beforeinstallprompt", handler);
     };
   }, []);
