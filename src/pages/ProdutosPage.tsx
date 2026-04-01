@@ -556,14 +556,19 @@ const ProdutosPage = () => {
                           </Button>
                         </div>
                       ) : (
-                        <Button
-                          size="sm"
-                          variant={p.ativo ? "outline" : "default"}
-                          className={`transition-all ${p.ativo ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20" : "bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"}`}
-                          onClick={() => toggleCotacaoMutation.mutate({ id: p.id, ativo: !p.ativo, produtoId: p.id })}
-                        >
-                          {p.ativo ? "✓ Na cotação" : "+ Adicionar"}
-                        </Button>
+                        (() => {
+                          const inCotacao = itensNaCotacao.has(p.id);
+                          return (
+                            <Button
+                              size="sm"
+                              variant={inCotacao ? "outline" : "default"}
+                              className={`transition-all ${inCotacao ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20" : "bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"}`}
+                              onClick={() => toggleCotacaoMutation.mutate({ produtoId: p.id, adding: !inCotacao })}
+                            >
+                              {inCotacao ? "✓ Na cotação" : "+ Adicionar"}
+                            </Button>
+                          );
+                        })()
                       )}
                     </div>
                   ))}
