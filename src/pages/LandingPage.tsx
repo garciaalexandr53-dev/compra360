@@ -144,8 +144,8 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-5 h-14">
           <div className="flex items-center gap-2">
-            <img src="/compra360-icon.png" alt="Compra360" width="28" height="28" className="w-7 h-7 rounded-lg" />
-            <span className="font-bold text-white text-lg">Compra360</span>
+            <img src="/compra360-icon.png" alt="Compra360" width="36" height="36" className="w-9 h-9" />
+            <span className="font-bold text-white text-xl">Compra360</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white" onClick={goLogin}>
