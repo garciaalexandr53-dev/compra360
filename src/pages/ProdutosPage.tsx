@@ -100,18 +100,21 @@ const ProdutosPage = () => {
     },
   });
 
-  // Count products in active cotacao
-  const { data: cotacaoItemCount = 0 } = useQuery({
-    queryKey: ["cotacao-item-count", cotacaoAtiva?.id],
+  // Fetch actual product IDs in the active cotacao
+  const { data: cotacaoItens = [] } = useQuery({
+    queryKey: ["cotacao-produto-ids", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
     queryFn: async () => {
-      const { count } = await supabase
+      const { data } = await supabase
         .from("cotacao_produtos")
-        .select("id", { count: "exact", head: true })
+        .select("produto_id")
         .eq("cotacao_id", cotacaoAtiva!.id);
-      return count ?? 0;
+      return data ?? [];
     },
   });
+
+  const itensNaCotacao = useMemo(() => new Set(cotacaoItens.map(i => i.produto_id)), [cotacaoItens]);
+  const cotacaoItemCount = itensNaCotacao.size;
 
   // Show/hide footer with animation
   useEffect(() => {
