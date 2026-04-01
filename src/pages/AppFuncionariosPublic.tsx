@@ -391,15 +391,6 @@ const AppFuncionariosPublic = () => {
             </div>
           )}
 
-          {/* Name input - compact */}
-          <div className="px-4 pt-3">
-            <Input
-              placeholder="Seu nome (opcional)"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              className="h-10 text-sm"
-            />
-          </div>
 
           {/* Search bar - always visible */}
           <div className="px-4 pt-3 pb-2 sticky top-[92px] z-10 bg-background">
