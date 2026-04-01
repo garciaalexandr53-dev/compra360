@@ -328,7 +328,7 @@ const AppFuncionariosPublic = () => {
           <div className="flex items-center gap-2">
             <span className="text-lg">📋</span>
             <div>
-              <h1 className="text-base font-bold leading-tight">Compra360</h1>
+              <h1 className="text-base font-bold leading-tight">Compra360 Funcionários</h1>
               {selectedLojaName && (
                 <p className="text-[11px] opacity-80 flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
