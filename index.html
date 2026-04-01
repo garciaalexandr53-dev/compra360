@@ -19,10 +19,16 @@
         const isFuncionarios = window.location.pathname.startsWith("/app-funcionarios");
         if (!isFuncionarios) return;
 
+        const search = new URLSearchParams(window.location.search);
+        const token = search.get("__lovable_token");
+        const manifestHref = token
+          ? `/manifest-funcionarios.json?__lovable_token=${encodeURIComponent(token)}`
+          : "/manifest-funcionarios.json";
+
         document.title = "Compra360 Funcionários";
 
         const manifest = document.querySelector('link[rel="manifest"]');
-        if (manifest) manifest.setAttribute("href", "/manifest-funcionarios.json");
+        if (manifest) manifest.setAttribute("href", manifestHref);
 
         const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
         if (appleTitle) appleTitle.setAttribute("content", "Compra360 Funcionários");
