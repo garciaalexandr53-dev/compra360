@@ -258,7 +258,7 @@ const AppFuncionariosPublic = () => {
         ]
           .filter(Boolean)
           .join(" | ") || null,
-        registrado_por: (nome.trim() || "Funcionário") + lojaLabel,
+        registrado_por: "Funcionário" + lojaLabel,
         loja_id: selectedLojaId || (lojas.length === 1 ? lojas[0].id : null),
       }));
 
@@ -391,15 +391,6 @@ const AppFuncionariosPublic = () => {
             </div>
           )}
 
-          {/* Name input - compact */}
-          <div className="px-4 pt-3">
-            <Input
-              placeholder="Seu nome (opcional)"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              className="h-10 text-sm"
-            />
-          </div>
 
           {/* Search bar - always visible */}
           <div className="px-4 pt-3 pb-2 sticky top-[92px] z-10 bg-background">
@@ -487,13 +478,23 @@ const AppFuncionariosPublic = () => {
                       {/* Add button */}
                       <button
                         onClick={() => addFromProduct(product)}
-                        className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-all active:scale-90 ${
+                        className={`h-10 px-3 rounded-xl flex items-center justify-center gap-1.5 shrink-0 transition-all active:scale-90 ${
                           isAdded
                             ? "bg-green-500 text-white"
                             : "bg-primary text-primary-foreground"
                         }`}
                       >
-                        {isAdded ? <Check className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+                        {isAdded ? (
+                          <>
+                            <Check className="h-4 w-4" />
+                            <span className="text-xs font-semibold">OK</span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-4 w-4" />
+                            <span className="text-xs font-semibold">Add</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   );
