@@ -45,9 +45,25 @@ const AppFuncionariosPublic = () => {
   const [showNewProduct, setShowNewProduct] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Swap manifest to funcionarios version & listen for install prompt
+  // Swap manifest, title & meta to funcionarios version for separate PWA identity
   useEffect(() => {
+    // Set page title
+    const originalTitle = document.title;
+    document.title = "Compra360 Funcionários";
+
+    // Set apple-mobile-web-app-title
+    let appleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]') as HTMLMetaElement | null;
+    const originalAppleTitle = appleMeta?.getAttribute("content") || "";
+    if (!appleMeta) {
+      appleMeta = document.createElement("meta");
+      appleMeta.name = "apple-mobile-web-app-title";
+      document.head.appendChild(appleMeta);
+    }
+    appleMeta.setAttribute("content", "Compra360 Funcionários");
+
+    // Swap manifest
     const existing = document.querySelector('link[rel="manifest"]');
+    const originalManifest = existing?.getAttribute("href") || "/manifest.json";
     if (existing) existing.setAttribute("href", "/manifest-funcionarios.json");
     else {
       const link = document.createElement("link");
@@ -56,6 +72,7 @@ const AppFuncionariosPublic = () => {
       document.head.appendChild(link);
     }
 
+    // Listen for install prompt
     const handler = (e: Event) => {
       e.preventDefault();
       setInstallPrompt(e);
@@ -63,8 +80,11 @@ const AppFuncionariosPublic = () => {
     window.addEventListener("beforeinstallprompt", handler);
 
     return () => {
+      document.title = originalTitle;
       const el = document.querySelector('link[rel="manifest"]');
-      if (el) el.setAttribute("href", "/manifest.json");
+      if (el) el.setAttribute("href", originalManifest);
+      const meta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+      if (meta && originalAppleTitle) meta.setAttribute("content", originalAppleTitle);
       window.removeEventListener("beforeinstallprompt", handler);
     };
   }, []);
@@ -308,7 +328,7 @@ const AppFuncionariosPublic = () => {
           <div className="flex items-center gap-2">
             <span className="text-lg">📋</span>
             <div>
-              <h1 className="text-base font-bold leading-tight">Compra360</h1>
+              <h1 className="text-base font-bold leading-tight">Compra360 Funcionários</h1>
               {selectedLojaName && (
                 <p className="text-[11px] opacity-80 flex items-center gap-1">
                   <MapPin className="h-3 w-3" />

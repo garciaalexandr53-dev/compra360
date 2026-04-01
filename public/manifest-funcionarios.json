@@ -1,8 +1,9 @@
 {
-  "name": "Compra360 - Funcionários",
+  "name": "Compra360 Funcionários",
   "short_name": "C360 Func",
   "description": "Lista de faltas e conferência de pedidos",
   "start_url": "/app-funcionarios",
+  "id": "/app-funcionarios",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
