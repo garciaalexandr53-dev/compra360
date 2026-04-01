@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft } from "lucide-react";
+import { Loader2, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft, Zap, SlidersHorizontal } from "lucide-react";
 import SendOrdersModal from "@/components/dashboard/SendOrdersModal";
 import { generateScenarios, type Scenario } from "@/lib/scenarios";
 
@@ -34,6 +34,8 @@ const AnalisePage = () => {
   const [applyingScenario, setApplyingScenario] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
   const [sendQueueOpen, setSendQueueOpen] = useState(false);
+  const [mode, setMode] = useState<"auto" | "manual">("auto");
+  const [showOtherOptions, setShowOtherOptions] = useState(false);
 
   // Receipt dialog
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -168,6 +170,40 @@ const AnalisePage = () => {
     }
   }, [hasPrecos, cotacaoProdutos, precos, fornecedores, scenarios]);
 
+  // ---- AUTO MODE: pick best scenario ----
+  const scenarioEconomia = scenarios?.find(s => s.id === "sem-minimo-abaixo") || scenarios?.find(s => s.id === "melhor-preco");
+  const scenarioMelhorPreco = scenarios?.find(s => s.id === "melhor-preco");
+  const scenarioConsolidado = scenarios?.find(s => s.id === "consolidado");
+  const melhorPrecoMinIssues = scenarioMelhorPreco?.fornecedores.filter(s => !s.minimoOk).length || 0;
+
+  const autoDecision = useMemo(() => {
+    if (!scenarioEconomia) return { scenario: null, warning: null, label: "" };
+
+    let chosen = scenarioEconomia;
+    let warning: string | null = null;
+
+    // EXCEÇÃO 2: Menos fornecedores reduz ≥1 fornecedor com custo ≤5%
+    if (scenarioConsolidado && scenarioEconomia) {
+      const aumento = (scenarioConsolidado.totalGeral - scenarioEconomia.totalGeral) / scenarioEconomia.totalGeral;
+      if (
+        scenarioConsolidado.numFornecedores < scenarioEconomia.numFornecedores &&
+        aumento <= 0.05
+      ) {
+        chosen = scenarioConsolidado;
+      }
+    }
+
+    // EXCEÇÃO 1: Melhor preço é >10% mais barato
+    if (scenarioMelhorPreco && scenarioEconomia && scenarioMelhorPreco.id !== scenarioEconomia.id) {
+      const diff = (scenarioEconomia.totalGeral - scenarioMelhorPreco.totalGeral) / scenarioEconomia.totalGeral;
+      if (diff > 0.10) {
+        warning = "💰 Existe uma opção mais barata, mas alguns pedidos podem não atingir o mínimo.";
+      }
+    }
+
+    return { scenario: chosen, warning, label: chosen.nome };
+  }, [scenarioEconomia, scenarioMelhorPreco, scenarioConsolidado]);
+
   // ---- Apply selected scenario (create pedidos) ----
   const applyScenario = async (scenario: Scenario) => {
     if (!cotacaoAtiva?.id || !user?.id) return;
@@ -185,7 +221,7 @@ const AnalisePage = () => {
       queryClient.invalidateQueries({ queryKey: ["pedidos"] });
       setSelectedScenario(scenario);
       setOrdersOpen(true);
-      toast.success("Estratégia aplicada! Pedidos prontos para envio. ✅");
+      toast.success("✅ Estratégia aplicada com sucesso");
     } catch (e: any) {
       toast.error(e.message || "Erro ao aplicar cenário");
     } finally {
@@ -312,11 +348,158 @@ const AnalisePage = () => {
     </div>
   );
 
-  // Find scenario helpers
-  const scenarioEconomia = scenarios?.find(s => s.id === "sem-minimo-abaixo") || scenarios?.find(s => s.id === "melhor-preco");
-  const scenarioMelhorPreco = scenarios?.find(s => s.id === "melhor-preco");
-  const scenarioConsolidado = scenarios?.find(s => s.id === "consolidado");
-  const melhorPrecoMinIssues = scenarioMelhorPreco?.fornecedores.filter(s => !s.minimoOk).length || 0;
+  // ---- Render: Scenario Cards (used in manual mode and "ver outras opções") ----
+  const renderScenarioCards = () => (
+    <div className="space-y-4 animate-fade-in">
+      <h3 className="text-sm font-bold text-foreground">
+        {mode === "manual" ? "Compare e escolha como deseja comprar" : "Outras formas de comprar:"}
+      </h3>
+
+      {/* Card 1 — Economia Inteligente */}
+      {scenarioEconomia && (
+        <div className="bg-card border border-green-500/50 rounded-xl p-4 shadow-sm shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all hover:shadow-[0_0_16px_rgba(16,185,129,0.4)]">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-green-500/15 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.4)]">
+              ✨ RECOMENDADO
+            </span>
+          </div>
+          <div className="text-base font-bold text-foreground">Economia Inteligente</div>
+          <div className="text-2xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioEconomia.totalGeral)}</div>
+          {scenarioEconomia.diffVsBaseline !== 0 && (
+            <div className="text-xs text-muted-foreground mt-0.5">
+              {scenarioEconomia.diffVsBaseline > 0 ? "+" : ""}{formatBRL(scenarioEconomia.diffVsBaseline)} vs melhor preço puro
+            </div>
+          )}
+          <div className="text-xs text-muted-foreground mt-1">{scenarioEconomia.numFornecedores} fornecedor(es)</div>
+          <p className="text-xs text-muted-foreground mt-2">Menor custo respeitando o pedido mínimo de cada fornecedor</p>
+          <Button
+            onClick={() => applyScenario(scenarioEconomia)}
+            disabled={applyingScenario}
+            className="w-full mt-3 h-12 text-sm font-bold bg-green-600 hover:bg-green-700 text-white"
+          >
+            {applyingScenario ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+            ✅ Usar esta estratégia
+          </Button>
+        </div>
+      )}
+
+      {/* Card 2 — Melhor Preço */}
+      {scenarioMelhorPreco && scenarioMelhorPreco.id !== scenarioEconomia?.id && (
+        <div className="bg-card border rounded-xl p-4 shadow-sm transition-all hover:shadow-md">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full">
+              💰 MENOR CUSTO
+            </span>
+          </div>
+          <div className="text-base font-bold text-foreground">Melhor Preço</div>
+          <div className="text-xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioMelhorPreco.totalGeral)}</div>
+          <p className="text-xs text-muted-foreground mt-2">Preço mais baixo possível — pode haver fornecedores abaixo do mínimo</p>
+          {melhorPrecoMinIssues > 0 && (
+            <div className="flex items-center gap-1.5 mt-2 bg-amber-500/10 rounded-lg px-3 py-2">
+              <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                ⚠️ {melhorPrecoMinIssues} fornecedor(es) abaixo do pedido mínimo
+              </span>
+            </div>
+          )}
+          <Button
+            variant="outline"
+            onClick={() => applyScenario(scenarioMelhorPreco)}
+            disabled={applyingScenario}
+            className="w-full mt-3 h-12 text-sm font-bold"
+          >
+            {applyingScenario ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Usar esta estratégia
+          </Button>
+        </div>
+      )}
+
+      {/* Card 3 — Menos Fornecedores */}
+      {scenarioConsolidado ? (
+        <div className="bg-card border rounded-xl p-4 shadow-sm transition-all hover:shadow-md">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
+              📦 MAIS SIMPLES
+            </span>
+          </div>
+          <div className="text-base font-bold text-foreground">Menos Fornecedores</div>
+          <div className="text-xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioConsolidado.totalGeral)}</div>
+          <div className="text-xs mt-1">
+            <span className="font-bold text-green-600 dark:text-green-400">{scenarioConsolidado.numFornecedores}</span>
+            <span className="text-muted-foreground"> fornecedor(es)</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">Menos pedidos para gerenciar, entrega mais simples</p>
+          <Button
+            variant="outline"
+            onClick={() => applyScenario(scenarioConsolidado)}
+            disabled={applyingScenario}
+            className="w-full mt-3 h-12 text-sm font-bold"
+          >
+            {applyingScenario ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Usar esta estratégia
+          </Button>
+        </div>
+      ) : (
+        <div className="bg-card border rounded-xl p-4 shadow-sm opacity-60">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
+              📦 MAIS SIMPLES
+            </span>
+          </div>
+          <div className="text-base font-bold text-foreground">Menos Fornecedores</div>
+          <p className="text-xs text-muted-foreground mt-3">
+            Já atingimos o menor número possível de fornecedores nesta compra
+          </p>
+        </div>
+      )}
+
+      {/* Tabela Comparativa */}
+      {scenarios && scenarios.length > 1 && (
+        <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-muted/50">
+                <th className="px-3 py-2 text-left text-[10px] font-bold uppercase text-muted-foreground">Estratégia</th>
+                <th className="px-3 py-2 text-right text-[10px] font-bold uppercase text-muted-foreground">Total</th>
+                <th className="px-3 py-2 text-center text-[10px] font-bold uppercase text-muted-foreground">Forn.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scenarioEconomia && (
+                <tr className="bg-green-500/5 border-l-2 border-l-green-500">
+                  <td className="px-3 py-2 text-xs font-bold text-foreground">
+                    Economia inteligente
+                    <span className="ml-1 text-[9px] text-green-600 dark:text-green-400 font-bold">← recomendado</span>
+                  </td>
+                  <td className="px-3 py-2 text-right text-xs font-mono font-bold text-foreground">{formatBRL(scenarioEconomia.totalGeral)}</td>
+                  <td className="px-3 py-2 text-center text-xs font-bold">{scenarioEconomia.numFornecedores}</td>
+                </tr>
+              )}
+              {scenarioMelhorPreco && scenarioMelhorPreco.id !== scenarioEconomia?.id && (
+                <tr>
+                  <td className="px-3 py-2 text-xs font-medium text-foreground">
+                    Melhor preço
+                    <span className="ml-1 text-[9px] text-muted-foreground">(mais barato)</span>
+                  </td>
+                  <td className="px-3 py-2 text-right text-xs font-mono font-bold text-foreground">{formatBRL(scenarioMelhorPreco.totalGeral)}</td>
+                  <td className="px-3 py-2 text-center text-xs font-bold">{scenarioMelhorPreco.numFornecedores}</td>
+                </tr>
+              )}
+              {scenarioConsolidado && (
+                <tr>
+                  <td className="px-3 py-2 text-xs font-medium text-foreground">
+                    Menos fornecedores
+                    <span className="ml-1 text-[9px] text-muted-foreground">(mais simples)</span>
+                  </td>
+                  <td className="px-3 py-2 text-right text-xs font-mono font-bold text-foreground">{formatBRL(scenarioConsolidado.totalGeral)}</td>
+                  <td className="px-3 py-2 text-center text-xs font-bold">{scenarioConsolidado.numFornecedores}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="p-5 space-y-5 pb-[calc(env(safe-area-inset-bottom,0px)+140px)]">
@@ -326,13 +509,43 @@ const AnalisePage = () => {
         <span className="text-xs text-muted-foreground">Análise de pedidos</span>
       </div>
 
-      {/* 1. HEADER */}
+      {/* 1. TOGGLE DE MODO */}
+      {!selectedScenario && scenarios && scenarios.length > 0 && (
+        <div className="flex items-center justify-center">
+          <div className="inline-flex rounded-full bg-muted p-1 gap-1">
+            <button
+              onClick={() => { setMode("auto"); setShowOtherOptions(false); }}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                mode === "auto"
+                  ? "bg-green-600 text-white shadow-md"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Zap className="h-4 w-4" />
+              Automático
+            </button>
+            <button
+              onClick={() => setMode("manual")}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                mode === "manual"
+                  ? "bg-muted-foreground/20 text-foreground shadow-md"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              Manual
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* HEADER */}
       <div className="bg-card border rounded-xl p-4 shadow-sm">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">💰 Total da compra</div>
             <div className="text-2xl font-extrabold font-mono text-foreground mt-1">
-              {formatBRL(selectedScenario ? selectedScenario.totalGeral : grandTotal)}
+              {formatBRL(selectedScenario ? selectedScenario.totalGeral : (autoDecision.scenario ? autoDecision.scenario.totalGeral : grandTotal))}
             </div>
           </div>
           <div className="text-right">
@@ -343,160 +556,72 @@ const AnalisePage = () => {
           </div>
         </div>
         <p className="text-center text-xs font-medium text-primary mt-3">
-          O Compra360 encontrou a melhor forma de comprar para você
+          {mode === "auto" ? "O Compra360 já escolheu a melhor opção para você" : "Compare e escolha como deseja comprar"}
         </p>
       </div>
 
-      {/* 2. CENÁRIOS */}
-      {scenarios && scenarios.length > 0 && !selectedScenario && (
-        <div className="space-y-4 animate-fade-in">
-          <h3 className="text-sm font-bold text-foreground">Escolha como você quer comprar:</h3>
+      {/* 2. MODO AUTOMÁTICO — Card de decisão */}
+      {mode === "auto" && !selectedScenario && autoDecision.scenario && (
+        <div className="space-y-3 animate-fade-in">
+          <div className="bg-card border border-green-500/50 rounded-xl p-5 shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all">
+            <div className="text-center mb-4">
+              <span className="text-2xl">🏆</span>
+              <h3 className="text-base font-bold text-foreground mt-1">Melhor escolha para você</h3>
+            </div>
 
-          {/* Card 1 — Economia Inteligente */}
-          {scenarioEconomia && (
-            <div className="bg-card border border-green-500/50 rounded-xl p-4 shadow-sm shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all hover:shadow-[0_0_16px_rgba(16,185,129,0.4)]">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-green-500/15 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.4)]">
-                  ✨ RECOMENDADO
-                </span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">💰 Total</span>
+                <span className="text-xl font-extrabold font-mono text-foreground">{formatBRL(autoDecision.scenario.totalGeral)}</span>
               </div>
-              <div className="text-base font-bold text-foreground">Economia Inteligente</div>
-              <div className="text-2xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioEconomia.totalGeral)}</div>
-              {scenarioEconomia.diffVsBaseline !== 0 && (
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  {scenarioEconomia.diffVsBaseline > 0 ? "+" : ""}{formatBRL(scenarioEconomia.diffVsBaseline)} vs melhor preço puro
-                </div>
-              )}
-              <div className="text-xs text-muted-foreground mt-1">{scenarioEconomia.numFornecedores} fornecedor(es)</div>
-              <p className="text-xs text-muted-foreground mt-2">Menor custo respeitando o pedido mínimo de cada fornecedor</p>
-              <Button 
-                onClick={() => applyScenario(scenarioEconomia)} 
-                disabled={applyingScenario} 
-                className="w-full mt-3 h-12 text-sm font-bold bg-green-600 hover:bg-green-700 text-white"
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">📦 Fornecedores</span>
+                <span className="text-sm font-bold text-foreground">{autoDecision.scenario.numFornecedores}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">💸 Economia vs pior preço</span>
+                <span className="text-sm font-bold text-green-600 dark:text-green-400">{formatBRL(worstTotal - autoDecision.scenario.totalGeral)}</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center mt-3">
+              Essa opção equilibra menor custo com pedidos válidos.
+            </p>
+
+            {autoDecision.warning && (
+              <div className="mt-3 bg-amber-500/10 rounded-lg px-3 py-2">
+                <p className="text-xs font-medium text-amber-600 dark:text-amber-400">{autoDecision.warning}</p>
+              </div>
+            )}
+
+            <Button
+              onClick={() => applyScenario(autoDecision.scenario!)}
+              disabled={applyingScenario}
+              className="w-full mt-4 h-12 text-sm font-bold bg-green-600 hover:bg-green-700 text-white hover:scale-[1.02] transition-transform"
+            >
+              {applyingScenario ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+              ✅ Aplicar automaticamente
+            </Button>
+          </div>
+
+          {/* Botão "Ver outras opções" */}
+          {scenarios && scenarios.length > 1 && (
+            <>
+              <Button
+                variant="ghost"
+                className="w-full text-sm text-muted-foreground hover:text-foreground"
+                onClick={() => setShowOtherOptions(!showOtherOptions)}
               >
-                {applyingScenario ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-                ✅ Usar esta estratégia
+                {showOtherOptions ? "Ocultar outras opções ↑" : "Ver outras formas de comprar ↓"}
               </Button>
-            </div>
-          )}
-
-          {/* Card 2 — Melhor Preço */}
-          {scenarioMelhorPreco && scenarioMelhorPreco.id !== scenarioEconomia?.id && (
-            <div className="bg-card border rounded-xl p-4 shadow-sm transition-all hover:shadow-md">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full">
-                  💰 MENOR CUSTO
-                </span>
-              </div>
-              <div className="text-base font-bold text-foreground">Melhor Preço</div>
-              <div className="text-xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioMelhorPreco.totalGeral)}</div>
-              <p className="text-xs text-muted-foreground mt-2">Preço mais baixo possível — pode haver fornecedores abaixo do mínimo</p>
-              {melhorPrecoMinIssues > 0 && (
-                <div className="flex items-center gap-1.5 mt-2 bg-amber-500/10 rounded-lg px-3 py-2">
-                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                    ⚠️ {melhorPrecoMinIssues} fornecedor(es) abaixo do pedido mínimo
-                  </span>
-                </div>
-              )}
-              <Button 
-                variant="outline"
-                onClick={() => applyScenario(scenarioMelhorPreco)} 
-                disabled={applyingScenario} 
-                className="w-full mt-3 h-12 text-sm font-bold"
-              >
-                {applyingScenario ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Usar esta estratégia
-              </Button>
-            </div>
-          )}
-
-          {/* Card 3 — Menos Fornecedores */}
-          {scenarioConsolidado ? (
-            <div className="bg-card border rounded-xl p-4 shadow-sm transition-all hover:shadow-md">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
-                  📦 MAIS SIMPLES
-                </span>
-              </div>
-              <div className="text-base font-bold text-foreground">Menos Fornecedores</div>
-              <div className="text-xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioConsolidado.totalGeral)}</div>
-              <div className="text-xs mt-1">
-                <span className="font-bold text-green-600 dark:text-green-400">{scenarioConsolidado.numFornecedores}</span>
-                <span className="text-muted-foreground"> fornecedor(es)</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">Menos pedidos para gerenciar, entrega mais simples</p>
-              <Button 
-                variant="outline"
-                onClick={() => applyScenario(scenarioConsolidado)} 
-                disabled={applyingScenario} 
-                className="w-full mt-3 h-12 text-sm font-bold"
-              >
-                {applyingScenario ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Usar esta estratégia
-              </Button>
-            </div>
-          ) : (
-            <div className="bg-card border rounded-xl p-4 shadow-sm opacity-60">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
-                  📦 MAIS SIMPLES
-                </span>
-              </div>
-              <div className="text-base font-bold text-foreground">Menos Fornecedores</div>
-              <p className="text-xs text-muted-foreground mt-3">
-                Já atingimos o menor número possível de fornecedores nesta compra
-              </p>
-            </div>
-          )}
-
-          {/* Tabela Comparativa */}
-          {scenarios.length > 1 && (
-            <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-muted/50">
-                    <th className="px-3 py-2 text-left text-[10px] font-bold uppercase text-muted-foreground">Estratégia</th>
-                    <th className="px-3 py-2 text-right text-[10px] font-bold uppercase text-muted-foreground">Total</th>
-                    <th className="px-3 py-2 text-center text-[10px] font-bold uppercase text-muted-foreground">Forn.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {scenarioEconomia && (
-                    <tr className="bg-green-500/5 border-l-2 border-l-green-500">
-                      <td className="px-3 py-2 text-xs font-bold text-foreground">
-                        Economia inteligente
-                        <span className="ml-1 text-[9px] text-green-600 dark:text-green-400 font-bold">← recomendado</span>
-                      </td>
-                      <td className="px-3 py-2 text-right text-xs font-mono font-bold text-foreground">{formatBRL(scenarioEconomia.totalGeral)}</td>
-                      <td className="px-3 py-2 text-center text-xs font-bold">{scenarioEconomia.numFornecedores}</td>
-                    </tr>
-                  )}
-                  {scenarioMelhorPreco && scenarioMelhorPreco.id !== scenarioEconomia?.id && (
-                    <tr>
-                      <td className="px-3 py-2 text-xs font-medium text-foreground">
-                        Melhor preço
-                        <span className="ml-1 text-[9px] text-muted-foreground">(mais barato)</span>
-                      </td>
-                      <td className="px-3 py-2 text-right text-xs font-mono font-bold text-foreground">{formatBRL(scenarioMelhorPreco.totalGeral)}</td>
-                      <td className="px-3 py-2 text-center text-xs font-bold">{scenarioMelhorPreco.numFornecedores}</td>
-                    </tr>
-                  )}
-                  {scenarioConsolidado && (
-                    <tr>
-                      <td className="px-3 py-2 text-xs font-medium text-foreground">
-                        Menos fornecedores
-                        <span className="ml-1 text-[9px] text-muted-foreground">(mais simples)</span>
-                      </td>
-                      <td className="px-3 py-2 text-right text-xs font-mono font-bold text-foreground">{formatBRL(scenarioConsolidado.totalGeral)}</td>
-                      <td className="px-3 py-2 text-center text-xs font-bold">{scenarioConsolidado.numFornecedores}</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+              {showOtherOptions && renderScenarioCards()}
+            </>
           )}
         </div>
       )}
+
+      {/* 3. MODO MANUAL — Cards de cenário */}
+      {mode === "manual" && !selectedScenario && scenarios && scenarios.length > 0 && renderScenarioCards()}
 
       {/* Cenário aplicado */}
       {selectedScenario && (
@@ -514,14 +639,14 @@ const AnalisePage = () => {
         </div>
       )}
 
-      {/* 3. BLOCO EXPLICATIVO */}
+      {/* BLOCO EXPLICATIVO */}
       <div className="bg-muted/50 border rounded-xl px-4 py-3">
         <p className="text-xs text-muted-foreground text-center">
           🤖 O sistema analisou {cotacaoProdutos.length} produto(s) e {fornecedores.length} fornecedor(es) para encontrar a combinação ideal de preço e operação.
         </p>
       </div>
 
-      {/* 4. PEDIDOS — accordion */}
+      {/* PEDIDOS — accordion */}
       {fornecedoresComPedido.length > 0 && (
         <Collapsible open={ordersOpen} onOpenChange={setOrdersOpen}>
           <CollapsibleTrigger className="flex items-center justify-between w-full bg-card border rounded-xl px-4 py-3 hover:bg-muted/30 transition-colors">
@@ -583,7 +708,7 @@ const AnalisePage = () => {
         </Collapsible>
       )}
 
-      {/* 5. CTA FIXO */}
+      {/* CTA FIXO */}
       {selectedScenario && fornecedoresComPedido.length > 0 && (
         <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+64px)] left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t z-50">
           <Button
@@ -591,7 +716,7 @@ const AnalisePage = () => {
             size="lg"
             className="w-full h-12 bg-green-600 hover:bg-green-700 text-white text-base font-bold"
           >
-            <Smartphone className="h-5 w-5 mr-2" /> 📱 Finalizar e enviar pedidos
+            <Smartphone className="h-5 w-5 mr-2" /> 📱 Enviar pedidos agora (já otimizado)
           </Button>
         </div>
       )}
