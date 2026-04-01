@@ -374,29 +374,15 @@ const AppFuncionariosPublic = () => {
         </div>
       ) : (
         <div className="flex flex-col flex-1">
-          {/* Loja indicator or selector */}
-          {lojaFromUrl && selectedLojaName ? (
+          {/* Loja indicator (fixed label only) */}
+          {selectedLojaName && (
             <div className="px-4 pt-3">
               <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                 <MapPin className="h-3.5 w-3.5" />
                 Loja: <span className="font-medium text-foreground">{selectedLojaName}</span>
               </p>
             </div>
-          ) : !lojaFromUrl && lojas.length > 1 ? (
-            <div className="px-4 pt-3">
-              <Select value={selectedLojaId} onValueChange={setSelectedLojaId}>
-                <SelectTrigger className="h-11">
-                  <Store className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <SelectValue placeholder="Selecione a loja" />
-                </SelectTrigger>
-                <SelectContent>
-                  {lojas.map((loja) => (
-                    <SelectItem key={loja.id} value={loja.id}>{loja.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : null}
+          )}
 
 
           {/* Search bar - always visible */}
@@ -456,49 +442,42 @@ const AppFuncionariosPublic = () => {
                           : "bg-card border-border hover:border-primary/30 active:scale-[0.98]"
                       }`}
                     >
-                      {/* Product info */}
+                      {/* Product info - full name with line wrap */}
                       <div className="flex-1 min-w-0" onClick={() => addFromProduct(product)}>
-                        <div className="text-sm font-medium leading-tight truncate">{product.nome}</div>
+                        <div className="text-sm font-medium leading-snug">{product.nome}</div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
                           {product.embalagem || "un"}
                           {product.categorias?.nome ? ` · ${product.categorias.nome}` : ""}
                         </div>
                       </div>
 
-                      {/* Quantity input */}
-                      <div className="shrink-0">
-                        <input
-                          type="number"
-                          inputMode="numeric"
-                          min={1}
-                          value={qty}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value) || 1;
-                            setProductQtds((prev) => ({ ...prev, [productKey]: Math.max(1, val) }));
-                          }}
-                          className="h-10 w-14 text-center text-sm font-bold rounded-lg border border-border bg-muted focus:outline-none focus:ring-2 focus:ring-primary tabular-nums"
-                        />
-                      </div>
+                      {/* Quantity input - compact, select on focus */}
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        value={qty}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 1;
+                          setProductQtds((prev) => ({ ...prev, [productKey]: Math.max(1, val) }));
+                        }}
+                        className="h-8 w-11 text-center text-xs font-bold rounded-md border border-border bg-muted focus:outline-none focus:ring-2 focus:ring-primary tabular-nums shrink-0"
+                      />
 
-                      {/* Add button */}
+                      {/* Add button - compact */}
                       <button
                         onClick={() => addFromProduct(product)}
-                        className={`h-10 px-3 rounded-xl flex items-center justify-center gap-1.5 shrink-0 transition-all active:scale-90 ${
+                        className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-all active:scale-90 ${
                           isAdded
                             ? "bg-green-500 text-white"
                             : "bg-primary text-primary-foreground"
                         }`}
                       >
                         {isAdded ? (
-                          <>
-                            <Check className="h-4 w-4" />
-                            <span className="text-xs font-semibold">OK</span>
-                          </>
+                          <Check className="h-3.5 w-3.5" />
                         ) : (
-                          <>
-                            <Plus className="h-4 w-4" />
-                            <span className="text-xs font-semibold">Add</span>
-                          </>
+                          <Plus className="h-3.5 w-3.5" />
                         )}
                       </button>
                     </div>
