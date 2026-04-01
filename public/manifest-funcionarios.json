@@ -4,6 +4,7 @@
   "description": "Lista de faltas e conferência de pedidos",
   "start_url": "/app-funcionarios",
   "id": "/app-funcionarios",
+  "scope": "/app-funcionarios",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",

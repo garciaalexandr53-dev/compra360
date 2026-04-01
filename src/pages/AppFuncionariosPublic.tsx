@@ -45,34 +45,29 @@ const AppFuncionariosPublic = () => {
   const [showNewProduct, setShowNewProduct] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Swap manifest, title & meta to funcionarios version for separate PWA identity
+  // Keep title consistent and capture install prompt
   useEffect(() => {
-    // Set page title
     const originalTitle = document.title;
+    const originalManifest = document.querySelector('link[rel="manifest"]')?.getAttribute("href") || "/manifest.json";
+    const originalAppleTitle =
+      document.querySelector('meta[name="apple-mobile-web-app-title"]')?.getAttribute("content") || "Compra360";
+
     document.title = "Compra360 Funcionários";
 
-    // Set apple-mobile-web-app-title
-    let appleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]') as HTMLMetaElement | null;
-    const originalAppleTitle = appleMeta?.getAttribute("content") || "";
-    if (!appleMeta) {
-      appleMeta = document.createElement("meta");
-      appleMeta.name = "apple-mobile-web-app-title";
-      document.head.appendChild(appleMeta);
-    }
-    appleMeta.setAttribute("content", "Compra360 Funcionários");
+    const search = new URLSearchParams(window.location.search);
+    const tokenFromSearch = search.get("__lovable_token");
+    const tokenFromHref = window.location.href.match(/[?&]__lovable_token=([^&#]+)/)?.[1] || null;
+    const token = tokenFromSearch || (tokenFromHref ? decodeURIComponent(tokenFromHref) : null);
+    const manifestHref = token
+      ? `/manifest-funcionarios.json?__lovable_token=${encodeURIComponent(token)}`
+      : "/manifest-funcionarios.json";
 
-    // Swap manifest
-    const existing = document.querySelector('link[rel="manifest"]');
-    const originalManifest = existing?.getAttribute("href") || "/manifest.json";
-    if (existing) existing.setAttribute("href", "/manifest-funcionarios.json");
-    else {
-      const link = document.createElement("link");
-      link.rel = "manifest";
-      link.href = "/manifest-funcionarios.json";
-      document.head.appendChild(link);
-    }
+    const manifest = document.querySelector('link[rel="manifest"]');
+    if (manifest) manifest.setAttribute("href", manifestHref);
 
-    // Listen for install prompt
+    const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (appleTitle) appleTitle.setAttribute("content", "Compra360 Funcionários");
+
     const handler = (e: Event) => {
       e.preventDefault();
       setInstallPrompt(e);
@@ -81,10 +76,10 @@ const AppFuncionariosPublic = () => {
 
     return () => {
       document.title = originalTitle;
-      const el = document.querySelector('link[rel="manifest"]');
-      if (el) el.setAttribute("href", originalManifest);
-      const meta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-      if (meta && originalAppleTitle) meta.setAttribute("content", originalAppleTitle);
+      const manifestOnCleanup = document.querySelector('link[rel="manifest"]');
+      if (manifestOnCleanup) manifestOnCleanup.setAttribute("href", originalManifest);
+      const appleTitleOnCleanup = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+      if (appleTitleOnCleanup) appleTitleOnCleanup.setAttribute("content", originalAppleTitle);
       window.removeEventListener("beforeinstallprompt", handler);
     };
   }, []);

@@ -3,17 +3,52 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (() => {
+        const isFuncionarios = window.location.pathname.startsWith("/app-funcionarios");
+        const search = new URLSearchParams(window.location.search);
+        const tokenFromSearch = search.get("__lovable_token");
+        const tokenFromHref = window.location.href.match(/[?&]__lovable_token=([^&#]+)/)?.[1] || null;
+        const token = tokenFromSearch || (tokenFromHref ? decodeURIComponent(tokenFromHref) : null);
+
+        const appTitle = isFuncionarios ? "Compra360 Funcionários" : "Compra360";
+        const manifestBase = isFuncionarios ? "/manifest-funcionarios.json" : "/manifest.json";
+        const manifestHref = token
+          ? `${manifestBase}?__lovable_token=${encodeURIComponent(token)}`
+          : manifestBase;
+
+        window.__compra360HeadConfig = { appTitle, manifestHref };
+
+        let manifest = document.querySelector('link[rel="manifest"]');
+        if (!manifest) {
+          manifest = document.createElement("link");
+          manifest.setAttribute("rel", "manifest");
+          document.head.appendChild(manifest);
+        }
+        manifest.setAttribute("href", manifestHref);
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=optional" />
     <link rel="preload" as="font" type="font/woff2" crossorigin href="https://fonts.gstatic.com/s/sora/v17/xMQbuFFYT72XzQUpDqW1KX4.woff2" />
     <title>Compra360</title>
     <meta name="description" content="Compra360 — O jeito inteligente de comprar.">
-    <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Compra360">
+    <script>
+      (() => {
+        const config = window.__compra360HeadConfig;
+        if (!config) return;
+        document.title = config.appTitle;
+        const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+        if (appleTitle) appleTitle.setAttribute("content", config.appTitle);
+        const manifest = document.querySelector('link[rel="manifest"]');
+        if (manifest) manifest.setAttribute("href", config.manifestHref);
+      })();
+    </script>
     <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="/icon-192.png" sizes="192x192">
     <meta name="author" content="Lovable" />
