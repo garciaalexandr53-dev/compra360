@@ -100,18 +100,21 @@ const ProdutosPage = () => {
     },
   });
 
-  // Count products in active cotacao
-  const { data: cotacaoItemCount = 0 } = useQuery({
-    queryKey: ["cotacao-item-count", cotacaoAtiva?.id],
+  // Fetch actual product IDs in the active cotacao
+  const { data: cotacaoItens = [] } = useQuery({
+    queryKey: ["cotacao-produto-ids", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
     queryFn: async () => {
-      const { count } = await supabase
+      const { data } = await supabase
         .from("cotacao_produtos")
-        .select("id", { count: "exact", head: true })
+        .select("produto_id")
         .eq("cotacao_id", cotacaoAtiva!.id);
-      return count ?? 0;
+      return data ?? [];
     },
   });
+
+  const itensNaCotacao = useMemo(() => new Set(cotacaoItens.map(i => i.produto_id)), [cotacaoItens]);
+  const cotacaoItemCount = itensNaCotacao.size;
 
   // Show/hide footer with animation
   useEffect(() => {
@@ -231,30 +234,28 @@ const ProdutosPage = () => {
   });
 
   const toggleCotacaoMutation = useMutation({
-    mutationFn: async ({ id, ativo, produtoId }: { id: string; ativo: boolean; produtoId: string }) => {
-      const { error: updateErr } = await supabase.from("produtos").update({ ativo }).eq("id", id);
-      if (updateErr) throw updateErr;
-
-      if (ativo && cotacaoAtiva) {
-        const { error: insertErr } = await supabase.from("cotacao_produtos").insert({
+    mutationFn: async ({ produtoId, adding }: { produtoId: string; adding: boolean }) => {
+      if (adding && cotacaoAtiva) {
+        const { error } = await supabase.from("cotacao_produtos").insert({
           cotacao_id: cotacaoAtiva.id,
           produto_id: produtoId,
           quantidade: 1,
         });
-        if (insertErr) throw insertErr;
-      } else if (!ativo && cotacaoAtiva) {
-        const { error: deleteErr } = await supabase.from("cotacao_produtos")
+        if (error) throw error;
+      } else if (!adding && cotacaoAtiva) {
+        const { error } = await supabase.from("cotacao_produtos")
           .delete()
           .eq("cotacao_id", cotacaoAtiva.id)
           .eq("produto_id", produtoId);
-        if (deleteErr) throw deleteErr;
+        if (error) throw error;
       }
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-produto-ids"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
-      toast.success(variables.ativo ? "Produto adicionado à cotação!" : "Produto removido da cotação");
+      toast.success(variables.adding ? "Produto adicionado à cotação!" : "Produto removido da cotação");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -555,14 +556,19 @@ const ProdutosPage = () => {
                           </Button>
                         </div>
                       ) : (
-                        <Button
-                          size="sm"
-                          variant={p.ativo ? "outline" : "default"}
-                          className={`transition-all ${p.ativo ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20" : "bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"}`}
-                          onClick={() => toggleCotacaoMutation.mutate({ id: p.id, ativo: !p.ativo, produtoId: p.id })}
-                        >
-                          {p.ativo ? "✓ Na cotação" : "+ Adicionar"}
-                        </Button>
+                        (() => {
+                          const inCotacao = itensNaCotacao.has(p.id);
+                          return (
+                            <Button
+                              size="sm"
+                              variant={inCotacao ? "outline" : "default"}
+                              className={`transition-all ${inCotacao ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20" : "bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"}`}
+                              onClick={() => toggleCotacaoMutation.mutate({ produtoId: p.id, adding: !inCotacao })}
+                            >
+                              {inCotacao ? "✓ Na cotação" : "+ Adicionar"}
+                            </Button>
+                          );
+                        })()
                       )}
                     </div>
                   ))}
