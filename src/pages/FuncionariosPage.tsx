@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Trash2, Download, Package, MoreHorizontal, Store, AlertTriangle, Pencil, Undo2 } from "lucide-react";
+import { Trash2, Download, Package, MoreHorizontal, Store, AlertTriangle, Pencil, Undo2, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -15,6 +16,7 @@ import { ptBR } from "date-fns/locale";
 const FuncionariosPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva, lojas } = useLojaAtiva();
+  const navigate = useNavigate();
   const [linkLojaId, setLinkLojaId] = useState<string>("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editQty, setEditQty] = useState<string>("");
@@ -387,25 +389,47 @@ const FuncionariosPage = () => {
               {pendentes.length}
             </span>
           </div>
-          {pendentesImportaveis.length > 0 && (
+          {pendentes.length > 0 && (
             <Button
               size="sm"
               onClick={() => importarMutation.mutate()}
-              disabled={importarMutation.isPending}
-              className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
+              disabled={importarMutation.isPending || pendentesImportaveis.length === 0}
+              className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] disabled:opacity-50"
+              title={pendentesImportaveis.length === 0 ? "Finalize as cotações ativas antes de importar" : undefined}
             >
               <Download className="h-4 w-4 mr-1" />
-              {importarMutation.isPending ? "Importando..." : `Importar ${pendentesImportaveis.length}`}
+              {importarMutation.isPending
+                ? "Importando..."
+                : pendentesImportaveis.length === 0
+                  ? "Importação bloqueada"
+                  : pendentesBloqueados.length > 0
+                    ? `Importar ${pendentesImportaveis.length} disponíveis`
+                    : `Importar ${pendentesImportaveis.length}`}
             </Button>
           )}
         </div>
         {pendentesBloqueados.length > 0 && (
-          <Alert className="m-3 mb-0 border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-xs text-amber-800 dark:text-amber-300">
-              <strong>{pendentesBloqueados.length} ite{pendentesBloqueados.length === 1 ? 'm' : 'ns'}</strong> de lojas com cotação em andamento. Finalize a cotação antes de importar.
-            </AlertDescription>
-          </Alert>
+          <div className="m-3 mb-0 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
+            <div className="flex items-start gap-2">
+              <span className="text-sm mt-0.5">⛔</span>
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-destructive">
+                  {pendentesBloqueados.length} ite{pendentesBloqueados.length === 1 ? 'm' : 'ns'} aguardando fim da cotação
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Estes itens só podem ser importados após finalizar a cotação da loja correspondente.
+                </p>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-6 px-0 text-xs text-primary mt-1 gap-1"
+                  onClick={() => navigate("/cotacao")}
+                >
+                  Ir para cotação <ArrowRight className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
         <div className="h-[calc(100vh-380px)] overflow-y-auto">
           {isLoading ? (
@@ -423,9 +447,12 @@ const FuncionariosPage = () => {
                 <div key={item.id} className={`flex items-start gap-2 px-4 py-3 border-b hover:bg-muted/30 transition-colors ${bloqueado ? 'opacity-50' : ''}`}>
                   <span className="text-xs text-muted-foreground w-5 pt-0.5 shrink-0">{i + 1}.</span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                    <div className="text-sm font-medium text-foreground flex items-center gap-1.5 flex-wrap">
                       <span className="break-words">{item.nome}</span>
-                      {bloqueado && <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">cotação ativa</span>}
+                      {bloqueado
+                        ? <span className="text-[9px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">⛔ Cotação ativa</span>
+                        : <span className="text-[9px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">✅ Disponível</span>
+                      }
                     </div>
                     <div className="text-xs text-muted-foreground mt-0.5">
                       {editingId === item.id ? (
