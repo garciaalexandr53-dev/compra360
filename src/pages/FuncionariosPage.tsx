@@ -259,7 +259,7 @@ const FuncionariosPage = () => {
               {pendentes.length}
             </span>
           </div>
-          {pendentes.length > 0 && (
+          {pendentesImportaveis.length > 0 && (
             <Button
               size="sm"
               onClick={() => importarMutation.mutate()}
@@ -267,7 +267,7 @@ const FuncionariosPage = () => {
               className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
             >
               <Download className="h-4 w-4 mr-1" />
-              {importarMutation.isPending ? "Importando..." : `Importar ${pendentes.length} itens`}
+              {importarMutation.isPending ? "Importando..." : `Importar ${pendentesImportaveis.length} itens`}
             </Button>
           )}
         </div>
