@@ -16,6 +16,7 @@ import { ptBR } from "date-fns/locale";
 const FuncionariosPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva, lojas } = useLojaAtiva();
+  const navigate = useNavigate();
   const [linkLojaId, setLinkLojaId] = useState<string>("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editQty, setEditQty] = useState<string>("");
