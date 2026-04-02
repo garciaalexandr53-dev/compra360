@@ -28,9 +28,34 @@ const FuncionariosPage = () => {
 
 
 
+  // Fetch active cotações to know which lojas are blocked
+  const { data: cotacoesAtivas = [] } = useQuery({
+    queryKey: ["cotacoes-ativas-lojas"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cotacoes")
+        .select("id, loja_id")
+        .eq("status", "ativa");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const lojasComCotacaoAtiva = new Set(cotacoesAtivas.map((c: any) => c.loja_id).filter(Boolean));
 
   const pendentes = itens.filter((i: any) => !i.importado);
   const importados = itens.filter((i: any) => i.importado);
+
+  // Pendentes that CAN be imported (loja has no active cotação)
+  const pendentesImportaveis = pendentes.filter((i: any) => {
+    const lid = i.loja_id || lojaAtiva?.id;
+    return !lid || !lojasComCotacaoAtiva.has(lid);
+  });
+  // Pendentes blocked (loja has active cotação)
+  const pendentesBloqueados = pendentes.filter((i: any) => {
+    const lid = i.loja_id || lojaAtiva?.id;
+    return lid && lojasComCotacaoAtiva.has(lid);
+  });
 
   const importarMutation = useMutation({
     mutationFn: async () => {
