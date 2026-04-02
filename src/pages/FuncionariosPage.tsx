@@ -447,9 +447,12 @@ const FuncionariosPage = () => {
                 <div key={item.id} className={`flex items-start gap-2 px-4 py-3 border-b hover:bg-muted/30 transition-colors ${bloqueado ? 'opacity-50' : ''}`}>
                   <span className="text-xs text-muted-foreground w-5 pt-0.5 shrink-0">{i + 1}.</span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                    <div className="text-sm font-medium text-foreground flex items-center gap-1.5 flex-wrap">
                       <span className="break-words">{item.nome}</span>
-                      {bloqueado && <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">cotação ativa</span>}
+                      {bloqueado
+                        ? <span className="text-[9px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">⛔ Cotação ativa</span>
+                        : <span className="text-[9px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">✅ Disponível</span>
+                      }
                     </div>
                     <div className="text-xs text-muted-foreground mt-0.5">
                       {editingId === item.id ? (
