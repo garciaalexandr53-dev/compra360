@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { Download, Check } from "lucide-react";
+import { Download, Check, X } from "lucide-react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -107,6 +107,7 @@ const AppFuncionariosPublic = () => {
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
   const [productQtds, setProductQtds] = useState<Record<string, number>>({});
   const productsListRef = useRef<HTMLDivElement | null>(null);
+  const itemsListRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (urlLojaId && urlLojaId !== selectedLojaId) {
@@ -235,6 +236,13 @@ const AppFuncionariosPublic = () => {
       delete next[productKey];
       return next;
     });
+
+    // Clear search and refocus for next product
+    setProductSearch("");
+    setTimeout(() => searchInputRef.current?.focus(), 100);
+
+    // Toast feedback
+    toast.success(`✅ ${product.nome} adicionado!`, { duration: 1000, position: "top-center" });
 
     // Visual feedback
     setJustAdded((prev) => new Set(prev).add(productKey));
@@ -407,6 +415,21 @@ const AppFuncionariosPublic = () => {
         </button>
       </div>
 
+      {/* Items counter badge */}
+      {activeTab === "lista" && items.length > 0 && (
+        <div className="px-4 py-1.5 bg-primary/5 border-b flex items-center justify-between">
+          <span className="text-xs font-medium text-primary flex items-center gap-1.5">
+            📋 {items.length} {items.length === 1 ? "item" : "itens"} na lista
+          </span>
+          <button
+            onClick={() => itemsListRef.current?.scrollIntoView({ behavior: "smooth" })}
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            Ver lista ↓
+          </button>
+        </div>
+      )}
+
       {activeTab === "conferencia" ? (
         <div className="p-4 flex-1">
           <ConferenciaPedidos />
@@ -433,8 +456,19 @@ const AppFuncionariosPublic = () => {
                 placeholder="Buscar produto..."
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
-                className="pl-9 h-12 text-base rounded-xl border-2 focus-visible:ring-primary"
+                className="pl-9 pr-9 h-12 text-base rounded-xl border-2 focus-visible:ring-primary"
               />
+              {productSearch.length > 0 && (
+                <button
+                  onClick={() => {
+                    setProductSearch("");
+                    searchInputRef.current?.focus();
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -581,7 +615,7 @@ const AppFuncionariosPublic = () => {
 
           {/* Bottom bar: items summary + send */}
           {items.length > 0 && (
-            <div className="sticky bottom-0 left-0 right-0 bg-card border-t shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-10">
+            <div ref={itemsListRef} className="sticky bottom-0 left-0 right-0 bg-card border-t shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-10">
               {/* Compact items list */}
               <div className="max-h-[120px] overflow-y-auto px-3 py-2 space-y-1">
                 {items.map((item, index) => (
