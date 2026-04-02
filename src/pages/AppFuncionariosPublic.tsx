@@ -415,6 +415,21 @@ const AppFuncionariosPublic = () => {
         </button>
       </div>
 
+      {/* Items counter badge */}
+      {activeTab === "lista" && items.length > 0 && (
+        <div className="px-4 py-1.5 bg-primary/5 border-b flex items-center justify-between">
+          <span className="text-xs font-medium text-primary flex items-center gap-1.5">
+            📋 {items.length} {items.length === 1 ? "item" : "itens"} na lista
+          </span>
+          <button
+            onClick={() => itemsListRef.current?.scrollIntoView({ behavior: "smooth" })}
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            Ver lista ↓
+          </button>
+        </div>
+      )}
+
       {activeTab === "conferencia" ? (
         <div className="p-4 flex-1">
           <ConferenciaPedidos />
