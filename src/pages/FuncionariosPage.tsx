@@ -271,35 +271,50 @@ const FuncionariosPage = () => {
             </Button>
           )}
         </div>
+        {pendentesBloqueados.length > 0 && (
+          <Alert className="m-3 mb-0 border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-xs text-amber-800 dark:text-amber-300">
+              <strong>{pendentesBloqueados.length} ite{pendentesBloqueados.length === 1 ? 'm' : 'ns'}</strong> de lojas com cotação em andamento. Finalize a cotação antes de importar.
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="h-[calc(100vh-380px)] overflow-y-auto">
           {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
           ) : pendentes.length === 0 ? (
             <div className="p-10 text-center text-muted-foreground">Nenhum item pendente.</div>
           ) : (
-            pendentes.map((item: any, i: number) => (
-              <div key={item.id} className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted/30 transition-colors">
-                <span className="text-xs text-muted-foreground w-6">{i + 1}.</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium">{item.nome}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {item.registrado_por && `Por: ${item.registrado_por} · `}
-                    {(item as any).lojas?.nome && `Loja: ${(item as any).lojas.nome} · `}
-                    {item.quantidade > 1 && `Qtd: ${item.quantidade} · `}
-                    {item.observacao && `${item.observacao} · `}
-                    {new Date(item.created_at).toLocaleString("pt-BR")}
+            pendentes.map((item: any, i: number) => {
+              const lid = item.loja_id || lojaAtiva?.id;
+              const bloqueado = lid && lojasComCotacaoAtiva.has(lid);
+              return (
+                <div key={item.id} className={`flex items-center gap-3 px-4 py-3 border-b hover:bg-muted/30 transition-colors ${bloqueado ? 'opacity-50' : ''}`}>
+                  <span className="text-xs text-muted-foreground w-6">{i + 1}.</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium flex items-center gap-1.5">
+                      {item.nome}
+                      {bloqueado && <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 px-1.5 py-0.5 rounded-full whitespace-nowrap">cotação ativa</span>}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {item.registrado_por && `Por: ${item.registrado_por} · `}
+                      {(item as any).lojas?.nome && `Loja: ${(item as any).lojas.nome} · `}
+                      {item.quantidade > 1 && `Qtd: ${item.quantidade} · `}
+                      {item.observacao && `${item.observacao} · `}
+                      {new Date(item.created_at).toLocaleString("pt-BR")}
+                    </div>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive"
+                    onClick={() => deleteMutation.mutate(item.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive"
-                  onClick={() => deleteMutation.mutate(item.id)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
