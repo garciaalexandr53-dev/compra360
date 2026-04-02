@@ -800,6 +800,14 @@ const CotacaoPage = () => {
                     <div className="text-xs text-muted-foreground">Remove todos os produtos, preços e fornecedores permanentemente.</div>
                   </div>
                 </label>
+                {importedItemsCount > 0 && (
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                    <p className="text-xs text-amber-800 dark:text-amber-300">
+                      <strong>{importedItemsCount} ite{importedItemsCount === 1 ? 'm foi importado' : 'ns foram importados'}</strong> desta lista. Se continuar, eles ficarão no histórico por 30 dias e poderão ser restaurados.
+                    </p>
+                  </div>
+                )}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
