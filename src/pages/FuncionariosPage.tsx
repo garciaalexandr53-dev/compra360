@@ -185,16 +185,19 @@ const FuncionariosPage = () => {
         .in("id", ids);
       if (error) throw error;
 
-      return { total: newItems.length, dups: dupCount };
+      return { total: newItems.length, dups: dupCount, createdNewCotacao };
     },
-    onSuccess: ({ total, dups }) => {
+    onSuccess: ({ total, dups, createdNewCotacao }) => {
       queryClient.invalidateQueries({ queryKey: ["itens-faltantes"] });
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacoes-ativas-lojas"] });
+      const suffix = createdNewCotacao ? " Nova cotação criada automaticamente." : "";
       const msg = dups > 0
-        ? `${total} itens importados! (${dups} duplicados ignorados)`
-        : `${total} itens importados para o Banco de Produtos!`;
+        ? `${total} itens importados! (${dups} duplicados ignorados)${suffix}`
+        : `${total} itens importados para o Banco de Produtos!${suffix}`;
       toast.success(msg);
     },
     onError: (e: any) => toast.error(e.message),
