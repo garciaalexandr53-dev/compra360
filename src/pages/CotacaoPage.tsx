@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Wand2, MoreHorizontal, FileSpreadsheet, RotateCcw, Copy, HelpCircle, ClipboardCopy, Trash2, Target, ArrowLeft, ArrowRight } from "lucide-react";
+import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Wand2, MoreHorizontal, FileSpreadsheet, RotateCcw, Copy, HelpCircle, ClipboardCopy, Trash2, Target, ArrowLeft, ArrowRight, AlertTriangle } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
