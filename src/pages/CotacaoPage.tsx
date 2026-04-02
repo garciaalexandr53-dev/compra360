@@ -554,6 +554,14 @@ const CotacaoPage = () => {
         ? cotacaoProdutos.map((cp) => ({ produto_id: cp.produto_id, quantidade: cp.quantidade }))
         : [];
 
+      // Garantir que não existam outras cotações ativas para a mesma loja
+      await supabase
+        .from("cotacoes")
+        .update({ status: "finalizada" as any })
+        .eq("loja_id", lojaAtiva?.id || null)
+        .eq("status", "ativa")
+        .neq("id", cotacaoAtiva.id);
+
       // Delete prices for this quote's products
       const cpIds = cotacaoProdutos.map((cp) => cp.id);
       if (cpIds.length) {
@@ -571,7 +579,7 @@ const CotacaoPage = () => {
         const nome = `Cotação ${new Date().toLocaleDateString("pt-BR")} ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
         const { data: newCot, error: newCotError } = await supabase
           .from("cotacoes")
-          .insert({ nome, loja_id: lojaAtiva?.id || null, created_by: user?.id } as any)
+          .insert({ nome, status: "ativa", loja_id: lojaAtiva?.id || null, created_by: user?.id } as any)
           .select()
           .single();
         if (newCotError) throw newCotError;
@@ -582,6 +590,12 @@ const CotacaoPage = () => {
         }
         toast.success(`Cotação excluída. Nova cotação criada com ${savedProducts.length} produto(s)!`);
       } else {
+        // Limpeza de segurança — encerrar qualquer cotação ativa residual
+        await supabase
+          .from("cotacoes")
+          .update({ status: "finalizada" as any })
+          .eq("loja_id", lojaAtiva?.id || null)
+          .eq("status", "ativa");
         toast.success("Cotação excluída com sucesso");
       }
 
