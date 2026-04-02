@@ -255,14 +255,36 @@ const FuncionariosPage = () => {
     },
   });
 
+  const restaurarMutation = useMutation({
+    mutationFn: async (item: any) => {
+      const { error } = await supabase
+        .from("itens_faltantes")
+        .update({ importado: false })
+        .eq("id", item.id);
+      if (error) throw error;
+      return item.nome;
+    },
+    onSuccess: (nome) => {
+      queryClient.invalidateQueries({ queryKey: ["itens-faltantes"] });
+      toast.success(`✅ ${nome} restaurado para pendentes!`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const limparImportados = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("itens_faltantes").delete().eq("importado", true);
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const { error } = await supabase
+        .from("itens_faltantes")
+        .delete()
+        .eq("importado", true)
+        .lt("created_at", thirtyDaysAgo.toISOString());
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["itens-faltantes"] });
-      toast.success("Histórico limpo!");
+      toast.success("Itens antigos removidos!");
     },
   });
 
