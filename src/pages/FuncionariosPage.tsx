@@ -224,13 +224,28 @@ const FuncionariosPage = () => {
 
       const lid = item.loja_id || lojaAtiva?.id;
       if (lid) {
-        const { data: cot } = await supabase
+        let { data: cot } = await supabase
           .from("cotacoes")
           .select("id")
           .eq("status", "ativa")
           .eq("loja_id", lid)
           .limit(1)
           .maybeSingle();
+
+        if (!cot) {
+          const { data: newCot, error: cotError } = await supabase
+            .from("cotacoes")
+            .insert({
+              nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`,
+              status: "ativa" as any,
+              loja_id: lid,
+              created_by: user.id,
+            })
+            .select("id")
+            .single();
+          if (cotError) throw cotError;
+          cot = newCot;
+        }
 
         if (cot?.id) {
           const { data: matchedProds } = await supabase
