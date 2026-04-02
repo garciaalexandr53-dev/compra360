@@ -67,6 +67,48 @@ const FuncionariosPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      // Auto-criar cotações ativas para lojas que não têm
+      let createdNewCotacao = false;
+      const lojaIds = [...new Set(itemsToImport.map((i: any) => i.loja_id).filter(Boolean))];
+      for (const lojaId of lojaIds) {
+        const { data: cotExistente } = await supabase
+          .from("cotacoes")
+          .select("id")
+          .eq("status", "ativa")
+          .eq("loja_id", lojaId)
+          .limit(1)
+          .maybeSingle();
+        if (!cotExistente) {
+          const { error: cotError } = await supabase.from("cotacoes").insert({
+            nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`,
+            status: "ativa" as any,
+            loja_id: lojaId,
+            created_by: user.id,
+          });
+          if (cotError) throw cotError;
+          createdNewCotacao = true;
+        }
+      }
+      const temSemLoja = itemsToImport.some((i: any) => !i.loja_id);
+      if (temSemLoja) {
+        const { data: cotSemLoja } = await supabase
+          .from("cotacoes")
+          .select("id")
+          .eq("status", "ativa")
+          .is("loja_id", null)
+          .limit(1)
+          .maybeSingle();
+        if (!cotSemLoja) {
+          await supabase.from("cotacoes").insert({
+            nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`,
+            status: "ativa" as any,
+            loja_id: null,
+            created_by: user.id,
+          });
+          createdNewCotacao = true;
+        }
+      }
+
       const { data: existingProducts } = await supabase.from("produtos").select("nome");
       const existingNames = new Set((existingProducts || []).map((p) => p.nome.toLowerCase().trim()));
 
@@ -143,16 +185,19 @@ const FuncionariosPage = () => {
         .in("id", ids);
       if (error) throw error;
 
-      return { total: newItems.length, dups: dupCount };
+      return { total: newItems.length, dups: dupCount, createdNewCotacao };
     },
-    onSuccess: ({ total, dups }) => {
+    onSuccess: ({ total, dups, createdNewCotacao }) => {
       queryClient.invalidateQueries({ queryKey: ["itens-faltantes"] });
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacoes-ativas-lojas"] });
+      const suffix = createdNewCotacao ? " Nova cotação criada automaticamente." : "";
       const msg = dups > 0
-        ? `${total} itens importados! (${dups} duplicados ignorados)`
-        : `${total} itens importados para o Banco de Produtos!`;
+        ? `${total} itens importados! (${dups} duplicados ignorados)${suffix}`
+        : `${total} itens importados para o Banco de Produtos!${suffix}`;
       toast.success(msg);
     },
     onError: (e: any) => toast.error(e.message),
@@ -179,13 +224,28 @@ const FuncionariosPage = () => {
 
       const lid = item.loja_id || lojaAtiva?.id;
       if (lid) {
-        const { data: cot } = await supabase
+        let { data: cot } = await supabase
           .from("cotacoes")
           .select("id")
           .eq("status", "ativa")
           .eq("loja_id", lid)
           .limit(1)
           .maybeSingle();
+
+        if (!cot) {
+          const { data: newCot, error: cotError } = await supabase
+            .from("cotacoes")
+            .insert({
+              nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`,
+              status: "ativa" as any,
+              loja_id: lid,
+              created_by: user.id,
+            })
+            .select("id")
+            .single();
+          if (cotError) throw cotError;
+          cot = newCot;
+        }
 
         if (cot?.id) {
           const { data: matchedProds } = await supabase
@@ -227,6 +287,8 @@ const FuncionariosPage = () => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacoes-ativas-lojas"] });
       toast.success(`✅ ${nome} importado para a cotação!`);
     },
     onError: (e: any) => toast.error(e.message),
