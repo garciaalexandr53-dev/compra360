@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Trash2, Download, Package, MoreHorizontal, Store } from "lucide-react";
+import { Trash2, Download, Package, MoreHorizontal, Store, AlertTriangle } from "lucide-react";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const FuncionariosPage = () => {
   const queryClient = useQueryClient();
