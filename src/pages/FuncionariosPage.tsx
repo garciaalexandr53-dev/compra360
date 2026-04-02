@@ -292,14 +292,14 @@ const FuncionariosPage = () => {
               Limpar histórico
             </Button>
           </div>
-          <ScrollArea className="max-h-[200px]">
+          <div className="max-h-[200px] overflow-y-auto">
             {importados.map((item: any) => (
               <div key={item.id} className="flex items-center gap-3 px-4 py-2 border-b text-muted-foreground">
                 <span className="text-xs">✓</span>
                 <span className="text-sm line-through">{item.nome}</span>
               </div>
             ))}
-          </ScrollArea>
+          </div>
         </div>
       )}
     </div>
