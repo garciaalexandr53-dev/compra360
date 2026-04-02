@@ -63,6 +63,7 @@ const CotacaoPage = () => {
   const [erpImportOpen, setErpImportOpen] = useState(false);
   const [cancelCotacaoOpen, setCancelCotacaoOpen] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelOpt, setCancelOpt] = useState<"manter" | "excluir_tudo">("manter");
   const [fornSuggestOpen, setFornSuggestOpen] = useState(false);
   const [fornSuggestText, setFornSuggestText] = useState("");
   const [fornSuggestLoading, setFornSuggestLoading] = useState(false);
