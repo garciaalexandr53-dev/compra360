@@ -797,7 +797,7 @@ const DashboardPage = () => {
         onSave={saveSupplierSelection}
       />
       <ModalFornecedorSugestao open={fornSuggestOpen} onOpenChange={setFornSuggestOpen} text={fornSuggestText} loading={fornSuggestLoading} hasHistory={fornSuggestHasHistory} recommendedIds={fornSuggestRecommendedIds} onApply={applyFornSuggestions} />
-      <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} loading={novaCotacaoLoading} />
+      <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} loading={novaCotacaoLoading} lojaId={lojaAtiva?.id} />
 
       <AlertDialog open={!!removeSupplier} onOpenChange={(open) => { if (!open) setRemoveSupplier(null); }}>
         <AlertDialogContent>

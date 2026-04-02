@@ -754,7 +754,7 @@ const CotacaoPage = () => {
       )}
 
       <ModalFornecedores open={supplierModalOpen} onOpenChange={setSupplierModalOpen} fornecedores={allFornecedores} selectedSuppliers={selectedSuppliers} onToggle={toggleSupplier} onSelectAll={selectAllSuppliers} onSave={saveSupplierSelection} />
-      <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} />
+      <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} lojaId={lojaAtiva?.id} />
       <ModalAiAnalise open={aiAnalysisOpen} onOpenChange={setAiAnalysisOpen} text={aiAnalysisText} loading={aiAnalysisLoading} onReanalisar={runAiAnalysis} />
       <ModalQtySugestao open={qtySuggestOpen} onOpenChange={setQtySuggestOpen} suggestions={qtySuggestions} loading={qtySuggestLoading} onApply={applyQtySuggestions} />
       <ImportErpModal open={erpImportOpen} onOpenChange={setErpImportOpen} cotacaoId={cotacaoAtiva.id} />
