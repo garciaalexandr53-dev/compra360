@@ -440,8 +440,19 @@ const AppFuncionariosPublic = () => {
                 placeholder="Buscar produto..."
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
-                className="pl-9 h-12 text-base rounded-xl border-2 focus-visible:ring-primary"
+                className="pl-9 pr-9 h-12 text-base rounded-xl border-2 focus-visible:ring-primary"
               />
+              {productSearch.length > 0 && (
+                <button
+                  onClick={() => {
+                    setProductSearch("");
+                    searchInputRef.current?.focus();
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
 
