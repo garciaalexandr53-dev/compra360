@@ -481,29 +481,71 @@ const FuncionariosPage = () => {
       </div>
 
       {/* Imported history */}
-      {importados.length > 0 && (
-        <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-sm text-muted-foreground">Já Importados</span>
-              <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                {importados.length}
-              </span>
-            </div>
-            <Button variant="ghost" size="sm" className="text-xs text-destructive" onClick={() => limparImportados.mutate()}>
-              Limpar histórico
-            </Button>
-          </div>
-          <div className="max-h-[200px] overflow-y-auto">
-            {importados.map((item: any) => (
-              <div key={item.id} className="flex items-center gap-3 px-4 py-2 border-b text-muted-foreground">
-                <span className="text-xs">✓</span>
-                <span className="text-sm line-through">{item.nome}</span>
+      {importados.length > 0 && (() => {
+        const now = new Date();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const oldCount = importados.filter((i: any) => new Date(i.created_at) < thirtyDaysAgo).length;
+
+        return (
+          <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-sm text-muted-foreground">Já Importados</span>
+                <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                  {importados.length}
+                </span>
               </div>
-            ))}
+              {oldCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-destructive"
+                  onClick={() => {
+                    if (confirm(`Remover apenas ${oldCount} ite${oldCount === 1 ? 'm' : 'ns'} com mais de 30 dias?`)) {
+                      limparImportados.mutate();
+                    }
+                  }}
+                >
+                  Limpar antigos ({oldCount})
+                </Button>
+              )}
+            </div>
+            <div className="max-h-[300px] overflow-y-auto">
+              {importados.map((item: any) => {
+                const emb = getEmbalagem(item);
+                const createdAt = new Date(item.created_at);
+                const tempoRelativo = formatDistanceToNow(createdAt, { addSuffix: true, locale: ptBR });
+                const isOld = createdAt < thirtyDaysAgo;
+                const daysLeft = isOld ? 0 : Math.ceil((createdAt.getTime() + 30 * 86400000 - now.getTime()) / 86400000);
+
+                return (
+                  <div key={item.id} className={`flex items-start gap-2 px-4 py-3 border-b ${isOld ? 'opacity-40' : ''}`}>
+                    <span className="text-xs text-green-600 pt-0.5 shrink-0">✓</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-muted-foreground break-words">{item.nome}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        Qtd: {item.quantidade || 1} · {emb} · Importado {tempoRelativo}
+                        {isOld && <span className="ml-1 text-amber-500 font-medium">· Expira em breve</span>}
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-primary shrink-0 gap-1 px-2"
+                      onClick={() => restaurarMutation.mutate(item)}
+                      disabled={restaurarMutation.isPending}
+                    >
+                      <Undo2 className="h-3 w-3" />
+                      Restaurar
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };
