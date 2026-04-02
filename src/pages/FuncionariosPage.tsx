@@ -389,25 +389,47 @@ const FuncionariosPage = () => {
               {pendentes.length}
             </span>
           </div>
-          {pendentesImportaveis.length > 0 && (
+          {pendentes.length > 0 && (
             <Button
               size="sm"
               onClick={() => importarMutation.mutate()}
-              disabled={importarMutation.isPending}
-              className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
+              disabled={importarMutation.isPending || pendentesImportaveis.length === 0}
+              className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] disabled:opacity-50"
+              title={pendentesImportaveis.length === 0 ? "Finalize as cotações ativas antes de importar" : undefined}
             >
               <Download className="h-4 w-4 mr-1" />
-              {importarMutation.isPending ? "Importando..." : `Importar ${pendentesImportaveis.length}`}
+              {importarMutation.isPending
+                ? "Importando..."
+                : pendentesImportaveis.length === 0
+                  ? "Importação bloqueada"
+                  : pendentesBloqueados.length > 0
+                    ? `Importar ${pendentesImportaveis.length} disponíveis`
+                    : `Importar ${pendentesImportaveis.length}`}
             </Button>
           )}
         </div>
         {pendentesBloqueados.length > 0 && (
-          <Alert className="m-3 mb-0 border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-xs text-amber-800 dark:text-amber-300">
-              <strong>{pendentesBloqueados.length} ite{pendentesBloqueados.length === 1 ? 'm' : 'ns'}</strong> de lojas com cotação em andamento. Finalize a cotação antes de importar.
-            </AlertDescription>
-          </Alert>
+          <div className="m-3 mb-0 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
+            <div className="flex items-start gap-2">
+              <span className="text-sm mt-0.5">⛔</span>
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-destructive">
+                  {pendentesBloqueados.length} ite{pendentesBloqueados.length === 1 ? 'm' : 'ns'} aguardando fim da cotação
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Estes itens só podem ser importados após finalizar a cotação da loja correspondente.
+                </p>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-6 px-0 text-xs text-primary mt-1 gap-1"
+                  onClick={() => navigate("/cotacao")}
+                >
+                  Ir para cotação <ArrowRight className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
         <div className="h-[calc(100vh-380px)] overflow-y-auto">
           {isLoading ? (
