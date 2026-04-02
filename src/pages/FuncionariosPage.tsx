@@ -275,7 +275,7 @@ const FuncionariosPage = () => {
               </div>
             ))
           )}
-        </ScrollArea>
+        </div>
       </div>
 
       {/* Imported history */}
