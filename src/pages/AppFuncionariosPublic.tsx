@@ -236,6 +236,13 @@ const AppFuncionariosPublic = () => {
       return next;
     });
 
+    // Clear search and refocus for next product
+    setProductSearch("");
+    setTimeout(() => searchInputRef.current?.focus(), 100);
+
+    // Toast feedback
+    toast.success(`✅ ${product.nome} adicionado!`, { duration: 1000, position: "top-center" });
+
     // Visual feedback
     setJustAdded((prev) => new Set(prev).add(productKey));
     setTimeout(() => {
