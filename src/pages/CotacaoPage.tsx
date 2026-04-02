@@ -92,6 +92,19 @@ const CotacaoPage = () => {
     },
   });
 
+  const { data: importedItemsCount = 0 } = useQuery({
+    queryKey: ["imported-items-count", lojaAtiva?.id],
+    queryFn: async () => {
+      let query = supabase
+        .from("itens_faltantes")
+        .select("id", { count: "exact", head: true })
+        .eq("importado", true);
+      if (lojaAtiva?.id) query = query.eq("loja_id", lojaAtiva.id);
+      const { count } = await query;
+      return count || 0;
+    },
+  });
+
   const { data: fornecedorLojas = [] } = useQuery({
     queryKey: ["fornecedor-lojas"],
     queryFn: async () => { const { data, error } = await supabase.from("fornecedor_lojas").select("*"); if (error) throw error; return data; },
