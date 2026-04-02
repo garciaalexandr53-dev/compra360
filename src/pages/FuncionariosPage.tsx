@@ -59,8 +59,8 @@ const FuncionariosPage = () => {
 
   const importarMutation = useMutation({
     mutationFn: async () => {
-      const itemsToImport = pendentes.filter((i: any) => !i.importado);
-      if (!itemsToImport.length) throw new Error("Nenhum item pendente");
+      const itemsToImport = pendentesImportaveis.filter((i: any) => !i.importado);
+      if (!itemsToImport.length) throw new Error("Nenhum item disponível para importação");
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
