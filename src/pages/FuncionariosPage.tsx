@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Trash2, Download, Package, MoreHorizontal, Store } from "lucide-react";
+import { Trash2, Download, Package, MoreHorizontal, Store, AlertTriangle } from "lucide-react";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const FuncionariosPage = () => {
   const queryClient = useQueryClient();
@@ -27,14 +28,39 @@ const FuncionariosPage = () => {
 
 
 
+  // Fetch active cotações to know which lojas are blocked
+  const { data: cotacoesAtivas = [] } = useQuery({
+    queryKey: ["cotacoes-ativas-lojas"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cotacoes")
+        .select("id, loja_id")
+        .eq("status", "ativa");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const lojasComCotacaoAtiva = new Set(cotacoesAtivas.map((c: any) => c.loja_id).filter(Boolean));
 
   const pendentes = itens.filter((i: any) => !i.importado);
   const importados = itens.filter((i: any) => i.importado);
 
+  // Pendentes that CAN be imported (loja has no active cotação)
+  const pendentesImportaveis = pendentes.filter((i: any) => {
+    const lid = i.loja_id || lojaAtiva?.id;
+    return !lid || !lojasComCotacaoAtiva.has(lid);
+  });
+  // Pendentes blocked (loja has active cotação)
+  const pendentesBloqueados = pendentes.filter((i: any) => {
+    const lid = i.loja_id || lojaAtiva?.id;
+    return lid && lojasComCotacaoAtiva.has(lid);
+  });
+
   const importarMutation = useMutation({
     mutationFn: async () => {
-      const itemsToImport = pendentes.filter((i: any) => !i.importado);
-      if (!itemsToImport.length) throw new Error("Nenhum item pendente");
+      const itemsToImport = pendentesImportaveis.filter((i: any) => !i.importado);
+      if (!itemsToImport.length) throw new Error("Nenhum item disponível para importação");
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
@@ -233,7 +259,7 @@ const FuncionariosPage = () => {
               {pendentes.length}
             </span>
           </div>
-          {pendentes.length > 0 && (
+          {pendentesImportaveis.length > 0 && (
             <Button
               size="sm"
               onClick={() => importarMutation.mutate()}
@@ -241,39 +267,54 @@ const FuncionariosPage = () => {
               className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
             >
               <Download className="h-4 w-4 mr-1" />
-              {importarMutation.isPending ? "Importando..." : `Importar ${pendentes.length} itens`}
+              {importarMutation.isPending ? "Importando..." : `Importar ${pendentesImportaveis.length} itens`}
             </Button>
           )}
         </div>
+        {pendentesBloqueados.length > 0 && (
+          <Alert className="m-3 mb-0 border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-xs text-amber-800 dark:text-amber-300">
+              <strong>{pendentesBloqueados.length} ite{pendentesBloqueados.length === 1 ? 'm' : 'ns'}</strong> de lojas com cotação em andamento. Finalize a cotação antes de importar.
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="h-[calc(100vh-380px)] overflow-y-auto">
           {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
           ) : pendentes.length === 0 ? (
             <div className="p-10 text-center text-muted-foreground">Nenhum item pendente.</div>
           ) : (
-            pendentes.map((item: any, i: number) => (
-              <div key={item.id} className="flex items-center gap-3 px-4 py-3 border-b hover:bg-muted/30 transition-colors">
-                <span className="text-xs text-muted-foreground w-6">{i + 1}.</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium">{item.nome}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {item.registrado_por && `Por: ${item.registrado_por} · `}
-                    {(item as any).lojas?.nome && `Loja: ${(item as any).lojas.nome} · `}
-                    {item.quantidade > 1 && `Qtd: ${item.quantidade} · `}
-                    {item.observacao && `${item.observacao} · `}
-                    {new Date(item.created_at).toLocaleString("pt-BR")}
+            pendentes.map((item: any, i: number) => {
+              const lid = item.loja_id || lojaAtiva?.id;
+              const bloqueado = lid && lojasComCotacaoAtiva.has(lid);
+              return (
+                <div key={item.id} className={`flex items-center gap-3 px-4 py-3 border-b hover:bg-muted/30 transition-colors ${bloqueado ? 'opacity-50' : ''}`}>
+                  <span className="text-xs text-muted-foreground w-6">{i + 1}.</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium flex items-center gap-1.5">
+                      {item.nome}
+                      {bloqueado && <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 px-1.5 py-0.5 rounded-full whitespace-nowrap">cotação ativa</span>}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {item.registrado_por && `Por: ${item.registrado_por} · `}
+                      {(item as any).lojas?.nome && `Loja: ${(item as any).lojas.nome} · `}
+                      {item.quantidade > 1 && `Qtd: ${item.quantidade} · `}
+                      {item.observacao && `${item.observacao} · `}
+                      {new Date(item.created_at).toLocaleString("pt-BR")}
+                    </div>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive"
+                    onClick={() => deleteMutation.mutate(item.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive"
-                  onClick={() => deleteMutation.mutate(item.id)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
