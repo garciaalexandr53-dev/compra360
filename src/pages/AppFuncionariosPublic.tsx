@@ -107,6 +107,7 @@ const AppFuncionariosPublic = () => {
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
   const [productQtds, setProductQtds] = useState<Record<string, number>>({});
   const productsListRef = useRef<HTMLDivElement | null>(null);
+  const itemsListRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (urlLojaId && urlLojaId !== selectedLojaId) {
