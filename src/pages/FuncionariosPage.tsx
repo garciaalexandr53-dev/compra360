@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Trash2, Download, Package, MoreHorizontal, Store } from "lucide-react";
@@ -245,7 +245,7 @@ const FuncionariosPage = () => {
             </Button>
           )}
         </div>
-        <ScrollArea className="max-h-[400px]">
+        <div className="h-[calc(100vh-380px)] overflow-y-auto">
           {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
           ) : pendentes.length === 0 ? (
@@ -275,7 +275,7 @@ const FuncionariosPage = () => {
               </div>
             ))
           )}
-        </ScrollArea>
+        </div>
       </div>
 
       {/* Imported history */}
@@ -292,14 +292,14 @@ const FuncionariosPage = () => {
               Limpar histórico
             </Button>
           </div>
-          <ScrollArea className="max-h-[200px]">
+          <div className="max-h-[200px] overflow-y-auto">
             {importados.map((item: any) => (
               <div key={item.id} className="flex items-center gap-3 px-4 py-2 border-b text-muted-foreground">
                 <span className="text-xs">✓</span>
                 <span className="text-sm line-through">{item.nome}</span>
               </div>
             ))}
-          </ScrollArea>
+          </div>
         </div>
       )}
     </div>
