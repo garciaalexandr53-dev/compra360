@@ -615,7 +615,7 @@ const AppFuncionariosPublic = () => {
 
           {/* Bottom bar: items summary + send */}
           {items.length > 0 && (
-            <div className="sticky bottom-0 left-0 right-0 bg-card border-t shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-10">
+            <div ref={itemsListRef} className="sticky bottom-0 left-0 right-0 bg-card border-t shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-10">
               {/* Compact items list */}
               <div className="max-h-[120px] overflow-y-auto px-3 py-2 space-y-1">
                 {items.map((item, index) => (
