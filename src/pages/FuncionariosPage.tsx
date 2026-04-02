@@ -245,7 +245,7 @@ const FuncionariosPage = () => {
             </Button>
           )}
         </div>
-        <ScrollArea className="max-h-[400px]">
+        <div className="h-[calc(100vh-380px)] overflow-y-auto">
           {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
           ) : pendentes.length === 0 ? (
