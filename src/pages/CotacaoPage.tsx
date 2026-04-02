@@ -760,12 +760,34 @@ const CotacaoPage = () => {
       <ImportErpModal open={erpImportOpen} onOpenChange={setErpImportOpen} cotacaoId={cotacaoAtiva.id} />
       <ModalFornecedorSugestao open={fornSuggestOpen} onOpenChange={setFornSuggestOpen} text={fornSuggestText} loading={fornSuggestLoading} hasHistory={fornSuggestHasHistory} recommendedIds={fornSuggestRecommendedIds} onApply={applyFornSuggestions} />
 
-      <AlertDialog open={cancelCotacaoOpen} onOpenChange={setCancelCotacaoOpen}>
+      <AlertDialog open={cancelCotacaoOpen} onOpenChange={(v) => { setCancelCotacaoOpen(v); if (!v) setCancelOpt("manter"); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza que deseja excluir esta cotação?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Essa ação não poderá ser desfeita. Todos os produtos, preços e fornecedores vinculados serão removidos permanentemente.
+            <AlertDialogTitle>Excluir cotação em andamento?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>Essa ação não poderá ser desfeita. Escolha o que fazer com os produtos:</p>
+                <label
+                  className={`flex items-start gap-3 p-3 border-2 rounded-xl cursor-pointer transition-colors ${cancelOpt === "manter" ? "border-primary bg-accent/30" : "border-border hover:border-muted-foreground/30"}`}
+                  onClick={() => setCancelOpt("manter")}
+                >
+                  <input type="radio" name="cancel-opt" checked={cancelOpt === "manter"} readOnly className="mt-1 accent-[hsl(var(--primary))]" />
+                  <div>
+                    <div className="text-sm font-bold text-foreground">Manter lista de produtos</div>
+                    <div className="text-xs text-muted-foreground">Exclui a cotação e os preços, mas cria uma nova com os mesmos produtos.</div>
+                  </div>
+                </label>
+                <label
+                  className={`flex items-start gap-3 p-3 border-2 rounded-xl cursor-pointer transition-colors ${cancelOpt === "excluir_tudo" ? "border-destructive bg-red-50 dark:bg-red-950/20" : "border-border hover:border-muted-foreground/30"}`}
+                  onClick={() => setCancelOpt("excluir_tudo")}
+                >
+                  <input type="radio" name="cancel-opt" checked={cancelOpt === "excluir_tudo"} readOnly className="mt-1 accent-red-600" />
+                  <div>
+                    <div className="text-sm font-bold text-foreground">Excluir tudo</div>
+                    <div className="text-xs text-muted-foreground">Remove todos os produtos, preços e fornecedores permanentemente.</div>
+                  </div>
+                </label>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -775,7 +797,7 @@ const CotacaoPage = () => {
               disabled={cancelLoading}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {cancelLoading ? "Excluindo..." : "Excluir cotação"}
+              {cancelLoading ? "Excluindo..." : "Confirmar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
