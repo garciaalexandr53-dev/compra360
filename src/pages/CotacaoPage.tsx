@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Wand2, MoreHorizontal, FileSpreadsheet, RotateCcw, Copy, HelpCircle, ClipboardCopy, Trash2, Target, ArrowLeft, ArrowRight } from "lucide-react";
+import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Wand2, MoreHorizontal, FileSpreadsheet, RotateCcw, Copy, HelpCircle, ClipboardCopy, Trash2, Target, ArrowLeft, ArrowRight, AlertTriangle } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
@@ -89,6 +89,19 @@ const CotacaoPage = () => {
       const { data, error } = await query.limit(1).maybeSingle();
       if (error) throw error;
       return data;
+    },
+  });
+
+  const { data: importedItemsCount = 0 } = useQuery({
+    queryKey: ["imported-items-count", lojaAtiva?.id],
+    queryFn: async () => {
+      let query = supabase
+        .from("itens_faltantes")
+        .select("id", { count: "exact", head: true })
+        .eq("importado", true);
+      if (lojaAtiva?.id) query = query.eq("loja_id", lojaAtiva.id);
+      const { count } = await query;
+      return count || 0;
     },
   });
 
@@ -754,7 +767,7 @@ const CotacaoPage = () => {
       )}
 
       <ModalFornecedores open={supplierModalOpen} onOpenChange={setSupplierModalOpen} fornecedores={allFornecedores} selectedSuppliers={selectedSuppliers} onToggle={toggleSupplier} onSelectAll={selectAllSuppliers} onSave={saveSupplierSelection} />
-      <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} />
+      <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} lojaId={lojaAtiva?.id} />
       <ModalAiAnalise open={aiAnalysisOpen} onOpenChange={setAiAnalysisOpen} text={aiAnalysisText} loading={aiAnalysisLoading} onReanalisar={runAiAnalysis} />
       <ModalQtySugestao open={qtySuggestOpen} onOpenChange={setQtySuggestOpen} suggestions={qtySuggestions} loading={qtySuggestLoading} onApply={applyQtySuggestions} />
       <ImportErpModal open={erpImportOpen} onOpenChange={setErpImportOpen} cotacaoId={cotacaoAtiva.id} />
@@ -787,6 +800,14 @@ const CotacaoPage = () => {
                     <div className="text-xs text-muted-foreground">Remove todos os produtos, preços e fornecedores permanentemente.</div>
                   </div>
                 </label>
+                {importedItemsCount > 0 && (
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                    <p className="text-xs text-amber-800 dark:text-amber-300">
+                      <strong>{importedItemsCount} ite{importedItemsCount === 1 ? 'm foi importado' : 'ns foram importados'}</strong> desta lista. Se continuar, eles ficarão no histórico por 30 dias e poderão ser restaurados.
+                    </p>
+                  </div>
+                )}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
