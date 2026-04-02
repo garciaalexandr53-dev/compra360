@@ -2,18 +2,23 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Trash2, Download, Package, MoreHorizontal, Store, AlertTriangle } from "lucide-react";
+import { Trash2, Download, Package, MoreHorizontal, Store, AlertTriangle, Pencil } from "lucide-react";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const FuncionariosPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva, lojas } = useLojaAtiva();
   const [linkLojaId, setLinkLojaId] = useState<string>("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editQty, setEditQty] = useState<string>("");
+
   const { data: itens = [], isLoading } = useQuery({
     queryKey: ["itens-faltantes"],
     queryFn: async () => {
@@ -26,9 +31,6 @@ const FuncionariosPage = () => {
     },
   });
 
-
-
-  // Fetch active cotações to know which lojas are blocked
   const { data: cotacoesAtivas = [] } = useQuery({
     queryKey: ["cotacoes-ativas-lojas"],
     queryFn: async () => {
@@ -46,12 +48,10 @@ const FuncionariosPage = () => {
   const pendentes = itens.filter((i: any) => !i.importado);
   const importados = itens.filter((i: any) => i.importado);
 
-  // Pendentes that CAN be imported (loja has no active cotação)
   const pendentesImportaveis = pendentes.filter((i: any) => {
     const lid = i.loja_id || lojaAtiva?.id;
     return !lid || !lojasComCotacaoAtiva.has(lid);
   });
-  // Pendentes blocked (loja has active cotação)
   const pendentesBloqueados = pendentes.filter((i: any) => {
     const lid = i.loja_id || lojaAtiva?.id;
     return lid && lojasComCotacaoAtiva.has(lid);
@@ -65,14 +65,12 @@ const FuncionariosPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Check for existing products to avoid duplicates
       const { data: existingProducts } = await supabase.from("produtos").select("nome");
       const existingNames = new Set((existingProducts || []).map((p) => p.nome.toLowerCase().trim()));
 
       const newItems = itemsToImport.filter((i: any) => !existingNames.has(i.nome.toLowerCase().trim()));
       const dupCount = itemsToImport.length - newItems.length;
 
-      // Insert each unique item into produtos with ativo=true and user_id
       const inserts = newItems.map((item: any) => ({
         nome: item.nome,
         embalagem: item.observacao?.replace("Embalagem: ", "") || "un",
@@ -85,7 +83,6 @@ const FuncionariosPage = () => {
         if (prodErr) throw prodErr;
       }
 
-      // Group items by loja_id to add to the correct cotação per store
       const itemsByLoja = new Map<string, any[]>();
       for (const item of itemsToImport) {
         const lid = (item as any).loja_id || lojaAtiva?.id || "__none__";
@@ -93,7 +90,6 @@ const FuncionariosPage = () => {
         itemsByLoja.get(lid)!.push(item);
       }
 
-      // For each loja group, find the active cotação and add products
       for (const [lojaId, lojaItems] of itemsByLoja) {
         let cotacaoId: string | null = null;
         if (lojaId !== "__none__") {
@@ -138,7 +134,6 @@ const FuncionariosPage = () => {
         }
       }
 
-      // Mark all as imported
       const ids = itemsToImport.map((i: any) => i.id);
       const { error } = await supabase
         .from("itens_faltantes")
@@ -161,9 +156,98 @@ const FuncionariosPage = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
+  // Import single item
+  const importarItemMutation = useMutation({
+    mutationFn: async (item: any) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const { data: existingProducts } = await supabase.from("produtos").select("nome");
+      const existingNames = new Set((existingProducts || []).map((p) => p.nome.toLowerCase().trim()));
+
+      if (!existingNames.has(item.nome.toLowerCase().trim())) {
+        const { error: prodErr } = await supabase.from("produtos").insert({
+          nome: item.nome,
+          embalagem: item.observacao?.replace("Embalagem: ", "") || "un",
+          ativo: true,
+          user_id: user.id,
+        });
+        if (prodErr) throw prodErr;
+      }
+
+      const lid = item.loja_id || lojaAtiva?.id;
+      if (lid) {
+        const { data: cot } = await supabase
+          .from("cotacoes")
+          .select("id")
+          .eq("status", "ativa")
+          .eq("loja_id", lid)
+          .limit(1)
+          .maybeSingle();
+
+        if (cot?.id) {
+          const { data: matchedProds } = await supabase
+            .from("produtos")
+            .select("id, nome")
+            .ilike("nome", item.nome.trim());
+
+          if (matchedProds?.length) {
+            const { data: existingCp } = await supabase
+              .from("cotacao_produtos")
+              .select("produto_id")
+              .eq("cotacao_id", cot.id);
+            const existingProdIds = new Set((existingCp || []).map((cp) => cp.produto_id));
+
+            const cpInserts = matchedProds
+              .filter((p) => !existingProdIds.has(p.id))
+              .map((p) => ({
+                cotacao_id: cot.id,
+                produto_id: p.id,
+                quantidade: item.quantidade || 1,
+              }));
+            if (cpInserts.length) {
+              await supabase.from("cotacao_produtos").insert(cpInserts);
+            }
+          }
+        }
+      }
+
+      const { error } = await supabase
+        .from("itens_faltantes")
+        .update({ importado: true })
+        .eq("id", item.id);
+      if (error) throw error;
+
+      return item.nome;
+    },
+    onSuccess: (nome) => {
+      queryClient.invalidateQueries({ queryKey: ["itens-faltantes"] });
+      queryClient.invalidateQueries({ queryKey: ["produtos"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
+      toast.success(`✅ ${nome} importado para a cotação!`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, nome }: { id: string; nome: string }) => {
       const { error } = await supabase.from("itens_faltantes").delete().eq("id", id);
+      if (error) throw error;
+      return nome;
+    },
+    onSuccess: (nome) => {
+      queryClient.invalidateQueries({ queryKey: ["itens-faltantes"] });
+      toast.success("Item removido");
+    },
+  });
+
+  const updateQtyMutation = useMutation({
+    mutationFn: async ({ id, quantidade }: { id: string; quantidade: number }) => {
+      const { error } = await supabase
+        .from("itens_faltantes")
+        .update({ quantidade })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -182,7 +266,25 @@ const FuncionariosPage = () => {
     },
   });
 
-  // Determine which loja to use for the link
+  const handleStartEdit = (item: any) => {
+    setEditingId(item.id);
+    setEditQty("");
+  };
+
+  const handleSaveQty = (id: string) => {
+    const qty = parseInt(editQty);
+    if (qty > 0) {
+      updateQtyMutation.mutate({ id, quantidade: qty });
+    }
+    setEditingId(null);
+  };
+
+  const handleDelete = (item: any) => {
+    if (confirm(`Remover ${item.nome}?`)) {
+      deleteMutation.mutate({ id: item.id, nome: item.nome });
+    }
+  };
+
   const effectiveLinkLojaId = lojas.length === 1 ? lojas[0].id : linkLojaId;
   const effectiveLinkLoja = lojas.find((l) => l.id === effectiveLinkLojaId);
   const appUrl = effectiveLinkLojaId
@@ -206,6 +308,10 @@ const FuncionariosPage = () => {
     const lojaLabel = effectiveLinkLoja ? ` da loja ${effectiveLinkLoja.nome}` : "";
     const msg = `📋 Use este link para registrar itens faltantes${lojaLabel}:\n${appUrl}\n\nBasta abrir no celular, digitar o item e enviar!`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
+  const getEmbalagem = (item: any) => {
+    return item.observacao?.replace("Embalagem: ", "") || "un";
   };
 
   return (
@@ -267,7 +373,7 @@ const FuncionariosPage = () => {
               className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
             >
               <Download className="h-4 w-4 mr-1" />
-              {importarMutation.isPending ? "Importando..." : `Importar ${pendentesImportaveis.length} itens`}
+              {importarMutation.isPending ? "Importando..." : `Importar ${pendentesImportaveis.length}`}
             </Button>
           )}
         </div>
@@ -288,30 +394,63 @@ const FuncionariosPage = () => {
             pendentes.map((item: any, i: number) => {
               const lid = item.loja_id || lojaAtiva?.id;
               const bloqueado = lid && lojasComCotacaoAtiva.has(lid);
+              const emb = getEmbalagem(item);
+              const tempoRelativo = formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: ptBR });
+
               return (
-                <div key={item.id} className={`flex items-center gap-3 px-4 py-3 border-b hover:bg-muted/30 transition-colors ${bloqueado ? 'opacity-50' : ''}`}>
-                  <span className="text-xs text-muted-foreground w-6">{i + 1}.</span>
+                <div key={item.id} className={`flex items-start gap-2 px-4 py-3 border-b hover:bg-muted/30 transition-colors ${bloqueado ? 'opacity-50' : ''}`}>
+                  <span className="text-xs text-muted-foreground w-5 pt-0.5 shrink-0">{i + 1}.</span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium flex items-center gap-1.5">
-                      {item.nome}
-                      {bloqueado && <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 px-1.5 py-0.5 rounded-full whitespace-nowrap">cotação ativa</span>}
+                    <div className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                      <span className="break-words">{item.nome}</span>
+                      {bloqueado && <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">cotação ativa</span>}
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {item.registrado_por && `Por: ${item.registrado_por} · `}
-                      {(item as any).lojas?.nome && `Loja: ${(item as any).lojas.nome} · `}
-                      {item.quantidade > 1 && `Qtd: ${item.quantidade} · `}
-                      {item.observacao && `${item.observacao} · `}
-                      {new Date(item.created_at).toLocaleString("pt-BR")}
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {editingId === item.id ? (
+                        <Input
+                          type="number"
+                          className="w-20 h-7 text-center text-sm inline-block"
+                          autoFocus
+                          placeholder={String(item.quantidade || 1)}
+                          value={editQty}
+                          onChange={(e) => setEditQty(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") handleSaveQty(item.id); }}
+                          onBlur={() => handleSaveQty(item.id)}
+                        />
+                      ) : (
+                        <>Qtd: {item.quantidade || 1} · {emb} · {tempoRelativo}</>
+                      )}
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive"
-                    onClick={() => deleteMutation.mutate(item.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="flex items-center gap-0.5 shrink-0 pt-0.5">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                      onClick={() => handleStartEdit(item)}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    {!bloqueado && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-primary"
+                        onClick={() => importarItemMutation.mutate(item)}
+                        disabled={importarItemMutation.isPending}
+                      >
+                        <Download className="h-3 w-3" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive"
+                      onClick={() => handleDelete(item)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
               );
             })
