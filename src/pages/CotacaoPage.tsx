@@ -535,6 +535,12 @@ const CotacaoPage = () => {
     if (!cotacaoAtiva?.id) return;
     setCancelLoading(true);
     try {
+      // Snapshot products before deleting if user wants to keep them
+      const keepItems = cancelOpt === "manter";
+      const savedProducts = keepItems
+        ? cotacaoProdutos.map((cp) => ({ produto_id: cp.produto_id, quantidade: cp.quantidade }))
+        : [];
+
       // Delete prices for this quote's products
       const cpIds = cotacaoProdutos.map((cp) => cp.id);
       if (cpIds.length) {
@@ -546,16 +552,36 @@ const CotacaoPage = () => {
       await supabase.from("cotacao_fornecedores").delete().eq("cotacao_id", cotacaoAtiva.id);
       // Delete the cotacao itself
       await supabase.from("cotacoes").delete().eq("id", cotacaoAtiva.id);
+
+      // If keeping items, create a new cotação with the same products
+      if (keepItems && savedProducts.length > 0) {
+        const nome = `Cotação ${new Date().toLocaleDateString("pt-BR")} ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+        const { data: newCot, error: newCotError } = await supabase
+          .from("cotacoes")
+          .insert({ nome, loja_id: lojaAtiva?.id || null, created_by: user?.id } as any)
+          .select()
+          .single();
+        if (newCotError) throw newCotError;
+        if (newCot) {
+          await supabase.from("cotacao_produtos").insert(
+            savedProducts.map((p) => ({ cotacao_id: newCot.id, produto_id: p.produto_id, quantidade: p.quantidade }))
+          );
+        }
+        toast.success(`Cotação excluída. Nova cotação criada com ${savedProducts.length} produto(s)!`);
+      } else {
+        toast.success("Cotação excluída com sucesso");
+      }
+
       // Reset local state
       setLocalPrices({});
       setSelectedSuppliers({});
       queryClient.invalidateQueries();
-      toast.success("Cotação excluída com sucesso");
     } catch (e: any) {
       toast.error(e.message || "Erro ao excluir cotação");
     } finally {
       setCancelLoading(false);
       setCancelCotacaoOpen(false);
+      setCancelOpt("manter");
     }
   };
 
