@@ -14,8 +14,7 @@ async function fetchAllRows<T = Record<string, unknown>>(
   let from = 0;
 
   while (true) {
-    let query = supabase
-      .from(tableName)
+    let query = (supabase.from as any)(tableName)
       .select(selectColumns)
       .range(from, from + batchSize - 1);
 
