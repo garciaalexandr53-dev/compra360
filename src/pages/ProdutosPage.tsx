@@ -265,6 +265,7 @@ const ProdutosPage = () => {
     const { data: allProducts, error } = await supabase
       .from("produtos")
       .select("id, nome, created_at")
+      .eq("user_id", user?.id)
       .order("created_at", { ascending: true });
     if (error || !allProducts) {
       toast.error("Erro ao buscar produtos");
