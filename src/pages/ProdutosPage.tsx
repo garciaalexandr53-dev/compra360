@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Progress } from "@/components/ui/progress";
 import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, ChevronRight, Sparkles, Loader2, MoreHorizontal, ArrowRight, Package, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
@@ -22,6 +24,8 @@ type Categoria = Tables<"categorias">;
 const emptyForm = { nome: "", categoria_id: "", embalagem: "" };
 const PAGE_SIZE = 80;
 
+const cleanEmbalagem = (raw: string | null | undefined) => raw?.split("|")[0].trim() || "un";
+
 const ProdutosPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -32,7 +36,6 @@ const ProdutosPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const [editMode, setEditMode] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [catSidebarOpen, setCatSidebarOpen] = useState(false);
   const [newCatModalOpen, setNewCatModalOpen] = useState(false);
@@ -40,8 +43,17 @@ const ProdutosPage = () => {
   const [showFooter, setShowFooter] = useState(false);
   const [prevCotacaoCount, setPrevCotacaoCount] = useState<number | null>(null);
 
-  const [inlineEditing, setInlineEditing] = useState<Record<string, { nome?: string; embalagem?: string }>>({});
-  const [classifying, setClassifying] = useState(false);
+  // Delete confirmation
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+
+  // AI classify modal state
+  const [classifyModalOpen, setClassifyModalOpen] = useState(false);
+  const [classifyStatus, setClassifyStatus] = useState<"running" | "done" | "error">("running");
+  const [classifyProgress, setClassifyProgress] = useState(0);
+  const [classifyResult, setClassifyResult] = useState({ updated: 0, categories: 0 });
+  const [classifyError, setClassifyError] = useState("");
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: categorias = [] } = useQuery({
@@ -100,7 +112,6 @@ const ProdutosPage = () => {
     },
   });
 
-  // Fetch actual product IDs in the active cotacao
   const { data: cotacaoItens = [] } = useQuery({
     queryKey: ["cotacao-produto-ids", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
@@ -116,12 +127,10 @@ const ProdutosPage = () => {
   const itensNaCotacao = useMemo(() => new Set(cotacaoItens.map(i => i.produto_id)), [cotacaoItens]);
   const cotacaoItemCount = itensNaCotacao.size;
 
-  // Show/hide footer with animation
   useEffect(() => {
     if (cotacaoItemCount > 0 && !showFooter) {
       setShowFooter(true);
     }
-    // Show first-product toast
     if (prevCotacaoCount === 0 && cotacaoItemCount === 1) {
       toast.success("🎉 Primeiro produto adicionado! Continue selecionando.");
     }
@@ -162,7 +171,7 @@ const ProdutosPage = () => {
       const payload = {
         nome: form.nome.trim(),
         categoria_id: form.categoria_id || null,
-        embalagem: form.embalagem.trim() || null,
+        embalagem: cleanEmbalagem(form.embalagem),
       };
       if (editingId) {
         const { error } = await supabase.from("produtos").update(payload).eq("id", editingId);
@@ -205,6 +214,7 @@ const ProdutosPage = () => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
       queryClient.invalidateQueries({ queryKey: ["categorias"] });
       toast.success("Produto removido!");
+      setDeleteConfirmId(null);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -221,16 +231,6 @@ const ProdutosPage = () => {
       toast.success("Todos os produtos e categorias foram removidos!");
     },
     onError: (e: any) => toast.error(e.message),
-  });
-
-  const inlineUpdateMutation = useMutation({
-    mutationFn: async ({ id, field, value }: { id: string; field: string; value: string }) => {
-      const { error } = await supabase.from("produtos").update({ [field]: value.trim() || null }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["produtos"] });
-    },
   });
 
   const toggleCotacaoMutation = useMutation({
@@ -259,6 +259,41 @@ const ProdutosPage = () => {
     },
     onError: (e: any) => toast.error(e.message),
   });
+
+  // --- Duplicate removal ---
+  const removeDuplicates = async () => {
+    const { data: allProducts, error } = await supabase
+      .from("produtos")
+      .select("id, nome, created_at")
+      .order("created_at", { ascending: true });
+    if (error || !allProducts) {
+      toast.error("Erro ao buscar produtos");
+      return;
+    }
+    const seen = new Map<string, string>();
+    const toDelete: string[] = [];
+    for (const p of allProducts) {
+      const key = p.nome.toLowerCase().trim();
+      if (seen.has(key)) {
+        toDelete.push(p.id);
+      } else {
+        seen.set(key, p.id);
+      }
+    }
+    if (toDelete.length === 0) {
+      toast.info("Nenhuma duplicata encontrada");
+      return;
+    }
+    const { error: delError } = await supabase.from("produtos").delete().in("id", toDelete);
+    if (delError) {
+      toast.error("Erro ao remover duplicatas");
+      return;
+    }
+    await cleanOrphanCategories();
+    queryClient.invalidateQueries({ queryKey: ["produtos"] });
+    queryClient.invalidateQueries({ queryKey: ["categorias"] });
+    toast.success(`${toDelete.length} duplicata${toDelete.length > 1 ? "s" : ""} removida${toDelete.length > 1 ? "s" : ""} com sucesso!`);
+  };
 
   const filtered = useMemo(() => produtos.filter((p) => {
     const matchCat = selectedCat === "Todos" || p.categorias?.nome === selectedCat;
@@ -294,17 +329,7 @@ const ProdutosPage = () => {
     setModalOpen(true);
   };
 
-  const handleInlineBlur = (id: string, field: string, value: string, original: string) => {
-    if (value.trim() !== original.trim()) {
-      inlineUpdateMutation.mutate({ id, field, value });
-    }
-    setInlineEditing((prev) => {
-      const copy = { ...prev };
-      delete copy[id];
-      return copy;
-    });
-  };
-
+  // --- AI Classify with progress modal ---
   const autoClassifyProducts = async () => {
     const uncategorized = produtos.filter((p) => !p.categoria_id);
     const targets = uncategorized.length > 0 ? uncategorized : filtered;
@@ -312,9 +337,17 @@ const ProdutosPage = () => {
       toast.info("Nenhum produto para classificar.");
       return;
     }
-    setClassifying(true);
+
+    setClassifyModalOpen(true);
+    setClassifyStatus("running");
+    setClassifyProgress(10);
+    setClassifyError("");
+    setClassifyResult({ updated: 0, categories: 0 });
+
     try {
       const existingCatNames = categorias.map((c) => c.nome);
+      setClassifyProgress(25);
+
       const resp = await supabase.functions.invoke("ai-automacao", {
         body: {
           type: "classify-products",
@@ -323,10 +356,12 @@ const ProdutosPage = () => {
         },
       });
       if (resp.error) throw new Error(resp.error.message);
+
+      setClassifyProgress(50);
       const classifications = resp.data?.classifications || [];
       if (!classifications.length) {
-        toast.info("IA não conseguiu classificar os produtos.");
-        setClassifying(false);
+        setClassifyError("IA não conseguiu classificar os produtos.");
+        setClassifyStatus("error");
         return;
       }
 
@@ -337,10 +372,16 @@ const ProdutosPage = () => {
       // Create new categories
       const allCatNames = classifications.map((c: any) => String(c.categoria || "")).filter((c: string) => c && !catMap[c.toLowerCase()]);
       const newCats = Array.from(new Set<string>(allCatNames));
+      let newCatCount = 0;
       for (const catName of newCats) {
         const { data, error } = await supabase.from("categorias").insert([{ nome: catName, user_id: user?.id }]).select("id").single();
-        if (!error && data) catMap[catName.toLowerCase()] = data.id;
+        if (!error && data) {
+          catMap[catName.toLowerCase()] = data.id;
+          newCatCount++;
+        }
       }
+
+      setClassifyProgress(75);
 
       // Update products
       let updated = 0;
@@ -356,11 +397,15 @@ const ProdutosPage = () => {
 
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
       queryClient.invalidateQueries({ queryKey: ["categorias"] });
-      toast.success(`🤖 ${updated} produtos classificados pela IA!`);
+
+      setClassifyProgress(100);
+      const uniqueCats = new Set(classifications.map((c: any) => c.categoria).filter(Boolean));
+      setClassifyResult({ updated, categories: uniqueCats.size });
+      setClassifyStatus("done");
     } catch (e: any) {
-      toast.error(e.message || "Erro na classificação automática");
+      setClassifyError(e.message || "Erro na classificação automática");
+      setClassifyStatus("error");
     }
-    setClassifying(false);
   };
 
   return (
@@ -412,13 +457,11 @@ const ProdutosPage = () => {
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <div className="p-3 border-b bg-card/80 space-y-3">
-          {/* Title */}
           <div>
             <h1 className="text-lg font-bold text-foreground">Adicionar produtos</h1>
             <p className="text-xs text-muted-foreground">Monte sua lista para cotação</p>
           </div>
 
-          {/* Progress stepper */}
           <div className="flex items-center gap-2 text-xs">
             <Badge variant="default" className="text-[10px] px-2 py-0.5 gap-1">
               <CheckCircle2 className="h-3 w-3" />1. Produtos
@@ -429,7 +472,6 @@ const ProdutosPage = () => {
             <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-muted-foreground">3. Resultado</Badge>
           </div>
 
-          {/* Cotacao item counter */}
           <div className="flex items-center gap-2">
             {cotacaoItemCount > 0 ? (
               <Badge variant="secondary" className="text-[10px] gap-1 bg-primary/10 text-primary border-primary/20">
@@ -460,42 +502,38 @@ const ProdutosPage = () => {
             <span className="text-sm text-muted-foreground whitespace-nowrap">{filtered.length}{totalCount > filtered.length ? `/${totalCount}` : ""}</span>
           </div>
           <div className="flex items-center gap-2">
-            {editMode ? (
-              <>
-                <Button size="sm" onClick={() => setEditMode(false)}>
-                  <Check className="h-4 w-4 mr-1" /> Concluir
+            <Button size="sm" onClick={openAdd}>
+              <Plus className="h-4 w-4 mr-1" /> Novo
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="shrink-0 gap-1">
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="text-xs">Mais</span>
                 </Button>
-                <Button size="sm" onClick={openAdd}>
-                  <Plus className="h-4 w-4 mr-1" /> Novo
-                </Button>
-                <Button size="sm" variant="destructive" onClick={() => {
-                  if (confirm(`Excluir TODOS os ${produtos.length} produtos?`)) deleteAllMutation.mutate();
-                }} disabled={deleteAllMutation.isPending || produtos.length === 0}>
-                  <Trash2 className="h-4 w-4 mr-1" /> Excluir Todos
-                </Button>
-              </>
-            ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="shrink-0 gap-1">
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="text-xs">Mais</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setImportOpen(true)}>
-                    <Upload className="h-4 w-4 mr-2" /> Importar Produtos
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={autoClassifyProducts} disabled={classifying || produtos.length === 0}>
-                    <Sparkles className="h-4 w-4 mr-2" /> {classifying ? "Classificando..." : "Classificar IA"}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setEditMode(true)}>
-                    <Pencil className="h-4 w-4 mr-2" /> Modo Edição
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setImportOpen(true)}>
+                  <Upload className="h-4 w-4 mr-2" /> Importar Produtos
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={autoClassifyProducts} disabled={produtos.length === 0}>
+                  <Sparkles className="h-4 w-4 mr-2" /> Classificar IA
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={removeDuplicates} disabled={produtos.length === 0}>
+                  <span className="mr-2">🧹</span> Remover duplicatas
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => {
+                    if (confirm(`Excluir TODOS os ${produtos.length} produtos?`)) deleteAllMutation.mutate();
+                  }}
+                  disabled={deleteAllMutation.isPending || produtos.length === 0}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" /> Excluir Todos
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -513,65 +551,46 @@ const ProdutosPage = () => {
                       {cat}
                     </div>
                   )}
-                  {prods.map((p) => (
-                    <div
-                      key={p.id}
-                      className={`flex items-center gap-3 px-4 py-3 border-b hover:bg-muted/30 transition-all ${
-                        p.ativo ? "border-l-2 border-l-primary bg-primary/5" : ""
-                      }`}
-                    >
-                      <div className="flex-1 min-w-0">
-                        {editMode ? (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Input
-                              className="h-7 text-sm font-medium w-auto flex-1 min-w-[150px]"
-                              defaultValue={p.nome}
-                              onBlur={(e) => handleInlineBlur(p.id, "nome", e.target.value, p.nome)}
-                            />
-                            <Input
-                              className="h-7 text-xs w-20"
-                              defaultValue={p.embalagem || ""}
-                              placeholder="embal."
-                              onBlur={(e) => handleInlineBlur(p.id, "embalagem", e.target.value, p.embalagem || "")}
-                            />
+                  {prods.map((p) => {
+                    const inCotacao = itensNaCotacao.has(p.id);
+                    return (
+                      <div
+                        key={p.id}
+                        className={`flex items-center gap-2 px-3 py-2.5 border-b hover:bg-muted/30 transition-all ${
+                          inCotacao ? "border-l-2 border-l-primary bg-primary/5" : ""
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-foreground truncate">{p.nome}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {p.categorias?.nome || "Sem Categoria"} · {p.embalagem || "un"}
                           </div>
-                        ) : (
-                          <>
-                            <div className="text-sm font-medium text-foreground">{p.nome}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {p.categorias?.nome || "Sem Categoria"} · {p.embalagem || "un"}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                      {editMode ? (
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(p)}>
-                            <Pencil className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)} title="Editar">
+                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => {
-                            if (confirm(`Remover "${p.nome}"?`)) deleteMutation.mutate(p.id);
-                          }}>
-                            <Trash2 className="h-3.5 w-3.5" />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => { setDeleteConfirmId(p.id); setDeleteConfirmName(p.nome); }}
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={inCotacao ? "outline" : "default"}
+                            className={`h-7 text-xs px-2 transition-all ${inCotacao ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20" : "bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"}`}
+                            onClick={() => toggleCotacaoMutation.mutate({ produtoId: p.id, adding: !inCotacao })}
+                          >
+                            {inCotacao ? "✓" : "+"}
                           </Button>
                         </div>
-                      ) : (
-                        (() => {
-                          const inCotacao = itensNaCotacao.has(p.id);
-                          return (
-                            <Button
-                              size="sm"
-                              variant={inCotacao ? "outline" : "default"}
-                              className={`transition-all ${inCotacao ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20" : "bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"}`}
-                              onClick={() => toggleCotacaoMutation.mutate({ produtoId: p.id, adding: !inCotacao })}
-                            >
-                              {inCotacao ? "✓ Na cotação" : "+ Adicionar"}
-                            </Button>
-                          );
-                        })()
-                      )}
-                    </div>
-                  ))}
+                      </div>
+                    );
+                  })}
                 </div>
               ))}
               {isFetchingNextPage && (
@@ -606,6 +625,86 @@ const ProdutosPage = () => {
           </div>
         )}
       </div>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir produto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja remover <strong>"{deleteConfirmName}"</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { if (deleteConfirmId) deleteMutation.mutate(deleteConfirmId); }}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Removendo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* AI Classify Progress Modal */}
+      <Dialog
+        open={classifyModalOpen}
+        onOpenChange={(open) => {
+          if (!open && classifyStatus === "running") return; // prevent closing while running
+          setClassifyModalOpen(open);
+        }}
+      >
+        <DialogContent
+          className="max-w-sm"
+          onPointerDownOutside={(e) => { if (classifyStatus === "running") e.preventDefault(); }}
+          onEscapeKeyDown={(e) => { if (classifyStatus === "running") e.preventDefault(); }}
+          onInteractOutside={(e) => { if (classifyStatus === "running") e.preventDefault(); }}
+        >
+          {/* Hide close button while running */}
+          {classifyStatus === "running" && (
+            <style>{`.classify-modal-content [data-radix-dialog-close] { display: none !important; }`}</style>
+          )}
+          <div className="classify-modal-content">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {classifyStatus === "running" && <><Sparkles className="h-5 w-5 text-primary animate-pulse" /> Classificando produtos...</>}
+                {classifyStatus === "done" && <><span className="text-xl">✅</span> Classificação concluída!</>}
+                {classifyStatus === "error" && <><span className="text-xl">❌</span> Erro na classificação</>}
+              </DialogTitle>
+              <DialogDescription>
+                {classifyStatus === "running" && `Analisando ${produtos.filter(p => !p.categoria_id).length || filtered.length} produtos · Aguarde`}
+                {classifyStatus === "done" && `${classifyResult.updated} produtos classificados em ${classifyResult.categories} categorias`}
+                {classifyStatus === "error" && classifyError}
+              </DialogDescription>
+            </DialogHeader>
+
+            {classifyStatus === "running" && (
+              <div className="py-4">
+                <Progress value={classifyProgress} className="h-2" />
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  <Loader2 className="h-3 w-3 animate-spin inline mr-1" />
+                  Processando...
+                </p>
+              </div>
+            )}
+
+            {classifyStatus === "done" && (
+              <DialogFooter className="mt-4">
+                <Button onClick={() => setClassifyModalOpen(false)}>Fechar</Button>
+              </DialogFooter>
+            )}
+
+            {classifyStatus === "error" && (
+              <DialogFooter className="mt-4 gap-2">
+                <Button variant="outline" onClick={() => setClassifyModalOpen(false)}>Cancelar</Button>
+                <Button onClick={autoClassifyProducts}>Tentar Novamente</Button>
+              </DialogFooter>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add/Edit Product Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
