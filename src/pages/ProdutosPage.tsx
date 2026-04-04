@@ -194,9 +194,9 @@ const ProdutosPage = () => {
   });
 
   const cleanOrphanCategories = async () => {
-    const { data: allCats } = await supabase.from("categorias").select("id");
+    const { data: allCats } = await supabase.from("categorias").select("id").eq("user_id", user?.id);
     if (!allCats?.length) return;
-    const { data: usedCats } = await supabase.from("produtos").select("categoria_id");
+    const { data: usedCats } = await supabase.from("produtos").select("categoria_id").eq("user_id", user?.id).not("categoria_id", "is", null);
     const usedIds = new Set((usedCats || []).map((p) => p.categoria_id).filter(Boolean));
     const orphans = allCats.filter((c) => !usedIds.has(c.id)).map((c) => c.id);
     if (orphans.length) {
