@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { fetchAllProductNames } from "@/lib/supabaseHelpers";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
