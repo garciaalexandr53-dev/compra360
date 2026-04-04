@@ -109,8 +109,18 @@ const FuncionariosPage = () => {
         }
       }
 
-      const { data: existingProducts } = await supabase.from("produtos").select("nome");
-      const existingNames = new Set((existingProducts || []).map((p) => p.nome.toLowerCase().trim()));
+      // Buscar TODOS os produtos com paginação (evitar limite de 1000)
+      let allExisting: { nome: string }[] = [];
+      const batchSize = 1000;
+      let from = 0;
+      while (true) {
+        const { data } = await supabase.from("produtos").select("nome").range(from, from + batchSize - 1);
+        if (!data || data.length === 0) break;
+        allExisting = allExisting.concat(data);
+        if (data.length < batchSize) break;
+        from += batchSize;
+      }
+      const existingNames = new Set(allExisting.map((p) => p.nome.toLowerCase().trim()));
 
       const newItems = itemsToImport.filter((i: any) => !existingNames.has(i.nome.toLowerCase().trim()));
       const dupCount = itemsToImport.length - newItems.length;
