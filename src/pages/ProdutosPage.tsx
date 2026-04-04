@@ -262,11 +262,24 @@ const ProdutosPage = () => {
 
   // --- Duplicate removal ---
   const removeDuplicates = async () => {
-    const { data: allProducts, error } = await supabase
-      .from("produtos")
-      .select("id, nome, created_at")
-      .eq("user_id", user?.id)
-      .order("created_at", { ascending: true });
+    // Fetch ALL products (bypassing 1000-row default limit)
+    let allProducts: { id: string; nome: string; created_at: string }[] = [];
+    let from = 0;
+    const batchSize = 1000;
+    let error: any = null;
+    while (true) {
+      const { data, error: fetchErr } = await supabase
+        .from("produtos")
+        .select("id, nome, created_at")
+        .eq("user_id", user?.id)
+        .order("created_at", { ascending: true })
+        .range(from, from + batchSize - 1);
+      if (fetchErr) { error = fetchErr; break; }
+      if (!data || data.length === 0) break;
+      allProducts = allProducts.concat(data);
+      if (data.length < batchSize) break;
+      from += batchSize;
+    }
     if (error || !allProducts) {
       toast.error("Erro ao buscar produtos");
       return;
