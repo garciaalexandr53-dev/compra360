@@ -298,10 +298,14 @@ const ProdutosPage = () => {
       toast.info("Nenhuma duplicata encontrada");
       return;
     }
-    const { error: delError } = await supabase.from("produtos").delete().in("id", toDelete);
-    if (delError) {
-      toast.error("Erro ao remover duplicatas");
-      return;
+    // Delete in batches to avoid query size limits
+    for (let i = 0; i < toDelete.length; i += 500) {
+      const batch = toDelete.slice(i, i + 500);
+      const { error: delError } = await supabase.from("produtos").delete().in("id", batch);
+      if (delError) {
+        toast.error("Erro ao remover duplicatas");
+        return;
+      }
     }
     await cleanOrphanCategories();
     queryClient.invalidateQueries({ queryKey: ["produtos"] });
