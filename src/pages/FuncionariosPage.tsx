@@ -219,8 +219,17 @@ const FuncionariosPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      const { data: existingProducts } = await supabase.from("produtos").select("nome");
-      const existingNames = new Set((existingProducts || []).map((p) => p.nome.toLowerCase().trim()));
+      // Buscar TODOS os produtos com paginação
+      let allExisting: { nome: string }[] = [];
+      let fromIdx = 0;
+      while (true) {
+        const { data } = await supabase.from("produtos").select("nome").range(fromIdx, fromIdx + 999);
+        if (!data || data.length === 0) break;
+        allExisting = allExisting.concat(data);
+        if (data.length < 1000) break;
+        fromIdx += 1000;
+      }
+      const existingNames = new Set(allExisting.map((p) => p.nome.toLowerCase().trim()));
 
       if (!existingNames.has(item.nome.toLowerCase().trim())) {
         const { error: prodErr } = await supabase.from("produtos").insert({
