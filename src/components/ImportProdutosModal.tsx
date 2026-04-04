@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { fetchAllProductNames } from "@/lib/supabaseHelpers";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -225,9 +226,8 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
     if (!parsedItems.length) return;
     setImporting(true);
     try {
-      // Get existing products to check duplicates
-      const { data: existingProducts } = await supabase.from("produtos").select("nome");
-      const existingNames = new Set((existingProducts || []).map((p) => p.nome.toLowerCase().trim()));
+      // Get existing products to check duplicates (paginated, no 1000-row limit)
+      const existingNames = await fetchAllProductNames();
 
       // Filter out duplicates
       const uniqueItems = parsedItems.filter((p) => !existingNames.has(p.nome.toLowerCase().trim()));

@@ -98,9 +98,10 @@ const ImportNfModal = ({ open, onOpenChange, onImported }: ImportNfModalProps) =
 
     setImporting(true);
     try {
-      // Get existing products for matching
-      const { data: existingProducts } = await supabase.from("produtos").select("id, nome");
-      const existingMap = new Map((existingProducts || []).map(p => [p.nome.toLowerCase().trim(), p.id]));
+      // Get existing products for matching (paginated, no 1000-row limit)
+      const { fetchAllProductsMap } = await import("@/lib/supabaseHelpers");
+      const fullMap = await fetchAllProductsMap();
+      const existingMap = new Map([...fullMap.entries()].map(([k, v]) => [k, v.id]));
 
       // Get active cotacao
       const { data: cotacao } = await supabase

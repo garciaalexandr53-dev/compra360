@@ -108,14 +108,9 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
     if (!items.length) return;
     setImporting(true);
     try {
-      // 1. Ensure products exist in banco de produtos
-      const names = items.map((i) => i.nome);
-      const { data: existingProds } = await supabase
-        .from("produtos")
-        .select("id, nome")
-        .in("nome", names);
-
-      const existingMap = new Map((existingProds || []).map((p) => [p.nome.toLowerCase().trim(), p]));
+      // 1. Ensure products exist in banco de produtos (paginated, no 1000-row limit)
+      const { fetchAllProductsMap } = await import("@/lib/supabaseHelpers");
+      const existingMap = await fetchAllProductsMap();
       const newProducts = items.filter((i) => !existingMap.has(i.nome.toLowerCase().trim()));
 
       if (newProducts.length) {
