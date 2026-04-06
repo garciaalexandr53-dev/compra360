@@ -33,31 +33,62 @@ const FuncionariosPage = () => {
     },
   });
 
-  const { data: cotacoesAtivas = [] } = useQuery({
-    queryKey: ["cotacoes-ativas-lojas"],
+  // Fetch active cotação for the active store
+  const { data: cotacaoAtivaLoja } = useQuery({
+    queryKey: ["cotacao-ativa-loja", lojaAtiva?.id],
     queryFn: async () => {
+      if (!lojaAtiva?.id) return null;
       const { data, error } = await supabase
         .from("cotacoes")
         .select("id, loja_id")
-        .eq("status", "ativa");
+        .eq("status", "ativa")
+        .eq("loja_id", lojaAtiva.id)
+        .limit(1)
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
+    enabled: !!lojaAtiva?.id,
   });
 
-  const lojasComCotacaoAtiva = new Set(cotacoesAtivas.map((c: any) => c.loja_id).filter(Boolean));
-
-  const pendentes = itens.filter((i: any) => !i.importado);
-  const importados = itens.filter((i: any) => i.importado);
-
-  const pendentesImportaveis = pendentes.filter((i: any) => {
-    const lid = i.loja_id || lojaAtiva?.id;
-    return !lid || !lojasComCotacaoAtiva.has(lid);
+  // Check if any supplier has sent prices for the active cotação
+  const { data: precosCount = 0 } = useQuery({
+    queryKey: ["cotacao-precos-count", cotacaoAtivaLoja?.id],
+    queryFn: async () => {
+      if (!cotacaoAtivaLoja?.id) return 0;
+      const { count, error } = await supabase
+        .from("precos")
+        .select("id", { count: "exact", head: true })
+        .not("preco", "is", null)
+        .in(
+          "cotacao_produto_id",
+          (await supabase
+            .from("cotacao_produtos")
+            .select("id")
+            .eq("cotacao_id", cotacaoAtivaLoja.id)
+          ).data?.map((cp: any) => cp.id) || []
+        );
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!cotacaoAtivaLoja?.id,
   });
-  const pendentesBloqueados = pendentes.filter((i: any) => {
-    const lid = i.loja_id || lojaAtiva?.id;
-    return lid && lojasComCotacaoAtiva.has(lid);
+
+  const cotacaoTemPrecos = precosCount > 0;
+
+  // Filter items: only show items from the active store
+  const allPendentes = itens.filter((i: any) => !i.importado);
+  const pendentes = allPendentes.filter((i: any) => {
+    if (!lojaAtiva?.id) return true;
+    return i.loja_id === lojaAtiva.id || !i.loja_id;
   });
+  const importados = itens.filter((i: any) => i.importado && (i.loja_id === lojaAtiva?.id || !i.loja_id));
+  const outrasLojas = allPendentes.filter((i: any) => lojaAtiva?.id && i.loja_id && i.loja_id !== lojaAtiva.id);
+
+  // Allow import if: no active cotação OR cotação has no prices yet
+  const canImport = !cotacaoAtivaLoja || !cotacaoTemPrecos;
+  const pendentesImportaveis = canImport ? pendentes : [];
+  const pendentesBloqueados = canImport ? [] : pendentes;
 
   const importarMutation = useMutation({
     mutationFn: async () => {
