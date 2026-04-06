@@ -25,6 +25,30 @@ if (isFuncionariosApp && localStorage.getItem("funcionarios-cache-reset-version"
   void clearPwaState();
 }
 
+// Force SW update check on every app load — ensures users get the latest version
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((reg) => {
+      // Trigger update check
+      reg.update().catch(() => {});
+
+      // If a waiting SW exists, activate it immediately
+      if (reg.waiting) {
+        reg.waiting.postMessage({ type: "SKIP_WAITING" });
+        window.location.reload();
+      }
+    });
+  });
+
+  // Listen for new SW becoming available during the session
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!sessionStorage.getItem("sw-reloaded")) {
+      sessionStorage.setItem("sw-reloaded", "1");
+      window.location.reload();
+    }
+  });
+}
+
 // Auto-recover from stale chunk errors after deploys
 const recoverLazyChunk = (msg: string) => {
   if (
@@ -39,7 +63,9 @@ window.addEventListener("error", (e) => recoverLazyChunk((e as ErrorEvent).messa
 window.addEventListener("unhandledrejection", (e) =>
   recoverLazyChunk(String((e as PromiseRejectionEvent).reason?.message || (e as PromiseRejectionEvent).reason || ""))
 );
-window.addEventListener("load", () => sessionStorage.removeItem("lazy-reloaded"));
+window.addEventListener("load", () => {
+  sessionStorage.removeItem("lazy-reloaded");
+  sessionStorage.removeItem("sw-reloaded");
+});
 
 createRoot(document.getElementById("root")!).render(<App />);
-
