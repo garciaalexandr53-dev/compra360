@@ -21,7 +21,8 @@ import type { Tables } from "@/integrations/supabase/types";
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 type Categoria = Tables<"categorias">;
 
-const emptyForm = { nome: "", categoria_id: "", embalagem: "" };
+const EMBALAGEM_OPTIONS = ["UNI", "DZ", "CX", "FD", "PCT", "KG", "LT", "SC", "GL"];
+const emptyForm = { nome: "", categoria_id: "", embalagem: "UNI", quantidade: 1 };
 const PAGE_SIZE = 80;
 
 const cleanEmbalagem = (raw: string | null | undefined) => raw?.split("|")[0].trim() || "un";
