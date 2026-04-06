@@ -304,7 +304,9 @@ const FuncionariosPage = () => {
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
-      queryClient.invalidateQueries({ queryKey: ["cotacoes-ativas-lojas"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-ativa-loja"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-precos-count"] });
+      queryClient.invalidateQueries({ queryKey: ["precos"] });
       toast.success(`✅ ${nome} importado para a cotação!`);
     },
     onError: (e: any) => toast.error(e.message),
