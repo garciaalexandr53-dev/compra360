@@ -137,9 +137,10 @@ const DashboardPage = () => {
   });
 
   const filteredFornecedores = useMemo(() => {
-    // Show all suppliers — no store-based filtering so none are hidden
-    return allFornecedores;
-  }, [allFornecedores]);
+    if (!lojaAtiva?.id) return allFornecedores;
+    const linkedToStore = new Set(fornecedorLojas.filter((fl: any) => fl.loja_id === lojaAtiva.id).map((fl: any) => fl.fornecedor_id));
+    return allFornecedores.filter((f) => linkedToStore.has(f.id));
+  }, [allFornecedores, fornecedorLojas, lojaAtiva?.id]);
 
   const { data: cotacaoFornecedores = [] } = useQuery({
     queryKey: ["cotacao-fornecedores", cotacaoAtiva?.id],
