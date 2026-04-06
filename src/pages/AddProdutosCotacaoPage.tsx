@@ -282,9 +282,18 @@ const AddProdutosCotacaoPage = () => {
             min={1}
             value={quantidade}
             onChange={e => setQuantidade(Math.max(1, Number(e.target.value) || 1))}
-            className="h-12 w-20 text-center"
+            className="h-12 w-16 text-center"
             placeholder="Qtd"
           />
+          <select
+            value={embalagem}
+            onChange={e => setEmbalagem(e.target.value)}
+            className="h-12 w-20 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {EMBALAGEM_OPTIONS.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
           <Button size="icon" className="h-12 w-12" onClick={handleAdd} disabled={!nome.trim()}>
             <Plus className="h-4 w-4" />
           </Button>
