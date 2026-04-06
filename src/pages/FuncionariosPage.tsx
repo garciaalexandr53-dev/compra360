@@ -392,7 +392,8 @@ const FuncionariosPage = () => {
 
   const effectiveLinkLojaId = lojas.length === 1 ? lojas[0].id : linkLojaId;
   const effectiveLinkLoja = lojas.find((l) => l.id === effectiveLinkLojaId);
-  const baseUrl = "https://compra360.lovable.app/app-funcionarios";
+  const publicOrigin = import.meta.env.VITE_APP_PUBLIC_URL || "https://compra360.lovable.app";
+  const baseUrl = `${publicOrigin.replace(/\/$/, "")}/app-funcionarios`;
   const appUrl = effectiveLinkLojaId
     ? `${baseUrl}?loja=${effectiveLinkLojaId}`
     : baseUrl;
