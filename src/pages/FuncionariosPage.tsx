@@ -552,8 +552,7 @@ const FuncionariosPage = () => {
             <div className="p-10 text-center text-muted-foreground">Nenhum item pendente.</div>
           ) : (
             pendentes.map((item: any, i: number) => {
-              const lid = item.loja_id || lojaAtiva?.id;
-              const bloqueado = lid && lojasComCotacaoAtiva.has(lid);
+              const bloqueado = !canImport;
               const emb = getEmbalagem(item);
               const tempoRelativo = formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: ptBR });
 
@@ -563,8 +562,11 @@ const FuncionariosPage = () => {
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-foreground flex items-center gap-1.5 flex-wrap">
                       <span className="break-words">{item.nome}</span>
+                      {item.loja_id && item.lojas?.nome && (
+                        <span className="text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">📍 {item.lojas.nome}</span>
+                      )}
                       {bloqueado
-                        ? <span className="text-[9px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">⛔ Cotação ativa</span>
+                        ? <span className="text-[9px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">⛔ Fornecedor já respondeu</span>
                         : <span className="text-[9px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">✅ Disponível</span>
                       }
                     </div>
