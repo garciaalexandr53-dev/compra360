@@ -223,9 +223,10 @@ const AddProdutosCotacaoPage = () => {
   const pickSuggestion = (p: { id: string; nome: string }) => {
     const isFirstProduct = items.length === 0 && alreadyCount === 0;
 
-    setItems(prev => [...prev, { id: genId(), nome: p.nome, quantidade: Math.max(1, quantidade), produtoId: p.id }]);
+    setItems(prev => [...prev, { id: genId(), nome: p.nome, quantidade: Math.max(1, quantidade), embalagem: embalagem, produtoId: p.id }]);
     setNome("");
     setQuantidade(1);
+    setEmbalagem("UNI");
     inputRef.current?.focus();
     if (isFirstProduct) {
       toast.success("🎉 Primeiro produto adicionado! Continue selecionando.");
