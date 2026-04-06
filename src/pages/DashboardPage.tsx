@@ -293,6 +293,13 @@ const DashboardPage = () => {
   const conclusionDismissKey = `conclusao-vista-${cotacaoAtiva?.id}`;
   useEffect(() => {
     if (allPedidosSent && cotacaoAtiva?.id) {
+      // Auto-finalize the cotação when all orders are sent
+      if (cotacaoAtiva.status === "ativa") {
+        supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: new Date().toISOString() }).eq("id", cotacaoAtiva.id).then(() => {
+          queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
+          queryClient.invalidateQueries({ queryKey: ["last-cotacao"] });
+        });
+      }
       try {
         const dismissed = localStorage.getItem(conclusionDismissKey);
         if (!dismissed) setShowConclusao(true);
