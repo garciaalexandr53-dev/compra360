@@ -480,12 +480,19 @@ const DashboardPage = () => {
             <ActionButtons />
             {lastCotacao && (
               <Card className="mt-4">
-                <CardContent className="p-3 flex items-center gap-3">
-                  <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div className="text-xs text-muted-foreground">
-                    Última cotação: <span className="font-semibold text-foreground">{lastCotacao.nome}</span>
-                    {lastCotacao.finalizada_at && <> · {format(new Date(lastCotacao.finalizada_at), "dd/MM/yyyy")}</>}
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="text-xs text-muted-foreground">
+                      Última cotação: <span className="font-semibold text-foreground">{lastCotacao.nome}</span>
+                      {lastCotacao.finalizada_at && <> · {format(new Date(lastCotacao.finalizada_at), "dd/MM/yyyy")}</>}
+                    </div>
                   </div>
+                  {lastCotacao.status === "finalizada" && (
+                    <Button variant="outline" size="sm" className="w-full gap-2 text-xs" onClick={reopenCotacao}>
+                      <RefreshCw className="h-3.5 w-3.5" /> Reabrir cotação para ajustes
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             )}
