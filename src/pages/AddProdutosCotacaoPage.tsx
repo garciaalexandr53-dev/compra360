@@ -177,6 +177,7 @@ const AddProdutosCotacaoPage = () => {
           // Create new produto
           const { data: newProd, error } = await supabase.from("produtos").insert({
             nome: item.nome,
+            embalagem: item.embalagem,
             user_id: user?.id,
           }).select("id").single();
           if (error) throw error;
