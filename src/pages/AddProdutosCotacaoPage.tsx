@@ -12,10 +12,13 @@ import DashboardProgress from "@/components/dashboard/DashboardProgress";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
+const EMBALAGEM_OPTIONS = ["UNI", "DZ", "CX", "FD", "PCT", "KG", "LT", "SC", "GL"];
+
 interface LocalItem {
   id: string;
   nome: string;
   quantidade: number;
+  embalagem: string;
   produtoId?: string; // if matched to existing produto
 }
 
