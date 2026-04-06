@@ -392,9 +392,10 @@ const FuncionariosPage = () => {
 
   const effectiveLinkLojaId = lojas.length === 1 ? lojas[0].id : linkLojaId;
   const effectiveLinkLoja = lojas.find((l) => l.id === effectiveLinkLojaId);
+  const baseUrl = "https://compra360.lovable.app/app-funcionarios";
   const appUrl = effectiveLinkLojaId
-    ? `${window.location.origin}/app-funcionarios?loja=${effectiveLinkLojaId}`
-    : `${window.location.origin}/app-funcionarios`;
+    ? `${baseUrl}?loja=${effectiveLinkLojaId}`
+    : baseUrl;
 
   const copyLink = () => {
     if (lojas.length > 1 && !effectiveLinkLojaId) {
