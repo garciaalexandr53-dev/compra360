@@ -118,8 +118,7 @@ const CotacaoPage = () => {
   const allFornecedores = useMemo(() => {
     if (!lojaAtiva?.id) return allFornecedoresRaw;
     const linkedToStore = new Set(fornecedorLojas.filter((fl: any) => fl.loja_id === lojaAtiva.id).map((fl: any) => fl.fornecedor_id));
-    const allLinked = new Set(fornecedorLojas.map((fl: any) => fl.fornecedor_id));
-    return allFornecedoresRaw.filter((f) => linkedToStore.has(f.id) || !allLinked.has(f.id));
+    return allFornecedoresRaw.filter((f) => linkedToStore.has(f.id));
   }, [allFornecedoresRaw, fornecedorLojas, lojaAtiva?.id]);
 
   const { data: cotacaoFornecedores = [] } = useQuery({
