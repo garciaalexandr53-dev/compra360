@@ -229,12 +229,24 @@ const DashboardPage = () => {
   const { data: lastCotacao } = useQuery({
     queryKey: ["last-cotacao", lojaAtiva?.id],
     queryFn: async () => {
-      let q = supabase.from("cotacoes").select("nome, finalizada_at").neq("status", "ativa").order("finalizada_at", { ascending: false }).limit(1);
+      let q = supabase.from("cotacoes").select("id, nome, finalizada_at, status").neq("status", "ativa").order("finalizada_at", { ascending: false }).limit(1);
       if (lojaAtiva?.id) q = q.eq("loja_id", lojaAtiva.id);
       const { data } = await q.maybeSingle();
       return data;
     },
   });
+
+  const reopenCotacao = async () => {
+    if (!lastCotacao?.id) return;
+    try {
+      // Reopen: set status back to ativa and clear finalizada_at
+      await supabase.from("cotacoes").update({ status: "ativa", finalizada_at: null }).eq("id", lastCotacao.id);
+      queryClient.invalidateQueries();
+      toast.success("Cotação reaberta com sucesso!");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao reabrir cotação");
+    }
+  };
 
   // Economy estimate for state 5
   const { data: economyEstimate } = useQuery({
