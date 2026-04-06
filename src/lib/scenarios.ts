@@ -333,8 +333,8 @@ export function generateScenarios(
 ): Scenario[] {
   const cpInfos: CpInfo[] = cotacaoProdutos.map((cp) => ({
     id: cp.id,
-    produtoNome: (cp as any).produtos?.nome || "?",
-    embalagem: (cp as any).produtos?.embalagem || "",
+    produtoNome: (cp as any).produtos?.nome || (cp as any).produto?.nome || "?",
+    embalagem: (cp as any).produtos?.embalagem || (cp as any).produto?.embalagem || "",
     quantidade: cp.quantidade || 1,
   }));
 

@@ -277,7 +277,7 @@ const AnalisePage = () => {
     });
     msg += `\n-----\n💰 *TOTAL GERAL: ${formatBRL(total)}*${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}\n-----\n_Enviado via Compra360_`;
     const phone = f.telefone?.replace(/\D/g, "");
-    const url = phone ? `https://api.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(msg)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    const url = phone ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
   };
 
@@ -297,7 +297,7 @@ const AnalisePage = () => {
       if (resp.error) throw new Error(resp.error.message);
       const msg = resp.data?.message || "";
       const phone = f.telefone?.replace(/\D/g, "");
-      const url = phone ? `https://api.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(msg)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+      const url = phone ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
       window.open(url, "_blank");
     } catch (e: any) { toast.error(e.message || "Erro ao gerar mensagem IA"); }
     setWhatsappAiLoading(null);
