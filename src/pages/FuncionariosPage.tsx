@@ -477,16 +477,14 @@ const FuncionariosPage = () => {
               onClick={() => importarMutation.mutate()}
               disabled={importarMutation.isPending || pendentesImportaveis.length === 0}
               className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] disabled:opacity-50"
-              title={pendentesImportaveis.length === 0 ? "Finalize as cotações ativas antes de importar" : undefined}
+              title={pendentesImportaveis.length === 0 ? "Fornecedores já responderam preços nesta cotação" : undefined}
             >
               <Download className="h-4 w-4 mr-1" />
               {importarMutation.isPending
                 ? "Importando..."
                 : pendentesImportaveis.length === 0
-                  ? "Importação bloqueada"
-                  : pendentesBloqueados.length > 0
-                    ? `Importar ${pendentesImportaveis.length} disponíveis`
-                    : `Importar ${pendentesImportaveis.length}`}
+                  ? "Bloqueado (preços recebidos)"
+                  : `Importar ${pendentesImportaveis.length}`}
             </Button>
           )}
         </div>
@@ -496,10 +494,10 @@ const FuncionariosPage = () => {
               <span className="text-sm mt-0.5">⛔</span>
               <div className="flex-1">
                 <p className="text-xs font-semibold text-destructive">
-                  {pendentesBloqueados.length} ite{pendentesBloqueados.length === 1 ? 'm' : 'ns'} aguardando fim da cotação
+                  Fornecedores já enviaram preços nesta cotação
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Estes itens só podem ser importados após finalizar a cotação da loja correspondente.
+                  Para importar novos itens, finalize a cotação atual e inicie uma nova.
                 </p>
                 <Button
                   variant="link"
