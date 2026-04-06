@@ -359,9 +359,9 @@ const AddProdutosCotacaoPage = () => {
                 <CardContent className="flex items-center gap-3 p-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{item.nome}</p>
-                    {item.produtoId && (
-                      <p className="text-[10px] text-muted-foreground">produto existente</p>
-                    )}
+                    <p className="text-[10px] text-muted-foreground">
+                      {item.embalagem}{item.produtoId ? " · produto existente" : ""}
+                    </p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <Button
