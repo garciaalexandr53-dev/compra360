@@ -511,6 +511,13 @@ const FuncionariosPage = () => {
             </div>
           </div>
         )}
+        {outrasLojas.length > 0 && (
+          <div className="m-3 mb-0 p-2 rounded-lg border border-muted bg-muted/30">
+            <p className="text-[11px] text-muted-foreground">
+              📋 {outrasLojas.length} ite{outrasLojas.length === 1 ? 'm' : 'ns'} de outras lojas (troque a loja ativa para visualizar)
+            </p>
+          </div>
+        )}
         <div className="h-[calc(100vh-380px)] overflow-y-auto">
           {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
