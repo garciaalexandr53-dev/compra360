@@ -343,7 +343,8 @@ const ProdutosPage = () => {
     setForm({
       nome: p.nome,
       categoria_id: p.categoria_id || "",
-      embalagem: p.embalagem || "",
+      embalagem: p.embalagem || "UNI",
+      quantidade: 1,
     });
     setModalOpen(true);
   };
