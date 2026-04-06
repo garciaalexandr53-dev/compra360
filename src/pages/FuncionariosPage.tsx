@@ -206,6 +206,7 @@ const FuncionariosPage = () => {
         ? `${total} itens importados! (${dups} duplicados ignorados)${suffix}`
         : `${total} itens importados para o Banco de Produtos!${suffix}`;
       toast.success(msg);
+      navigate("/dashboard");
     },
     onError: (e: any) => toast.error(e.message),
   });
