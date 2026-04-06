@@ -113,11 +113,13 @@ const AddProdutosCotacaoPage = () => {
       id: genId(),
       nome: trimmed,
       quantidade: Math.max(1, quantidade),
+      embalagem: embalagem,
       produtoId: match?.id,
     }]);
 
     setNome("");
     setQuantidade(1);
+    setEmbalagem("UNI");
     inputRef.current?.focus();
     if (isFirstProduct) {
       toast.success("🎉 Primeiro produto adicionado! Continue selecionando.");
