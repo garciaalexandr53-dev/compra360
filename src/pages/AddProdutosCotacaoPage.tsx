@@ -35,6 +35,7 @@ const AddProdutosCotacaoPage = () => {
   const [qtyDrafts, setQtyDrafts] = useState<Record<string, string>>({});
   const [nome, setNome] = useState("");
   const [quantidade, setQuantidade] = useState(1);
+  const [embalagem, setEmbalagem] = useState("UNI");
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
