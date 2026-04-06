@@ -98,46 +98,29 @@ const FuncionariosPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Auto-criar cotações ativas para lojas que não têm
+      const targetLojaId = lojaAtiva?.id;
+      if (!targetLojaId) throw new Error("Selecione uma loja ativa");
+
+      // Ensure active cotação exists for the active store
       let createdNewCotacao = false;
-      const lojaIds = [...new Set(itemsToImport.map((i: any) => i.loja_id).filter(Boolean))];
-      for (const lojaId of lojaIds) {
-        const { data: cotExistente } = await supabase
-          .from("cotacoes")
-          .select("id")
-          .eq("status", "ativa")
-          .eq("loja_id", lojaId)
-          .limit(1)
-          .maybeSingle();
-        if (!cotExistente) {
-          const { error: cotError } = await supabase.from("cotacoes").insert({
-            nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`,
-            status: "ativa" as any,
-            loja_id: lojaId,
-            created_by: user.id,
-          });
-          if (cotError) throw cotError;
-          createdNewCotacao = true;
-        }
-      }
-      const temSemLoja = itemsToImport.some((i: any) => !i.loja_id);
-      if (temSemLoja) {
-        const { data: cotSemLoja } = await supabase
-          .from("cotacoes")
-          .select("id")
-          .eq("status", "ativa")
-          .is("loja_id", null)
-          .limit(1)
-          .maybeSingle();
-        if (!cotSemLoja) {
-          await supabase.from("cotacoes").insert({
-            nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`,
-            status: "ativa" as any,
-            loja_id: null,
-            created_by: user.id,
-          });
-          createdNewCotacao = true;
-        }
+      let { data: cot } = await supabase
+        .from("cotacoes")
+        .select("id")
+        .eq("status", "ativa")
+        .eq("loja_id", targetLojaId)
+        .limit(1)
+        .maybeSingle();
+
+      if (!cot) {
+        const { data: newCot, error: cotError } = await supabase.from("cotacoes").insert({
+          nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`,
+          status: "ativa" as any,
+          loja_id: targetLojaId,
+          created_by: user.id,
+        }).select("id").single();
+        if (cotError) throw cotError;
+        cot = newCot;
+        createdNewCotacao = true;
       }
 
       // Buscar TODOS os produtos com paginação (evitar limite de 1000)
