@@ -145,6 +145,16 @@ const PedidosPage = () => {
   const createPedidoMutation = useMutation({
     mutationFn: async ({ fornecedorId, total }: { fornecedorId: string; total: number }) => {
       if (!cotacaoAtiva) throw new Error("Sem cotação ativa");
+      const { data: existing } = await supabase.from("pedidos").select("id")
+        .eq("cotacao_id", cotacaoAtiva.id).eq("fornecedor_id", fornecedorId)
+        .limit(1).maybeSingle();
+      if (existing) {
+        const { data, error } = await supabase.from("pedidos").update({
+          total, status: "enviado" as any, enviado_at: new Date().toISOString(),
+        }).eq("id", existing.id).select().single();
+        if (error) throw error;
+        return data;
+      }
       const { data, error } = await supabase.from("pedidos").insert({
         cotacao_id: cotacaoAtiva.id,
         fornecedor_id: fornecedorId,
