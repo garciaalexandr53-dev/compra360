@@ -33,31 +33,62 @@ const FuncionariosPage = () => {
     },
   });
 
-  const { data: cotacoesAtivas = [] } = useQuery({
-    queryKey: ["cotacoes-ativas-lojas"],
+  // Fetch active cotação for the active store
+  const { data: cotacaoAtivaLoja } = useQuery({
+    queryKey: ["cotacao-ativa-loja", lojaAtiva?.id],
     queryFn: async () => {
+      if (!lojaAtiva?.id) return null;
       const { data, error } = await supabase
         .from("cotacoes")
         .select("id, loja_id")
-        .eq("status", "ativa");
+        .eq("status", "ativa")
+        .eq("loja_id", lojaAtiva.id)
+        .limit(1)
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
+    enabled: !!lojaAtiva?.id,
   });
 
-  const lojasComCotacaoAtiva = new Set(cotacoesAtivas.map((c: any) => c.loja_id).filter(Boolean));
-
-  const pendentes = itens.filter((i: any) => !i.importado);
-  const importados = itens.filter((i: any) => i.importado);
-
-  const pendentesImportaveis = pendentes.filter((i: any) => {
-    const lid = i.loja_id || lojaAtiva?.id;
-    return !lid || !lojasComCotacaoAtiva.has(lid);
+  // Check if any supplier has sent prices for the active cotação
+  const { data: precosCount = 0 } = useQuery({
+    queryKey: ["cotacao-precos-count", cotacaoAtivaLoja?.id],
+    queryFn: async () => {
+      if (!cotacaoAtivaLoja?.id) return 0;
+      const { count, error } = await supabase
+        .from("precos")
+        .select("id", { count: "exact", head: true })
+        .not("preco", "is", null)
+        .in(
+          "cotacao_produto_id",
+          (await supabase
+            .from("cotacao_produtos")
+            .select("id")
+            .eq("cotacao_id", cotacaoAtivaLoja.id)
+          ).data?.map((cp: any) => cp.id) || []
+        );
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!cotacaoAtivaLoja?.id,
   });
-  const pendentesBloqueados = pendentes.filter((i: any) => {
-    const lid = i.loja_id || lojaAtiva?.id;
-    return lid && lojasComCotacaoAtiva.has(lid);
+
+  const cotacaoTemPrecos = precosCount > 0;
+
+  // Filter items: only show items from the active store
+  const allPendentes = itens.filter((i: any) => !i.importado);
+  const pendentes = allPendentes.filter((i: any) => {
+    if (!lojaAtiva?.id) return true;
+    return i.loja_id === lojaAtiva.id || !i.loja_id;
   });
+  const importados = itens.filter((i: any) => i.importado && (i.loja_id === lojaAtiva?.id || !i.loja_id));
+  const outrasLojas = allPendentes.filter((i: any) => lojaAtiva?.id && i.loja_id && i.loja_id !== lojaAtiva.id);
+
+  // Allow import if: no active cotação OR cotação has no prices yet
+  const canImport = !cotacaoAtivaLoja || !cotacaoTemPrecos;
+  const pendentesImportaveis = canImport ? pendentes : [];
+  const pendentesBloqueados = canImport ? [] : pendentes;
 
   const importarMutation = useMutation({
     mutationFn: async () => {
@@ -67,46 +98,29 @@ const FuncionariosPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Auto-criar cotações ativas para lojas que não têm
+      const targetLojaId = lojaAtiva?.id;
+      if (!targetLojaId) throw new Error("Selecione uma loja ativa");
+
+      // Ensure active cotação exists for the active store
       let createdNewCotacao = false;
-      const lojaIds = [...new Set(itemsToImport.map((i: any) => i.loja_id).filter(Boolean))];
-      for (const lojaId of lojaIds) {
-        const { data: cotExistente } = await supabase
-          .from("cotacoes")
-          .select("id")
-          .eq("status", "ativa")
-          .eq("loja_id", lojaId)
-          .limit(1)
-          .maybeSingle();
-        if (!cotExistente) {
-          const { error: cotError } = await supabase.from("cotacoes").insert({
-            nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`,
-            status: "ativa" as any,
-            loja_id: lojaId,
-            created_by: user.id,
-          });
-          if (cotError) throw cotError;
-          createdNewCotacao = true;
-        }
-      }
-      const temSemLoja = itemsToImport.some((i: any) => !i.loja_id);
-      if (temSemLoja) {
-        const { data: cotSemLoja } = await supabase
-          .from("cotacoes")
-          .select("id")
-          .eq("status", "ativa")
-          .is("loja_id", null)
-          .limit(1)
-          .maybeSingle();
-        if (!cotSemLoja) {
-          await supabase.from("cotacoes").insert({
-            nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`,
-            status: "ativa" as any,
-            loja_id: null,
-            created_by: user.id,
-          });
-          createdNewCotacao = true;
-        }
+      let { data: cot } = await supabase
+        .from("cotacoes")
+        .select("id")
+        .eq("status", "ativa")
+        .eq("loja_id", targetLojaId)
+        .limit(1)
+        .maybeSingle();
+
+      if (!cot) {
+        const { data: newCot, error: cotError } = await supabase.from("cotacoes").insert({
+          nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`,
+          status: "ativa" as any,
+          loja_id: targetLojaId,
+          created_by: user.id,
+        }).select("id").single();
+        if (cotError) throw cotError;
+        cot = newCot;
+        createdNewCotacao = true;
       }
 
       // Buscar TODOS os produtos com paginação (evitar limite de 1000)
@@ -137,53 +151,34 @@ const FuncionariosPage = () => {
         if (prodErr) throw prodErr;
       }
 
-      const itemsByLoja = new Map<string, any[]>();
-      for (const item of itemsToImport) {
-        const lid = (item as any).loja_id || lojaAtiva?.id || "__none__";
-        if (!itemsByLoja.has(lid)) itemsByLoja.set(lid, []);
-        itemsByLoja.get(lid)!.push(item);
-      }
+      // Link products to the active store's cotação
+      const cotacaoId = cot?.id;
+      if (cotacaoId) {
+        const allNames = itemsToImport.map((i: any) => i.nome);
+        const { data: matchedProds } = await supabase
+          .from("produtos")
+          .select("id, nome")
+          .in("nome", allNames);
 
-      for (const [lojaId, lojaItems] of itemsByLoja) {
-        let cotacaoId: string | null = null;
-        if (lojaId !== "__none__") {
-          const { data: cot } = await supabase
-            .from("cotacoes")
-            .select("id")
-            .eq("status", "ativa")
-            .eq("loja_id", lojaId)
-            .limit(1)
-            .maybeSingle();
-          cotacaoId = cot?.id || null;
-        }
+        if (matchedProds?.length) {
+          const { data: existingCp } = await supabase
+            .from("cotacao_produtos")
+            .select("produto_id")
+            .eq("cotacao_id", cotacaoId);
+          const existingProdIds = new Set((existingCp || []).map((cp) => cp.produto_id));
 
-        if (cotacaoId) {
-          const allNames = lojaItems.map((i: any) => i.nome);
-          const { data: matchedProds } = await supabase
-            .from("produtos")
-            .select("id, nome")
-            .in("nome", allNames);
-
-          if (matchedProds?.length) {
-            const { data: existingCp } = await supabase
-              .from("cotacao_produtos")
-              .select("produto_id")
-              .eq("cotacao_id", cotacaoId);
-            const existingProdIds = new Set((existingCp || []).map((cp) => cp.produto_id));
-
-            const cpInserts = matchedProds
-              .filter((p) => !existingProdIds.has(p.id))
-              .map((p) => {
-                const item = lojaItems.find((i: any) => i.nome.toLowerCase().trim() === p.nome.toLowerCase().trim());
-                return {
-                  cotacao_id: cotacaoId!,
-                  produto_id: p.id,
-                  quantidade: item?.quantidade || 1,
-                };
-              });
-            if (cpInserts.length) {
-              await supabase.from("cotacao_produtos").insert(cpInserts);
-            }
+          const cpInserts = matchedProds
+            .filter((p) => !existingProdIds.has(p.id))
+            .map((p) => {
+              const item = itemsToImport.find((i: any) => i.nome.toLowerCase().trim() === p.nome.toLowerCase().trim());
+              return {
+                cotacao_id: cotacaoId,
+                produto_id: p.id,
+                quantidade: item?.quantidade || 1,
+              };
+            });
+          if (cpInserts.length) {
+            await supabase.from("cotacao_produtos").insert(cpInserts);
           }
         }
       }
@@ -203,7 +198,9 @@ const FuncionariosPage = () => {
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
-      queryClient.invalidateQueries({ queryKey: ["cotacoes-ativas-lojas"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-ativa-loja"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-precos-count"] });
+      queryClient.invalidateQueries({ queryKey: ["precos"] });
       const suffix = createdNewCotacao ? " Nova cotação criada automaticamente." : "";
       const msg = dups > 0
         ? `${total} itens importados! (${dups} duplicados ignorados)${suffix}`
@@ -307,7 +304,9 @@ const FuncionariosPage = () => {
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
-      queryClient.invalidateQueries({ queryKey: ["cotacoes-ativas-lojas"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-ativa-loja"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-precos-count"] });
+      queryClient.invalidateQueries({ queryKey: ["precos"] });
       toast.success(`✅ ${nome} importado para a cotação!`);
     },
     onError: (e: any) => toast.error(e.message),
@@ -478,16 +477,14 @@ const FuncionariosPage = () => {
               onClick={() => importarMutation.mutate()}
               disabled={importarMutation.isPending || pendentesImportaveis.length === 0}
               className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] disabled:opacity-50"
-              title={pendentesImportaveis.length === 0 ? "Finalize as cotações ativas antes de importar" : undefined}
+              title={pendentesImportaveis.length === 0 ? "Fornecedores já responderam preços nesta cotação" : undefined}
             >
               <Download className="h-4 w-4 mr-1" />
               {importarMutation.isPending
                 ? "Importando..."
                 : pendentesImportaveis.length === 0
-                  ? "Importação bloqueada"
-                  : pendentesBloqueados.length > 0
-                    ? `Importar ${pendentesImportaveis.length} disponíveis`
-                    : `Importar ${pendentesImportaveis.length}`}
+                  ? "Bloqueado (preços recebidos)"
+                  : `Importar ${pendentesImportaveis.length}`}
             </Button>
           )}
         </div>
@@ -497,10 +494,10 @@ const FuncionariosPage = () => {
               <span className="text-sm mt-0.5">⛔</span>
               <div className="flex-1">
                 <p className="text-xs font-semibold text-destructive">
-                  {pendentesBloqueados.length} ite{pendentesBloqueados.length === 1 ? 'm' : 'ns'} aguardando fim da cotação
+                  Fornecedores já enviaram preços nesta cotação
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Estes itens só podem ser importados após finalizar a cotação da loja correspondente.
+                  Para importar novos itens, finalize a cotação atual e inicie uma nova.
                 </p>
                 <Button
                   variant="link"
@@ -514,6 +511,13 @@ const FuncionariosPage = () => {
             </div>
           </div>
         )}
+        {outrasLojas.length > 0 && (
+          <div className="m-3 mb-0 p-2 rounded-lg border border-muted bg-muted/30">
+            <p className="text-[11px] text-muted-foreground">
+              📋 {outrasLojas.length} ite{outrasLojas.length === 1 ? 'm' : 'ns'} de outras lojas (troque a loja ativa para visualizar)
+            </p>
+          </div>
+        )}
         <div className="h-[calc(100vh-380px)] overflow-y-auto">
           {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
@@ -521,8 +525,7 @@ const FuncionariosPage = () => {
             <div className="p-10 text-center text-muted-foreground">Nenhum item pendente.</div>
           ) : (
             pendentes.map((item: any, i: number) => {
-              const lid = item.loja_id || lojaAtiva?.id;
-              const bloqueado = lid && lojasComCotacaoAtiva.has(lid);
+              const bloqueado = !canImport;
               const emb = getEmbalagem(item);
               const tempoRelativo = formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: ptBR });
 
@@ -532,8 +535,11 @@ const FuncionariosPage = () => {
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-foreground flex items-center gap-1.5 flex-wrap">
                       <span className="break-words">{item.nome}</span>
+                      {item.loja_id && item.lojas?.nome && (
+                        <span className="text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">📍 {item.lojas.nome}</span>
+                      )}
                       {bloqueado
-                        ? <span className="text-[9px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">⛔ Cotação ativa</span>
+                        ? <span className="text-[9px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">⛔ Fornecedor já respondeu</span>
                         : <span className="text-[9px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">✅ Disponível</span>
                       }
                     </div>
