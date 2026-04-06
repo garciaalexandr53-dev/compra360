@@ -370,8 +370,8 @@ const DashboardPage = () => {
     const msg = `Olá ${f.nome}! Segue o link para cotação de preços:\n\n${link}\n\nPreencha os preços e envie. Obrigado!`;
     const phone = f.telefone?.replace(/\D/g, "");
     const url = phone
-      ? `https://api.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(msg)}`
-      : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+      ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`
+      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
   };
 
@@ -646,8 +646,8 @@ const DashboardPage = () => {
                           const msg = `Olá ${f.nome}! Vi que ainda não preencheu a cotação de preços. Segue o link novamente:\n\n${link}\n\nPrecisa de ajuda? Estou à disposição!`;
                           const phone = f.telefone?.replace(/\D/g, "");
                           const url = phone
-                            ? `https://api.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(msg)}`
-                            : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+                            ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`
+                            : `https://wa.me/?text=${encodeURIComponent(msg)}`;
                           window.open(url, "_blank");
                         }}
                         className="w-full flex items-start gap-2 rounded-lg border border-amber-300/40 dark:border-amber-700/40 bg-amber-50/40 dark:bg-amber-950/10 py-2 px-3 text-left hover:bg-amber-100/60 dark:hover:bg-amber-900/20 transition-colors cursor-pointer"

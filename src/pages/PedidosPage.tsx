@@ -192,8 +192,8 @@ const PedidosPage = () => {
 
     const phone = f.telefone?.replace(/\D/g, "");
     const url = phone
-      ? `https://api.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(msg)}`
-      : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+      ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`
+      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
   };
 
