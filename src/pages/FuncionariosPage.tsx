@@ -198,7 +198,9 @@ const FuncionariosPage = () => {
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
-      queryClient.invalidateQueries({ queryKey: ["cotacoes-ativas-lojas"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-ativa-loja"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-precos-count"] });
+      queryClient.invalidateQueries({ queryKey: ["precos"] });
       const suffix = createdNewCotacao ? " Nova cotação criada automaticamente." : "";
       const msg = dups > 0
         ? `${total} itens importados! (${dups} duplicados ignorados)${suffix}`
