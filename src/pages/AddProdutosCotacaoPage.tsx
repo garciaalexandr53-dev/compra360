@@ -12,10 +12,13 @@ import DashboardProgress from "@/components/dashboard/DashboardProgress";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
+const EMBALAGEM_OPTIONS = ["UNI", "DZ", "CX", "FD", "PCT", "KG", "LT", "SC", "GL"];
+
 interface LocalItem {
   id: string;
   nome: string;
   quantidade: number;
+  embalagem: string;
   produtoId?: string; // if matched to existing produto
 }
 
@@ -32,6 +35,7 @@ const AddProdutosCotacaoPage = () => {
   const [qtyDrafts, setQtyDrafts] = useState<Record<string, string>>({});
   const [nome, setNome] = useState("");
   const [quantidade, setQuantidade] = useState(1);
+  const [embalagem, setEmbalagem] = useState("UNI");
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -109,11 +113,13 @@ const AddProdutosCotacaoPage = () => {
       id: genId(),
       nome: trimmed,
       quantidade: Math.max(1, quantidade),
+      embalagem: embalagem,
       produtoId: match?.id,
     }]);
 
     setNome("");
     setQuantidade(1);
+    setEmbalagem("UNI");
     inputRef.current?.focus();
     if (isFirstProduct) {
       toast.success("🎉 Primeiro produto adicionado! Continue selecionando.");
@@ -171,6 +177,7 @@ const AddProdutosCotacaoPage = () => {
           // Create new produto
           const { data: newProd, error } = await supabase.from("produtos").insert({
             nome: item.nome,
+            embalagem: item.embalagem,
             user_id: user?.id,
           }).select("id").single();
           if (error) throw error;
@@ -216,9 +223,10 @@ const AddProdutosCotacaoPage = () => {
   const pickSuggestion = (p: { id: string; nome: string }) => {
     const isFirstProduct = items.length === 0 && alreadyCount === 0;
 
-    setItems(prev => [...prev, { id: genId(), nome: p.nome, quantidade: Math.max(1, quantidade), produtoId: p.id }]);
+    setItems(prev => [...prev, { id: genId(), nome: p.nome, quantidade: Math.max(1, quantidade), embalagem: embalagem, produtoId: p.id }]);
     setNome("");
     setQuantidade(1);
+    setEmbalagem("UNI");
     inputRef.current?.focus();
     if (isFirstProduct) {
       toast.success("🎉 Primeiro produto adicionado! Continue selecionando.");
@@ -274,9 +282,18 @@ const AddProdutosCotacaoPage = () => {
             min={1}
             value={quantidade}
             onChange={e => setQuantidade(Math.max(1, Number(e.target.value) || 1))}
-            className="h-12 w-20 text-center"
+            className="h-12 w-16 text-center"
             placeholder="Qtd"
           />
+          <select
+            value={embalagem}
+            onChange={e => setEmbalagem(e.target.value)}
+            className="h-12 w-20 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {EMBALAGEM_OPTIONS.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
           <Button size="icon" className="h-12 w-12" onClick={handleAdd} disabled={!nome.trim()}>
             <Plus className="h-4 w-4" />
           </Button>
@@ -342,9 +359,9 @@ const AddProdutosCotacaoPage = () => {
                 <CardContent className="flex items-center gap-3 p-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{item.nome}</p>
-                    {item.produtoId && (
-                      <p className="text-[10px] text-muted-foreground">produto existente</p>
-                    )}
+                    <p className="text-[10px] text-muted-foreground">
+                      {item.embalagem}{item.produtoId ? " · produto existente" : ""}
+                    </p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <Button
