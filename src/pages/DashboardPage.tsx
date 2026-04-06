@@ -229,12 +229,24 @@ const DashboardPage = () => {
   const { data: lastCotacao } = useQuery({
     queryKey: ["last-cotacao", lojaAtiva?.id],
     queryFn: async () => {
-      let q = supabase.from("cotacoes").select("nome, finalizada_at").neq("status", "ativa").order("finalizada_at", { ascending: false }).limit(1);
+      let q = supabase.from("cotacoes").select("id, nome, finalizada_at, status").neq("status", "ativa").order("finalizada_at", { ascending: false }).limit(1);
       if (lojaAtiva?.id) q = q.eq("loja_id", lojaAtiva.id);
       const { data } = await q.maybeSingle();
       return data;
     },
   });
+
+  const reopenCotacao = async () => {
+    if (!lastCotacao?.id) return;
+    try {
+      // Reopen: set status back to ativa and clear finalizada_at
+      await supabase.from("cotacoes").update({ status: "ativa", finalizada_at: null }).eq("id", lastCotacao.id);
+      queryClient.invalidateQueries();
+      toast.success("Cotação reaberta com sucesso!");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao reabrir cotação");
+    }
+  };
 
   // Economy estimate for state 5
   const { data: economyEstimate } = useQuery({
@@ -281,6 +293,13 @@ const DashboardPage = () => {
   const conclusionDismissKey = `conclusao-vista-${cotacaoAtiva?.id}`;
   useEffect(() => {
     if (allPedidosSent && cotacaoAtiva?.id) {
+      // Auto-finalize the cotação when all orders are sent
+      if (cotacaoAtiva.status === "ativa") {
+        supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: new Date().toISOString() }).eq("id", cotacaoAtiva.id).then(() => {
+          queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
+          queryClient.invalidateQueries({ queryKey: ["last-cotacao"] });
+        });
+      }
       try {
         const dismissed = localStorage.getItem(conclusionDismissKey);
         if (!dismissed) setShowConclusao(true);
@@ -468,12 +487,19 @@ const DashboardPage = () => {
             <ActionButtons />
             {lastCotacao && (
               <Card className="mt-4">
-                <CardContent className="p-3 flex items-center gap-3">
-                  <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div className="text-xs text-muted-foreground">
-                    Última cotação: <span className="font-semibold text-foreground">{lastCotacao.nome}</span>
-                    {lastCotacao.finalizada_at && <> · {format(new Date(lastCotacao.finalizada_at), "dd/MM/yyyy")}</>}
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="text-xs text-muted-foreground">
+                      Última cotação: <span className="font-semibold text-foreground">{lastCotacao.nome}</span>
+                      {lastCotacao.finalizada_at && <> · {format(new Date(lastCotacao.finalizada_at), "dd/MM/yyyy")}</>}
+                    </div>
                   </div>
+                  {lastCotacao.status === "finalizada" && (
+                    <Button variant="outline" size="sm" className="w-full gap-2 text-xs" onClick={reopenCotacao}>
+                      <RefreshCw className="h-3.5 w-3.5" /> Reabrir cotação para ajustes
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             )}
