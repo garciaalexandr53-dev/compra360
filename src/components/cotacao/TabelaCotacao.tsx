@@ -313,6 +313,19 @@ const TabelaCotacao = ({
                               </TooltipContent>
                             </Tooltip>
                           )}
+                          {!histAlert && intraAlert === "high" && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="absolute -bottom-1.5 -right-1 text-[11px] cursor-help leading-none">🟠</span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs text-xs">
+                                <p className="font-bold">🟠 Preço muito acima dos outros fornecedores</p>
+                                <p className="text-[11px] mt-1">
+                                  Este preço está 80%+ acima da mediana dos demais. Possível erro de digitação.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
                         </div>
                       </td>
                     );
