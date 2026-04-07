@@ -1,0 +1,1 @@
+ALTER TABLE public.cotacao_produtos ADD COLUMN IF NOT EXISTS tipo_embalagem TEXT DEFAULT 'UNI';
