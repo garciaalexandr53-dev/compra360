@@ -156,18 +156,21 @@ export type Database = {
           id: string
           produto_id: string
           quantidade: number | null
+          tipo_embalagem: string | null
         }
         Insert: {
           cotacao_id: string
           id?: string
           produto_id: string
           quantidade?: number | null
+          tipo_embalagem?: string | null
         }
         Update: {
           cotacao_id?: string
           id?: string
           produto_id?: string
           quantidade?: number | null
+          tipo_embalagem?: string | null
         }
         Relationships: [
           {
