@@ -62,6 +62,7 @@ const SendQueueModal = ({ open, onOpenChange, fornecedores, onConclude }: Props 
       : `https://wa.me/?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
     setStatuses(prev => ({ ...prev, [f.id]: "sent" }));
+    onOpenChange(false);
   };
 
   const skip = (id: string) => {
