@@ -561,7 +561,7 @@ const AnalisePage = () => {
             </div>
           </div>
           <div className="text-right">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">🏆 Economia vs pior preço</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">🏆 Economia vs média</div>
             <div className="text-xl font-extrabold font-mono text-green-600 dark:text-green-400 mt-1">
               {formatBRL(economiaDisponivel)}
             </div>
