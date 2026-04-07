@@ -591,8 +591,8 @@ const AnalisePage = () => {
                 <span className="text-sm font-bold text-foreground">{autoDecision.scenario.numFornecedores}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">💸 Economia vs pior preço</span>
-                <span className="text-sm font-bold text-green-600 dark:text-green-400">{formatBRL(worstTotal - autoDecision.scenario.totalGeral)}</span>
+                <span className="text-sm text-muted-foreground">💸 Economia vs média</span>
+                <span className="text-sm font-bold text-green-600 dark:text-green-400">{formatBRL(Math.max(0, avgTotal - autoDecision.scenario.totalGeral))}</span>
               </div>
             </div>
 
