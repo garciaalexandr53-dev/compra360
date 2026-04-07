@@ -782,6 +782,7 @@ const CotacaoPage = () => {
         onLegendClose={toggleLegend}
         analyzePrices={analyzePrices}
         getHistAlert={getHistAlert}
+        getIntraAnomaly={getIntraAnomaly}
         historicalAvgMap={historicalAvgMap}
         onPriceChange={handlePriceChange}
         onPriceBlur={handlePriceBlur}
