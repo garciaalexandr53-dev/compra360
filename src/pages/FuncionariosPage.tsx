@@ -682,6 +682,11 @@ const FuncionariosPage = () => {
           </div>
         );
       })()}
+        </TabsContent>
+        <TabsContent value="conferencia">
+          <ConferenciaPedidos />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
