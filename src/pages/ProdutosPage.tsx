@@ -241,13 +241,14 @@ const ProdutosPage = () => {
   });
 
   const toggleCotacaoMutation = useMutation({
-    mutationFn: async ({ produtoId, adding }: { produtoId: string; adding: boolean }) => {
+    mutationFn: async ({ produtoId, adding, quantidade = 1, tipoEmbalagem = "UNI" }: { produtoId: string; adding: boolean; quantidade?: number; tipoEmbalagem?: string }) => {
       if (adding && cotacaoAtiva) {
         const { error } = await supabase.from("cotacao_produtos").insert({
           cotacao_id: cotacaoAtiva.id,
           produto_id: produtoId,
-          quantidade: 1,
-        });
+          quantidade,
+          tipo_embalagem: tipoEmbalagem,
+        } as any);
         if (error) throw error;
       } else if (!adding && cotacaoAtiva) {
         const { error } = await supabase.from("cotacao_produtos")
