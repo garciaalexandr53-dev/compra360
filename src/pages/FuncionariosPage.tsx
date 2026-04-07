@@ -4,13 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Download, Package, Store, AlertTriangle, Pencil, Undo2, ArrowRight, Copy, MessageCircle, Check } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Trash2, Download, Package, Store, AlertTriangle, Pencil, Undo2, ArrowRight, Copy, MessageCircle, Check, ClipboardCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import ConferenciaPedidos from "@/components/ConferenciaPedidos";
 
 const FuncionariosPage = () => {
   const queryClient = useQueryClient();
@@ -425,6 +427,18 @@ const FuncionariosPage = () => {
 
   return (
     <div className="p-5 space-y-3">
+      <Tabs defaultValue="itens" className="w-full">
+        <TabsList className="w-full mb-3">
+          <TabsTrigger value="itens" className="flex-1 gap-1.5">
+            <Package className="h-4 w-4" />
+            Itens Faltantes
+          </TabsTrigger>
+          <TabsTrigger value="conferencia" className="flex-1 gap-1.5">
+            <ClipboardCheck className="h-4 w-4" />
+            Conferência
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="itens" className="space-y-3">
       {/* Compact header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -668,6 +682,11 @@ const FuncionariosPage = () => {
           </div>
         );
       })()}
+        </TabsContent>
+        <TabsContent value="conferencia">
+          <ConferenciaPedidos />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
