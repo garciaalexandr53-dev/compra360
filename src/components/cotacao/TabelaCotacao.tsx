@@ -46,6 +46,7 @@ interface TabelaCotacaoProps {
   onLegendClose: () => void;
   analyzePrices: (cpId: string) => PriceAnalysis;
   getHistAlert: (produtoId: string, val: number) => "high" | "low" | null;
+  getIntraAnomaly: (cpId: string, val: number) => "high" | null;
   historicalAvgMap: Record<string, { avg: number; count: number }>;
   onPriceChange: (cpId: string, fornecedorId: string, value: string) => void;
   onPriceBlur: (cpId: string, fornecedorId: string) => void;
