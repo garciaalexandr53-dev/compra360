@@ -218,10 +218,10 @@ const FornecedorCotacaoPage = () => {
           <button
             onClick={handleNoItems}
             disabled={sending || hasAnyPrice}
-            className={`text-[10px] px-2 py-1 rounded border transition-colors shrink-0 mt-0.5 ${
+            className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors shrink-0 mt-0.5 ${
               hasAnyPrice || sending
-                ? "border-destructive/20 text-destructive/30 cursor-not-allowed"
-                : "border-destructive/40 text-destructive hover:bg-destructive/10"
+                ? "bg-white/10 text-white/30 cursor-not-allowed"
+                : "bg-white text-red-600 hover:bg-red-50 shadow-sm"
             }`}
           >
             ❌ Não tenho itens
