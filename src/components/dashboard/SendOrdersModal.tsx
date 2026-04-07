@@ -62,6 +62,7 @@ const SendOrdersModal = ({ open, onOpenChange, orders, onSendOrder, onConclude }
   const handleSend = (o: SupplierOrder) => {
     onSendOrder(o.fornecedor);
     setStatuses(prev => ({ ...prev, [o.fornecedor.id]: "sent" }));
+    onOpenChange(false);
   };
 
   const skip = (id: string) => {
