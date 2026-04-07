@@ -105,18 +105,19 @@ const AnalisePage = () => {
   });
 
   // ---- Compute totals ----
-  const { grandTotal, worstTotal, economiaDisponivel } = useMemo(() => {
+  const { grandTotal, avgTotal, economiaDisponivel } = useMemo(() => {
     let best = 0;
-    let worst = 0;
+    let avg = 0;
     cotacaoProdutos.forEach((cp: any) => {
       const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco !== null && p.preco > 0);
       if (!cpPrecos.length) return;
       const prices = cpPrecos.map((p: any) => Number(p.preco));
       const qty = cp.quantidade || 1;
       best += Math.min(...prices) * qty;
-      worst += Math.max(...prices) * qty;
+      const mean = prices.reduce((s, v) => s + v, 0) / prices.length;
+      avg += mean * qty;
     });
-    return { grandTotal: best, worstTotal: worst, economiaDisponivel: worst - best };
+    return { grandTotal: best, avgTotal: avg, economiaDisponivel: Math.max(0, avg - best) };
   }, [cotacaoProdutos, precos]);
 
   // ---- Orders by supplier (best price wins) ----
@@ -560,7 +561,7 @@ const AnalisePage = () => {
             </div>
           </div>
           <div className="text-right">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">🏆 Economia vs pior preço</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">🏆 Economia vs média</div>
             <div className="text-xl font-extrabold font-mono text-green-600 dark:text-green-400 mt-1">
               {formatBRL(economiaDisponivel)}
             </div>
@@ -590,8 +591,8 @@ const AnalisePage = () => {
                 <span className="text-sm font-bold text-foreground">{autoDecision.scenario.numFornecedores}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">💸 Economia vs pior preço</span>
-                <span className="text-sm font-bold text-green-600 dark:text-green-400">{formatBRL(worstTotal - autoDecision.scenario.totalGeral)}</span>
+                <span className="text-sm text-muted-foreground">💸 Economia vs média</span>
+                <span className="text-sm font-bold text-green-600 dark:text-green-400">{formatBRL(Math.max(0, avgTotal - autoDecision.scenario.totalGeral))}</span>
               </div>
             </div>
 
