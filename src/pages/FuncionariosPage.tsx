@@ -440,31 +440,14 @@ const FuncionariosPage = () => {
         </TabsList>
         <TabsContent value="itens" className="space-y-3">
       {/* Compact header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-lg font-bold">App Funcionários</h1>
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{pendentes.length} pendentes</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Button
-            variant={linkCopiado ? "default" : "outline"}
-            size="sm"
-            className={`h-8 gap-1 ${linkCopiado ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
-            onClick={copyLink}
-          >
-            {linkCopiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            <span className="text-xs">{linkCopiado ? "✓ Copiado!" : "Link"}</span>
-          </Button>
-          <Button variant="outline" size="sm" className="h-8 gap-1" onClick={openWhatsApp}>
-            <MessageCircle className="h-4 w-4" />
-            <span className="text-xs">WhatsApp</span>
-          </Button>
-        </div>
+      <div className="flex items-center gap-2">
+        <h1 className="text-lg font-bold">App Funcionários</h1>
+        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{pendentes.length} pendentes</span>
       </div>
 
       {/* Loja selector for link */}
       {lojas.length > 1 && (
-        <div>
+        <div className="space-y-2">
           <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
             <Store className="h-3.5 w-3.5 inline mr-1" />Qual loja precisa abastecer?
           </label>
@@ -480,6 +463,31 @@ const FuncionariosPage = () => {
           </Select>
         </div>
       )}
+
+      {/* Feedback loja selecionada */}
+      {effectiveLinkLoja && (
+        <div className="flex items-center gap-2 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-sm px-3 py-2 rounded-lg">
+          <Check className="h-4 w-4 shrink-0" />
+          <span>Loja selecionada: <strong>{effectiveLinkLoja.nome}</strong></span>
+        </div>
+      )}
+
+      {/* Botões Link e WhatsApp */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Button
+          variant={linkCopiado ? "default" : "outline"}
+          size="sm"
+          className={`h-9 gap-1.5 flex-1 ${linkCopiado ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
+          onClick={copyLink}
+        >
+          {linkCopiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          <span className="text-sm">{linkCopiado ? "✓ Copiado!" : "Copiar Link"}</span>
+        </Button>
+        <Button variant="outline" size="sm" className="h-9 gap-1.5 flex-1" onClick={openWhatsApp}>
+          <MessageCircle className="h-4 w-4" />
+          <span className="text-sm">WhatsApp</span>
+        </Button>
+      </div>
 
       {/* Pending items */}
       <div className="bg-card border rounded-xl shadow-sm overflow-hidden mb-5">
