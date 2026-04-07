@@ -405,6 +405,8 @@ const FuncionariosPage = () => {
     }
     navigator.clipboard.writeText(appUrl);
     toast.success(`Link copiado! (${effectiveLinkLoja?.nome || ""})`);
+    setLinkCopiado(true);
+    setTimeout(() => setLinkCopiado(false), 2000);
   };
 
   const openWhatsApp = () => {
