@@ -4,8 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Trash2, Download, Package, MoreHorizontal, Store, AlertTriangle, Pencil, Undo2, ArrowRight } from "lucide-react";
+import { Trash2, Download, Package, Store, AlertTriangle, Pencil, Undo2, ArrowRight, Copy, MessageCircle, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { toast } from "sonner";
@@ -20,6 +19,7 @@ const FuncionariosPage = () => {
   const [linkLojaId, setLinkLojaId] = useState<string>("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editQty, setEditQty] = useState<string>("");
+  const [linkCopiado, setLinkCopiado] = useState(false);
 
   const { data: itens = [], isLoading } = useQuery({
     queryKey: ["itens-faltantes"],
@@ -405,6 +405,8 @@ const FuncionariosPage = () => {
     }
     navigator.clipboard.writeText(appUrl);
     toast.success(`Link copiado! (${effectiveLinkLoja?.nome || ""})`);
+    setLinkCopiado(true);
+    setTimeout(() => setLinkCopiado(false), 2000);
   };
 
   const openWhatsApp = () => {
@@ -429,22 +431,28 @@ const FuncionariosPage = () => {
           <h1 className="text-lg font-bold">App Funcionários</h1>
           <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{pendentes.length} pendentes</span>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 gap-1"><MoreHorizontal className="h-4 w-4" /><span className="text-xs">Mais</span></Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={copyLink}>📋 Copiar Link</DropdownMenuItem>
-            <DropdownMenuItem onClick={openWhatsApp}>📱 Enviar WhatsApp</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-1.5">
+          <Button
+            variant={linkCopiado ? "default" : "outline"}
+            size="sm"
+            className={`h-8 gap-1 ${linkCopiado ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
+            onClick={copyLink}
+          >
+            {linkCopiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            <span className="text-xs">{linkCopiado ? "✓ Copiado!" : "Link"}</span>
+          </Button>
+          <Button variant="outline" size="sm" className="h-8 gap-1" onClick={openWhatsApp}>
+            <MessageCircle className="h-4 w-4" />
+            <span className="text-xs">WhatsApp</span>
+          </Button>
+        </div>
       </div>
 
       {/* Loja selector for link */}
       {lojas.length > 1 && (
         <div>
           <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
-            <Store className="h-3.5 w-3.5 inline mr-1" />Para qual loja?
+            <Store className="h-3.5 w-3.5 inline mr-1" />Qual loja precisa abastecer?
           </label>
           <Select value={linkLojaId} onValueChange={setLinkLojaId}>
             <SelectTrigger className="h-9">
@@ -458,9 +466,6 @@ const FuncionariosPage = () => {
           </Select>
         </div>
       )}
-
-      {/* Inline link */}
-      <div className="bg-muted rounded-lg p-2 font-mono text-[10px] break-all">{appUrl}</div>
 
       {/* Pending items */}
       <div className="bg-card border rounded-xl shadow-sm overflow-hidden mb-5">
