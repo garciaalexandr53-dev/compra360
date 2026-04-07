@@ -83,7 +83,7 @@ const FornecedorCotacaoPage = () => {
           nome: cp.produtos?.nome || "?",
           embalagem: cp.produtos?.embalagem || "un",
           quantidade: cp.quantidade || 1,
-        }));
+        })).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
         setProdutos(items);
 
         // Load existing prices for this fornecedor
