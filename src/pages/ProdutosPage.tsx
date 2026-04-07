@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, ChevronRight, Sparkles, Loader2, MoreHorizontal, ArrowRight, Package, CheckCircle2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
