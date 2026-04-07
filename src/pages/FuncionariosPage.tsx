@@ -19,6 +19,7 @@ const FuncionariosPage = () => {
   const [linkLojaId, setLinkLojaId] = useState<string>("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editQty, setEditQty] = useState<string>("");
+  const [linkCopiado, setLinkCopiado] = useState(false);
 
   const { data: itens = [], isLoading } = useQuery({
     queryKey: ["itens-faltantes"],
