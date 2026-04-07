@@ -56,6 +56,11 @@ const ProdutosPage = () => {
   const [classifyResult, setClassifyResult] = useState({ updated: 0, categories: 0 });
   const [classifyError, setClassifyError] = useState("");
 
+  // Popover states for adding to cotação
+  const [popoverOpen, setPopoverOpen] = useState<Record<string, boolean>>({});
+  const [popoverQtd, setPopoverQtd] = useState<Record<string, string>>({});
+  const [popoverEmb, setPopoverEmb] = useState<Record<string, string>>({});
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: categorias = [] } = useQuery({
