@@ -427,6 +427,18 @@ const FuncionariosPage = () => {
 
   return (
     <div className="p-5 space-y-3">
+      <Tabs defaultValue="itens" className="w-full">
+        <TabsList className="w-full mb-3">
+          <TabsTrigger value="itens" className="flex-1 gap-1.5">
+            <Package className="h-4 w-4" />
+            Itens Faltantes
+          </TabsTrigger>
+          <TabsTrigger value="conferencia" className="flex-1 gap-1.5">
+            <ClipboardCheck className="h-4 w-4" />
+            Conferência
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="itens" className="space-y-3">
       {/* Compact header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
