@@ -251,6 +251,7 @@ const TabelaCotacao = ({
                     const isTieMin = isMin && info.tiedCount > 1;
                     const isSecond = info.second === f.id;
                     const histAlert = numVal !== null ? getHistAlert(cp.produto_id, numVal) : null;
+                    const intraAlert = numVal !== null ? getIntraAnomaly(cp.id, numVal) : null;
 
                     // Check if this price was manually edited (exists in DB vs what's shown)
                     const cellKey = `${cp.id}-${f.id}`;
