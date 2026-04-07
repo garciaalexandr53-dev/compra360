@@ -543,7 +543,9 @@ const CotacaoPage = () => {
     if (!cotacaoAtiva?.id) return;
     setAiAnalysisOpen(true); setAiAnalysisText(""); setAiAnalysisLoading(true);
     try {
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-precos`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` }, body: JSON.stringify({ cotacao_id: cotacaoAtiva.id }) });
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-precos`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` }, body: JSON.stringify({ cotacao_id: cotacaoAtiva.id }) });
       if (!resp.ok) { const err = await resp.json().catch(() => ({ error: "Erro desconhecido" })); toast.error(err.error || "Erro na análise de IA"); setAiAnalysisLoading(false); return; }
       const reader = resp.body?.getReader(); if (!reader) throw new Error("No reader");
       const decoder = new TextDecoder(); let buffer = "", fullText = "";
