@@ -46,6 +46,7 @@ interface TabelaCotacaoProps {
   onLegendClose: () => void;
   analyzePrices: (cpId: string) => PriceAnalysis;
   getHistAlert: (produtoId: string, val: number) => "high" | "low" | null;
+  getIntraAnomaly: (cpId: string, val: number) => "high" | null;
   historicalAvgMap: Record<string, { avg: number; count: number }>;
   onPriceChange: (cpId: string, fornecedorId: string, value: string) => void;
   onPriceBlur: (cpId: string, fornecedorId: string) => void;
@@ -66,6 +67,7 @@ const TabelaCotacao = ({
   onLegendClose,
   analyzePrices,
   getHistAlert,
+  getIntraAnomaly,
   historicalAvgMap,
   onPriceChange,
   onPriceBlur,
@@ -249,6 +251,7 @@ const TabelaCotacao = ({
                     const isTieMin = isMin && info.tiedCount > 1;
                     const isSecond = info.second === f.id;
                     const histAlert = numVal !== null ? getHistAlert(cp.produto_id, numVal) : null;
+                    const intraAlert = numVal !== null ? getIntraAnomaly(cp.id, numVal) : null;
 
                     // Check if this price was manually edited (exists in DB vs what's shown)
                     const cellKey = `${cp.id}-${f.id}`;
@@ -306,6 +309,19 @@ const TabelaCotacao = ({
                                 <p className="text-[11px] mt-1">
                                   Média histórica: R${formatNumber(hist?.avg || 0)} ({hist?.count || 0} cotações).
                                   Preço significativamente acima do habitual.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                          {!histAlert && intraAlert === "high" && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="absolute -bottom-1.5 -right-1 text-[11px] cursor-help leading-none">🟠</span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs text-xs">
+                                <p className="font-bold">🟠 Preço muito acima dos outros fornecedores</p>
+                                <p className="text-[11px] mt-1">
+                                  Este preço está 80%+ acima da mediana dos demais. Possível erro de digitação.
                                 </p>
                               </TooltipContent>
                             </Tooltip>

@@ -357,6 +357,21 @@ const CotacaoPage = () => {
     return null;
   };
 
+  // Intra-quote anomaly: price is >80% above the median of other suppliers for same item
+  const getIntraAnomaly = (cpId: string, val: number): "high" | null => {
+    const allPrices: number[] = [];
+    fornecedores.forEach((f) => {
+      const raw = localPrices[cpId]?.[f.id]?.replace(",", ".").replace(/[^0-9.]/g, "");
+      if (raw) { const n = parseFloat(raw); if (!isNaN(n) && n > 0) allPrices.push(n); }
+    });
+    if (allPrices.length < 3) return null;
+    const sorted = [...allPrices].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    if (median <= 0) return null;
+    if ((val - median) / median > 0.80) return "high";
+    return null;
+  };
+
   const hasAnomaly = (cpId: string) => {
     const cp = cotacaoProdutos.find(c => c.id === cpId);
     if (!cp) return false;
@@ -365,7 +380,7 @@ const CotacaoPage = () => {
       if (!rawVal) return false;
       const num = parseFloat(rawVal);
       if (isNaN(num) || num <= 0) return false;
-      return getHistAlert(cp.produto_id, num) !== null;
+      return getHistAlert(cp.produto_id, num) !== null || getIntraAnomaly(cpId, num) !== null;
     });
   };
 
@@ -767,6 +782,7 @@ const CotacaoPage = () => {
         onLegendClose={toggleLegend}
         analyzePrices={analyzePrices}
         getHistAlert={getHistAlert}
+        getIntraAnomaly={getIntraAnomaly}
         historicalAvgMap={historicalAvgMap}
         onPriceChange={handlePriceChange}
         onPriceBlur={handlePriceBlur}
