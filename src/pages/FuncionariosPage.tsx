@@ -473,7 +473,7 @@ const FuncionariosPage = () => {
       )}
 
       {/* Botões Link e WhatsApp */}
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-row gap-2">
         <Button
           variant={linkCopiado ? "default" : "outline"}
           size="sm"
