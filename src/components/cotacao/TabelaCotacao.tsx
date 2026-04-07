@@ -67,6 +67,7 @@ const TabelaCotacao = ({
   onLegendClose,
   analyzePrices,
   getHistAlert,
+  getIntraAnomaly,
   historicalAvgMap,
   onPriceChange,
   onPriceBlur,
