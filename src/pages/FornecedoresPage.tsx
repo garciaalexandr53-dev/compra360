@@ -198,7 +198,8 @@ const FornecedoresPage = () => {
   };
 
   const getLink = (f: Fornecedor) => {
-    const base = `${window.location.origin}/fornecedor/${f.token}`;
+    const publicOrigin = (import.meta.env.VITE_APP_PUBLIC_URL || "https://compra360.lovable.app").replace(/\/$/, "");
+    const base = `${publicOrigin}/fornecedor/${f.token}`;
     return lojaAtiva?.id ? `${base}?loja=${lojaAtiva.id}` : base;
   };
 
