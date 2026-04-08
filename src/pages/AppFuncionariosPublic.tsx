@@ -651,6 +651,83 @@ const AppFuncionariosPublic = () => {
           )}
         </div>
       )}
+
+      {/* Dialog for quantity and unit type */}
+      <Dialog open={!!dialogProduct} onOpenChange={(open) => { if (!open) setDialogProduct(null); }}>
+        <DialogContent className="max-w-[340px] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-base leading-snug">
+              {dialogProduct?.nome}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* Quantity */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Quantidade</label>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 shrink-0"
+                  onClick={() => setDialogQtd(String(Math.max(1, (parseInt(dialogQtd) || 1) - 1)))}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  value={dialogQtd}
+                  onChange={(e) => setDialogQtd(e.target.value)}
+                  onFocus={(e) => e.target.select()}
+                  className="h-10 text-center text-lg font-bold flex-1"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 shrink-0"
+                  onClick={() => setDialogQtd(String((parseInt(dialogQtd) || 1) + 1))}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Unit type chips */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tipo de embalagem</label>
+              <div className="flex flex-wrap gap-2">
+                {["UNI", "CX", "DZ", "FD", "KG", "PCT", "LT"].map((emb) => (
+                  <button
+                    key={emb}
+                    onClick={() => setDialogEmbal(emb)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                      dialogEmbal === emb
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-muted text-muted-foreground border-border hover:border-primary/50"
+                    }`}
+                  >
+                    {emb}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex-row gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setDialogProduct(null)}>
+              Cancelar
+            </Button>
+            <Button
+              className="flex-1 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
+              onClick={confirmProductDialog}
+            >
+              <Plus className="h-4 w-4 mr-1" /> Adicionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
