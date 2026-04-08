@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle2, Clock, SkipForward, Smartphone } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { buildWhatsAppUrl } from "@/lib/format";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 
 type Fornecedor = Tables<"fornecedores">;

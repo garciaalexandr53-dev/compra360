@@ -9,6 +9,7 @@ import { Trash2, Download, Package, Store, AlertTriangle, Pencil, Undo2, ArrowRi
 import { useNavigate } from "react-router-dom";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { toast } from "sonner";
+import { buildWhatsAppUrl } from "@/lib/format";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";

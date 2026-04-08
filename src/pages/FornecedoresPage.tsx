@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
-import { formatBRL } from "@/lib/format";
+import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 type Fornecedor = Tables<"fornecedores">;
