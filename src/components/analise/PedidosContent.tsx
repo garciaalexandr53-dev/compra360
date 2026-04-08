@@ -184,11 +184,7 @@ const PedidosContent = () => {
     });
     msg += `\n-----\n💰 *TOTAL GERAL: ${formatBRL(total)}*${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}\n-----\n_Enviado via Compra360_`;
 
-    const phone = f.telefone?.replace(/\D/g, "");
-    const url = phone
-      ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`
-      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-    window.open(url, "_blank");
+    window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
   };
 
   const sendWhatsAppAi = async (f: Fornecedor) => {
