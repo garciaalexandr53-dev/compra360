@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { formatBRL, formatNumber } from "@/lib/format";
+import { formatBRL, formatNumber, buildWhatsAppUrl } from "@/lib/format";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Printer, FileText, Loader2, MessageSquare } from "lucide-react";
