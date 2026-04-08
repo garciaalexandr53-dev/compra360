@@ -211,6 +211,37 @@ const AppFuncionariosPublic = () => {
     [produtosData]
   );
 
+  // Query for sent items history (last 30 days)
+  const thirtyDaysAgo = useMemo(() => subDays(new Date(), 30).toISOString(), []);
+  const { data: enviados = [], isLoading: enviadosLoading } = useQuery({
+    queryKey: ["itens-enviados", selectedLojaId],
+    enabled: !!selectedLojaId && activeTab === "enviados",
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("itens_faltantes")
+        .select("id, nome, quantidade, observacao, registrado_por, created_at, importado")
+        .eq("loja_id", selectedLojaId)
+        .gte("created_at", thirtyDaysAgo)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const enviadosGrouped = useMemo(() => {
+    const groups: Record<string, typeof enviados> = {};
+    for (const item of enviados) {
+      const date = new Date(item.created_at);
+      let label: string;
+      if (isToday(date)) label = "Hoje";
+      else if (isYesterday(date)) label = "Ontem";
+      else label = format(date, "dd/MM/yyyy (EEEE)", { locale: ptBR });
+      if (!groups[label]) groups[label] = [];
+      groups[label].push(item);
+    }
+    return Object.entries(groups);
+  }, [enviados]);
+
   useEffect(() => {
     if (!productsListRef.current || !hasNextPage || isFetchingNextPage || produtosLoading) return;
     const listElement = productsListRef.current;
