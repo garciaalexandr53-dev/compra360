@@ -446,6 +446,17 @@ const AppFuncionariosPublic = () => {
           <Package className="h-4 w-4" />
           Conferência
         </button>
+        <button
+          onClick={() => setActiveTab("enviados")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors border-b-2 ${
+            activeTab === "enviados"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground"
+          }`}
+        >
+          <History className="h-4 w-4" />
+          Enviados
+        </button>
       </div>
 
       {/* Items counter badge */}
