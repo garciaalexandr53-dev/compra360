@@ -545,6 +545,7 @@ export type Database = {
         }[]
       }
       is_buyer: { Args: never; Returns: boolean }
+      loja_exists: { Args: { _loja_id: string }; Returns: boolean }
       produto_belongs_to_loja_owner: {
         Args: { _user_id: string }
         Returns: boolean
