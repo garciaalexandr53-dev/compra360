@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Search, ClipboardList, Package, Store, MapPin, Plus, Minus, Send } from "lucide-react";
@@ -43,6 +44,9 @@ const AppFuncionariosPublic = () => {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [justAdded, setJustAdded] = useState<Set<string>>(new Set());
   const [showNewProduct, setShowNewProduct] = useState(false);
+  const [dialogProduct, setDialogProduct] = useState<ProdutoPublico | null>(null);
+  const [dialogQtd, setDialogQtd] = useState("1");
+  const [dialogEmbal, setDialogEmbal] = useState("UNI");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Keep title consistent and capture install prompt
@@ -105,7 +109,7 @@ const AppFuncionariosPublic = () => {
   });
   const [productSearch, setProductSearch] = useState("");
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
-  const [productQtds, setProductQtds] = useState<Record<string, number>>({});
+  
   const productsListRef = useRef<HTMLDivElement | null>(null);
   const itemsListRef = useRef<HTMLDivElement | null>(null);
 
@@ -226,25 +230,24 @@ const AppFuncionariosPublic = () => {
     toast.success("Adicionado!");
   };
 
-  const addFromProduct = useCallback((product: ProdutoPublico) => {
-    const productKey = getProductKey(product);
-    const qty = productQtds[productKey] || 1;
+  const openProductDialog = useCallback((product: ProdutoPublico) => {
+    setDialogProduct(product);
+    setDialogQtd("1");
+    setDialogEmbal((product.embalagem || "UNI").toUpperCase());
+  }, []);
 
-    setItems((prev) => [...prev, { nome: product.nome, quantidade: qty, embalagem: product.embalagem || "un" }]);
-    setProductQtds((prev) => {
-      const next = { ...prev };
-      delete next[productKey];
-      return next;
-    });
+  const confirmProductDialog = useCallback(() => {
+    if (!dialogProduct) return;
+    const productKey = getProductKey(dialogProduct);
+    const qty = parseInt(dialogQtd) || 1;
 
-    // Clear search and refocus for next product
+    setItems((prev) => [...prev, { nome: dialogProduct.nome, quantidade: qty, embalagem: dialogEmbal.toLowerCase() }]);
+
     setProductSearch("");
     setTimeout(() => searchInputRef.current?.focus(), 100);
 
-    // Toast feedback
-    toast.success(`✅ ${product.nome} adicionado!`, { duration: 1000, position: "top-center" });
+    toast.success(`✅ ${dialogProduct.nome} adicionado!`, { duration: 1000, position: "top-center" });
 
-    // Visual feedback
     setJustAdded((prev) => new Set(prev).add(productKey));
     setTimeout(() => {
       setJustAdded((prev) => {
@@ -253,17 +256,12 @@ const AppFuncionariosPublic = () => {
         return next;
       });
     }, 1200);
-  }, [productQtds]);
+
+    setDialogProduct(null);
+  }, [dialogProduct, dialogQtd, dialogEmbal]);
 
   const removeItem = (index: number) => setItems((prev) => prev.filter((_, i) => i !== index));
 
-  const updateProductQtd = useCallback((productKey: string, delta: number) => {
-    setProductQtds((prev) => {
-      const current = prev[productKey] || 1;
-      const next = Math.max(1, current + delta);
-      return { ...prev, [productKey]: next };
-    });
-  }, []);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
@@ -504,7 +502,6 @@ const AppFuncionariosPublic = () => {
                 {filteredProducts.map((product, index) => {
                   const productKey = getProductKey(product);
                   const isAdded = justAdded.has(productKey);
-                  const qty = productQtds[productKey] || 1;
 
                   return (
                     <div
@@ -515,8 +512,8 @@ const AppFuncionariosPublic = () => {
                           : "bg-card border-border hover:border-primary/30 active:scale-[0.98]"
                       }`}
                     >
-                      {/* Product info - full name with line wrap */}
-                      <div className="flex-1 min-w-0" onClick={() => addFromProduct(product)}>
+                      {/* Product info */}
+                      <div className="flex-1 min-w-0" onClick={() => openProductDialog(product)}>
                         <div className="text-sm font-medium leading-snug">{product.nome}</div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
                           {product.embalagem || "un"}
@@ -524,23 +521,9 @@ const AppFuncionariosPublic = () => {
                         </div>
                       </div>
 
-                      {/* Quantity input - compact, select on focus */}
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        min={1}
-                        value={qty}
-                        onFocus={(e) => e.target.select()}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value) || 1;
-                          setProductQtds((prev) => ({ ...prev, [productKey]: Math.max(1, val) }));
-                        }}
-                        className="h-8 w-11 text-center text-xs font-bold rounded-md border border-border bg-muted focus:outline-none focus:ring-2 focus:ring-primary tabular-nums shrink-0"
-                      />
-
-                      {/* Add button - compact */}
+                      {/* Add button */}
                       <button
-                        onClick={() => addFromProduct(product)}
+                        onClick={() => openProductDialog(product)}
                         className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-all active:scale-90 ${
                           isAdded
                             ? "bg-green-500 text-white"
@@ -661,6 +644,83 @@ const AppFuncionariosPublic = () => {
           )}
         </div>
       )}
+
+      {/* Dialog for quantity and unit type */}
+      <Dialog open={!!dialogProduct} onOpenChange={(open) => { if (!open) setDialogProduct(null); }}>
+        <DialogContent className="max-w-[340px] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-base leading-snug">
+              {dialogProduct?.nome}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* Quantity */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Quantidade</label>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 shrink-0"
+                  onClick={() => setDialogQtd(String(Math.max(1, (parseInt(dialogQtd) || 1) - 1)))}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  value={dialogQtd}
+                  onChange={(e) => setDialogQtd(e.target.value)}
+                  onFocus={(e) => e.target.select()}
+                  className="h-10 text-center text-lg font-bold flex-1"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 shrink-0"
+                  onClick={() => setDialogQtd(String((parseInt(dialogQtd) || 1) + 1))}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Unit type chips */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tipo de embalagem</label>
+              <div className="flex flex-wrap gap-2">
+                {["UNI", "CX", "DZ", "FD", "KG", "PCT", "LT"].map((emb) => (
+                  <button
+                    key={emb}
+                    onClick={() => setDialogEmbal(emb)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                      dialogEmbal === emb
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-muted text-muted-foreground border-border hover:border-primary/50"
+                    }`}
+                  >
+                    {emb}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex-row gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setDialogProduct(null)}>
+              Cancelar
+            </Button>
+            <Button
+              className="flex-1 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
+              onClick={confirmProductDialog}
+            >
+              <Plus className="h-4 w-4 mr-1" /> Adicionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
