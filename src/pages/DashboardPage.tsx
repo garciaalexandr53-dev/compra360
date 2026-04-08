@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { formatBRL } from "@/lib/format";
+import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
 import type { Tables } from "@/integrations/supabase/types";
 
 import DashboardAlerts from "@/components/dashboard/DashboardAlerts";
