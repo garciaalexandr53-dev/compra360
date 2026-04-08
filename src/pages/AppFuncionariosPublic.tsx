@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { Download, Check, X } from "lucide-react";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { Download, Check, X, History } from "lucide-react";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { format, isToday, isYesterday, subDays } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +27,7 @@ interface ProdutoPublico {
   } | null;
 }
 
-type AppTab = "lista" | "conferencia";
+type AppTab = "lista" | "conferencia" | "enviados";
 
 const PRODUCT_PAGE_SIZE = 80;
 const SEARCH_DEBOUNCE_MS = 250;
@@ -40,6 +42,7 @@ const AppFuncionariosPublic = () => {
   const [currentEmbal, setCurrentEmbal] = useState("un");
   const [nome, setNome] = useState("");
   const [sending, setSending] = useState(false);
+  const queryClient = useQueryClient();
   const [sent, setSent] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [justAdded, setJustAdded] = useState<Set<string>>(new Set());
@@ -208,6 +211,37 @@ const AppFuncionariosPublic = () => {
     [produtosData]
   );
 
+  // Query for sent items history (last 30 days)
+  const thirtyDaysAgo = useMemo(() => subDays(new Date(), 30).toISOString(), []);
+  const { data: enviados = [], isLoading: enviadosLoading } = useQuery({
+    queryKey: ["itens-enviados", selectedLojaId],
+    enabled: !!selectedLojaId && activeTab === "enviados",
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("itens_faltantes")
+        .select("id, nome, quantidade, observacao, registrado_por, created_at, importado")
+        .eq("loja_id", selectedLojaId)
+        .gte("created_at", thirtyDaysAgo)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const enviadosGrouped = useMemo(() => {
+    const groups: Record<string, typeof enviados> = {};
+    for (const item of enviados) {
+      const date = new Date(item.created_at);
+      let label: string;
+      if (isToday(date)) label = "Hoje";
+      else if (isYesterday(date)) label = "Ontem";
+      else label = format(date, "dd/MM/yyyy (EEEE)", { locale: ptBR });
+      if (!groups[label]) groups[label] = [];
+      groups[label].push(item);
+    }
+    return Object.entries(groups);
+  }, [enviados]);
+
   useEffect(() => {
     if (!productsListRef.current || !hasNextPage || isFetchingNextPage || produtosLoading) return;
     const listElement = productsListRef.current;
@@ -311,6 +345,7 @@ const AppFuncionariosPublic = () => {
       if (error) throw error;
 
       setSent(true);
+      queryClient.invalidateQueries({ queryKey: ["itens-enviados", selectedLojaId] });
       const lojaMsg = selectedLojaName ? ` para ${selectedLojaName}` : "";
       toast.success(`${items.length} itens enviados${lojaMsg}!`);
     } catch (error: any) {
@@ -411,6 +446,17 @@ const AppFuncionariosPublic = () => {
           <Package className="h-4 w-4" />
           Conferência
         </button>
+        <button
+          onClick={() => setActiveTab("enviados")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors border-b-2 ${
+            activeTab === "enviados"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground"
+          }`}
+        >
+          <History className="h-4 w-4" />
+          Enviados
+        </button>
       </div>
 
       {/* Items counter badge */}
@@ -431,6 +477,55 @@ const AppFuncionariosPublic = () => {
       {activeTab === "conferencia" ? (
         <div className="p-4 flex-1">
           <ConferenciaPedidos />
+        </div>
+      ) : activeTab === "enviados" ? (
+        <div className="flex-1 overflow-y-auto p-4">
+          {enviadosLoading ? (
+            <div className="p-8 text-center text-muted-foreground text-sm">Carregando...</div>
+          ) : enviados.length === 0 ? (
+            <div className="p-8 text-center">
+              <History className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+              <p className="text-muted-foreground text-sm">Nenhum item enviado nos últimos 30 dias</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-xs text-muted-foreground">{enviados.length} item(ns) nos últimos 30 dias</p>
+              {enviadosGrouped.map(([dateLabel, groupItems]) => (
+                <div key={dateLabel}>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 sticky top-0 bg-background py-1">
+                    {dateLabel} ({groupItems.length})
+                  </h3>
+                  <div className="space-y-1">
+                    {groupItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm ${
+                          item.importado
+                            ? "bg-green-500/5 border-green-500/20"
+                            : "bg-card border-border"
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <span className="font-medium">{item.nome}</span>
+                          {item.quantidade && (
+                            <span className="text-muted-foreground ml-1.5 text-xs">×{item.quantidade}</span>
+                          )}
+                        </div>
+                        {item.importado && (
+                          <span className="text-[10px] font-medium text-green-600 bg-green-500/10 px-1.5 py-0.5 rounded-full shrink-0">
+                            Importado
+                          </span>
+                        )}
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {format(new Date(item.created_at), "HH:mm")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex flex-col flex-1">
