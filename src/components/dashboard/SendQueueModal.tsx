@@ -59,7 +59,6 @@ const SendQueueModal = ({ open, onOpenChange, fornecedores, onConclude }: Props 
     const msg = `Olá ${f.nome}! Segue o link para cotação de preços:\n\n${link}\n\nPreencha os preços e envie. Obrigado!`;
     window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
     setStatuses(prev => ({ ...prev, [f.id]: "sent" }));
-    onOpenChange(false);
   };
 
   const skip = (id: string) => {
