@@ -109,7 +109,7 @@ const AppFuncionariosPublic = () => {
   });
   const [productSearch, setProductSearch] = useState("");
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
-  const [productQtds] = useState<Record<string, number>>({});
+  
   const productsListRef = useRef<HTMLDivElement | null>(null);
   const itemsListRef = useRef<HTMLDivElement | null>(null);
 
