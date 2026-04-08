@@ -509,7 +509,6 @@ const AppFuncionariosPublic = () => {
                 {filteredProducts.map((product, index) => {
                   const productKey = getProductKey(product);
                   const isAdded = justAdded.has(productKey);
-                  const qty = productQtds[productKey] || 1;
 
                   return (
                     <div
@@ -520,8 +519,8 @@ const AppFuncionariosPublic = () => {
                           : "bg-card border-border hover:border-primary/30 active:scale-[0.98]"
                       }`}
                     >
-                      {/* Product info - full name with line wrap */}
-                      <div className="flex-1 min-w-0" onClick={() => addFromProduct(product)}>
+                      {/* Product info */}
+                      <div className="flex-1 min-w-0" onClick={() => openProductDialog(product)}>
                         <div className="text-sm font-medium leading-snug">{product.nome}</div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
                           {product.embalagem || "un"}
@@ -529,23 +528,9 @@ const AppFuncionariosPublic = () => {
                         </div>
                       </div>
 
-                      {/* Quantity input - compact, select on focus */}
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        min={1}
-                        value={qty}
-                        onFocus={(e) => e.target.select()}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value) || 1;
-                          setProductQtds((prev) => ({ ...prev, [productKey]: Math.max(1, val) }));
-                        }}
-                        className="h-8 w-11 text-center text-xs font-bold rounded-md border border-border bg-muted focus:outline-none focus:ring-2 focus:ring-primary tabular-nums shrink-0"
-                      />
-
-                      {/* Add button - compact */}
+                      {/* Add button */}
                       <button
-                        onClick={() => addFromProduct(product)}
+                        onClick={() => openProductDialog(product)}
                         className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-all active:scale-90 ${
                           isAdded
                             ? "bg-green-500 text-white"
