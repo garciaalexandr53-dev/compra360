@@ -306,9 +306,7 @@ const AnalisePage = () => {
       });
       if (resp.error) throw new Error(resp.error.message);
       const msg = resp.data?.message || "";
-      const phone = f.telefone?.replace(/\D/g, "");
-      const url = phone ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-      window.open(url, "_blank");
+      window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
     } catch (e: any) { toast.error(e.message || "Erro ao gerar mensagem IA"); }
     setWhatsappAiLoading(null);
   };

@@ -418,7 +418,7 @@ const FuncionariosPage = () => {
     }
     const lojaLabel = effectiveLinkLoja ? ` da loja ${effectiveLinkLoja.nome}` : "";
     const msg = `📋 Use este link para registrar itens faltantes${lojaLabel}:\n${appUrl}\n\nBasta abrir no celular, digitar o item e enviar!`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+    window.open(buildWhatsAppUrl(null, msg), "_blank");
   };
 
   const getEmbalagem = (item: any) => {
