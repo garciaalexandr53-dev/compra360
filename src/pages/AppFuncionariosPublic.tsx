@@ -42,6 +42,7 @@ const AppFuncionariosPublic = () => {
   const [currentEmbal, setCurrentEmbal] = useState("un");
   const [nome, setNome] = useState("");
   const [sending, setSending] = useState(false);
+  const queryClient = useQueryClient();
   const [sent, setSent] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [justAdded, setJustAdded] = useState<Set<string>>(new Set());
