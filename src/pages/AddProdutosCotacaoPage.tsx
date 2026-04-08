@@ -7,19 +7,18 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Minus, Trash2, ArrowRight, ShoppingCart, Package, ArrowLeft, Check, PlusCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Plus, Minus, Trash2, ShoppingCart, ArrowLeft, Check, PlusCircle } from "lucide-react";
 import DashboardProgress from "@/components/dashboard/DashboardProgress";
 import { toast } from "sonner";
 import { format } from "date-fns";
-
-const EMBALAGEM_OPTIONS = ["UNI", "DZ", "CX", "FD", "PCT", "KG", "LT", "SC", "GL"];
 
 interface LocalItem {
   id: string;
   nome: string;
   quantidade: number;
   embalagem: string;
-  produtoId?: string; // if matched to existing produto
+  produtoId?: string;
 }
 
 let localIdCounter = 0;
@@ -34,20 +33,22 @@ const AddProdutosCotacaoPage = () => {
   const [items, setItems] = useState<LocalItem[]>([]);
   const [qtyDrafts, setQtyDrafts] = useState<Record<string, string>>({});
   const [nome, setNome] = useState("");
-  const [quantidade, setQuantidade] = useState(1);
-  const [embalagem, setEmbalagem] = useState("UNI");
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Dialog states
+  const [dialogItem, setDialogItem] = useState<{ nome: string; produtoId?: string } | null>(null);
+  const [dialogQtd, setDialogQtd] = useState("");
+  const [dialogEmb, setDialogEmb] = useState("UNI");
+  const dialogInputRef = useRef<HTMLInputElement>(null);
+
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // Debounce search term
   React.useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(nome.trim()), 250);
     return () => clearTimeout(timer);
   }, [nome]);
 
-  // Fetch produtos matching search term (server-side filter)
   const { data: existingProdutos = [] } = useQuery({
     queryKey: ["produtos-search", debouncedSearch],
     queryFn: async () => {
@@ -64,7 +65,6 @@ const AddProdutosCotacaoPage = () => {
     enabled: debouncedSearch.length >= 2,
   });
 
-  // Fetch active cotacao
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
@@ -76,7 +76,6 @@ const AddProdutosCotacaoPage = () => {
     },
   });
 
-  // Fetch already added products to this cotacao
   const { data: alreadyInCotacao = [] } = useQuery({
     queryKey: ["cotacao-produtos-ids", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
@@ -94,44 +93,48 @@ const AddProdutosCotacaoPage = () => {
   const totalItems = stagedCount + alreadyCount;
   const hasAnyProduct = totalItems > 0;
 
-  const handleAdd = () => {
-    const trimmed = nome.trim();
-    if (!trimmed) return;
-
-    // Check duplicate in local list
-    if (items.some(i => i.nome.toLowerCase() === trimmed.toLowerCase())) {
-      toast.error("Produto já adicionado à lista");
-      return;
-    }
-
-    // Try to match existing produto
-    const match = existingProdutos.find(p => p.nome.toLowerCase() === trimmed.toLowerCase());
-
-    const isFirstProduct = items.length === 0 && alreadyCount === 0;
-
-    setItems(prev => [...prev, {
-      id: genId(),
-      nome: trimmed,
-      quantidade: Math.max(1, quantidade),
-      embalagem: embalagem,
-      produtoId: match?.id,
-    }]);
-
-    setNome("");
-    setQuantidade(1);
-    setEmbalagem("UNI");
-    inputRef.current?.focus();
-    if (isFirstProduct) {
-      toast.success("🎉 Primeiro produto adicionado! Continue selecionando.");
-    } else {
-      toast.success("Produto adicionado ✔", { duration: 1500 });
-    }
+  // Dialog handlers
+  const handlePickSuggestion = (produto: { id: string; nome: string }) => {
+    setDialogItem({ nome: produto.nome, produtoId: produto.id });
+    setDialogQtd("");
+    setDialogEmb("UNI");
+    setTimeout(() => dialogInputRef.current?.focus(), 100);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAdd();
+  const handlePickNovo = () => {
+    setDialogItem({ nome: nome.trim() });
+    setDialogQtd("");
+    setDialogEmb("UNI");
+    setTimeout(() => dialogInputRef.current?.focus(), 100);
+  };
+
+  const handleDialogConfirm = () => {
+    if (!dialogItem) return;
+    const qtd = parseInt(dialogQtd || "0");
+    if (!qtd || qtd < 1) {
+      toast.error("Informe a quantidade (mínimo 1)");
+      return;
+    }
+    if (items.some(i => i.nome.toLowerCase() === dialogItem.nome.toLowerCase())) {
+      toast.error("Produto já adicionado à lista");
+      setDialogItem(null);
+      return;
+    }
+    const isFirstProduct = items.length === 0 && alreadyCount === 0;
+    setItems(prev => [...prev, {
+      id: genId(),
+      nome: dialogItem.nome,
+      quantidade: qtd,
+      embalagem: dialogEmb,
+      produtoId: dialogItem.produtoId,
+    }]);
+    setDialogItem(null);
+    setNome("");
+    setTimeout(() => inputRef.current?.focus(), 100);
+    if (isFirstProduct) {
+      toast.success("🎉 Primeiro produto adicionado!");
+    } else {
+      toast.success("Produto adicionado ✔", { duration: 1500 });
     }
   };
 
@@ -155,11 +158,10 @@ const AddProdutosCotacaoPage = () => {
     try {
       let cotacaoId = cotacaoAtiva?.id;
 
-      // Create cotacao if none exists
       if (!cotacaoId) {
-        const nome = `Cotação ${format(new Date(), "dd/MM/yyyy HH:mm")}`;
+        const cotNome = `Cotação ${format(new Date(), "dd/MM/yyyy HH:mm")}`;
         const { data: newCot, error } = await supabase.from("cotacoes").insert({
-          nome,
+          nome: cotNome,
           loja_id: lojaAtiva?.id || null,
           created_by: user?.id,
         }).select().single();
@@ -167,14 +169,12 @@ const AddProdutosCotacaoPage = () => {
         cotacaoId = newCot.id;
       }
 
-      // For each item: create produto if not matched, then add to cotacao_produtos
       const toInsert: { cotacao_id: string; produto_id: string; quantidade: number }[] = [];
 
       for (const item of items) {
         let produtoId = item.produtoId;
 
         if (!produtoId) {
-          // Create new produto
           const { data: newProd, error } = await supabase.from("produtos").insert({
             nome: item.nome,
             embalagem: item.embalagem,
@@ -184,7 +184,6 @@ const AddProdutosCotacaoPage = () => {
           produtoId = newProd.id;
         }
 
-        // Check if already in cotacao
         const alreadyExists = alreadyInCotacao.some(a => a.produto_id === produtoId);
         if (!alreadyExists) {
           toInsert.push({
@@ -210,7 +209,6 @@ const AddProdutosCotacaoPage = () => {
     }
   };
 
-  // Suggestions from existing products
   const suggestions = useMemo(() => {
     if (nome.trim().length < 2) return [];
     const term = nome.toLowerCase();
@@ -219,21 +217,6 @@ const AddProdutosCotacaoPage = () => {
       .filter(p => p.nome.toLowerCase().includes(term) && !localNames.has(p.nome.toLowerCase()))
       .slice(0, 5);
   }, [nome, existingProdutos, items]);
-
-  const pickSuggestion = (p: { id: string; nome: string }) => {
-    const isFirstProduct = items.length === 0 && alreadyCount === 0;
-
-    setItems(prev => [...prev, { id: genId(), nome: p.nome, quantidade: Math.max(1, quantidade), embalagem: embalagem, produtoId: p.id }]);
-    setNome("");
-    setQuantidade(1);
-    setEmbalagem("UNI");
-    inputRef.current?.focus();
-    if (isFirstProduct) {
-      toast.success("🎉 Primeiro produto adicionado! Continue selecionando.");
-    } else {
-      toast.success("Produto adicionado ✔", { duration: 1500 });
-    }
-  };
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
@@ -265,39 +248,16 @@ const AddProdutosCotacaoPage = () => {
         </div>
       </div>
 
-      {/* Form */}
+      {/* Form — search only */}
       <div className="p-4 space-y-3">
-        <div className="flex gap-2">
-          <Input
-            ref={inputRef}
-            placeholder="Nome do produto"
-            value={nome}
-            onChange={e => setNome(e.target.value)}
-            onKeyDown={handleKeyDown}
-            autoFocus
-            className="h-12 flex-1"
-          />
-          <Input
-            type="number"
-            min={1}
-            value={quantidade}
-            onChange={e => setQuantidade(Math.max(1, Number(e.target.value) || 1))}
-            className="h-12 w-16 text-center"
-            placeholder="Qtd"
-          />
-          <select
-            value={embalagem}
-            onChange={e => setEmbalagem(e.target.value)}
-            className="h-12 w-20 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {EMBALAGEM_OPTIONS.map(opt => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-          <Button size="icon" className="h-12 w-12" onClick={handleAdd} disabled={!nome.trim()}>
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
+        <Input
+          ref={inputRef}
+          placeholder="Buscar produto..."
+          value={nome}
+          onChange={e => setNome(e.target.value)}
+          autoFocus
+          className="h-12 w-full"
+        />
 
         {/* Autocomplete suggestions */}
         {suggestions.length > 0 && (
@@ -305,7 +265,7 @@ const AddProdutosCotacaoPage = () => {
             {suggestions.map(s => (
               <button
                 key={s.id}
-                onClick={() => pickSuggestion(s)}
+                onClick={() => handlePickSuggestion(s)}
                 className="text-xs px-2.5 py-1 rounded-full bg-muted hover:bg-primary/20 text-foreground transition-colors border border-border"
               >
                 + {s.nome}
@@ -314,10 +274,10 @@ const AddProdutosCotacaoPage = () => {
           </div>
         )}
 
-        {/* Show "cadastrar novo" when typed name doesn't match any existing product */}
+        {/* Cadastrar novo */}
         {nome.trim().length >= 2 && !existingProdutos.some(p => p.nome.toLowerCase() === nome.trim().toLowerCase()) && (
           <button
-            onClick={handleAdd}
+            onClick={handlePickNovo}
             className="flex items-center gap-2 w-full rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-2.5 text-sm text-primary hover:bg-primary/10 transition-colors"
           >
             <PlusCircle className="h-4 w-4 shrink-0" />
@@ -325,6 +285,69 @@ const AddProdutosCotacaoPage = () => {
           </button>
         )}
       </div>
+
+      {/* Quantity Dialog */}
+      <Dialog open={!!dialogItem} onOpenChange={(open) => { if (!open) setDialogItem(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold truncate">
+              {dialogItem?.nome}
+            </DialogTitle>
+            {dialogItem?.produtoId && (
+              <p className="text-xs text-muted-foreground">Produto existente no banco</p>
+            )}
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Quantidade</label>
+            <Input
+              ref={dialogInputRef}
+              type="number"
+              inputMode="numeric"
+              placeholder="Ex: 10"
+              value={dialogQtd}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => setDialogQtd(e.target.value.replace(/\D/g, ""))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleDialogConfirm();
+              }}
+              className="h-12 text-center text-lg font-bold"
+              autoFocus
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Embalagem</label>
+            <div className="flex flex-wrap gap-2">
+              {["UNI", "CX", "DZ", "FD", "KG", "PCT"].map(emb => (
+                <button
+                  key={emb}
+                  onClick={() => setDialogEmb(emb)}
+                  className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                    dialogEmb === emb
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border text-muted-foreground hover:border-primary/50"
+                  }`}
+                >
+                  {emb}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDialogItem(null)}>
+              Cancelar
+            </Button>
+            <Button
+              className="flex-1 bg-gradient-to-r from-primary to-primary/80"
+              onClick={handleDialogConfirm}
+            >
+              ✅ Adicionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Product list */}
       <div className="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom,0px)+80px)]">
