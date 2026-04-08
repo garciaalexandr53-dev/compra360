@@ -262,13 +262,6 @@ const AppFuncionariosPublic = () => {
 
   const removeItem = (index: number) => setItems((prev) => prev.filter((_, i) => i !== index));
 
-  const updateProductQtd = useCallback((productKey: string, delta: number) => {
-    setProductQtds((prev) => {
-      const current = prev[productKey] || 1;
-      const next = Math.max(1, current + delta);
-      return { ...prev, [productKey]: next };
-    });
-  }, []);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
