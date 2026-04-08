@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { formatBRL, formatNumber } from "@/lib/format";
+import { formatBRL, formatNumber, buildWhatsAppUrl } from "@/lib/format";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
@@ -288,9 +288,7 @@ const AnalisePage = () => {
       msg += `\n*${i + 1}. ${it.produto}*\n    Embalagem: ${it.embalagem}\n    Qtd: ${it.quantidade}\n    Preço unit.: R$ ${formatNumber(it.preco)}\n    *Subtotal: R$ ${formatNumber(it.total)}*\n`;
     });
     msg += `\n-----\n💰 *TOTAL GERAL: ${formatBRL(total)}*${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}\n-----\n_Enviado via Compra360_`;
-    const phone = f.telefone?.replace(/\D/g, "");
-    const url = phone ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-    window.open(url, "_blank");
+    window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
   };
 
   const sendWhatsAppAi = async (f: Fornecedor) => {
@@ -308,9 +306,7 @@ const AnalisePage = () => {
       });
       if (resp.error) throw new Error(resp.error.message);
       const msg = resp.data?.message || "";
-      const phone = f.telefone?.replace(/\D/g, "");
-      const url = phone ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-      window.open(url, "_blank");
+      window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
     } catch (e: any) { toast.error(e.message || "Erro ao gerar mensagem IA"); }
     setWhatsappAiLoading(null);
   };

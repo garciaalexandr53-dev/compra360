@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle2, Clock, SkipForward, Smartphone } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { buildWhatsAppUrl } from "@/lib/format";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 
 type Fornecedor = Tables<"fornecedores">;
@@ -56,11 +57,7 @@ const SendQueueModal = ({ open, onOpenChange, fornecedores, onConclude }: Props 
   const openWhatsApp = (f: Fornecedor) => {
     const link = getLink(f);
     const msg = `Olá ${f.nome}! Segue o link para cotação de preços:\n\n${link}\n\nPreencha os preços e envie. Obrigado!`;
-    const phone = f.telefone?.replace(/\D/g, "");
-    const url = phone
-      ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`
-      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-    window.open(url, "_blank");
+    window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
     setStatuses(prev => ({ ...prev, [f.id]: "sent" }));
     onOpenChange(false);
   };

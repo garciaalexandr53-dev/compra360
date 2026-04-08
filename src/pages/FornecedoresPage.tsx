@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
-import { formatBRL } from "@/lib/format";
+import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 type Fornecedor = Tables<"fornecedores">;
@@ -208,11 +208,7 @@ const FornecedoresPage = () => {
   const openWhatsApp = (f: Fornecedor) => {
     const link = getLink(f);
     const msg = `Olá ${f.nome}! Segue o link para preencher os preços da cotação:\n${link}\n\nPreencha os preços e envie. Obrigado!`;
-    const phone = f.telefone?.replace(/\D/g, "");
-    const url = phone
-      ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`
-      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-    window.open(url, "_blank");
+    window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
   };
 
   const showLink = (f: Fornecedor) => { setSelectedFornecedor(f); setLinkModalOpen(true); };

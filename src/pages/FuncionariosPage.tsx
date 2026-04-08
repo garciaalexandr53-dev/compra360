@@ -9,6 +9,7 @@ import { Trash2, Download, Package, Store, AlertTriangle, Pencil, Undo2, ArrowRi
 import { useNavigate } from "react-router-dom";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { toast } from "sonner";
+import { buildWhatsAppUrl } from "@/lib/format";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -418,7 +419,7 @@ const FuncionariosPage = () => {
     }
     const lojaLabel = effectiveLinkLoja ? ` da loja ${effectiveLinkLoja.nome}` : "";
     const msg = `📋 Use este link para registrar itens faltantes${lojaLabel}:\n${appUrl}\n\nBasta abrir no celular, digitar o item e enviar!`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+    window.open(buildWhatsAppUrl(null, msg), "_blank");
   };
 
   const getEmbalagem = (item: any) => {

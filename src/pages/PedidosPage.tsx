@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { formatBRL, formatNumber, formatDate } from "@/lib/format";
+import { formatBRL, formatNumber, formatDate, buildWhatsAppUrl } from "@/lib/format";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Printer, FileText } from "lucide-react";
@@ -200,11 +200,7 @@ const PedidosPage = () => {
     });
     msg += `\n-----\n💰 *TOTAL GERAL: ${formatBRL(total)}*${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}\n-----\n_Enviado via Compra360_`;
 
-    const phone = f.telefone?.replace(/\D/g, "");
-    const url = phone
-      ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`
-      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-    window.open(url, "_blank");
+    window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
   };
 
   const openReceipt = async (f: Fornecedor) => {

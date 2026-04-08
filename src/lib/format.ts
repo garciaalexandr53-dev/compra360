@@ -14,3 +14,11 @@ export function formatDate(dateStr: string): string {
 export function formatDateTime(dateStr: string): string {
   return new Date(dateStr).toLocaleString('pt-BR');
 }
+
+export function buildWhatsAppUrl(phone: string | null | undefined, message: string): string {
+  const cleanPhone = phone?.replace(/\D/g, "");
+  const encoded = encodeURIComponent(message);
+  return cleanPhone
+    ? `https://api.whatsapp.com/send?phone=55${cleanPhone}&text=${encoded}`
+    : `https://api.whatsapp.com/send?text=${encoded}`;
+}
