@@ -27,7 +27,7 @@ interface ProdutoPublico {
   } | null;
 }
 
-type AppTab = "lista" | "conferencia";
+type AppTab = "lista" | "conferencia" | "enviados";
 
 const PRODUCT_PAGE_SIZE = 80;
 const SEARCH_DEBOUNCE_MS = 250;
