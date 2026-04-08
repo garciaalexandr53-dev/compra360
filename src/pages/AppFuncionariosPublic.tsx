@@ -44,6 +44,9 @@ const AppFuncionariosPublic = () => {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [justAdded, setJustAdded] = useState<Set<string>>(new Set());
   const [showNewProduct, setShowNewProduct] = useState(false);
+  const [dialogProduct, setDialogProduct] = useState<ProdutoPublico | null>(null);
+  const [dialogQtd, setDialogQtd] = useState("1");
+  const [dialogEmbal, setDialogEmbal] = useState("UNI");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Keep title consistent and capture install prompt
