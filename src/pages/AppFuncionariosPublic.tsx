@@ -345,6 +345,7 @@ const AppFuncionariosPublic = () => {
       if (error) throw error;
 
       setSent(true);
+      queryClient.invalidateQueries({ queryKey: ["itens-enviados", selectedLojaId] });
       const lojaMsg = selectedLojaName ? ` para ${selectedLojaName}` : "";
       toast.success(`${items.length} itens enviados${lojaMsg}!`);
     } catch (error: any) {
