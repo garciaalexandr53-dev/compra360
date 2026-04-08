@@ -230,25 +230,24 @@ const AppFuncionariosPublic = () => {
     toast.success("Adicionado!");
   };
 
-  const addFromProduct = useCallback((product: ProdutoPublico) => {
-    const productKey = getProductKey(product);
-    const qty = productQtds[productKey] || 1;
+  const openProductDialog = useCallback((product: ProdutoPublico) => {
+    setDialogProduct(product);
+    setDialogQtd("1");
+    setDialogEmbal((product.embalagem || "UNI").toUpperCase());
+  }, []);
 
-    setItems((prev) => [...prev, { nome: product.nome, quantidade: qty, embalagem: product.embalagem || "un" }]);
-    setProductQtds((prev) => {
-      const next = { ...prev };
-      delete next[productKey];
-      return next;
-    });
+  const confirmProductDialog = useCallback(() => {
+    if (!dialogProduct) return;
+    const productKey = getProductKey(dialogProduct);
+    const qty = parseInt(dialogQtd) || 1;
 
-    // Clear search and refocus for next product
+    setItems((prev) => [...prev, { nome: dialogProduct.nome, quantidade: qty, embalagem: dialogEmbal.toLowerCase() }]);
+
     setProductSearch("");
     setTimeout(() => searchInputRef.current?.focus(), 100);
 
-    // Toast feedback
-    toast.success(`✅ ${product.nome} adicionado!`, { duration: 1000, position: "top-center" });
+    toast.success(`✅ ${dialogProduct.nome} adicionado!`, { duration: 1000, position: "top-center" });
 
-    // Visual feedback
     setJustAdded((prev) => new Set(prev).add(productKey));
     setTimeout(() => {
       setJustAdded((prev) => {
@@ -257,7 +256,9 @@ const AppFuncionariosPublic = () => {
         return next;
       });
     }, 1200);
-  }, [productQtds]);
+
+    setDialogProduct(null);
+  }, [dialogProduct, dialogQtd, dialogEmbal]);
 
   const removeItem = (index: number) => setItems((prev) => prev.filter((_, i) => i !== index));
 
