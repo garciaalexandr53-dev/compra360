@@ -48,7 +48,11 @@ export default function AppLayout() {
           <header className="h-14 flex items-center justify-between border-b px-4 bg-card shadow-sm">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="hidden md:flex" />
-              {!isDashboard && <LojaSelector />}
+              {isDashboard ? (
+                <span className="text-lg font-bold text-primary tracking-tight">Compra360</span>
+              ) : (
+                <LojaSelector />
+              )}
             </div>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={toggle}>
