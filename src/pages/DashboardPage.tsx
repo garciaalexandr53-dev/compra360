@@ -28,7 +28,7 @@ import ModalNovaCotacao from "@/components/cotacao/ModalNovaCotacao";
 type Fornecedor = Tables<"fornecedores">;
 
 const DashboardPage = () => {
-  const { lojaAtiva } = useLojaAtiva();
+  const { lojaAtiva, lojas, setLojaAtivaId } = useLojaAtiva();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
