@@ -49,7 +49,7 @@ const DashboardPage = () => {
   const [novaCotacaoLoading, setNovaCotacaoLoading] = useState(false);
   const [removeSupplier, setRemoveSupplier] = useState<Fornecedor | null>(null);
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
-  const [lojaStepOpen, setLojaStepOpen] = useState(true);
+  const [lojaStepOpen, setLojaStepOpen] = useState(false);
   const [lojaConfirmed, setLojaConfirmed] = useState(false);
 
   const removeSupplierMutation = useMutation({
@@ -119,9 +119,13 @@ const DashboardPage = () => {
     },
   });
 
-  // When there's an active cotação or only 1 store, mark loja as confirmed
+  // When there's an active cotação or only 1 store, auto-confirm
   useEffect(() => {
-    if (cotacaoAtiva || lojas.length <= 1) {
+    if (cotacaoAtiva) {
+      setLojaConfirmed(true);
+      setLojaStepOpen(false);
+    } else if (lojas.length === 1) {
+      setLojaAtivaId(lojas[0].id);
       setLojaConfirmed(true);
       setLojaStepOpen(false);
     }
