@@ -631,10 +631,10 @@ const CotacaoPage = () => {
 
   // ── Empty state → redirect to Dashboard guided flow ──
   useEffect(() => {
-    if (!cotacaoAtiva && cotacaoAtiva !== undefined) {
+    if (cotacaoFetched && !cotacaoAtiva) {
       navigate("/dashboard", { replace: true });
     }
-  }, [cotacaoAtiva, navigate]);
+  }, [cotacaoFetched, cotacaoAtiva, navigate]);
 
   if (!cotacaoAtiva) {
     return null;
