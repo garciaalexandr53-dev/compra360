@@ -512,34 +512,43 @@ const DashboardPage = () => {
                     className="flex items-center gap-2 w-full text-left"
                   >
                     <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">1</div>
-                    <span className="text-sm font-semibold text-foreground">Selecionar loja</span>
-                    {lojaConfirmed && lojaAtiva && (
-                      <span className="text-xs text-muted-foreground ml-1 truncate max-w-[140px]">· {lojaAtiva.nome}</span>
-                    )}
-                    {lojaConfirmed && <CheckCircle2 className="h-4 w-4 text-green-500 ml-auto shrink-0" />}
-                  </button>
-                  {lojaStepOpen && (
-                    <div className="grid gap-2 animate-fade-in">
-                      {!lojaConfirmed && (
-                        <p className="text-xs text-muted-foreground px-1">Escolha a loja para esta cotação</p>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-sm font-semibold text-foreground">Selecionar loja</span>
+                      {!lojaStepOpen && !lojaConfirmed && (
+                        <span className="text-xs text-muted-foreground">Escolha a loja para esta cotação</span>
                       )}
-                      {lojas.map((loja) => (
-                        <button
-                          key={loja.id}
-                          onClick={() => { setLojaAtivaId(loja.id); setLojaConfirmed(true); setLojaStepOpen(false); }}
-                          className={`flex items-center gap-3 w-full rounded-lg border-2 px-3 py-2.5 text-left text-sm transition-all ${
-                            lojaConfirmed && lojaAtiva?.id === loja.id
-                              ? "border-primary bg-primary/5 font-semibold text-foreground"
-                              : "border-border hover:border-primary/40 text-muted-foreground"
-                          }`}
-                        >
-                          <Store className="h-4 w-4 shrink-0" />
-                          <span className="truncate">{loja.nome}</span>
-                          {lojaConfirmed && lojaAtiva?.id === loja.id && <CheckCircle2 className="h-4 w-4 text-primary ml-auto shrink-0" />}
-                        </button>
-                      ))}
+                      {!lojaStepOpen && lojaConfirmed && lojaAtiva && (
+                        <span className="text-xs text-muted-foreground truncate">{lojaAtiva.nome}</span>
+                      )}
                     </div>
-                  )}
+                    {lojaConfirmed && <CheckCircle2 className="h-4 w-4 text-green-500 ml-auto shrink-0" />}
+                    <ArrowRight className={`h-4 w-4 text-muted-foreground ml-auto shrink-0 transition-transform duration-300 ${lojaStepOpen ? "rotate-90" : ""}`} />
+                  </button>
+                  <div
+                    className={`grid transition-all duration-300 ease-in-out ${
+                      lojaStepOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                    }`}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="grid gap-2 pt-1">
+                        {lojas.map((loja) => (
+                          <button
+                            key={loja.id}
+                            onClick={() => { setLojaAtivaId(loja.id); setLojaConfirmed(true); setLojaStepOpen(false); }}
+                            className={`flex items-center gap-3 w-full rounded-lg border-2 px-3 py-2.5 text-left text-sm transition-all ${
+                              lojaConfirmed && lojaAtiva?.id === loja.id
+                                ? "border-primary bg-primary/5 font-semibold text-foreground"
+                                : "border-border hover:border-primary/40 text-muted-foreground"
+                            }`}
+                          >
+                            <Store className="h-4 w-4 shrink-0" />
+                            <span className="truncate">{loja.nome}</span>
+                            {lojaConfirmed && lojaAtiva?.id === loja.id && <CheckCircle2 className="h-4 w-4 text-primary ml-auto shrink-0" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             )}
