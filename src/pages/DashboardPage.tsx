@@ -127,6 +127,7 @@ const DashboardPage = () => {
     }
   }, [cotacaoAtiva]);
 
+  const { data: itemCount = 0 } = useQuery({
     queryKey: ["cotacao-item-count", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
     queryFn: async () => {
