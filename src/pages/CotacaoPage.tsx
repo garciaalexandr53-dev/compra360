@@ -80,7 +80,7 @@ const CotacaoPage = () => {
   };
 
   // ── Queries ──
-  const { data: cotacaoAtiva } = useQuery({
+  const { data: cotacaoAtiva, isFetched: cotacaoFetched } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
       let query = supabase.from("cotacoes").select("*").eq("status", "ativa");
