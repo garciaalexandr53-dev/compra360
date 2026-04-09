@@ -119,7 +119,14 @@ const DashboardPage = () => {
     },
   });
 
-  const { data: itemCount = 0 } = useQuery({
+  // When there's an active cotação, mark loja as confirmed
+  useEffect(() => {
+    if (cotacaoAtiva) {
+      setLojaConfirmed(true);
+      setLojaStepOpen(false);
+    }
+  }, [cotacaoAtiva]);
+
     queryKey: ["cotacao-item-count", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
     queryFn: async () => {
