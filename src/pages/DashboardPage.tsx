@@ -15,7 +15,7 @@ import { ptBR } from "date-fns/locale";
 import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
 import type { Tables } from "@/integrations/supabase/types";
 
-import DashboardAlerts from "@/components/dashboard/DashboardAlerts";
+
 import DashboardProgress from "@/components/dashboard/DashboardProgress";
 import DashboardHistorico from "@/components/dashboard/DashboardHistorico";
 import SendQueueModal from "@/components/dashboard/SendQueueModal";
