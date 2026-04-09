@@ -630,8 +630,13 @@ const CotacaoPage = () => {
   };
 
   // ── Empty state → redirect to Dashboard guided flow ──
+  useEffect(() => {
+    if (!cotacaoAtiva && cotacaoAtiva !== undefined) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [cotacaoAtiva, navigate]);
+
   if (!cotacaoAtiva) {
-    navigate("/dashboard", { replace: true });
     return null;
   }
 
