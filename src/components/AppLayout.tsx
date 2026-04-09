@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Outlet, Navigate } from "react-router-dom";
+import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +16,8 @@ export default function AppLayout() {
   const { theme, toggle } = useTheme();
   const { lojas, loading: lojasLoading } = useLojaAtiva();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const location = useLocation();
+  const isDashboard = location.pathname === "/dashboard";
 
   useEffect(() => {
     if (!lojasLoading && lojas.length === 0 && user) {
@@ -46,7 +48,7 @@ export default function AppLayout() {
           <header className="h-14 flex items-center justify-between border-b px-4 bg-card shadow-sm">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="hidden md:flex" />
-              <LojaSelector />
+              {!isDashboard && <LojaSelector />}
             </div>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={toggle}>

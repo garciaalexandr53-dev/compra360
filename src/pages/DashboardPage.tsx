@@ -49,6 +49,7 @@ const DashboardPage = () => {
   const [novaCotacaoLoading, setNovaCotacaoLoading] = useState(false);
   const [removeSupplier, setRemoveSupplier] = useState<Fornecedor | null>(null);
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
+  const [lojaStepOpen, setLojaStepOpen] = useState(false);
 
   const removeSupplierMutation = useMutation({
     mutationFn: async (fornecedorId: string) => {
@@ -490,32 +491,40 @@ const DashboardPage = () => {
               </div>
             </div>
 
-            {/* Step 1: Store selection */}
+            {/* Step 1: Store selection (collapsed by default) */}
             {lojas.length > 1 && (
               <Card className="border-l-4 border-l-primary">
                 <CardContent className="p-4 space-y-3">
-                  <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setLojaStepOpen(!lojaStepOpen)}
+                    className="flex items-center gap-2 w-full text-left"
+                  >
                     <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">1</div>
                     <span className="text-sm font-semibold text-foreground">Selecionar loja</span>
-                    {lojaAtiva && <CheckCircle2 className="h-4 w-4 text-green-500 ml-auto" />}
-                  </div>
-                  <div className="grid gap-2">
-                    {lojas.map((loja) => (
-                      <button
-                        key={loja.id}
-                        onClick={() => setLojaAtivaId(loja.id)}
-                        className={`flex items-center gap-3 w-full rounded-lg border-2 px-3 py-2.5 text-left text-sm transition-all ${
-                          lojaAtiva?.id === loja.id
-                            ? "border-primary bg-primary/5 font-semibold text-foreground"
-                            : "border-border hover:border-primary/40 text-muted-foreground"
-                        }`}
-                      >
-                        <Store className="h-4 w-4 shrink-0" />
-                        <span className="truncate">{loja.nome}</span>
-                        {lojaAtiva?.id === loja.id && <CheckCircle2 className="h-4 w-4 text-primary ml-auto shrink-0" />}
-                      </button>
-                    ))}
-                  </div>
+                    {lojaAtiva && (
+                      <span className="text-xs text-muted-foreground ml-1 truncate max-w-[140px]">· {lojaAtiva.nome}</span>
+                    )}
+                    {lojaAtiva && <CheckCircle2 className="h-4 w-4 text-green-500 ml-auto shrink-0" />}
+                  </button>
+                  {lojaStepOpen && (
+                    <div className="grid gap-2 animate-fade-in">
+                      {lojas.map((loja) => (
+                        <button
+                          key={loja.id}
+                          onClick={() => { setLojaAtivaId(loja.id); setLojaStepOpen(false); }}
+                          className={`flex items-center gap-3 w-full rounded-lg border-2 px-3 py-2.5 text-left text-sm transition-all ${
+                            lojaAtiva?.id === loja.id
+                              ? "border-primary bg-primary/5 font-semibold text-foreground"
+                              : "border-border hover:border-primary/40 text-muted-foreground"
+                          }`}
+                        >
+                          <Store className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{loja.nome}</span>
+                          {lojaAtiva?.id === loja.id && <CheckCircle2 className="h-4 w-4 text-primary ml-auto shrink-0" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
