@@ -80,7 +80,7 @@ const CotacaoPage = () => {
   };
 
   // ── Queries ──
-  const { data: cotacaoAtiva } = useQuery({
+  const { data: cotacaoAtiva, isFetched: cotacaoFetched } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
       let query = supabase.from("cotacoes").select("*").eq("status", "ativa");
@@ -629,18 +629,15 @@ const CotacaoPage = () => {
     }
   };
 
-  // ── Empty state ──
+  // ── Empty state → redirect to Dashboard guided flow ──
+  useEffect(() => {
+    if (cotacaoFetched && !cotacaoAtiva) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [cotacaoFetched, cotacaoAtiva, navigate]);
+
   if (!cotacaoAtiva) {
-    return (
-      <div className="p-10 text-center text-muted-foreground">
-        <p className="text-lg font-semibold mb-2">Nenhuma cotação ativa</p>
-        <p className="text-sm">Crie uma nova cotação para começar.</p>
-        <Button className="mt-4 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]" onClick={async () => {
-          const { error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa", loja_id: lojaAtiva?.id || null, created_by: user?.id } as any);
-          if (error) toast.error(error.message); else { queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] }); toast.success("Cotação criada!"); }
-        }}>+ Nova Cotação</Button>
-      </div>
-    );
+    return null;
   }
 
   return (

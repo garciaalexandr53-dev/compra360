@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ClipboardList, FileSpreadsheet, Pencil, Send, Users, Eye, Trophy, RefreshCw, Smartphone, CheckCircle2, Clock, Target, Lightbulb, MessageCircle, X, UserPlus } from "lucide-react";
+import { ClipboardList, FileSpreadsheet, Pencil, Send, Users, Eye, Trophy, RefreshCw, Smartphone, CheckCircle2, Clock, Target, Lightbulb, MessageCircle, X, UserPlus, Store, ArrowRight, Rocket } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
@@ -28,7 +28,7 @@ import ModalNovaCotacao from "@/components/cotacao/ModalNovaCotacao";
 type Fornecedor = Tables<"fornecedores">;
 
 const DashboardPage = () => {
-  const { lojaAtiva } = useLojaAtiva();
+  const { lojaAtiva, lojas, setLojaAtivaId } = useLojaAtiva();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -476,16 +476,66 @@ const DashboardPage = () => {
       <DashboardAlerts itensFaltantes={itensFaltantes} pedidosPendentes={pedidosPendentes} />
 
       <div className="animate-fade-in">
-        {/* ── STATE 1: No active quote ── */}
+        {/* ── STATE 1: No active quote — guided flow ── */}
         {state === 1 && (
           <div className="space-y-5">
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Pronto para uma nova cotação?</h1>
-              <p className="text-sm text-muted-foreground mt-1">Escolha como deseja começar</p>
+            {/* Step indicator */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Rocket className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-foreground">Vamos começar uma nova cotação!</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">Siga os passos abaixo</p>
+              </div>
             </div>
-            <ActionButtons />
+
+            {/* Step 1: Store selection */}
+            {lojas.length > 1 && (
+              <Card className="border-l-4 border-l-primary">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">1</div>
+                    <span className="text-sm font-semibold text-foreground">Selecionar loja</span>
+                    {lojaAtiva && <CheckCircle2 className="h-4 w-4 text-green-500 ml-auto" />}
+                  </div>
+                  <div className="grid gap-2">
+                    {lojas.map((loja) => (
+                      <button
+                        key={loja.id}
+                        onClick={() => setLojaAtivaId(loja.id)}
+                        className={`flex items-center gap-3 w-full rounded-lg border-2 px-3 py-2.5 text-left text-sm transition-all ${
+                          lojaAtiva?.id === loja.id
+                            ? "border-primary bg-primary/5 font-semibold text-foreground"
+                            : "border-border hover:border-primary/40 text-muted-foreground"
+                        }`}
+                      >
+                        <Store className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{loja.nome}</span>
+                        {lojaAtiva?.id === loja.id && <CheckCircle2 className="h-4 w-4 text-primary ml-auto shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step 2: Import options */}
+            <Card className="border-l-4 border-l-primary/60">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${
+                    lojas.length > 1 ? "bg-primary/80 text-primary-foreground" : "bg-primary text-primary-foreground"
+                  }`}>{lojas.length > 1 ? "2" : "1"}</div>
+                  <span className="text-sm font-semibold text-foreground">Adicionar produtos</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Escolha como deseja montar sua lista de produtos</p>
+                <ActionButtons />
+              </CardContent>
+            </Card>
+
             {lastCotacao && (
-              <Card className="mt-4">
+              <Card className="mt-2 border-dashed">
                 <CardContent className="p-3 space-y-2">
                   <div className="flex items-center gap-3">
                     <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
