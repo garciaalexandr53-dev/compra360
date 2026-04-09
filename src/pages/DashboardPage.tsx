@@ -516,6 +516,9 @@ const DashboardPage = () => {
                   </button>
                   {lojaStepOpen && (
                     <div className="grid gap-2 animate-fade-in">
+                      {!lojaConfirmed && (
+                        <p className="text-xs text-muted-foreground px-1">Escolha a loja para esta cotação</p>
+                      )}
                       {lojas.map((loja) => (
                         <button
                           key={loja.id}
