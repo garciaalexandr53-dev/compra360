@@ -49,7 +49,8 @@ const DashboardPage = () => {
   const [novaCotacaoLoading, setNovaCotacaoLoading] = useState(false);
   const [removeSupplier, setRemoveSupplier] = useState<Fornecedor | null>(null);
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
-  const [lojaStepOpen, setLojaStepOpen] = useState(false);
+  const [lojaStepOpen, setLojaStepOpen] = useState(true);
+  const [lojaConfirmed, setLojaConfirmed] = useState(false);
 
   const removeSupplierMutation = useMutation({
     mutationFn: async (fornecedorId: string) => {
