@@ -119,13 +119,13 @@ const DashboardPage = () => {
     },
   });
 
-  // When there's an active cotação, mark loja as confirmed
+  // When there's an active cotação or only 1 store, mark loja as confirmed
   useEffect(() => {
-    if (cotacaoAtiva) {
+    if (cotacaoAtiva || lojas.length <= 1) {
       setLojaConfirmed(true);
       setLojaStepOpen(false);
     }
-  }, [cotacaoAtiva]);
+  }, [cotacaoAtiva, lojas.length]);
 
   const { data: itemCount = 0 } = useQuery({
     queryKey: ["cotacao-item-count", cotacaoAtiva?.id],
