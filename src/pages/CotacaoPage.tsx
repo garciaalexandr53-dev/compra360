@@ -632,20 +632,13 @@ const CotacaoPage = () => {
   // ── Empty state ──
   if (!cotacaoAtiva) {
     return (
-      <div className="p-10 text-center text-muted-foreground flex flex-col items-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
-          <FileWarning className="h-7 w-7 text-muted-foreground" />
-        </div>
-        <div>
-          <p className="text-lg font-semibold text-foreground mb-1">Nenhuma cotação ativa</p>
-          <p className="text-sm text-muted-foreground">Inicie uma nova cotação pelo Painel</p>
-        </div>
-        <Button
-          className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white gap-2"
-          onClick={() => navigate("/dashboard")}
-        >
-          Ir para o Painel →
-        </Button>
+      <div className="p-10 text-center text-muted-foreground">
+        <p className="text-lg font-semibold mb-2">Nenhuma cotação ativa</p>
+        <p className="text-sm">Crie uma nova cotação para começar.</p>
+        <Button className="mt-4 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]" onClick={async () => {
+          const { error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa", loja_id: lojaAtiva?.id || null, created_by: user?.id } as any);
+          if (error) toast.error(error.message); else { queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] }); toast.success("Cotação criada!"); }
+        }}>+ Nova Cotação</Button>
       </div>
     );
   }
