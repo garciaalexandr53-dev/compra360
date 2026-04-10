@@ -429,7 +429,7 @@ const FuncionariosPage = () => {
 
   return (
     <div className="p-5 space-y-3">
-      <Tabs defaultValue="itens" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full mb-3">
           <TabsTrigger value="itens" className="flex-1 gap-1.5">
             <Package className="h-4 w-4" />
