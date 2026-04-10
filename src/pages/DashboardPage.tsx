@@ -489,7 +489,7 @@ const DashboardPage = () => {
 
   return (
     <div className="p-5 max-w-2xl mx-auto">
-
+      <TrialBanner />
       <div className="animate-fade-in">
         {/* ── STATE 1: No active quote — guided flow ── */}
         {state === 1 && (
