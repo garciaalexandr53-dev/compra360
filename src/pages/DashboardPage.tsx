@@ -18,6 +18,7 @@ import type { Tables } from "@/integrations/supabase/types";
 
 import DashboardProgress from "@/components/dashboard/DashboardProgress";
 import DashboardHistorico from "@/components/dashboard/DashboardHistorico";
+import DashboardReposicao from "@/components/dashboard/DashboardReposicao";
 import SendQueueModal from "@/components/dashboard/SendQueueModal";
 import ConclusaoScreen from "@/components/dashboard/ConclusaoScreen";
 import ImportErpModal from "@/components/ImportErpModal";
@@ -865,6 +866,7 @@ const DashboardPage = () => {
         )}
       </div>
 
+      {state !== 4 && <DashboardReposicao />}
       {state !== 4 && <DashboardHistorico />}
 
       {/* Conclusion Screen */}
