@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Wand2, Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Wand2, Loader2, TrendingUp, TrendingDown, Minus, Store } from "lucide-react";
 
 interface QtySuggestion {
   cotacao_produto_id: string;
@@ -9,6 +9,7 @@ interface QtySuggestion {
   quantidade_sugerida: number;
   justificativa: string;
   tendencia?: "crescente" | "estável" | "diminuindo" | "sem_historico";
+  comparativo_lojas?: string;
 }
 
 interface ModalQtySugestaoProps {
@@ -17,6 +18,8 @@ interface ModalQtySugestaoProps {
   suggestions: QtySuggestion[];
   loading: boolean;
   onApply: () => void;
+  lojaNome?: string;
+  multiStore?: boolean;
 }
 
 const trendIcon = (t?: string) => {
@@ -34,21 +37,28 @@ const trendBadge = (t?: string) => {
   return null;
 };
 
-const ModalQtySugestao = ({ open, onOpenChange, suggestions, loading, onApply }: ModalQtySugestaoProps) => {
+const ModalQtySugestao = ({ open, onOpenChange, suggestions, loading, onApply, lojaNome, multiStore }: ModalQtySugestaoProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wand2 className="h-5 w-5 text-primary" />
-            Sugestão de Quantidades (IA)
+            Previsão de Demanda (IA)
           </DialogTitle>
+          {lojaNome && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+              <Store className="h-3 w-3" />
+              <span>Análise para <strong className="text-foreground">{lojaNome}</strong></span>
+              {multiStore && <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1">Multi-loja</Badge>}
+            </div>
+          )}
         </DialogHeader>
         <div className="flex-1 overflow-y-auto min-h-[200px]">
           {loading && (
-            <div className="flex items-center justify-center gap-3 py-12 text-muted-foreground">
+            <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span className="text-sm">Analisando histórico de 5 cotações...</span>
+              <span className="text-sm">Analisando histórico de consumo{multiStore ? " entre lojas" : ""}...</span>
             </div>
           )}
           {!loading && suggestions.length === 0 && (
@@ -69,6 +79,12 @@ const ModalQtySugestao = ({ open, onOpenChange, suggestions, loading, onApply }:
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">{s.justificativa}</p>
+                  {s.comparativo_lojas && (
+                    <div className="flex items-center gap-1 mt-1.5">
+                      <Store className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span className="text-[10px] text-muted-foreground italic">{s.comparativo_lojas}</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
