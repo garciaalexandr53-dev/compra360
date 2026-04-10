@@ -16,6 +16,8 @@ interface CotacaoProduto {
   produto_id: string;
   cotacao_id: string;
   quantidade: number | null;
+  fator_embalagem: number;
+  tipo_embalagem: string | null;
   produto?: Produto;
 }
 
@@ -135,6 +137,7 @@ const TabelaCotacao = ({
                 Produto
               </th>
               <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-14">Emb</th>
+              <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-10">Fator</th>
               <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-16">Qt</th>
               {fornecedores.map((f) => {
                 const hasPrice = supplierHasResponded(f.id);
@@ -183,7 +186,7 @@ const TabelaCotacao = ({
           </thead>
           <tbody>
             {filteredItems.length === 0 ? (
-              <tr><td colSpan={fornecedores.length + 5} className="text-center py-10 text-muted-foreground">
+              <tr><td colSpan={fornecedores.length + 6} className="text-center py-10 text-muted-foreground">
                 {filterAnomalies ? "Nenhum item com anomalia de preço detectada." : cotacaoProdutosCount === 0 ? (
                   isReviewMode ? (
                     <div className="py-16 flex flex-col items-center gap-3">
@@ -196,7 +199,8 @@ const TabelaCotacao = ({
               </td></tr>
             ) : filteredItems.map((cp, rowIndex) => {
               const info = analyzePrices(cp.id);
-              const totalLine = info.minVal !== null ? info.minVal * (cp.quantidade || 1) : null;
+              const fator = cp.fator_embalagem || 1;
+              const totalLine = info.minVal !== null ? info.minVal * (cp.quantidade || 1) * fator : null;
               const qtyValue = qtyDrafts[cp.id] ?? String(cp.quantidade || 1);
 
               return (
@@ -225,6 +229,11 @@ const TabelaCotacao = ({
                       defaultValue={cp.produto?.embalagem || "un"}
                       onBlur={(e) => onFieldBlur(cp.id, "embalagem", e.target.value, cp.produto?.embalagem || "un")}
                     />
+                  </td>
+                  <td className="px-1 py-1.5 border-b border-border/50 text-center">
+                    <span className="text-[11px] text-muted-foreground font-mono">
+                      {fator > 1 ? `×${fator}` : "—"}
+                    </span>
                   </td>
                   <td className="px-1 py-1.5 border-b border-border/50 text-center">
                     <Input

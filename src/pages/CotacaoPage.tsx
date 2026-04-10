@@ -30,7 +30,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 type Fornecedor = Tables<"fornecedores">;
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 
-interface CotacaoProduto { id: string; produto_id: string; cotacao_id: string; quantidade: number | null; produto?: Produto; }
+interface CotacaoProduto { id: string; produto_id: string; cotacao_id: string; quantidade: number | null; fator_embalagem: number; tipo_embalagem: string | null; produto?: Produto; }
 interface Preco { id: string; cotacao_produto_id: string; fornecedor_id: string; preco: number | null; }
 
 const HIST_HIGH_THRESHOLD = 0.40; // 40% acima da média histórica
@@ -158,7 +158,7 @@ const CotacaoPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase.from("cotacao_produtos").select("*, produtos(*, categorias(nome))").eq("cotacao_id", cotacaoAtiva!.id);
       if (error) throw error;
-      return (data || []).map((cp: any) => ({ id: cp.id, produto_id: cp.produto_id, cotacao_id: cp.cotacao_id, quantidade: cp.quantidade, produto: cp.produtos })) as CotacaoProduto[];
+      return (data || []).map((cp: any) => ({ id: cp.id, produto_id: cp.produto_id, cotacao_id: cp.cotacao_id, quantidade: cp.quantidade, fator_embalagem: cp.fator_embalagem ?? 1, tipo_embalagem: cp.tipo_embalagem ?? null, produto: cp.produtos })) as CotacaoProduto[];
     },
   });
 
@@ -394,7 +394,7 @@ const CotacaoPage = () => {
 
   const grandTotal = useMemo(() => {
     let total = 0;
-    cotacaoProdutos.forEach((cp) => { const info = analyzePrices(cp.id); if (info.min && info.minVal !== null) total += info.minVal * (cp.quantidade || 1); });
+    cotacaoProdutos.forEach((cp) => { const info = analyzePrices(cp.id); if (info.min && info.minVal !== null) total += info.minVal * (cp.quantidade || 1) * (cp.fator_embalagem || 1); });
     return total;
   }, [localPrices, cotacaoProdutos, fornecedores]);
 
