@@ -18,6 +18,7 @@ export default function AppLayout() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const location = useLocation();
   const isDashboard = location.pathname === "/dashboard";
+  const isFuncionarios = location.pathname === "/funcionarios";
 
   useEffect(() => {
     if (!lojasLoading && lojas.length === 0 && user) {
@@ -50,6 +51,8 @@ export default function AppLayout() {
               <SidebarTrigger className="hidden md:flex" />
               {isDashboard ? (
                 <span className="text-lg font-bold text-primary tracking-tight">Compra360</span>
+              ) : isFuncionarios ? (
+                <span className="text-lg font-bold text-primary tracking-tight">App Funcionários</span>
               ) : (
                 <LojaSelector />
               )}
