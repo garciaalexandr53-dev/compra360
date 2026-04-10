@@ -23,6 +23,7 @@ const FREE_PLAN: UserPlan = {
   max_fornecedores: 5,
   max_cotacoes_simultaneas: 1,
   features: ["Cotação básica", "1 loja", "Até 50 produtos", "Até 5 fornecedores"],
+  status: "active",
   is_trial: false,
   current_period_end: null,
 };
