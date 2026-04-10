@@ -23,6 +23,7 @@ type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 type Categoria = Tables<"categorias">;
 
 import { EMBALAGEM_SIGLAS, getDefaultFator } from "@/lib/embalagem";
+import { autoSuggestFator } from "@/lib/autoFator";
 const EMBALAGEM_OPTIONS = EMBALAGEM_SIGLAS;
 const emptyForm = { nome: "", categoria_id: "", embalagem: "UNI", quantidade: 1, fator_embalagem: 1 };
 const PAGE_SIZE = 80;
