@@ -57,6 +57,7 @@ const ProdutosPage = () => {
   const [classifyProgress, setClassifyProgress] = useState(0);
   const [classifyResult, setClassifyResult] = useState({ updated: 0, categories: 0 });
   const [classifyError, setClassifyError] = useState("");
+  const [classifyMode, setClassifyMode] = useState<"classify" | "fator">("classify");
 
   // Popover states for adding to cotação
   const [popoverOpen, setPopoverOpen] = useState<Record<string, boolean>>({});
