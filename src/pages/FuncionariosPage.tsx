@@ -440,7 +440,7 @@ const FuncionariosPage = () => {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="itens" className="space-y-3">
-      {/* Compact header */}
+      {/* Title at top */}
       <div className="flex items-center gap-2">
         <h1 className="text-lg font-bold">App Funcionários</h1>
         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{pendentes.length} pendentes</span>
@@ -648,21 +648,25 @@ const FuncionariosPage = () => {
         );
       })()}
 
-      {/* Compartilhar link com funcionários */}
+      {/* Loja selector + sharing */}
       <div className="bg-card border rounded-xl shadow-sm p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <Store className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-semibold">Compartilhar com funcionários</span>
-        </div>
-        {effectiveLinkLoja ? (
-          <p className="text-xs text-muted-foreground">
-            Link será gerado para <strong>{effectiveLinkLoja.nome}</strong>
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            Selecione a loja no topo da tela para gerar o link
-          </p>
-        )}
+        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
+          <Store className="h-3.5 w-3.5 inline mr-1" />Qual loja precisa abastecer?
+        </label>
+        {lojas.length > 1 ? (
+          <Select value={linkLojaId} onValueChange={setLinkLojaId}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Selecione a loja para gerar o link" />
+            </SelectTrigger>
+            <SelectContent>
+              {lojas.map((l) => (
+                <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : effectiveLinkLoja ? (
+          <p className="text-sm text-foreground font-medium">{effectiveLinkLoja.nome}</p>
+        ) : null}
         <div className="flex flex-row gap-2">
           <Button
             variant={linkCopiado ? "default" : "outline"}
