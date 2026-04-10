@@ -511,6 +511,141 @@ Retorne via tool call.` }
       return new Response(JSON.stringify({ suggestions: allSuggestions }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // === NEGOTIATION ARGUMENTS ===
+    if (type === "negotiate") {
+      const { cotacao_id, fornecedor_id, loja_id } = params;
+
+      // Get current cotacao products + prices
+      const { data: cps } = await sb.from("cotacao_produtos").select("*, produtos(nome, embalagem, categorias(nome))").eq("cotacao_id", cotacao_id);
+      if (!cps?.length) return errorResponse("Sem produtos na cotação", 400);
+
+      const cpIds = cps.map((cp: any) => cp.id);
+      const { data: allPrecos } = await sb.from("precos").select("*").in("cotacao_produto_id", cpIds);
+
+      // Get supplier info
+      const { data: forn } = await sb.from("fornecedores").select("*").eq("id", fornecedor_id).single();
+      if (!forn) return errorResponse("Fornecedor não encontrado", 404);
+
+      // Get all suppliers in this cotacao for comparison
+      const { data: cotForn } = await sb.from("cotacao_fornecedores").select("fornecedor_id").eq("cotacao_id", cotacao_id);
+      const fornIds = (cotForn || []).map((cf: any) => cf.fornecedor_id);
+      const { data: allForns } = await sb.from("fornecedores").select("id, nome").in("id", fornIds);
+      const fornMap = Object.fromEntries((allForns || []).map((f: any) => [f.id, f.nome]));
+
+      // Build per-product price comparison
+      const comparisons: any[] = [];
+      for (const cp of cps) {
+        const cpPrecos = (allPrecos || []).filter((p: any) => p.cotacao_produto_id === cp.id && p.preco != null && p.preco > 0);
+        if (!cpPrecos.length) continue;
+
+        const myPrice = cpPrecos.find((p: any) => p.fornecedor_id === fornecedor_id);
+        if (!myPrice) continue;
+
+        const minPrice = Math.min(...cpPrecos.map((p: any) => p.preco));
+        const avgPrice = cpPrecos.reduce((s: number, p: any) => s + p.preco, 0) / cpPrecos.length;
+        const winner = cpPrecos.find((p: any) => p.preco === minPrice);
+
+        comparisons.push({
+          produto: (cp.produtos as any)?.nome || "?",
+          categoria: (cp.produtos as any)?.categorias?.nome || null,
+          preco_fornecedor: myPrice.preco,
+          melhor_preco: minPrice,
+          media_preco: Math.round(avgPrice * 100) / 100,
+          diferenca_pct: Math.round(((myPrice.preco - minPrice) / minPrice) * 100),
+          vencedor: fornMap[winner?.fornecedor_id] || "outro",
+          quantidade: cp.quantidade || 1,
+          fator: cp.fator_embalagem || 1,
+        });
+      }
+
+      // Get historical prices (last 5 cotacoes)
+      let histQuery = sb.from("cotacoes").select("id, created_at").neq("id", cotacao_id).in("status", ["finalizada"]).order("created_at", { ascending: false }).limit(5);
+      if (loja_id) histQuery = histQuery.eq("loja_id", loja_id);
+      const { data: pastCots } = await histQuery;
+
+      let histContext = "";
+      if (pastCots?.length) {
+        const pastCotIds = pastCots.map((c: any) => c.id);
+        const { data: pastCps } = await sb.from("cotacao_produtos").select("id, produto_id, cotacao_id").in("cotacao_id", pastCotIds);
+        if (pastCps?.length) {
+          const pastCpIds = pastCps.map((cp: any) => cp.id);
+          const { data: pastPrecos } = await sb.from("precos").select("cotacao_produto_id, fornecedor_id, preco").in("cotacao_produto_id", pastCpIds).eq("fornecedor_id", fornecedor_id);
+
+          if (pastPrecos?.length) {
+            // Map past prices to product names
+            const pastPricesByProduct: Record<string, number[]> = {};
+            for (const pp of pastPrecos) {
+              const pastCp = pastCps.find((cp: any) => cp.id === pp.cotacao_produto_id);
+              if (!pastCp) continue;
+              const currentCp = cps.find((cp: any) => (cp.produtos as any)?.id === pastCp.produto_id || cp.produto_id === pastCp.produto_id);
+              const nome = currentCp ? (currentCp.produtos as any)?.nome : null;
+              if (!nome) continue;
+              if (!pastPricesByProduct[nome]) pastPricesByProduct[nome] = [];
+              pastPricesByProduct[nome].push(pp.preco);
+            }
+
+            const trends: string[] = [];
+            for (const [nome, prices] of Object.entries(pastPricesByProduct)) {
+              const current = comparisons.find((c: any) => c.produto === nome);
+              if (!current) continue;
+              const avgHist = prices.reduce((a, b) => a + b, 0) / prices.length;
+              const change = ((current.preco_fornecedor - avgHist) / avgHist) * 100;
+              if (Math.abs(change) > 5) {
+                trends.push(`${nome}: preço atual R$${current.preco_fornecedor} vs média histórica R$${avgHist.toFixed(2)} (${change > 0 ? "+" : ""}${change.toFixed(0)}%)`);
+              }
+            }
+            if (trends.length) histContext = `\n\nTENDÊNCIAS DE PREÇO (${forn.nome}, últimas ${pastCots.length} cotações):\n${trends.join("\n")}`;
+          }
+        }
+      }
+
+      // Items where this supplier loses
+      const losses = comparisons.filter((c: any) => c.diferenca_pct > 0).sort((a: any, b: any) => b.diferenca_pct - a.diferenca_pct);
+      const wins = comparisons.filter((c: any) => c.diferenca_pct === 0);
+      const totalFornecedor = comparisons.reduce((s: number, c: any) => s + c.preco_fornecedor * c.quantidade * c.fator, 0);
+      const totalMelhor = comparisons.reduce((s: number, c: any) => s + c.melhor_preco * c.quantidade * c.fator, 0);
+
+      const prompt = `Você é um especialista em negociação de compras para varejo. Gere argumentos de negociação concretos para usar com o fornecedor "${forn.nome}".
+
+DADOS DA COTAÇÃO ATUAL:
+- Total com ${forn.nome}: R$${totalFornecedor.toFixed(2)}
+- Total se comprasse tudo pelo melhor preço: R$${totalMelhor.toFixed(2)}
+- Diferença: R$${(totalFornecedor - totalMelhor).toFixed(2)}
+- Itens onde ${forn.nome} vence: ${wins.length} de ${comparisons.length}
+- Itens onde ${forn.nome} perde: ${losses.length}
+
+ITENS ONDE ${forn.nome.toUpperCase()} ESTÁ MAIS CARO (top 10):
+${losses.slice(0, 10).map((l: any) => `- ${l.produto}: R$${l.preco_fornecedor} vs melhor R$${l.melhor_preco} (+${l.diferenca_pct}%, vencedor: ${l.vencedor})`).join("\n")}
+
+ITENS ONDE ${forn.nome.toUpperCase()} VENCE:
+${wins.slice(0, 5).map((w: any) => `- ${w.produto}: R$${w.preco_fornecedor}`).join("\n")}${histContext}
+
+INSTRUÇÕES:
+1. Gere 3-5 argumentos de negociação específicos e acionáveis
+2. Use dados reais dos comparativos (nomes de produtos, percentuais, valores)
+3. Sugira produtos-chave onde pedir desconto teria maior impacto (maior volume × diferença)
+4. Se houver tendências de aumento, use como argumento
+5. Mantenha tom profissional e colaborativo
+6. Formate em Markdown com seções claras
+7. Inclua uma sugestão de meta de desconto realista (% geral)
+8. Termine com um resumo da mensagem ideal para enviar ao fornecedor`;
+
+      const result = await callAI([{ role: "user", content: prompt }]);
+      if (result.error) return errorResponse(result.error, result.status);
+
+      const text = result.data.choices?.[0]?.message?.content || "Sem resultado";
+
+      return new Response(JSON.stringify({
+        text,
+        fornecedor_nome: forn.nome,
+        total_fornecedor: totalFornecedor,
+        total_melhor: totalMelhor,
+        wins: wins.length,
+        losses: losses.length,
+        total_items: comparisons.length,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     return new Response(JSON.stringify({ error: "Tipo não reconhecido: " + type }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("ai-automacao error:", e);
