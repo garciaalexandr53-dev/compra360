@@ -22,8 +22,9 @@ import type { Tables } from "@/integrations/supabase/types";
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 type Categoria = Tables<"categorias">;
 
-const EMBALAGEM_OPTIONS = ["UNI", "DZ", "CX", "FD", "PCT", "KG", "LT", "SC", "GL"];
-const emptyForm = { nome: "", categoria_id: "", embalagem: "UNI", quantidade: 1 };
+import { EMBALAGEM_SIGLAS, getDefaultFator } from "@/lib/embalagem";
+const EMBALAGEM_OPTIONS = EMBALAGEM_SIGLAS;
+const emptyForm = { nome: "", categoria_id: "", embalagem: "UNI", quantidade: 1, fator_embalagem: 1 };
 const PAGE_SIZE = 80;
 
 const cleanEmbalagem = (raw: string | null | undefined) => raw?.split("|")[0].trim() || "un";
@@ -60,6 +61,7 @@ const ProdutosPage = () => {
   const [popoverOpen, setPopoverOpen] = useState<Record<string, boolean>>({});
   const [popoverQtd, setPopoverQtd] = useState<Record<string, string>>({});
   const [popoverEmb, setPopoverEmb] = useState<Record<string, string>>({});
+  const [popoverFator, setPopoverFator] = useState<Record<string, string>>({});
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -179,6 +181,7 @@ const ProdutosPage = () => {
         nome: form.nome.trim(),
         categoria_id: form.categoria_id || null,
         embalagem: cleanEmbalagem(form.embalagem),
+        fator_embalagem: form.fator_embalagem || 1,
       };
       if (editingId) {
         const { error } = await supabase.from("produtos").update(payload).eq("id", editingId);
@@ -241,13 +244,14 @@ const ProdutosPage = () => {
   });
 
   const toggleCotacaoMutation = useMutation({
-    mutationFn: async ({ produtoId, adding, quantidade = 1, tipoEmbalagem = "UNI" }: { produtoId: string; adding: boolean; quantidade?: number; tipoEmbalagem?: string }) => {
+    mutationFn: async ({ produtoId, adding, quantidade = 1, tipoEmbalagem = "UNI", fatorEmbalagem = 1 }: { produtoId: string; adding: boolean; quantidade?: number; tipoEmbalagem?: string; fatorEmbalagem?: number }) => {
       if (adding && cotacaoAtiva) {
         const { error } = await supabase.from("cotacao_produtos").insert({
           cotacao_id: cotacaoAtiva.id,
           produto_id: produtoId,
           quantidade,
           tipo_embalagem: tipoEmbalagem,
+          fator_embalagem: fatorEmbalagem,
         } as any);
         if (error) throw error;
       } else if (!adding && cotacaoAtiva) {
