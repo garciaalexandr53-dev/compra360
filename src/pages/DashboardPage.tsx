@@ -25,6 +25,7 @@ import ImportErpModal from "@/components/ImportErpModal";
 import ModalFornecedores from "@/components/cotacao/ModalFornecedores";
 import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugestao";
 import ModalNovaCotacao from "@/components/cotacao/ModalNovaCotacao";
+import TrialBanner from "@/components/dashboard/TrialBanner";
 
 type Fornecedor = Tables<"fornecedores">;
 
