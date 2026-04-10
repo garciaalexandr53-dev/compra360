@@ -310,6 +310,9 @@ export default function LandingPage() {
                 )}
                 <h3 className="text-white font-bold text-lg mb-1">{plan.name === "Business" ? "👑 " : ""}{plan.name}</h3>
                 <div className="mb-5">
+                  {plan.oldPrice && (
+                    <span className="text-slate-500 text-sm line-through mr-2">{plan.oldPrice}</span>
+                  )}
                   <span className="text-3xl font-bold text-white">{plan.price}</span>
                   <span className="text-slate-500 text-sm">{plan.period}</span>
                 </div>
