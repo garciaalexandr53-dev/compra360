@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft, Zap, SlidersHorizontal } from "lucide-react";
+import { Loader2, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft, Zap, SlidersHorizontal, Handshake } from "lucide-react";
+import NegociacaoModal from "@/components/analise/NegociacaoModal";
 import SendOrdersModal from "@/components/dashboard/SendOrdersModal";
 import { generateScenarios, type Scenario } from "@/lib/scenarios";
 
@@ -44,6 +45,7 @@ const AnalisePage = () => {
   const [receiptItems, setReceiptItems] = useState<OrderItem[]>([]);
   const [receiptNumero, setReceiptNumero] = useState<number | null>(null);
   const [whatsappAiLoading, setWhatsappAiLoading] = useState<string | null>(null);
+  const [negociacaoOpen, setNegociacaoOpen] = useState(false);
 
   // ---- Data fetching ----
   const { data: cotacaoAtiva } = useQuery({
@@ -652,11 +654,19 @@ const AnalisePage = () => {
         </div>
       )}
 
-      {/* BLOCO EXPLICATIVO */}
-      <div className="bg-muted/50 border rounded-xl px-4 py-3">
-        <p className="text-xs text-muted-foreground text-center">
+      <div className="bg-muted/50 border rounded-xl px-4 py-3 flex items-center justify-between">
+        <p className="text-xs text-muted-foreground flex-1">
           🤖 O sistema analisou {cotacaoProdutos.length} produto(s) e {fornecedores.length} fornecedor(es) para encontrar a combinação ideal de preço e operação.
         </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-3 text-xs shrink-0 gap-1.5"
+          onClick={() => setNegociacaoOpen(true)}
+        >
+          <Handshake className="h-3.5 w-3.5" />
+          Negociar
+        </Button>
       </div>
 
       {/* PEDIDOS — accordion */}
@@ -804,6 +814,12 @@ const AnalisePage = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <NegociacaoModal
+        open={negociacaoOpen}
+        onOpenChange={setNegociacaoOpen}
+        cotacaoId={cotacaoAtiva?.id || null}
+        fornecedores={fornecedores}
+      />
     </div>
   );
 };
