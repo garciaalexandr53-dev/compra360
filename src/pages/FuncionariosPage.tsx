@@ -440,8 +440,8 @@ const FuncionariosPage = () => {
           </TabsTrigger>
         </TabsList>
 
-        {/* Loja selector + sharing - right below tabs */}
-        <div className="bg-card border rounded-xl shadow-sm p-4 space-y-3 mb-3">
+        {/* Loja selector + sharing - only on Itens Faltantes tab */}
+        {activeTab === "itens" && <div className="bg-card border rounded-xl shadow-sm p-4 space-y-3 mb-3">
           <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
             <Store className="h-3.5 w-3.5 inline mr-1" />Qual loja precisa abastecer?
           </label>
