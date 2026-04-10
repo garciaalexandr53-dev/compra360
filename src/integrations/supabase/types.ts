@@ -446,6 +446,51 @@ export type Database = {
           },
         ]
       }
+      plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          display_name: string
+          features: Json
+          id: string
+          max_cotacoes_simultaneas: number
+          max_fornecedores: number
+          max_lojas: number
+          max_produtos: number
+          name: string
+          price_monthly: number
+          stripe_price_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          display_name: string
+          features?: Json
+          id?: string
+          max_cotacoes_simultaneas?: number
+          max_fornecedores?: number
+          max_lojas?: number
+          max_produtos?: number
+          name: string
+          price_monthly?: number
+          stripe_price_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          display_name?: string
+          features?: Json
+          id?: string
+          max_cotacoes_simultaneas?: number
+          max_fornecedores?: number
+          max_lojas?: number
+          max_produtos?: number
+          name?: string
+          price_monthly?: number
+          stripe_price_id?: string | null
+        }
+        Relationships: []
+      }
       precos: {
         Row: {
           cotacao_produto_id: string
@@ -529,6 +574,56 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          canceled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          plan_id: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan_id: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan_id?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -550,6 +645,7 @@ export type Database = {
           nome: string
         }[]
       }
+      get_user_plan: { Args: { _user_id?: string }; Returns: Json }
       is_buyer: { Args: never; Returns: boolean }
       loja_exists: { Args: { _loja_id: string }; Returns: boolean }
       produto_belongs_to_loja_owner: {
@@ -560,6 +656,7 @@ export type Database = {
     Enums: {
       cotacao_status: "ativa" | "finalizada" | "cancelada"
       pedido_status: "rascunho" | "enviado" | "confirmado" | "recebido"
+      subscription_status: "active" | "past_due" | "canceled" | "trialing"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -689,6 +786,7 @@ export const Constants = {
     Enums: {
       cotacao_status: ["ativa", "finalizada", "cancelada"],
       pedido_status: ["rascunho", "enviado", "confirmado", "recebido"],
+      subscription_status: ["active", "past_due", "canceled", "trialing"],
     },
   },
 } as const
