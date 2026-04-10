@@ -260,9 +260,10 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
         if (!error && data) catMap[catName.toLowerCase()] = data.id;
       }
 
-      // Insert products in batches
+      // Insert products in batches and collect inserted IDs
       const batchSize = 50;
       let total = 0;
+      const insertedProducts: { id: string; nome: string; embalagem: string; fator_embalagem: number }[] = [];
       for (let i = 0; i < uniqueItems.length; i += batchSize) {
         const batch = uniqueItems.slice(i, i + batchSize).map((p) => ({
           nome: p.nome,
@@ -271,8 +272,9 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
           ativo: false,
           user_id: user?.id,
         }));
-        const { error } = await supabase.from("produtos").insert(batch);
+        const { data: inserted, error } = await supabase.from("produtos").insert(batch).select("id, nome, embalagem, fator_embalagem");
         if (error) throw error;
+        if (inserted) insertedProducts.push(...inserted.map(p => ({ ...p, embalagem: p.embalagem || "UNI", fator_embalagem: p.fator_embalagem || 1 })));
         total += batch.length;
       }
 
@@ -285,6 +287,22 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
       setParsedItems([]);
       setPasteText("");
       onOpenChange(false);
+
+      // Auto-suggest fator_embalagem in background
+      if (insertedProducts.length > 0) {
+        const { autoSuggestFator } = await import("@/lib/autoFator");
+        toast.promise(
+          autoSuggestFator(insertedProducts, { skipIfAlreadySet: true }).then(updated => {
+            if (updated > 0) queryClient.invalidateQueries({ queryKey: ["produtos"] });
+            return updated;
+          }),
+          {
+            loading: "🤖 Analisando fatores de embalagem...",
+            success: (updated) => updated > 0 ? `📦 ${updated} fatores de embalagem atualizados pela IA` : "Fatores de embalagem já estão corretos",
+            error: "Não foi possível sugerir fatores automaticamente",
+          }
+        );
+      }
     } catch (e: any) {
       toast.error(e.message);
     }

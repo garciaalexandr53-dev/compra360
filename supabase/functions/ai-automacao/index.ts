@@ -383,6 +383,83 @@ Regras:
       return new Response(JSON.stringify({ text, has_history: true, recommended_supplier_ids: recommendedIds }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // === SUGGEST FATOR_EMBALAGEM FOR PRODUCTS ===
+    if (type === "suggest-fator") {
+      const { products } = params; // Array of { id, nome, embalagem }
+      if (!products?.length) return new Response(JSON.stringify({ suggestions: [] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+      // Batch in groups of 50 to avoid overly long prompts
+      const BATCH = 50;
+      const allSuggestions: any[] = [];
+
+      for (let i = 0; i < products.length; i += BATCH) {
+        const batch = products.slice(i, i + BATCH);
+        const productsList = batch.map((p: any) => `- ID: ${p.id} | Nome: ${p.nome} | Embalagem: ${p.embalagem || "UNI"}`).join("\n");
+
+        const result = await callAI(
+          [
+            { role: "system", content: "Você é um especialista em embalagens de produtos de supermercado/atacado brasileiro. Sua tarefa é determinar o fator de conversão (quantas unidades individuais vêm dentro de cada embalagem) para cada produto." },
+            { role: "user", content: `Para cada produto abaixo, determine o fator de embalagem (quantas unidades individuais estão dentro de cada embalagem de venda).
+
+REGRAS:
+- O fator indica quantas UNIDADES INDIVIDUAIS vêm em cada embalagem
+- Exemplos: "Coca-Cola 350ml - CX c/12" → fator 12 (12 latas na caixa)
+- "Arroz 5kg - FD c/6" → fator 6 (6 pacotes no fardo)
+- "Sabonete Dove - DZ" → fator 12 (dúzia = 12)
+- Se o nome do produto já indica a quantidade (ex: "c/24", "c/6", "12 unid", "x12"), USE esse número
+- Se a embalagem é UNI, KG, LT, PCT sem indicação de quantidade, fator = 1
+- Se a embalagem é DZ ou ½DZ, fator = 12 ou 6 respectivamente
+- Se a embalagem é CX ou FD e não há indicação de quantidade no nome, tente inferir pelo tipo de produto ou use um padrão razoável (CX geralmente 12, FD geralmente 6)
+- Na dúvida, prefira fator 1 (é mais seguro subestimar)
+
+PRODUTOS:
+${productsList}
+
+Retorne via tool call.` }
+          ],
+          [{
+            type: "function",
+            function: {
+              name: "suggest_fatores",
+              description: "Return suggested fator_embalagem for each product",
+              parameters: {
+                type: "object",
+                properties: {
+                  suggestions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        id: { type: "string", description: "Product ID" },
+                        fator: { type: "number", description: "Suggested fator_embalagem" },
+                        justificativa: { type: "string", description: "Brief explanation" }
+                      },
+                      required: ["id", "fator"],
+                      additionalProperties: false
+                    }
+                  }
+                },
+                required: ["suggestions"],
+                additionalProperties: false
+              }
+            }
+          }],
+          { type: "function", function: { name: "suggest_fatores" } }
+        );
+        if (result.error) return errorResponse(result.error, result.status);
+
+        try {
+          const toolCall = result.data.choices?.[0]?.message?.tool_calls?.[0];
+          if (toolCall) {
+            const args = JSON.parse(toolCall.function.arguments);
+            allSuggestions.push(...(args.suggestions || []));
+          }
+        } catch { /* continue */ }
+      }
+
+      return new Response(JSON.stringify({ suggestions: allSuggestions }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     return new Response(JSON.stringify({ error: "Tipo não reconhecido: " + type }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("ai-automacao error:", e);

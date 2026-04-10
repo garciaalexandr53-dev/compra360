@@ -23,6 +23,7 @@ type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 type Categoria = Tables<"categorias">;
 
 import { EMBALAGEM_SIGLAS, getDefaultFator } from "@/lib/embalagem";
+import { autoSuggestFator } from "@/lib/autoFator";
 const EMBALAGEM_OPTIONS = EMBALAGEM_SIGLAS;
 const emptyForm = { nome: "", categoria_id: "", embalagem: "UNI", quantidade: 1, fator_embalagem: 1 };
 const PAGE_SIZE = 80;
@@ -56,6 +57,7 @@ const ProdutosPage = () => {
   const [classifyProgress, setClassifyProgress] = useState(0);
   const [classifyResult, setClassifyResult] = useState({ updated: 0, categories: 0 });
   const [classifyError, setClassifyError] = useState("");
+  const [classifyMode, setClassifyMode] = useState<"classify" | "fator">("classify");
 
   // Popover states for adding to cotação
   const [popoverOpen, setPopoverOpen] = useState<Record<string, boolean>>({});
@@ -371,6 +373,7 @@ const ProdutosPage = () => {
     }
 
     setClassifyModalOpen(true);
+    setClassifyMode("classify");
     setClassifyStatus("running");
     setClassifyProgress(10);
     setClassifyError("");
@@ -436,6 +439,43 @@ const ProdutosPage = () => {
       setClassifyStatus("done");
     } catch (e: any) {
       setClassifyError(e.message || "Erro na classificação automática");
+      setClassifyStatus("error");
+    }
+  };
+
+  // --- AI Suggest Fator ---
+  const autoSuggestFatorProducts = async () => {
+    // Target products with fator = 1 (default), or all if none qualify
+    const candidates = produtos.filter(p => (p.fator_embalagem || 1) === 1);
+    const targets = candidates.length > 0 ? candidates : filtered;
+    if (!targets.length) {
+      toast.info("Nenhum produto para analisar.");
+      return;
+    }
+
+    setClassifyModalOpen(true);
+    setClassifyMode("fator");
+    setClassifyStatus("running");
+    setClassifyProgress(10);
+    setClassifyError("");
+    setClassifyResult({ updated: 0, categories: 0 });
+
+    try {
+      setClassifyProgress(30);
+      const updated = await autoSuggestFator(
+        targets.map(p => ({ id: p.id, nome: p.nome, embalagem: p.embalagem || "UNI", fator_embalagem: p.fator_embalagem || 1 })),
+        {
+          skipIfAlreadySet: false,
+          onProgress: (done, total) => setClassifyProgress(30 + Math.round((done / total) * 60)),
+        }
+      );
+
+      queryClient.invalidateQueries({ queryKey: ["produtos"] });
+      setClassifyProgress(100);
+      setClassifyResult({ updated, categories: 0 });
+      setClassifyStatus("done");
+    } catch (e: any) {
+      setClassifyError(e.message || "Erro ao sugerir fatores");
       setClassifyStatus("error");
     }
   };
@@ -549,7 +589,10 @@ const ProdutosPage = () => {
                   <Upload className="h-4 w-4 mr-2" /> Importar Produtos
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={autoClassifyProducts} disabled={produtos.length === 0}>
-                  <Sparkles className="h-4 w-4 mr-2" /> Classificar IA
+                  <Sparkles className="h-4 w-4 mr-2" /> Classificar Categorias IA
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={autoSuggestFatorProducts} disabled={produtos.length === 0}>
+                  <Package className="h-4 w-4 mr-2" /> Sugerir Fatores IA
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={removeDuplicates} disabled={produtos.length === 0}>
                   <span className="mr-2">🧹</span> Remover duplicatas
@@ -815,13 +858,17 @@ const ProdutosPage = () => {
           <div className="classify-modal-content">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                {classifyStatus === "running" && <><Sparkles className="h-5 w-5 text-primary animate-pulse" /> Classificando produtos...</>}
-                {classifyStatus === "done" && <><span className="text-xl">✅</span> Classificação concluída!</>}
-                {classifyStatus === "error" && <><span className="text-xl">❌</span> Erro na classificação</>}
+                {classifyStatus === "running" && <>{classifyMode === "classify" ? <Sparkles className="h-5 w-5 text-primary animate-pulse" /> : <Package className="h-5 w-5 text-primary animate-pulse" />} {classifyMode === "classify" ? "Classificando produtos..." : "Analisando embalagens..."}</>}
+                {classifyStatus === "done" && <><span className="text-xl">✅</span> {classifyMode === "classify" ? "Classificação concluída!" : "Fatores atualizados!"}</>}
+                {classifyStatus === "error" && <><span className="text-xl">❌</span> {classifyMode === "classify" ? "Erro na classificação" : "Erro na análise"}</>}
               </DialogTitle>
               <DialogDescription>
-                {classifyStatus === "running" && `Analisando ${produtos.filter(p => !p.categoria_id).length || filtered.length} produtos · Aguarde`}
-                {classifyStatus === "done" && `${classifyResult.updated} produtos classificados em ${classifyResult.categories} categorias`}
+                {classifyStatus === "running" && (classifyMode === "classify"
+                  ? `Analisando ${produtos.filter(p => !p.categoria_id).length || filtered.length} produtos · Aguarde`
+                  : `Sugerindo fatores para ${produtos.filter(p => (p.fator_embalagem || 1) === 1).length || filtered.length} produtos · Aguarde`)}
+                {classifyStatus === "done" && (classifyMode === "classify"
+                  ? `${classifyResult.updated} produtos classificados em ${classifyResult.categories} categorias`
+                  : `${classifyResult.updated} produtos atualizados com novo fator de embalagem`)}
                 {classifyStatus === "error" && classifyError}
               </DialogDescription>
             </DialogHeader>
@@ -845,7 +892,7 @@ const ProdutosPage = () => {
             {classifyStatus === "error" && (
               <DialogFooter className="mt-4 gap-2">
                 <Button variant="outline" onClick={() => setClassifyModalOpen(false)}>Cancelar</Button>
-                <Button onClick={autoClassifyProducts}>Tentar Novamente</Button>
+                <Button onClick={classifyMode === "classify" ? autoClassifyProducts : autoSuggestFatorProducts}>Tentar Novamente</Button>
               </DialogFooter>
             )}
           </div>
