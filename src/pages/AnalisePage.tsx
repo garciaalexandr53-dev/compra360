@@ -814,6 +814,12 @@ const AnalisePage = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <NegociacaoModal
+        open={negociacaoOpen}
+        onOpenChange={setNegociacaoOpen}
+        cotacaoId={cotacaoAtiva?.id || null}
+        fornecedores={fornecedores}
+      />
     </div>
   );
 };
