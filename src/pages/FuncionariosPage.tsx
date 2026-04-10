@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2, Download, Package, Store, AlertTriangle, Pencil, Undo2, ArrowRight, Copy, MessageCircle, Check, ClipboardCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +19,7 @@ const FuncionariosPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva, lojas } = useLojaAtiva();
   const navigate = useNavigate();
+  const [linkLojaId, setLinkLojaId] = useState<string>("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editQty, setEditQty] = useState<string>("");
   const [linkCopiado, setLinkCopiado] = useState(false);
@@ -391,8 +393,8 @@ const FuncionariosPage = () => {
     }
   };
 
-  const effectiveLinkLojaId = lojaAtiva?.id || "";
-  const effectiveLinkLoja = lojaAtiva;
+  const effectiveLinkLojaId = lojas.length === 1 ? lojas[0].id : linkLojaId;
+  const effectiveLinkLoja = lojas.find((l) => l.id === effectiveLinkLojaId);
   const publicOrigin = import.meta.env.VITE_APP_PUBLIC_URL || "https://compra360.lovable.app";
   const baseUrl = `${publicOrigin.replace(/\/$/, "")}/app-funcionarios`;
   const appUrl = effectiveLinkLojaId
