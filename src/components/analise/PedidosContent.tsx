@@ -115,12 +115,13 @@ const PedidosContent = () => {
         best = winners[0];
       }
       const qt = cp.quantidade || 1;
+      const fator = cp.fator_embalagem || 1;
       result[best.fornecedor_id]?.push({
         produto: cp.produtos?.nome || "?",
         embalagem: cp.produtos?.embalagem || "un",
         quantidade: qt,
         preco: best.preco ?? 0,
-        total: (best.preco ?? 0) * qt,
+        total: (best.preco ?? 0) * qt * fator,
       });
     });
     return result;

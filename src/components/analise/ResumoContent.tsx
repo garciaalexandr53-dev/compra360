@@ -107,7 +107,7 @@ const ResumoContent = () => {
           if (myPrice && myPrice.preco === minPrice) {
             if (winners.length === 1 || winners.sort((a: any, b: any) => (winCount[b.fornecedor_id] || 0) - (winCount[a.fornecedor_id] || 0))[0].fornecedor_id === f.id) {
               winsCount++;
-              totalPedido += myPrice.preco * (cp.quantidade || 1);
+              totalPedido += myPrice.preco * (cp.quantidade || 1) * (cp.fator_embalagem || 1);
             }
           }
         }
@@ -122,7 +122,7 @@ const ResumoContent = () => {
       const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco !== null && p.preco > 0);
       if (cpPrecos.length > 0) {
         const minPrice = Math.min(...cpPrecos.map((p: any) => p.preco));
-        grandTotal += minPrice * (cp.quantidade || 1);
+        grandTotal += minPrice * (cp.quantidade || 1) * (cp.fator_embalagem || 1);
       }
     });
 
