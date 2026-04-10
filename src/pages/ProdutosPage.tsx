@@ -691,8 +691,10 @@ const ProdutosPage = () => {
                                     <Input
                                       type="number"
                                       min={1}
-                                      value={popoverFator[p.id] || "1"}
-                                      onChange={(e) => setPopoverFator(prev => ({ ...prev, [p.id]: e.target.value.replace(/\D/g, "") || "1" }))}
+                                      value={popoverFator[p.id] ?? "1"}
+                                      onFocus={(e) => e.target.select()}
+                                      onChange={(e) => setPopoverFator(prev => ({ ...prev, [p.id]: e.target.value.replace(/\D/g, "") }))}
+                                      onBlur={() => setPopoverFator(prev => ({ ...prev, [p.id]: !prev[p.id] || prev[p.id] === "0" ? "1" : prev[p.id] }))}
                                       className="h-8 text-center text-sm"
                                     />
                                   </div>
@@ -895,8 +897,10 @@ const ProdutosPage = () => {
                 <Input
                   type="number"
                   min={1}
-                  value={form.fator_embalagem}
-                  onChange={(e) => setForm({ ...form, fator_embalagem: Math.max(1, Number(e.target.value) || 1) })}
+                  value={form.fator_embalagem === 0 ? "" : form.fator_embalagem}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setForm({ ...form, fator_embalagem: e.target.value === "" ? 0 : Math.max(0, parseInt(e.target.value) || 0) })}
+                  onBlur={() => setForm(f => ({ ...f, fator_embalagem: f.fator_embalagem < 1 ? 1 : f.fator_embalagem }))}
                   className="h-10 text-center"
                 />
                 <p className="text-[10px] text-muted-foreground mt-0.5 text-center">un/embalagem</p>
