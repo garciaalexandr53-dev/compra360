@@ -892,7 +892,7 @@ const ProdutosPage = () => {
             {classifyStatus === "error" && (
               <DialogFooter className="mt-4 gap-2">
                 <Button variant="outline" onClick={() => setClassifyModalOpen(false)}>Cancelar</Button>
-                <Button onClick={autoClassifyProducts}>Tentar Novamente</Button>
+                <Button onClick={classifyMode === "classify" ? autoClassifyProducts : autoSuggestFatorProducts}>Tentar Novamente</Button>
               </DialogFooter>
             )}
           </div>
