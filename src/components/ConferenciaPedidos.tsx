@@ -566,7 +566,10 @@ const ConferenciaPedidos = () => {
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="text-sm font-semibold">{item.produto_nome}</div>
-                      <div className="text-xs text-muted-foreground">{item.embalagem}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {item.embalagem}
+                        {item.fator > 1 && <span className="ml-1 font-mono text-[10px] text-primary">×{item.fator}</span>}
+                      </div>
                     </div>
                     {isDivergent ? (
                       <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
@@ -579,6 +582,10 @@ const ConferenciaPedidos = () => {
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-muted-foreground">
                       Qtd pedida: <span className="font-bold text-foreground">{item.quantidade_pedida}</span>
+                      {item.fator > 1 && (
+                        <span className="ml-1 text-muted-foreground">({item.quantidade_pedida * item.fator} un)</span>
+                      )}
+                    </div>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs text-muted-foreground mr-1">Recebida:</span>
