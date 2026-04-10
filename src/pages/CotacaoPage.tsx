@@ -58,8 +58,10 @@ const CotacaoPage = () => {
   const [aiAnalysisText, setAiAnalysisText] = useState("");
   const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
   const [qtySuggestLoading, setQtySuggestLoading] = useState(false);
-  const [qtySuggestions, setQtySuggestions] = useState<{ cotacao_produto_id: string; nome: string; quantidade_sugerida: number; justificativa: string; tendencia?: "crescente" | "estável" | "diminuindo" | "sem_historico" }[]>([]);
+  const [qtySuggestions, setQtySuggestions] = useState<{ cotacao_produto_id: string; nome: string; quantidade_sugerida: number; justificativa: string; tendencia?: "crescente" | "estável" | "diminuindo" | "sem_historico"; comparativo_lojas?: string }[]>([]);
   const [qtySuggestOpen, setQtySuggestOpen] = useState(false);
+  const [qtySuggestLojaNome, setQtySuggestLojaNome] = useState("");
+  const [qtySuggestMultiStore, setQtySuggestMultiStore] = useState(false);
   const [erpImportOpen, setErpImportOpen] = useState(false);
   const [cancelCotacaoOpen, setCancelCotacaoOpen] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
@@ -505,8 +507,14 @@ const CotacaoPage = () => {
 
   const runQtySuggestion = async () => {
     if (!cotacaoAtiva?.id) return;
-    setQtySuggestLoading(true); setQtySuggestOpen(true); setQtySuggestions([]);
-    try { const resp = await supabase.functions.invoke("ai-automacao", { body: { type: "suggest-quantities", cotacao_id: cotacaoAtiva.id, loja_id: lojaAtiva?.id || null } }); if (resp.error) throw new Error(resp.error.message); setQtySuggestions(resp.data?.suggestions || []); } catch (e: any) { toast.error(e.message || "Erro ao sugerir quantidades"); }
+    setQtySuggestLoading(true); setQtySuggestOpen(true); setQtySuggestions([]); setQtySuggestLojaNome(""); setQtySuggestMultiStore(false);
+    try {
+      const resp = await supabase.functions.invoke("ai-automacao", { body: { type: "suggest-quantities", cotacao_id: cotacaoAtiva.id, loja_id: lojaAtiva?.id || null } });
+      if (resp.error) throw new Error(resp.error.message);
+      setQtySuggestions(resp.data?.suggestions || []);
+      setQtySuggestLojaNome(resp.data?.loja_nome || "");
+      setQtySuggestMultiStore(resp.data?.multi_store || false);
+    } catch (e: any) { toast.error(e.message || "Erro ao sugerir quantidades"); }
     setQtySuggestLoading(false);
   };
 
@@ -798,7 +806,7 @@ const CotacaoPage = () => {
       <ModalFornecedores open={supplierModalOpen} onOpenChange={setSupplierModalOpen} fornecedores={allFornecedores} selectedSuppliers={selectedSuppliers} onToggle={toggleSupplier} onSelectAll={selectAllSuppliers} onSave={saveSupplierSelection} />
       <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} lojaId={lojaAtiva?.id} />
       <ModalAiAnalise open={aiAnalysisOpen} onOpenChange={setAiAnalysisOpen} text={aiAnalysisText} loading={aiAnalysisLoading} onReanalisar={runAiAnalysis} />
-      <ModalQtySugestao open={qtySuggestOpen} onOpenChange={setQtySuggestOpen} suggestions={qtySuggestions} loading={qtySuggestLoading} onApply={applyQtySuggestions} />
+      <ModalQtySugestao open={qtySuggestOpen} onOpenChange={setQtySuggestOpen} suggestions={qtySuggestions} loading={qtySuggestLoading} onApply={applyQtySuggestions} lojaNome={qtySuggestLojaNome} multiStore={qtySuggestMultiStore} />
       <ImportErpModal open={erpImportOpen} onOpenChange={setErpImportOpen} cotacaoId={cotacaoAtiva.id} />
       <ModalFornecedorSugestao open={fornSuggestOpen} onOpenChange={setFornSuggestOpen} text={fornSuggestText} loading={fornSuggestLoading} hasHistory={fornSuggestHasHistory} recommendedIds={fornSuggestRecommendedIds} onApply={applyFornSuggestions} />
 

@@ -133,65 +133,108 @@ Retorne APENAS o JSON, sem markdown, sem explicação.` }
       return new Response(JSON.stringify({ classifications }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // === SUGGEST QUANTITIES (improved with 5-quote history + trend) ===
+    // === SUGGEST QUANTITIES (Phase 3: per-store segmented demand forecasting) ===
     if (type === "suggest-quantities") {
       const { cotacao_id, loja_id } = params;
 
       const { data: cps } = await sb.from("cotacao_produtos").select("id, produto_id, quantidade, produtos(nome, embalagem)").eq("cotacao_id", cotacao_id);
 
-      // Get last 5 finalized quotes for this store
-      let historicalContext = "";
-      if (loja_id || true) {
-        let qb = sb.from("cotacoes").select("id, nome, created_at").neq("status", "ativa").order("finalizada_at", { ascending: false }).limit(5);
-        if (loja_id) qb = qb.eq("loja_id", loja_id);
-        const { data: pastCots } = await qb;
+      // Get store name for context
+      let lojaName = "";
+      if (loja_id) {
+        const { data: loja } = await sb.from("lojas").select("nome").eq("id", loja_id).single();
+        lojaName = loja?.nome || "";
+      }
 
-        if (pastCots?.length) {
-          const pastIds = pastCots.map(c => c.id);
-          const { data: pastCps } = await sb.from("cotacao_produtos").select("cotacao_id, produto_id, quantidade, produtos(nome)").in("cotacao_id", pastIds);
+      // Get ALL stores for this user to enable cross-store comparison
+      const { data: allLojas } = await sb.from("lojas").select("id, nome").eq("user_id", user.id);
+      const lojaMap: Record<string, string> = {};
+      (allLojas || []).forEach((l: any) => { lojaMap[l.id] = l.nome; });
+      const hasMultipleStores = (allLojas || []).length > 1;
 
-          // Build per-product history ordered by quote date (oldest first)
-          const histMap: Record<string, { qtds: number[]; name: string }> = {};
-          const cotOrder = pastCots.map(c => c.id).reverse(); // oldest first
+      // Helper to build history for a set of quote IDs
+      const buildHistory = (pastCps: any[], cotOrder: string[]) => {
+        const sorted = [...pastCps].sort((a: any, b: any) => cotOrder.indexOf(a.cotacao_id) - cotOrder.indexOf(b.cotacao_id));
+        const tempMap: Record<string, number[]> = {};
+        sorted.forEach((cp: any) => {
+          const name = cp.produtos?.nome || cp.produto_id;
+          if (!tempMap[name]) tempMap[name] = [];
+          if (cp.quantidade) tempMap[name].push(Number(cp.quantidade));
+        });
+        return tempMap;
+      };
 
-          (pastCps || []).forEach((cp: any) => {
-            const name = cp.produtos?.nome || cp.produto_id;
-            if (!histMap[name]) histMap[name] = { qtds: [], name };
-            if (cp.quantidade) {
-              const idx = cotOrder.indexOf(cp.cotacao_id);
-              // Store with index for ordering
-              histMap[name].qtds.push(cp.quantidade);
+      const calcTrend = (qtds: number[]) => {
+        if (qtds.length < 3) return "estável";
+        const firstHalf = qtds.slice(0, Math.floor(qtds.length / 2));
+        const secondHalf = qtds.slice(Math.floor(qtds.length / 2));
+        const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+        const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+        const change = avgFirst > 0 ? (avgSecond - avgFirst) / avgFirst : 0;
+        if (change > 0.15) return "crescente";
+        if (change < -0.15) return "diminuindo";
+        return "estável";
+      };
+
+      // 1) Current store history (last 5 quotes)
+      let storeHistContext = "";
+      let storeQb = sb.from("cotacoes").select("id, nome, created_at, finalizada_at").neq("status", "ativa").order("finalizada_at", { ascending: false }).limit(5);
+      if (loja_id) storeQb = storeQb.eq("loja_id", loja_id);
+      const { data: pastCots } = await storeQb;
+
+      if (pastCots?.length) {
+        const pastIds = pastCots.map(c => c.id);
+        const { data: pastCps } = await sb.from("cotacao_produtos").select("cotacao_id, produto_id, quantidade, produtos(nome)").in("cotacao_id", pastIds);
+        const cotOrder = pastCots.map(c => c.id).reverse();
+        const tempMap = buildHistory(pastCps || [], cotOrder);
+
+        const lines = Object.entries(tempMap).map(([name, qtds]) => {
+          const avg = qtds.reduce((a, b) => a + b, 0) / qtds.length;
+          const trend = calcTrend(qtds);
+          return `- ${name}: qtds [${qtds.join(", ")}] | média: ${avg.toFixed(1)} | tendência: ${trend}`;
+        });
+        storeHistContext = `\nHISTÓRICO ${lojaName ? `DA LOJA "${lojaName}"` : ""} (últimas ${pastCots.length} cotações):\n${lines.join("\n")}`;
+
+        // Calculate average interval between quotes (days)
+        const dates = pastCots.map(c => new Date(c.finalizada_at || c.created_at).getTime()).sort();
+        if (dates.length >= 2) {
+          const intervals: number[] = [];
+          for (let i = 1; i < dates.length; i++) intervals.push((dates[i] - dates[i-1]) / (1000*60*60*24));
+          const avgInterval = intervals.reduce((a,b)=>a+b,0) / intervals.length;
+          storeHistContext += `\nFrequência média de compra: a cada ${avgInterval.toFixed(0)} dias`;
+        }
+      }
+
+      // 2) Cross-store comparison (if multi-store)
+      let crossStoreContext = "";
+      if (hasMultipleStores && loja_id) {
+        const otherLojaIds = (allLojas || []).filter(l => l.id !== loja_id).map(l => l.id);
+        if (otherLojaIds.length > 0) {
+          let otherQb = sb.from("cotacoes").select("id, loja_id, finalizada_at").neq("status", "ativa").in("loja_id", otherLojaIds).order("finalizada_at", { ascending: false }).limit(10);
+          const { data: otherCots } = await otherQb;
+
+          if (otherCots?.length) {
+            // Group by store
+            const byStore: Record<string, string[]> = {};
+            otherCots.forEach((c: any) => {
+              if (!byStore[c.loja_id]) byStore[c.loja_id] = [];
+              byStore[c.loja_id].push(c.id);
+            });
+
+            const storeLines: string[] = [];
+            for (const [sId, cotIds] of Object.entries(byStore)) {
+              const { data: sCps } = await sb.from("cotacao_produtos").select("cotacao_id, produto_id, quantidade, produtos(nome)").in("cotacao_id", cotIds);
+              const tempMap = buildHistory(sCps || [], cotIds.reverse());
+              const productLines = Object.entries(tempMap).map(([name, qtds]) => {
+                const avg = qtds.reduce((a, b) => a + b, 0) / qtds.length;
+                return `  - ${name}: média ${avg.toFixed(1)} (${qtds.length} cotações)`;
+              }).slice(0, 15); // top 15 products per store
+              storeLines.push(`📍 ${lojaMap[sId] || sId}:\n${productLines.join("\n")}`);
             }
-          });
-
-          // Reorder by quote chronology
-          const orderedHist: Record<string, { qtds: number[]; name: string }> = {};
-          (pastCps || []).sort((a: any, b: any) => {
-            return cotOrder.indexOf(a.cotacao_id) - cotOrder.indexOf(b.cotacao_id);
-          });
-          const tempMap: Record<string, number[]> = {};
-          (pastCps || []).forEach((cp: any) => {
-            const name = cp.produtos?.nome || cp.produto_id;
-            if (!tempMap[name]) tempMap[name] = [];
-            if (cp.quantidade) tempMap[name].push(cp.quantidade);
-          });
-
-          const lines = Object.entries(tempMap).map(([name, qtds]) => {
-            const avg = qtds.reduce((a, b) => a + b, 0) / qtds.length;
-            // Calculate trend
-            let trend = "estável";
-            if (qtds.length >= 3) {
-              const firstHalf = qtds.slice(0, Math.floor(qtds.length / 2));
-              const secondHalf = qtds.slice(Math.floor(qtds.length / 2));
-              const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
-              const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
-              const change = (avgSecond - avgFirst) / avgFirst;
-              if (change > 0.15) trend = "crescente";
-              else if (change < -0.15) trend = "diminuindo";
+            if (storeLines.length > 0) {
+              crossStoreContext = `\n\nCOMPARATIVO ENTRE LOJAS (outras lojas do mesmo grupo):\n${storeLines.join("\n\n")}`;
             }
-            return `- ${name}: comprado ${qtds.join(", ")} nas últimas ${qtds.length} cotações | média: ${avg.toFixed(1)} | tendência: ${trend}`;
-          });
-          historicalContext = `\nHISTÓRICO (últimas ${pastCots.length} cotações):\n${lines.join("\n")}`;
+          }
         }
       }
 
@@ -199,20 +242,27 @@ Retorne APENAS o JSON, sem markdown, sem explicação.` }
         `- ${cp.produtos?.nome || "?"} (${cp.produtos?.embalagem || "un"}) — qtd atual: ${cp.quantidade || 1}`
       ).join("\n");
 
+      const multiStoreInstruction = hasMultipleStores ? `
+- Compare o consumo desta loja com as demais. Se outra loja consome significativamente mais ou menos, mencione na justificativa.
+- Na justificativa, indique se a sugestão considera sazonalidade, tendência ou padrão comparativo entre lojas.
+- Adicione o campo "comparativo_lojas" com uma frase curta comparando (ex: "Consome 30% mais que Loja B").` : "";
+
       const result = await callAI(
         [
-          { role: "system", content: "Você sugere quantidades de compra com base no histórico. Retorne APENAS JSON via tool call." },
-          { role: "user", content: `Sugira quantidades para cada produto da cotação atual, baseado no histórico de compras.
+          { role: "system", content: "Você é um analista de demanda que sugere quantidades de compra baseado em histórico segmentado por loja. Retorne APENAS JSON via tool call." },
+          { role: "user", content: `Sugira quantidades para cada produto da cotação atual${lojaName ? ` da loja "${lojaName}"` : ""}, baseado no histórico de compras.
 
 PRODUTOS ATUAIS:
 ${currentItems}
-${historicalContext}
+${storeHistContext}
+${crossStoreContext}
 
-Para cada produto, retorne a quantidade sugerida, uma justificativa curta e a tendência (crescente, estável ou diminuindo).
-Se a tendência for crescente, sugira quantidade ligeiramente acima da média.
-Se estável, sugira a média arredondada.
-Se diminuindo, sugira quantidade ligeiramente abaixo da média.
-Se não houver histórico, manter a quantidade atual e tendência "sem_historico".` }
+REGRAS:
+- Se a tendência for crescente, sugira quantidade ligeiramente acima da média.
+- Se estável, sugira a média arredondada.
+- Se diminuindo, sugira quantidade ligeiramente abaixo da média.
+- Se não houver histórico, manter a quantidade atual e tendência "sem_historico".
+- Considere a frequência de compra para ajustar (compras mais frequentes = menores quantidades).${multiStoreInstruction}` }
         ],
         [{
           type: "function",
@@ -231,7 +281,8 @@ Se não houver histórico, manter a quantidade atual e tendência "sem_historico
                       nome: { type: "string" },
                       quantidade_sugerida: { type: "number" },
                       justificativa: { type: "string" },
-                      tendencia: { type: "string", enum: ["crescente", "estável", "diminuindo", "sem_historico"] }
+                      tendencia: { type: "string", enum: ["crescente", "estável", "diminuindo", "sem_historico"] },
+                      comparativo_lojas: { type: "string", description: "Brief cross-store comparison if applicable" }
                     },
                     required: ["nome", "quantidade_sugerida", "justificativa", "tendencia"]
                   }
@@ -264,7 +315,7 @@ Se não houver histórico, manter a quantidade atual e tendência "sem_historico
         return { ...s, cotacao_produto_id: match?.id || null };
       });
 
-      return new Response(JSON.stringify({ suggestions: mapped }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ suggestions: mapped, loja_nome: lojaName, multi_store: hasMultipleStores }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // === SUGGEST SUPPLIERS PER PRODUCT ===
