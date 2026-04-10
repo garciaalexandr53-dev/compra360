@@ -114,7 +114,7 @@ const ResumoDistribuicaoContent = () => {
       // Get products + prices for the previous cotação
       const { data: prevCps } = await supabase
         .from("cotacao_produtos")
-        .select("id, quantidade")
+        .select("id, quantidade, fator_embalagem")
         .eq("cotacao_id", prevCotacao.id);
       if (!prevCps?.length) return null;
 
@@ -130,13 +130,14 @@ const ResumoDistribuicaoContent = () => {
       // Calculate best-price total for previous cotação
       let total = 0;
       const qtyMap = Object.fromEntries(prevCps.map((cp) => [cp.id, cp.quantidade || 1]));
+      const fatorMap = Object.fromEntries(prevCps.map((cp) => [cp.id, cp.fator_embalagem || 1]));
       const grouped: Record<string, number[]> = {};
       prevPrecos.forEach((p) => {
         if (!grouped[p.cotacao_produto_id]) grouped[p.cotacao_produto_id] = [];
         grouped[p.cotacao_produto_id].push(Number(p.preco));
       });
       for (const [cpId, prices] of Object.entries(grouped)) {
-        total += Math.min(...prices) * (qtyMap[cpId] || 1);
+        total += Math.min(...prices) * (qtyMap[cpId] || 1) * (fatorMap[cpId] || 1);
       }
       return total;
     },
@@ -174,7 +175,7 @@ const ResumoDistribuicaoContent = () => {
           if (myPrice && myPrice.preco === minPrice) {
             if (winners.length === 1 || winners.sort((a: any, b: any) => (winCount[b.fornecedor_id] || 0) - (winCount[a.fornecedor_id] || 0))[0].fornecedor_id === f.id) {
               winsCount++;
-              totalPedido += myPrice.preco * (cp.quantidade || 1);
+              totalPedido += myPrice.preco * (cp.quantidade || 1) * (cp.fator_embalagem || 1);
             }
           }
         }
@@ -188,7 +189,7 @@ const ResumoDistribuicaoContent = () => {
       const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco !== null && p.preco > 0);
       if (cpPrecos.length > 0) {
         const minPrice = Math.min(...cpPrecos.map((p: any) => p.preco));
-        grandTotal += minPrice * (cp.quantidade || 1);
+        grandTotal += minPrice * (cp.quantidade || 1) * (cp.fator_embalagem || 1);
       }
     });
 

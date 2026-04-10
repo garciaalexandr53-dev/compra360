@@ -51,6 +51,7 @@ interface CpInfo {
   produtoNome: string;
   embalagem: string;
   quantidade: number;
+  fator: number;
 }
 
 /**
@@ -89,7 +90,7 @@ function buildSupplierResult(
       embalagem: cp.embalagem,
       quantidade: cp.quantidade,
       preco,
-      total: preco * cp.quantidade,
+      total: preco * cp.quantidade * cp.fator,
       cpId: cp.id,
       fornecedorId,
     });
@@ -176,7 +177,7 @@ function scenarioSemMinimoAbaixo(
     for (const [cpId, a] of Object.entries(assignments)) {
       const cp = cotacaoProdutos.find((c) => c.id === cpId);
       if (!cp) continue;
-      totals[a.fornecedorId] = (totals[a.fornecedorId] || 0) + a.preco * cp.quantidade;
+      totals[a.fornecedorId] = (totals[a.fornecedorId] || 0) + a.preco * cp.quantidade * cp.fator;
     }
 
     for (const [fId, total] of Object.entries(totals)) {
@@ -288,7 +289,7 @@ function scenarioConsolidado(
     for (const [cpId, a] of Object.entries(assignments)) {
       const cp = cotacaoProdutos.find((c) => c.id === cpId);
       if (!cp) continue;
-      totals[a.fornecedorId] = (totals[a.fornecedorId] || 0) + a.preco * cp.quantidade;
+      totals[a.fornecedorId] = (totals[a.fornecedorId] || 0) + a.preco * cp.quantidade * cp.fator;
     }
     for (const [fId, total] of Object.entries(totals)) {
       const f = fornecedorMap[fId];
@@ -336,6 +337,7 @@ export function generateScenarios(
     produtoNome: (cp as any).produtos?.nome || (cp as any).produto?.nome || "?",
     embalagem: (cp as any).produtos?.embalagem || (cp as any).produto?.embalagem || "",
     quantidade: cp.quantidade || 1,
+    fator: (cp as any).fator_embalagem || 1,
   }));
 
   const fornecedorMap: Record<string, FornecedorInfo> = {};
