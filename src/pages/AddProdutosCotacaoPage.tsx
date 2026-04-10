@@ -412,7 +412,7 @@ const AddProdutosCotacaoPage = () => {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{item.nome}</p>
                     <p className="text-[10px] text-muted-foreground">
-                      {item.embalagem}{item.produtoId ? " · produto existente" : ""}
+                      {item.embalagem}{item.fator > 1 ? ` (${item.fator}un)` : ""}{item.produtoId ? " · produto existente" : ""}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
