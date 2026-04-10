@@ -356,6 +356,7 @@ const ProdutosPage = () => {
       categoria_id: p.categoria_id || "",
       embalagem: p.embalagem || "UNI",
       quantidade: 1,
+      fator_embalagem: (p as any).fator_embalagem || 1,
     });
     setModalOpen(true);
   };
