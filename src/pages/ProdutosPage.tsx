@@ -22,8 +22,9 @@ import type { Tables } from "@/integrations/supabase/types";
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 type Categoria = Tables<"categorias">;
 
-const EMBALAGEM_OPTIONS = ["UNI", "DZ", "CX", "FD", "PCT", "KG", "LT", "SC", "GL"];
-const emptyForm = { nome: "", categoria_id: "", embalagem: "UNI", quantidade: 1 };
+import { EMBALAGEM_SIGLAS, getDefaultFator } from "@/lib/embalagem";
+const EMBALAGEM_OPTIONS = EMBALAGEM_SIGLAS;
+const emptyForm = { nome: "", categoria_id: "", embalagem: "UNI", quantidade: 1, fator_embalagem: 1 };
 const PAGE_SIZE = 80;
 
 const cleanEmbalagem = (raw: string | null | undefined) => raw?.split("|")[0].trim() || "un";
@@ -60,6 +61,7 @@ const ProdutosPage = () => {
   const [popoverOpen, setPopoverOpen] = useState<Record<string, boolean>>({});
   const [popoverQtd, setPopoverQtd] = useState<Record<string, string>>({});
   const [popoverEmb, setPopoverEmb] = useState<Record<string, string>>({});
+  const [popoverFator, setPopoverFator] = useState<Record<string, string>>({});
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -179,6 +181,7 @@ const ProdutosPage = () => {
         nome: form.nome.trim(),
         categoria_id: form.categoria_id || null,
         embalagem: cleanEmbalagem(form.embalagem),
+        fator_embalagem: form.fator_embalagem || 1,
       };
       if (editingId) {
         const { error } = await supabase.from("produtos").update(payload).eq("id", editingId);
@@ -241,13 +244,14 @@ const ProdutosPage = () => {
   });
 
   const toggleCotacaoMutation = useMutation({
-    mutationFn: async ({ produtoId, adding, quantidade = 1, tipoEmbalagem = "UNI" }: { produtoId: string; adding: boolean; quantidade?: number; tipoEmbalagem?: string }) => {
+    mutationFn: async ({ produtoId, adding, quantidade = 1, tipoEmbalagem = "UNI", fatorEmbalagem = 1 }: { produtoId: string; adding: boolean; quantidade?: number; tipoEmbalagem?: string; fatorEmbalagem?: number }) => {
       if (adding && cotacaoAtiva) {
         const { error } = await supabase.from("cotacao_produtos").insert({
           cotacao_id: cotacaoAtiva.id,
           produto_id: produtoId,
           quantidade,
           tipo_embalagem: tipoEmbalagem,
+          fator_embalagem: fatorEmbalagem,
         } as any);
         if (error) throw error;
       } else if (!adding && cotacaoAtiva) {
@@ -352,6 +356,7 @@ const ProdutosPage = () => {
       categoria_id: p.categoria_id || "",
       embalagem: p.embalagem || "UNI",
       quantidade: 1,
+      fator_embalagem: (p as any).fator_embalagem || 1,
     });
     setModalOpen(true);
   };
@@ -662,11 +667,14 @@ const ProdutosPage = () => {
                                   <div className="space-y-1">
                                     <Label className="text-xs">Embalagem</Label>
                                     <div className="flex flex-wrap gap-1.5">
-                                      {["UNI", "CX", "DZ", "FD", "KG", "PCT"].map(emb => (
+                                      {["UNI", "CX", "DZ", "½DZ", "FD", "KG", "PCT"].map(emb => (
                                         <button
                                           key={emb}
                                           type="button"
-                                          onClick={() => setPopoverEmb(prev => ({ ...prev, [p.id]: emb }))}
+                                          onClick={() => {
+                                            setPopoverEmb(prev => ({ ...prev, [p.id]: emb }));
+                                            setPopoverFator(prev => ({ ...prev, [p.id]: String(getDefaultFator(emb)) }));
+                                          }}
                                           className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                                             (popoverEmb[p.id] || "UNI") === emb
                                               ? "bg-primary text-primary-foreground border-primary"
@@ -677,6 +685,16 @@ const ProdutosPage = () => {
                                         </button>
                                       ))}
                                     </div>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Fator (un/embalagem)</Label>
+                                    <Input
+                                      type="number"
+                                      min={1}
+                                      value={popoverFator[p.id] || "1"}
+                                      onChange={(e) => setPopoverFator(prev => ({ ...prev, [p.id]: e.target.value.replace(/\D/g, "") || "1" }))}
+                                      className="h-8 text-center text-sm"
+                                    />
                                   </div>
                                   <div className="flex gap-2 pt-1">
                                     <Button
@@ -701,6 +719,7 @@ const ProdutosPage = () => {
                                           adding: true,
                                           quantidade: qtd,
                                           tipoEmbalagem: popoverEmb[p.id] || "UNI",
+                                          fatorEmbalagem: parseInt(popoverFator[p.id] || "1") || 1,
                                         });
                                         setPopoverOpen(prev => ({ ...prev, [p.id]: false }));
                                       }}
@@ -860,7 +879,10 @@ const ProdutosPage = () => {
                 <Label>Embalagem</Label>
                 <select
                   value={form.embalagem}
-                  onChange={(e) => setForm({ ...form, embalagem: e.target.value })}
+                  onChange={(e) => {
+                    const emb = e.target.value;
+                    setForm({ ...form, embalagem: emb, fator_embalagem: getDefaultFator(emb) });
+                  }}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {EMBALAGEM_OPTIONS.map(opt => (
@@ -869,14 +891,15 @@ const ProdutosPage = () => {
                 </select>
               </div>
               <div className="w-24">
-                <Label>Quantidade</Label>
+                <Label>Fator (un)</Label>
                 <Input
                   type="number"
                   min={1}
-                  value={form.quantidade}
-                  onChange={(e) => setForm({ ...form, quantidade: Math.max(1, Number(e.target.value) || 1) })}
+                  value={form.fator_embalagem}
+                  onChange={(e) => setForm({ ...form, fator_embalagem: Math.max(1, Number(e.target.value) || 1) })}
                   className="h-10 text-center"
                 />
+                <p className="text-[10px] text-muted-foreground mt-0.5 text-center">un/embalagem</p>
               </div>
             </div>
           </div>
