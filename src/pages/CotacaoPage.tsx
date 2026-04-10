@@ -507,8 +507,14 @@ const CotacaoPage = () => {
 
   const runQtySuggestion = async () => {
     if (!cotacaoAtiva?.id) return;
-    setQtySuggestLoading(true); setQtySuggestOpen(true); setQtySuggestions([]);
-    try { const resp = await supabase.functions.invoke("ai-automacao", { body: { type: "suggest-quantities", cotacao_id: cotacaoAtiva.id, loja_id: lojaAtiva?.id || null } }); if (resp.error) throw new Error(resp.error.message); setQtySuggestions(resp.data?.suggestions || []); } catch (e: any) { toast.error(e.message || "Erro ao sugerir quantidades"); }
+    setQtySuggestLoading(true); setQtySuggestOpen(true); setQtySuggestions([]); setQtySuggestLojaNome(""); setQtySuggestMultiStore(false);
+    try {
+      const resp = await supabase.functions.invoke("ai-automacao", { body: { type: "suggest-quantities", cotacao_id: cotacaoAtiva.id, loja_id: lojaAtiva?.id || null } });
+      if (resp.error) throw new Error(resp.error.message);
+      setQtySuggestions(resp.data?.suggestions || []);
+      setQtySuggestLojaNome(resp.data?.loja_nome || "");
+      setQtySuggestMultiStore(resp.data?.multi_store || false);
+    } catch (e: any) { toast.error(e.message || "Erro ao sugerir quantidades"); }
     setQtySuggestLoading(false);
   };
 
