@@ -61,9 +61,12 @@ serve(async (req) => {
       let loja = null;
       if (loja_id) { const { data } = await sb.from("lojas").select("*").eq("id", loja_id).single(); loja = data; }
 
-      const itemsList = (items || []).map((it: any, i: number) =>
-        `${i+1}. ${it.produto} | Emb: ${it.embalagem} | Qtd: ${it.quantidade} | R$ ${it.preco} | Subtotal: R$ ${it.total}`
-      ).join("\n");
+      const itemsList = (items || []).map((it: any, i: number) => {
+        const fator = Number(it.fator) || 1;
+        const fatorLabel = fator > 1 ? ` c/${fator} un` : "";
+        const qtyTotal = fator > 1 ? ` (${(Number(it.quantidade) || 1) * fator} un)` : "";
+        return `${i+1}. ${it.produto} | Emb: ${it.embalagem}${fatorLabel} | Qtd: ${it.quantidade}${qtyTotal} | R$ ${it.preco} | Subtotal: R$ ${it.total}`;
+      }).join("\n");
       const totalGeral = Number((items || []).reduce((s: number, it: any) => s + (Number(it.total) || 0), 0)) || 0;
 
       const prompt = `Você é o assistente Compra360. Gere uma mensagem de WhatsApp profissional e amigável para enviar um pedido de compra ao fornecedor.
