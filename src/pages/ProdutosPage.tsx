@@ -865,7 +865,10 @@ const ProdutosPage = () => {
                 <Label>Embalagem</Label>
                 <select
                   value={form.embalagem}
-                  onChange={(e) => setForm({ ...form, embalagem: e.target.value })}
+                  onChange={(e) => {
+                    const emb = e.target.value;
+                    setForm({ ...form, embalagem: emb, fator_embalagem: getDefaultFator(emb) });
+                  }}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {EMBALAGEM_OPTIONS.map(opt => (
@@ -874,14 +877,15 @@ const ProdutosPage = () => {
                 </select>
               </div>
               <div className="w-24">
-                <Label>Quantidade</Label>
+                <Label>Fator (un)</Label>
                 <Input
                   type="number"
                   min={1}
-                  value={form.quantidade}
-                  onChange={(e) => setForm({ ...form, quantidade: Math.max(1, Number(e.target.value) || 1) })}
+                  value={form.fator_embalagem}
+                  onChange={(e) => setForm({ ...form, fator_embalagem: Math.max(1, Number(e.target.value) || 1) })}
                   className="h-10 text-center"
                 />
+                <p className="text-[10px] text-muted-foreground mt-0.5 text-center">un/embalagem</p>
               </div>
             </div>
           </div>
