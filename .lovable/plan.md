@@ -75,3 +75,39 @@ Transformar o sistema atual (HTML local) em um app web completo com **Supabase (
 
 Após receber o arquivo HTML original, os 2.210 produtos, 37 categorias e 14 fornecedores serão importados para o banco de dados.
 
+---
+
+## 6. Roadmap SaaS — Escalabilidade e Monetização
+
+### Fase 1: Infraestrutura de Planos e Assinaturas
+- Tabela `plans` com limites (lojas, produtos, fornecedores) para 3 planos: Grátis, Pro, Business
+- Tabela `subscriptions` vinculando usuário ao plano ativo
+- Função `get_user_plan()` (SECURITY DEFINER) para consulta segura
+
+### Fase 2: Integração Stripe
+- Edge Function `create-checkout-session` para checkout de assinatura
+- Edge Function `stripe-webhook` para processar eventos (pagamento, cancelamento, inadimplência)
+- **IMPORTANTE — Estratégia de inadimplência: NÃO bloquear o acesso.** Em vez disso, fazer **downgrade automático para o plano Grátis** e notificar o cliente. Isso mantém o usuário engajado e aumenta a chance de reconversão. O cliente continua usando o app, mas com funcionalidades limitadas do plano gratuito.
+
+### Fase 3: Feature Gating
+- Hook `useSubscription()` para verificar plano e limites do usuário
+- Componente `<FeatureGate>` para condicionar acesso a funcionalidades
+- Limites aplicados: nº de lojas, produtos, fornecedores, cotações simultâneas
+- Telas de upgrade quando o limite é atingido
+
+### Fase 4: Painel Administrativo (Admin Dashboard)
+- Tabela `user_roles` com enum `app_role` (admin, user)
+- Rota `/admin` protegida por role
+- Visão de todos os clientes, planos, status de pagamento
+- Ações: alterar plano, suspender conta, enviar notificações
+- Métricas: MRR, churn, total de clientes ativos
+
+### Fase 5: Métricas e Analytics
+- Tabela `activity_logs` para rastrear uso (cotações criadas, pedidos enviados)
+- Dashboard de crescimento, retenção e engajamento
+- Alertas de clientes inativos
+
+### Fase 6: Landing Page Profissional
+- Redesign da landing com planos, preços, depoimentos e CTA de cadastro
+- SEO otimizado para "sistema de cotação para supermercado"
+
