@@ -441,6 +441,42 @@ const ProdutosPage = () => {
     }
   };
 
+  // --- AI Suggest Fator ---
+  const autoSuggestFatorProducts = async () => {
+    // Target products with fator = 1 (default), or all if none qualify
+    const candidates = produtos.filter(p => (p.fator_embalagem || 1) === 1);
+    const targets = candidates.length > 0 ? candidates : filtered;
+    if (!targets.length) {
+      toast.info("Nenhum produto para analisar.");
+      return;
+    }
+
+    setClassifyModalOpen(true);
+    setClassifyStatus("running");
+    setClassifyProgress(10);
+    setClassifyError("");
+    setClassifyResult({ updated: 0, categories: 0 });
+
+    try {
+      setClassifyProgress(30);
+      const updated = await autoSuggestFator(
+        targets.map(p => ({ id: p.id, nome: p.nome, embalagem: p.embalagem || "UNI", fator_embalagem: p.fator_embalagem || 1 })),
+        {
+          skipIfAlreadySet: false,
+          onProgress: (done, total) => setClassifyProgress(30 + Math.round((done / total) * 60)),
+        }
+      );
+
+      queryClient.invalidateQueries({ queryKey: ["produtos"] });
+      setClassifyProgress(100);
+      setClassifyResult({ updated, categories: 0 });
+      setClassifyStatus("done");
+    } catch (e: any) {
+      setClassifyError(e.message || "Erro ao sugerir fatores");
+      setClassifyStatus("error");
+    }
+  };
+
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
       {/* Category sidebar - collapsible */}
