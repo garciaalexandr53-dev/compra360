@@ -440,11 +440,6 @@ const FuncionariosPage = () => {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="itens" className="space-y-3">
-      {/* Title at top */}
-      <div className="flex items-center gap-2">
-        <h1 className="text-lg font-bold">App Funcionários</h1>
-        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{pendentes.length} pendentes</span>
-      </div>
 
       {/* Pending items */}
       <div className="bg-card border rounded-xl shadow-sm overflow-hidden mb-5">
