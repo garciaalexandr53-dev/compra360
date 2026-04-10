@@ -586,7 +586,6 @@ const ConferenciaPedidos = () => {
                         <span className="ml-1 text-muted-foreground">({item.quantidade_pedida * item.fator} un)</span>
                       )}
                     </div>
-                    </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs text-muted-foreground mr-1">Recebida:</span>
                       <Button
