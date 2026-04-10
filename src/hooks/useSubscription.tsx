@@ -11,6 +11,7 @@ export interface UserPlan {
   max_cotacoes_simultaneas: number;
   features: string[];
   status: string;
+  is_trial: boolean;
   current_period_end: string | null;
 }
 
@@ -23,6 +24,7 @@ const FREE_PLAN: UserPlan = {
   max_cotacoes_simultaneas: 1,
   features: ["Cotação básica", "1 loja", "Até 50 produtos", "Até 5 fornecedores"],
   status: "active",
+  is_trial: false,
   current_period_end: null,
 };
 
@@ -49,6 +51,10 @@ export function useSubscription() {
     return isUnlimited(limit) || current < limit;
   };
 
+  const trialDaysLeft = plan?.is_trial && plan?.current_period_end
+    ? Math.max(0, Math.ceil((new Date(plan.current_period_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
   return {
     plan: plan ?? FREE_PLAN,
     isLoading,
@@ -56,6 +62,8 @@ export function useSubscription() {
     isBusiness: plan?.plan_name === "business",
     isFree: !plan || plan.plan_name === "free",
     isPastDue: plan?.status === "past_due",
+    isTrial: plan?.is_trial ?? false,
+    trialDaysLeft,
     canAdd,
     isUnlimited,
   };
