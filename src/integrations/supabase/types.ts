@@ -624,11 +624,42 @@ export type Database = {
           },
         ]
       }
+      trial_controls: {
+        Row: {
+          cnpj: string | null
+          created_at: string
+          device_fingerprint: string | null
+          id: string
+          phone: string | null
+          user_id: string
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string
+          device_fingerprint?: string | null
+          id?: string
+          phone?: string | null
+          user_id: string
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string
+          device_fingerprint?: string | null
+          id?: string
+          phone?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      check_trial_eligibility: {
+        Args: { _cnpj?: string; _fingerprint?: string; _phone?: string }
+        Returns: Json
+      }
       get_loja_owner: { Args: { _loja_id: string }; Returns: string }
       get_lojas_public: {
         Args: { _loja_id?: string }
