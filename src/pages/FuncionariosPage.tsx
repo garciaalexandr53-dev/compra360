@@ -646,6 +646,39 @@ const FuncionariosPage = () => {
           </div>
         );
       })()}
+
+      {/* Compartilhar link com funcionários */}
+      <div className="bg-card border rounded-xl shadow-sm p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Store className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-semibold">Compartilhar com funcionários</span>
+        </div>
+        {effectiveLinkLoja ? (
+          <p className="text-xs text-muted-foreground">
+            Link será gerado para <strong>{effectiveLinkLoja.nome}</strong>
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Selecione a loja no topo da tela para gerar o link
+          </p>
+        )}
+        <div className="flex flex-row gap-2">
+          <Button
+            variant={linkCopiado ? "default" : "outline"}
+            size="sm"
+            className={`h-9 gap-1.5 flex-1 ${linkCopiado ? "bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand))]/90 text-primary-foreground" : ""}`}
+            onClick={copyLink}
+            disabled={!effectiveLinkLojaId}
+          >
+            {linkCopiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            <span className="text-sm">{linkCopiado ? "✓ Copiado!" : "Copiar Link"}</span>
+          </Button>
+          <Button variant="outline" size="sm" className="h-9 gap-1.5 flex-1" onClick={openWhatsApp} disabled={!effectiveLinkLojaId}>
+            <MessageCircle className="h-4 w-4" />
+            <span className="text-sm">WhatsApp</span>
+          </Button>
+        </div>
+      </div>
         </TabsContent>
         <TabsContent value="conferencia">
           <ConferenciaPedidos />
