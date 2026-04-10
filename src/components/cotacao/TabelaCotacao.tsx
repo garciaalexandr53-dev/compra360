@@ -199,7 +199,8 @@ const TabelaCotacao = ({
               </td></tr>
             ) : filteredItems.map((cp, rowIndex) => {
               const info = analyzePrices(cp.id);
-              const totalLine = info.minVal !== null ? info.minVal * (cp.quantidade || 1) : null;
+              const fator = cp.fator_embalagem || 1;
+              const totalLine = info.minVal !== null ? info.minVal * (cp.quantidade || 1) * fator : null;
               const qtyValue = qtyDrafts[cp.id] ?? String(cp.quantidade || 1);
 
               return (
