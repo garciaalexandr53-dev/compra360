@@ -20,6 +20,7 @@ const FuncionariosPage = () => {
   const { lojaAtiva, lojas } = useLojaAtiva();
   const navigate = useNavigate();
   const [linkLojaId, setLinkLojaId] = useState<string>("");
+  const [activeTab, setActiveTab] = useState("itens");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editQty, setEditQty] = useState<string>("");
   const [linkCopiado, setLinkCopiado] = useState(false);
@@ -428,7 +429,7 @@ const FuncionariosPage = () => {
 
   return (
     <div className="p-5 space-y-3">
-      <Tabs defaultValue="itens" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full mb-3">
           <TabsTrigger value="itens" className="flex-1 gap-1.5">
             <Package className="h-4 w-4" />
@@ -440,42 +441,44 @@ const FuncionariosPage = () => {
           </TabsTrigger>
         </TabsList>
 
-        {/* Loja selector + sharing - right below tabs */}
-        <div className="bg-card border rounded-xl shadow-sm p-4 space-y-3 mb-3">
-          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
-            <Store className="h-3.5 w-3.5 inline mr-1" />Qual loja precisa abastecer?
-          </label>
-          {lojas.length > 1 ? (
-            <Select value={linkLojaId} onValueChange={setLinkLojaId}>
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="Selecione a loja para gerar o link" />
-              </SelectTrigger>
-              <SelectContent>
-                {lojas.map((l) => (
-                  <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : effectiveLinkLoja ? (
-            <p className="text-sm text-foreground font-medium">{effectiveLinkLoja.nome}</p>
-          ) : null}
-          <div className="flex flex-row gap-2">
-            <Button
-              variant={linkCopiado ? "default" : "outline"}
-              size="sm"
-              className={`h-9 gap-1.5 flex-1 ${linkCopiado ? "bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand))]/90 text-primary-foreground" : ""}`}
-              onClick={copyLink}
-              disabled={!effectiveLinkLojaId}
-            >
-              {linkCopiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              <span className="text-sm">{linkCopiado ? "✓ Copiado!" : "Copiar Link"}</span>
-            </Button>
-            <Button variant="outline" size="sm" className="h-9 gap-1.5 flex-1" onClick={openWhatsApp} disabled={!effectiveLinkLojaId}>
-              <MessageCircle className="h-4 w-4" />
-              <span className="text-sm">WhatsApp</span>
-            </Button>
+        {/* Loja selector + sharing - only on Itens Faltantes tab */}
+        {activeTab === "itens" && (
+          <div className="bg-card border rounded-xl shadow-sm p-4 space-y-3 mb-3">
+            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
+              <Store className="h-3.5 w-3.5 inline mr-1" />Qual loja precisa abastecer?
+            </label>
+            {lojas.length > 1 ? (
+              <Select value={linkLojaId} onValueChange={setLinkLojaId}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Selecione a loja para gerar o link" />
+                </SelectTrigger>
+                <SelectContent>
+                  {lojas.map((l) => (
+                    <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : effectiveLinkLoja ? (
+              <p className="text-sm text-foreground font-medium">{effectiveLinkLoja.nome}</p>
+            ) : null}
+            <div className="flex flex-row gap-2">
+              <Button
+                variant={linkCopiado ? "default" : "outline"}
+                size="sm"
+                className={`h-9 gap-1.5 flex-1 ${linkCopiado ? "bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand))]/90 text-primary-foreground" : ""}`}
+                onClick={copyLink}
+                disabled={!effectiveLinkLojaId}
+              >
+                {linkCopiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                <span className="text-sm">{linkCopiado ? "✓ Copiado!" : "Copiar Link"}</span>
+              </Button>
+              <Button variant="outline" size="sm" className="h-9 gap-1.5 flex-1" onClick={openWhatsApp} disabled={!effectiveLinkLojaId}>
+                <MessageCircle className="h-4 w-4" />
+                <span className="text-sm">WhatsApp</span>
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         <TabsContent value="itens" className="space-y-3">
 
