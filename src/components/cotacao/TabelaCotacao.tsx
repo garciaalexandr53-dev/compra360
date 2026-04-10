@@ -231,6 +231,11 @@ const TabelaCotacao = ({
                     />
                   </td>
                   <td className="px-1 py-1.5 border-b border-border/50 text-center">
+                    <span className="text-[11px] text-muted-foreground font-mono">
+                      {fator > 1 ? `×${fator}` : "—"}
+                    </span>
+                  </td>
+                  <td className="px-1 py-1.5 border-b border-border/50 text-center">
                     <Input
                       className={`${isReviewMode ? "h-10 text-sm font-semibold bg-muted/30 border-primary/20 focus:border-primary" : "h-8 text-[11px] border-transparent hover:border-input focus:border-input bg-transparent"} text-center w-16 mx-auto rounded-md shadow-none ring-0 focus-visible:ring-1 text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                       type="number"
