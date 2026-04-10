@@ -12,6 +12,7 @@ interface OrderItem {
   produto: string;
   embalagem: string;
   quantidade: number;
+  fator: number;
   preco: number;
   total: number;
 }
