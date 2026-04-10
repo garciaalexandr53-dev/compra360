@@ -18,6 +18,7 @@ export default function AppLayout() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const location = useLocation();
   const isDashboard = location.pathname === "/dashboard";
+  const isFuncionarios = location.pathname === "/funcionarios";
 
   useEffect(() => {
     if (!lojasLoading && lojas.length === 0 && user) {
