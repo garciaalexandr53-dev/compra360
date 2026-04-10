@@ -354,7 +354,9 @@ const AddProdutosCotacaoPage = () => {
               inputMode="numeric"
               min={1}
               value={dialogFator}
-              onChange={(e) => setDialogFator(e.target.value.replace(/\D/g, "") || "1")}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => setDialogFator(e.target.value.replace(/\D/g, ""))}
+              onBlur={() => setDialogFator(prev => prev === "" || prev === "0" ? "1" : prev)}
               className="h-10 text-center text-base"
             />
             <p className="text-[10px] text-muted-foreground text-center">
