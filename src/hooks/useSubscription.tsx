@@ -11,6 +11,7 @@ export interface UserPlan {
   max_cotacoes_simultaneas: number;
   features: string[];
   status: string;
+  is_trial: boolean;
   current_period_end: string | null;
 }
 
