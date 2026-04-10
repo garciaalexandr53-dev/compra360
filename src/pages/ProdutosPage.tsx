@@ -586,7 +586,10 @@ const ProdutosPage = () => {
                   <Upload className="h-4 w-4 mr-2" /> Importar Produtos
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={autoClassifyProducts} disabled={produtos.length === 0}>
-                  <Sparkles className="h-4 w-4 mr-2" /> Classificar IA
+                  <Sparkles className="h-4 w-4 mr-2" /> Classificar Categorias IA
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={autoSuggestFatorProducts} disabled={produtos.length === 0}>
+                  <Package className="h-4 w-4 mr-2" /> Sugerir Fatores IA
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={removeDuplicates} disabled={produtos.length === 0}>
                   <span className="mr-2">🧹</span> Remover duplicatas
