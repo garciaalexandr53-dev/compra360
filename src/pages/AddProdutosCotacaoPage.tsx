@@ -328,10 +328,13 @@ const AddProdutosCotacaoPage = () => {
           <div className="space-y-2">
             <label className="text-sm font-medium">Embalagem</label>
             <div className="flex flex-wrap gap-2">
-              {["UNI", "CX", "DZ", "FD", "KG", "PCT"].map(emb => (
+              {["UNI", "CX", "DZ", "½DZ", "FD", "KG", "PCT"].map(emb => (
                 <button
                   key={emb}
-                  onClick={() => setDialogEmb(emb)}
+                  onClick={() => {
+                    setDialogEmb(emb);
+                    setDialogFator(String(getDefaultFator(emb)));
+                  }}
                   className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
                     dialogEmb === emb
                       ? "bg-primary text-primary-foreground border-primary"
@@ -342,6 +345,23 @@ const AddProdutosCotacaoPage = () => {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Fator (un/embalagem)</label>
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={dialogFator}
+              onChange={(e) => setDialogFator(e.target.value.replace(/\D/g, "") || "1")}
+              className="h-10 text-center text-base"
+            />
+            <p className="text-[10px] text-muted-foreground text-center">
+              {parseInt(dialogFator) > 1
+                ? `1 ${dialogEmb} = ${dialogFator} unidades`
+                : "Preço por unidade"}
+            </p>
           </div>
 
           <DialogFooter className="gap-2">
