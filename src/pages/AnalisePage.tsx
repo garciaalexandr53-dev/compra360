@@ -45,6 +45,7 @@ const AnalisePage = () => {
   const [receiptItems, setReceiptItems] = useState<OrderItem[]>([]);
   const [receiptNumero, setReceiptNumero] = useState<number | null>(null);
   const [whatsappAiLoading, setWhatsappAiLoading] = useState<string | null>(null);
+  const [negociacaoOpen, setNegociacaoOpen] = useState(false);
 
   // ---- Data fetching ----
   const { data: cotacaoAtiva } = useQuery({
