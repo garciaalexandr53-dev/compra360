@@ -20,6 +20,7 @@ const FuncionariosPage = () => {
   const { lojaAtiva, lojas } = useLojaAtiva();
   const navigate = useNavigate();
   const [linkLojaId, setLinkLojaId] = useState<string>("");
+  const [activeTab, setActiveTab] = useState("itens");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editQty, setEditQty] = useState<string>("");
   const [linkCopiado, setLinkCopiado] = useState(false);
