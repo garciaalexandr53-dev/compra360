@@ -287,6 +287,22 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
       setParsedItems([]);
       setPasteText("");
       onOpenChange(false);
+
+      // Auto-suggest fator_embalagem in background
+      if (insertedProducts.length > 0) {
+        const { autoSuggestFator } = await import("@/lib/autoFator");
+        toast.promise(
+          autoSuggestFator(insertedProducts, { skipIfAlreadySet: true }).then(updated => {
+            if (updated > 0) queryClient.invalidateQueries({ queryKey: ["produtos"] });
+            return updated;
+          }),
+          {
+            loading: "🤖 Analisando fatores de embalagem...",
+            success: (updated) => updated > 0 ? `📦 ${updated} fatores de embalagem atualizados pela IA` : "Fatores de embalagem já estão corretos",
+            error: "Não foi possível sugerir fatores automaticamente",
+          }
+        );
+      }
     } catch (e: any) {
       toast.error(e.message);
     }
