@@ -858,13 +858,17 @@ const ProdutosPage = () => {
           <div className="classify-modal-content">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                {classifyStatus === "running" && <><Sparkles className="h-5 w-5 text-primary animate-pulse" /> Classificando produtos...</>}
-                {classifyStatus === "done" && <><span className="text-xl">✅</span> Classificação concluída!</>}
-                {classifyStatus === "error" && <><span className="text-xl">❌</span> Erro na classificação</>}
+                {classifyStatus === "running" && <>{classifyMode === "classify" ? <Sparkles className="h-5 w-5 text-primary animate-pulse" /> : <Package className="h-5 w-5 text-primary animate-pulse" />} {classifyMode === "classify" ? "Classificando produtos..." : "Analisando embalagens..."}</>}
+                {classifyStatus === "done" && <><span className="text-xl">✅</span> {classifyMode === "classify" ? "Classificação concluída!" : "Fatores atualizados!"}</>}
+                {classifyStatus === "error" && <><span className="text-xl">❌</span> {classifyMode === "classify" ? "Erro na classificação" : "Erro na análise"}</>}
               </DialogTitle>
               <DialogDescription>
-                {classifyStatus === "running" && `Analisando ${produtos.filter(p => !p.categoria_id).length || filtered.length} produtos · Aguarde`}
-                {classifyStatus === "done" && `${classifyResult.updated} produtos classificados em ${classifyResult.categories} categorias`}
+                {classifyStatus === "running" && (classifyMode === "classify"
+                  ? `Analisando ${produtos.filter(p => !p.categoria_id).length || filtered.length} produtos · Aguarde`
+                  : `Sugerindo fatores para ${produtos.filter(p => (p.fator_embalagem || 1) === 1).length || filtered.length} produtos · Aguarde`)}
+                {classifyStatus === "done" && (classifyMode === "classify"
+                  ? `${classifyResult.updated} produtos classificados em ${classifyResult.categories} categorias`
+                  : `${classifyResult.updated} produtos atualizados com novo fator de embalagem`)}
                 {classifyStatus === "error" && classifyError}
               </DialogDescription>
             </DialogHeader>
