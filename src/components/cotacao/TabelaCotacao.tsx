@@ -186,7 +186,7 @@ const TabelaCotacao = ({
           </thead>
           <tbody>
             {filteredItems.length === 0 ? (
-              <tr><td colSpan={fornecedores.length + 5} className="text-center py-10 text-muted-foreground">
+              <tr><td colSpan={fornecedores.length + 6} className="text-center py-10 text-muted-foreground">
                 {filterAnomalies ? "Nenhum item com anomalia de preço detectada." : cotacaoProdutosCount === 0 ? (
                   isReviewMode ? (
                     <div className="py-16 flex flex-col items-center gap-3">
