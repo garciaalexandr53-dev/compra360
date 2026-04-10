@@ -667,11 +667,14 @@ const ProdutosPage = () => {
                                   <div className="space-y-1">
                                     <Label className="text-xs">Embalagem</Label>
                                     <div className="flex flex-wrap gap-1.5">
-                                      {["UNI", "CX", "DZ", "FD", "KG", "PCT"].map(emb => (
+                                      {["UNI", "CX", "DZ", "½DZ", "FD", "KG", "PCT"].map(emb => (
                                         <button
                                           key={emb}
                                           type="button"
-                                          onClick={() => setPopoverEmb(prev => ({ ...prev, [p.id]: emb }))}
+                                          onClick={() => {
+                                            setPopoverEmb(prev => ({ ...prev, [p.id]: emb }));
+                                            setPopoverFator(prev => ({ ...prev, [p.id]: String(getDefaultFator(emb)) }));
+                                          }}
                                           className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                                             (popoverEmb[p.id] || "UNI") === emb
                                               ? "bg-primary text-primary-foreground border-primary"
@@ -682,6 +685,16 @@ const ProdutosPage = () => {
                                         </button>
                                       ))}
                                     </div>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Fator (un/embalagem)</Label>
+                                    <Input
+                                      type="number"
+                                      min={1}
+                                      value={popoverFator[p.id] || "1"}
+                                      onChange={(e) => setPopoverFator(prev => ({ ...prev, [p.id]: e.target.value.replace(/\D/g, "") || "1" }))}
+                                      className="h-8 text-center text-sm"
+                                    />
                                   </div>
                                   <div className="flex gap-2 pt-1">
                                     <Button
@@ -706,6 +719,7 @@ const ProdutosPage = () => {
                                           adding: true,
                                           quantidade: qtd,
                                           tipoEmbalagem: popoverEmb[p.id] || "UNI",
+                                          fatorEmbalagem: parseInt(popoverFator[p.id] || "1") || 1,
                                         });
                                         setPopoverOpen(prev => ({ ...prev, [p.id]: false }));
                                       }}
