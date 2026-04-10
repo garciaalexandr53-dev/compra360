@@ -373,6 +373,7 @@ const ProdutosPage = () => {
     }
 
     setClassifyModalOpen(true);
+    setClassifyMode("classify");
     setClassifyStatus("running");
     setClassifyProgress(10);
     setClassifyError("");
