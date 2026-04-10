@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2, Download, Package, Store, AlertTriangle, Pencil, Undo2, ArrowRight, Copy, MessageCircle, Check, ClipboardCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +19,7 @@ const FuncionariosPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva, lojas } = useLojaAtiva();
   const navigate = useNavigate();
+  const [linkLojaId, setLinkLojaId] = useState<string>("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editQty, setEditQty] = useState<string>("");
   const [linkCopiado, setLinkCopiado] = useState(false);
@@ -391,8 +393,8 @@ const FuncionariosPage = () => {
     }
   };
 
-  const effectiveLinkLojaId = lojaAtiva?.id || "";
-  const effectiveLinkLoja = lojaAtiva;
+  const effectiveLinkLojaId = lojas.length === 1 ? lojas[0].id : linkLojaId;
+  const effectiveLinkLoja = lojas.find((l) => l.id === effectiveLinkLojaId);
   const publicOrigin = import.meta.env.VITE_APP_PUBLIC_URL || "https://compra360.lovable.app";
   const baseUrl = `${publicOrigin.replace(/\/$/, "")}/app-funcionarios`;
   const appUrl = effectiveLinkLojaId
@@ -438,7 +440,7 @@ const FuncionariosPage = () => {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="itens" className="space-y-3">
-      {/* Compact header */}
+      {/* Title at top */}
       <div className="flex items-center gap-2">
         <h1 className="text-lg font-bold">App Funcionários</h1>
         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{pendentes.length} pendentes</span>
@@ -646,21 +648,25 @@ const FuncionariosPage = () => {
         );
       })()}
 
-      {/* Compartilhar link com funcionários */}
+      {/* Loja selector + sharing */}
       <div className="bg-card border rounded-xl shadow-sm p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <Store className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-semibold">Compartilhar com funcionários</span>
-        </div>
-        {effectiveLinkLoja ? (
-          <p className="text-xs text-muted-foreground">
-            Link será gerado para <strong>{effectiveLinkLoja.nome}</strong>
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            Selecione a loja no topo da tela para gerar o link
-          </p>
-        )}
+        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
+          <Store className="h-3.5 w-3.5 inline mr-1" />Qual loja precisa abastecer?
+        </label>
+        {lojas.length > 1 ? (
+          <Select value={linkLojaId} onValueChange={setLinkLojaId}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Selecione a loja para gerar o link" />
+            </SelectTrigger>
+            <SelectContent>
+              {lojas.map((l) => (
+                <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : effectiveLinkLoja ? (
+          <p className="text-sm text-foreground font-medium">{effectiveLinkLoja.nome}</p>
+        ) : null}
         <div className="flex flex-row gap-2">
           <Button
             variant={linkCopiado ? "default" : "outline"}
