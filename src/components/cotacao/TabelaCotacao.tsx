@@ -137,6 +137,7 @@ const TabelaCotacao = ({
                 Produto
               </th>
               <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-14">Emb</th>
+              <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-10">Fator</th>
               <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-16">Qt</th>
               {fornecedores.map((f) => {
                 const hasPrice = supplierHasResponded(f.id);
