@@ -113,12 +113,16 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
       const existingMap = await fetchAllProductsMap();
       const newProducts = items.filter((i) => !existingMap.has(i.nome.toLowerCase().trim()));
 
+      const newProductInserts: { id: string; nome: string; embalagem: string; fator_embalagem: number }[] = [];
       if (newProducts.length) {
         const { data: inserted } = await supabase
           .from("produtos")
           .insert(newProducts.map((p) => ({ nome: p.nome, embalagem: p.embalagem, ativo: true })))
-          .select("id, nome");
-        (inserted || []).forEach((p) => existingMap.set(p.nome.toLowerCase().trim(), p));
+          .select("id, nome, embalagem, fator_embalagem");
+        (inserted || []).forEach((p) => {
+          existingMap.set(p.nome.toLowerCase().trim(), p);
+          newProductInserts.push({ id: p.id, nome: p.nome, embalagem: p.embalagem || "UNI", fator_embalagem: p.fator_embalagem || 1 });
+        });
       }
 
       // 2. Check which products are already in the cotação
