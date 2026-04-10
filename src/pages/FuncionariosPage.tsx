@@ -445,50 +445,6 @@ const FuncionariosPage = () => {
         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{pendentes.length} pendentes</span>
       </div>
 
-      {/* Loja selector for link */}
-      {lojas.length > 1 && (
-        <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
-            <Store className="h-3.5 w-3.5 inline mr-1" />Qual loja precisa abastecer?
-          </label>
-          <Select value={linkLojaId} onValueChange={setLinkLojaId}>
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="Selecione a loja para gerar o link" />
-            </SelectTrigger>
-            <SelectContent>
-              {lojas.map((l) => (
-                <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {/* Feedback loja selecionada */}
-      {effectiveLinkLoja && (
-        <div className="flex items-center gap-2 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-sm px-3 py-2 rounded-lg">
-          <Check className="h-4 w-4 shrink-0" />
-          <span>Loja selecionada: <strong>{effectiveLinkLoja.nome}</strong></span>
-        </div>
-      )}
-
-      {/* Botões Link e WhatsApp */}
-      <div className="flex flex-row gap-2">
-        <Button
-          variant={linkCopiado ? "default" : "outline"}
-          size="sm"
-          className={`h-9 gap-1.5 flex-1 ${linkCopiado ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
-          onClick={copyLink}
-        >
-          {linkCopiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-          <span className="text-sm">{linkCopiado ? "✓ Copiado!" : "Copiar Link"}</span>
-        </Button>
-        <Button variant="outline" size="sm" className="h-9 gap-1.5 flex-1" onClick={openWhatsApp}>
-          <MessageCircle className="h-4 w-4" />
-          <span className="text-sm">WhatsApp</span>
-        </Button>
-      </div>
-
       {/* Pending items */}
       <div className="bg-card border rounded-xl shadow-sm overflow-hidden mb-5">
         <div className="px-4 py-3 border-b flex items-center justify-between">
