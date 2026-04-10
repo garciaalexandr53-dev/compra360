@@ -153,6 +153,7 @@ export type Database = {
       cotacao_produtos: {
         Row: {
           cotacao_id: string
+          fator_embalagem: number
           id: string
           produto_id: string
           quantidade: number | null
@@ -160,6 +161,7 @@ export type Database = {
         }
         Insert: {
           cotacao_id: string
+          fator_embalagem?: number
           id?: string
           produto_id: string
           quantidade?: number | null
@@ -167,6 +169,7 @@ export type Database = {
         }
         Update: {
           cotacao_id?: string
+          fator_embalagem?: number
           id?: string
           produto_id?: string
           quantidade?: number | null
@@ -488,6 +491,7 @@ export type Database = {
           categoria_id: string | null
           created_at: string
           embalagem: string | null
+          fator_embalagem: number
           id: string
           nome: string
           updated_at: string
@@ -498,6 +502,7 @@ export type Database = {
           categoria_id?: string | null
           created_at?: string
           embalagem?: string | null
+          fator_embalagem?: number
           id?: string
           nome: string
           updated_at?: string
@@ -508,6 +513,7 @@ export type Database = {
           categoria_id?: string | null
           created_at?: string
           embalagem?: string | null
+          fator_embalagem?: number
           id?: string
           nome?: string
           updated_at?: string
