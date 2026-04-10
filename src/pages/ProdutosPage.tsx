@@ -454,6 +454,7 @@ const ProdutosPage = () => {
     }
 
     setClassifyModalOpen(true);
+    setClassifyMode("fator");
     setClassifyStatus("running");
     setClassifyProgress(10);
     setClassifyError("");
