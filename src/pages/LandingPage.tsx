@@ -68,6 +68,7 @@ const plans = [
     period: "/mês",
     highlight: false,
     badge: null,
+    oldPrice: null,
     features: ["Sem cartão de crédito", "1 loja", "Até 3 fornecedores", "2 cotações por mês"],
     cta: "Começar grátis",
     ctaVariant: "outline" as const,
@@ -75,10 +76,11 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "R$97",
+    price: "R$49,90",
     period: "/mês",
     highlight: true,
     badge: "MAIS POPULAR",
+    oldPrice: null,
     features: [
       "Cotações ilimitadas",
       "Fornecedores ilimitados",
@@ -92,17 +94,18 @@ const plans = [
   },
   {
     name: "Business",
-    price: "R$197",
+    price: "R$97",
     period: "/mês",
     highlight: false,
-    badge: null,
+    badge: "MELHOR CUSTO-BENEFÍCIO",
+    oldPrice: "R$149",
     features: [
       "Tudo do Pro",
       "Múltiplas lojas em rede",
       "Relatórios executivos",
       "Suporte prioritário",
     ],
-    cta: "Falar com especialista",
+    cta: "Começar 30 dias grátis",
     ctaVariant: "outline" as const,
     note: null,
   },
@@ -307,6 +310,9 @@ export default function LandingPage() {
                 )}
                 <h3 className="text-white font-bold text-lg mb-1">{plan.name === "Business" ? "👑 " : ""}{plan.name}</h3>
                 <div className="mb-5">
+                  {plan.oldPrice && (
+                    <span className="text-slate-500 text-sm line-through mr-2">{plan.oldPrice}</span>
+                  )}
                   <span className="text-3xl font-bold text-white">{plan.price}</span>
                   <span className="text-slate-500 text-sm">{plan.period}</span>
                 </div>
