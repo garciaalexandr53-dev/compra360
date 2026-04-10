@@ -20,6 +20,7 @@ interface OrderItem {
   produto: string;
   embalagem: string;
   quantidade: number;
+  fator: number;
   preco: number;
   total: number;
 }
@@ -152,6 +153,7 @@ const AnalisePage = () => {
         produto: cp.produtos?.nome || "?",
         embalagem: cp.produtos?.embalagem || "un",
         quantidade: qt,
+        fator,
         preco: best.preco ?? 0,
         total: (best.preco ?? 0) * qt * fator,
       });
@@ -287,7 +289,8 @@ const AnalisePage = () => {
     const billingBlock = billingParts.length > 0 ? `\n-----\n*DADOS PARA FATURAMENTO:*\n${billingParts.join("\n")}\n` : "";
     let msg = `📋 *PEDIDO DE COMPRA - COMPRA360*${pedidoNumero ? ` #${pedidoNumero}` : ""}\n-----\n📦 *Fornecedor:* ${f.nome}\n📅 *Data:* ${date}\n📝 *Itens:* ${items.length}${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}${billingBlock}\n-----\n`;
     items.forEach((it, i) => {
-      msg += `\n*${i + 1}. ${it.produto}*\n    Embalagem: ${it.embalagem}\n    Qtd: ${it.quantidade}\n    Preço unit.: R$ ${formatNumber(it.preco)}\n    *Subtotal: R$ ${formatNumber(it.total)}*\n`;
+      const fatorLabel = it.fator > 1 ? ` c/${it.fator} un` : "";
+      msg += `\n*${i + 1}. ${it.produto}*\n    Embalagem: ${it.embalagem}${fatorLabel}\n    Qtd: ${it.quantidade}${it.fator > 1 ? ` (${it.quantidade * it.fator} un)` : ""}\n    Preço unit.: R$ ${formatNumber(it.preco)}\n    *Subtotal: R$ ${formatNumber(it.total)}*\n`;
     });
     msg += `\n-----\n💰 *TOTAL GERAL: ${formatBRL(total)}*${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}\n-----\n_Enviado via Compra360_`;
     window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");

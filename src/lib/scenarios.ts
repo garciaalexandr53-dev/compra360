@@ -7,6 +7,7 @@ export interface ScenarioItem {
   produto: string;
   embalagem: string;
   quantidade: number;
+  fator: number;
   preco: number;
   total: number;
   cpId: string;
@@ -89,6 +90,7 @@ function buildSupplierResult(
       produto: cp.produtoNome,
       embalagem: cp.embalagem,
       quantidade: cp.quantidade,
+      fator: cp.fator,
       preco,
       total: preco * cp.quantidade * cp.fator,
       cpId: cp.id,
