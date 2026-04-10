@@ -19,7 +19,6 @@ const FuncionariosPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva, lojas } = useLojaAtiva();
   const navigate = useNavigate();
-  const [linkLojaId, setLinkLojaId] = useState<string>("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editQty, setEditQty] = useState<string>("");
   const [linkCopiado, setLinkCopiado] = useState(false);
@@ -393,8 +392,8 @@ const FuncionariosPage = () => {
     }
   };
 
-  const effectiveLinkLojaId = lojas.length === 1 ? lojas[0].id : linkLojaId;
-  const effectiveLinkLoja = lojas.find((l) => l.id === effectiveLinkLojaId);
+  const effectiveLinkLojaId = lojaAtiva?.id || "";
+  const effectiveLinkLoja = lojaAtiva;
   const publicOrigin = import.meta.env.VITE_APP_PUBLIC_URL || "https://compra360.lovable.app";
   const baseUrl = `${publicOrigin.replace(/\/$/, "")}/app-funcionarios`;
   const appUrl = effectiveLinkLojaId
@@ -402,8 +401,8 @@ const FuncionariosPage = () => {
     : baseUrl;
 
   const copyLink = () => {
-    if (lojas.length > 1 && !effectiveLinkLojaId) {
-      toast.error("Selecione a loja primeiro!");
+    if (!effectiveLinkLojaId) {
+      toast.error("Selecione a loja no topo da tela!");
       return;
     }
     navigator.clipboard.writeText(appUrl);
@@ -413,8 +412,8 @@ const FuncionariosPage = () => {
   };
 
   const openWhatsApp = () => {
-    if (lojas.length > 1 && !effectiveLinkLojaId) {
-      toast.error("Selecione a loja primeiro!");
+    if (!effectiveLinkLojaId) {
+      toast.error("Selecione a loja no topo da tela!");
       return;
     }
     const lojaLabel = effectiveLinkLoja ? ` da loja ${effectiveLinkLoja.nome}` : "";
