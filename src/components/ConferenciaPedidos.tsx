@@ -71,6 +71,7 @@ const ConferenciaPedidos = () => {
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrReport, setOcrReport] = useState<OcrComparisonItem[] | null>(null);
   const [ocrTotalNf, setOcrTotalNf] = useState<number | null>(null);
+  const [filtroFornecedor, setFiltroFornecedor] = useState<string>("todos");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
