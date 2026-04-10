@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2, Download, Package, Store, AlertTriangle, Pencil, Undo2, ArrowRight, Copy, MessageCircle, Check, ClipboardCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -19,7 +18,6 @@ const FuncionariosPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva, lojas } = useLojaAtiva();
   const navigate = useNavigate();
-  const [linkLojaId, setLinkLojaId] = useState<string>("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editQty, setEditQty] = useState<string>("");
   const [linkCopiado, setLinkCopiado] = useState(false);
@@ -393,8 +391,8 @@ const FuncionariosPage = () => {
     }
   };
 
-  const effectiveLinkLojaId = lojas.length === 1 ? lojas[0].id : linkLojaId;
-  const effectiveLinkLoja = lojas.find((l) => l.id === effectiveLinkLojaId);
+  const effectiveLinkLojaId = lojaAtiva?.id || "";
+  const effectiveLinkLoja = lojaAtiva;
   const publicOrigin = import.meta.env.VITE_APP_PUBLIC_URL || "https://compra360.lovable.app";
   const baseUrl = `${publicOrigin.replace(/\/$/, "")}/app-funcionarios`;
   const appUrl = effectiveLinkLojaId
@@ -402,8 +400,8 @@ const FuncionariosPage = () => {
     : baseUrl;
 
   const copyLink = () => {
-    if (lojas.length > 1 && !effectiveLinkLojaId) {
-      toast.error("Selecione a loja primeiro!");
+    if (!effectiveLinkLojaId) {
+      toast.error("Selecione a loja no topo da tela!");
       return;
     }
     navigator.clipboard.writeText(appUrl);
@@ -413,8 +411,8 @@ const FuncionariosPage = () => {
   };
 
   const openWhatsApp = () => {
-    if (lojas.length > 1 && !effectiveLinkLojaId) {
-      toast.error("Selecione a loja primeiro!");
+    if (!effectiveLinkLojaId) {
+      toast.error("Selecione a loja no topo da tela!");
       return;
     }
     const lojaLabel = effectiveLinkLoja ? ` da loja ${effectiveLinkLoja.nome}` : "";
@@ -444,50 +442,6 @@ const FuncionariosPage = () => {
       <div className="flex items-center gap-2">
         <h1 className="text-lg font-bold">App Funcionários</h1>
         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{pendentes.length} pendentes</span>
-      </div>
-
-      {/* Loja selector for link */}
-      {lojas.length > 1 && (
-        <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">
-            <Store className="h-3.5 w-3.5 inline mr-1" />Qual loja precisa abastecer?
-          </label>
-          <Select value={linkLojaId} onValueChange={setLinkLojaId}>
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="Selecione a loja para gerar o link" />
-            </SelectTrigger>
-            <SelectContent>
-              {lojas.map((l) => (
-                <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {/* Feedback loja selecionada */}
-      {effectiveLinkLoja && (
-        <div className="flex items-center gap-2 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-sm px-3 py-2 rounded-lg">
-          <Check className="h-4 w-4 shrink-0" />
-          <span>Loja selecionada: <strong>{effectiveLinkLoja.nome}</strong></span>
-        </div>
-      )}
-
-      {/* Botões Link e WhatsApp */}
-      <div className="flex flex-row gap-2">
-        <Button
-          variant={linkCopiado ? "default" : "outline"}
-          size="sm"
-          className={`h-9 gap-1.5 flex-1 ${linkCopiado ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
-          onClick={copyLink}
-        >
-          {linkCopiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-          <span className="text-sm">{linkCopiado ? "✓ Copiado!" : "Copiar Link"}</span>
-        </Button>
-        <Button variant="outline" size="sm" className="h-9 gap-1.5 flex-1" onClick={openWhatsApp}>
-          <MessageCircle className="h-4 w-4" />
-          <span className="text-sm">WhatsApp</span>
-        </Button>
       </div>
 
       {/* Pending items */}
@@ -691,6 +645,39 @@ const FuncionariosPage = () => {
           </div>
         );
       })()}
+
+      {/* Compartilhar link com funcionários */}
+      <div className="bg-card border rounded-xl shadow-sm p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Store className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-semibold">Compartilhar com funcionários</span>
+        </div>
+        {effectiveLinkLoja ? (
+          <p className="text-xs text-muted-foreground">
+            Link será gerado para <strong>{effectiveLinkLoja.nome}</strong>
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Selecione a loja no topo da tela para gerar o link
+          </p>
+        )}
+        <div className="flex flex-row gap-2">
+          <Button
+            variant={linkCopiado ? "default" : "outline"}
+            size="sm"
+            className={`h-9 gap-1.5 flex-1 ${linkCopiado ? "bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand))]/90 text-primary-foreground" : ""}`}
+            onClick={copyLink}
+            disabled={!effectiveLinkLojaId}
+          >
+            {linkCopiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            <span className="text-sm">{linkCopiado ? "✓ Copiado!" : "Copiar Link"}</span>
+          </Button>
+          <Button variant="outline" size="sm" className="h-9 gap-1.5 flex-1" onClick={openWhatsApp} disabled={!effectiveLinkLojaId}>
+            <MessageCircle className="h-4 w-4" />
+            <span className="text-sm">WhatsApp</span>
+          </Button>
+        </div>
+      </div>
         </TabsContent>
         <TabsContent value="conferencia">
           <ConferenciaPedidos />
