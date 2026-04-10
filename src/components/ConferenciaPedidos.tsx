@@ -667,17 +667,60 @@ const ConferenciaPedidos = () => {
   }
 
   // Pedidos list
+  const fornecedoresUnicos = [...new Set(pedidos.map((p: any) => p.fornecedor))].sort();
+  const pedidosFiltrados = filtroFornecedor === "todos"
+    ? pedidos
+    : pedidos.filter((p: any) => p.fornecedor === filtroFornecedor);
+
+  const formatTimeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days === 0) return "Hoje";
+    if (days === 1) return "Ontem";
+    return `${days} dias atrás`;
+  };
+
   return (
     <div className="space-y-3">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-bold">Conferência de Pedidos</h2>
+          <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+            {pedidos.length}
+          </span>
+        </div>
+      </div>
+
+      {/* Filtro por fornecedor */}
+      {fornecedoresUnicos.length > 1 && (
+        <div className="flex items-center gap-2">
+          <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <Select value={filtroFornecedor} onValueChange={setFiltroFornecedor}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Filtrar fornecedor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os fornecedores</SelectItem>
+              {fornecedoresUnicos.map((f) => (
+                <SelectItem key={f} value={f}>{f}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">Carregando...</div>
-      ) : pedidos.length === 0 ? (
+      ) : pedidosFiltrados.length === 0 ? (
         <div className="text-center py-12">
           <Package className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
-          <p className="text-muted-foreground text-sm">Nenhum pedido aguardando conferência</p>
+          <p className="text-muted-foreground text-sm">
+            {pedidos.length > 0 ? "Nenhum pedido para este fornecedor" : "Nenhum pedido aguardando conferência"}
+          </p>
         </div>
       ) : (
-        pedidos.map((pedido: any) => (
+        pedidosFiltrados.map((pedido: any) => (
           <button
             key={pedido.id}
             onClick={() => loadPedidoDetails(pedido)}
@@ -687,10 +730,15 @@ const ConferenciaPedidos = () => {
               <Package className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-bold">Pedido #{pedido.numero}</div>
-              <div className="text-xs text-muted-foreground">{pedido.fornecedor}</div>
-              <div className="text-xs text-muted-foreground">
-                R$ {pedido.total.toFixed(2)} · {new Date(pedido.created_at).toLocaleDateString("pt-BR")}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold">Pedido #{pedido.numero}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-accent-foreground font-medium">
+                  {formatTimeAgo(pedido.created_at)}
+                </span>
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">{pedido.fornecedor}</div>
+              <div className="text-xs font-semibold text-foreground mt-0.5">
+                {formatBRL(pedido.total)}
               </div>
             </div>
             <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
