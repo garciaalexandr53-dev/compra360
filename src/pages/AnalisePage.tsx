@@ -654,11 +654,19 @@ const AnalisePage = () => {
         </div>
       )}
 
-      {/* BLOCO EXPLICATIVO */}
-      <div className="bg-muted/50 border rounded-xl px-4 py-3">
-        <p className="text-xs text-muted-foreground text-center">
+      <div className="bg-muted/50 border rounded-xl px-4 py-3 flex items-center justify-between">
+        <p className="text-xs text-muted-foreground flex-1">
           🤖 O sistema analisou {cotacaoProdutos.length} produto(s) e {fornecedores.length} fornecedor(es) para encontrar a combinação ideal de preço e operação.
         </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-3 text-xs shrink-0 gap-1.5"
+          onClick={() => setNegociacaoOpen(true)}
+        >
+          <Handshake className="h-3.5 w-3.5" />
+          Negociar
+        </Button>
       </div>
 
       {/* PEDIDOS — accordion */}
