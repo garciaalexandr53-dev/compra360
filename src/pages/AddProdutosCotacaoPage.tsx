@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo } from "react";
+import { getDefaultFator } from "@/lib/embalagem";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +19,7 @@ interface LocalItem {
   nome: string;
   quantidade: number;
   embalagem: string;
+  fator: number;
   produtoId?: string;
 }
 
@@ -40,6 +42,7 @@ const AddProdutosCotacaoPage = () => {
   const [dialogItem, setDialogItem] = useState<{ nome: string; produtoId?: string } | null>(null);
   const [dialogQtd, setDialogQtd] = useState("");
   const [dialogEmb, setDialogEmb] = useState("UNI");
+  const [dialogFator, setDialogFator] = useState("1");
   const dialogInputRef = useRef<HTMLInputElement>(null);
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -98,6 +101,7 @@ const AddProdutosCotacaoPage = () => {
     setDialogItem({ nome: produto.nome, produtoId: produto.id });
     setDialogQtd("");
     setDialogEmb("UNI");
+    setDialogFator("1");
     setTimeout(() => dialogInputRef.current?.focus(), 100);
   };
 
@@ -105,6 +109,7 @@ const AddProdutosCotacaoPage = () => {
     setDialogItem({ nome: nome.trim() });
     setDialogQtd("");
     setDialogEmb("UNI");
+    setDialogFator("1");
     setTimeout(() => dialogInputRef.current?.focus(), 100);
   };
 
@@ -126,6 +131,7 @@ const AddProdutosCotacaoPage = () => {
       nome: dialogItem.nome,
       quantidade: qtd,
       embalagem: dialogEmb,
+      fator: parseInt(dialogFator) || 1,
       produtoId: dialogItem.produtoId,
     }]);
     setDialogItem(null);
@@ -169,7 +175,7 @@ const AddProdutosCotacaoPage = () => {
         cotacaoId = newCot.id;
       }
 
-      const toInsert: { cotacao_id: string; produto_id: string; quantidade: number }[] = [];
+      const toInsert: { cotacao_id: string; produto_id: string; quantidade: number; fator_embalagem: number; tipo_embalagem: string }[] = [];
 
       for (const item of items) {
         let produtoId = item.produtoId;
@@ -178,8 +184,9 @@ const AddProdutosCotacaoPage = () => {
           const { data: newProd, error } = await supabase.from("produtos").insert({
             nome: item.nome,
             embalagem: item.embalagem,
+            fator_embalagem: item.fator,
             user_id: user?.id,
-          }).select("id").single();
+          } as any).select("id").single();
           if (error) throw error;
           produtoId = newProd.id;
         }
@@ -190,6 +197,8 @@ const AddProdutosCotacaoPage = () => {
             cotacao_id: cotacaoId!,
             produto_id: produtoId!,
             quantidade: item.quantidade,
+            fator_embalagem: item.fator,
+            tipo_embalagem: item.embalagem,
           });
         }
       }
