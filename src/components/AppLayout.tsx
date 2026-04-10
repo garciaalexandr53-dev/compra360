@@ -51,6 +51,8 @@ export default function AppLayout() {
               <SidebarTrigger className="hidden md:flex" />
               {isDashboard ? (
                 <span className="text-lg font-bold text-primary tracking-tight">Compra360</span>
+              ) : isFuncionarios ? (
+                <span className="text-lg font-bold text-primary tracking-tight">App Funcionários</span>
               ) : (
                 <LojaSelector />
               )}
