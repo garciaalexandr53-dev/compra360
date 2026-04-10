@@ -16,6 +16,8 @@ interface CotacaoProduto {
   produto_id: string;
   cotacao_id: string;
   quantidade: number | null;
+  fator_embalagem: number;
+  tipo_embalagem: string | null;
   produto?: Produto;
 }
 

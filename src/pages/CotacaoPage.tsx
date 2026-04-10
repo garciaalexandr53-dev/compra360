@@ -30,7 +30,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 type Fornecedor = Tables<"fornecedores">;
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 
-interface CotacaoProduto { id: string; produto_id: string; cotacao_id: string; quantidade: number | null; produto?: Produto; }
+interface CotacaoProduto { id: string; produto_id: string; cotacao_id: string; quantidade: number | null; fator_embalagem: number; tipo_embalagem: string | null; produto?: Produto; }
 interface Preco { id: string; cotacao_produto_id: string; fornecedor_id: string; preco: number | null; }
 
 const HIST_HIGH_THRESHOLD = 0.40; // 40% acima da média histórica
