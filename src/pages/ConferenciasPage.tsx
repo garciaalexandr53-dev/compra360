@@ -46,6 +46,7 @@ interface ConferenciaItem {
 }
 
 const ConferenciasPage = () => {
+  const { isBusiness } = useSubscription();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filtroFornecedor, setFiltroFornecedor] = useState<string>("todos");
   const [filtroDivergencia, setFiltroDivergencia] = useState<string>("todos");
