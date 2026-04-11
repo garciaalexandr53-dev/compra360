@@ -80,6 +80,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
 
   // Tracking saved state
   const [lojaSaved, setLojaSaved] = useState(false);
+  const [createdLojaId, setCreatedLojaId] = useState<string | null>(null);
   const [fornSavedCount, setFornSavedCount] = useState(0);
   const [prodSavedCount, setProdSavedCount] = useState(0);
 
@@ -146,12 +147,15 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
           }
         }
 
-        const { error } = await supabase.from("lojas").insert({
+        const { data: lojaData, error } = await supabase.from("lojas").insert({
           nome: lojaNome.trim(),
           cnpj: cnpjDigits.length === 14 ? cnpjDigits : null,
           user_id: user?.id,
-        });
+        }).select("id").single();
         if (error) throw error;
+
+        // Store loja ID for linking fornecedores later
+        if (lojaData) setCreatedLojaId(lojaData.id);
 
         if (fingerprint && user?.id) {
           await supabase.from("trial_controls" as any).upsert({
@@ -178,10 +182,21 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
           user_id: user?.id,
         }));
 
-        const { error } = await supabase.from("fornecedores").insert(inserts);
+        const { data: insertedForn, error } = await supabase.from("fornecedores").insert(inserts).select("id");
         if (error) throw error;
+
+        // Link fornecedores to the loja created in step 1
+        if (createdLojaId && insertedForn?.length) {
+          const links = insertedForn.map((f) => ({
+            fornecedor_id: f.id,
+            loja_id: createdLojaId,
+          }));
+          await supabase.from("fornecedor_lojas").insert(links);
+        }
+
         setFornSavedCount(validForn.length);
         qc.invalidateQueries({ queryKey: ["fornecedores"] });
+        qc.invalidateQueries({ queryKey: ["fornecedor-lojas"] });
       } else if (step === 3) {
         const validProd = produtos.filter((p) => p.nome.trim());
         if (validProd.length === 0) return;
