@@ -15,6 +15,7 @@ import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, ChevronRight,
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
+import CatalogoBaseModal from "@/components/CatalogoBaseModal";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureCheck } from "@/components/FeatureGate";
