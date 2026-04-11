@@ -351,6 +351,9 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── DEMO ANIMADO ── */}
+      <DemoAnimado />
+
       {/* ── BENEFÍCIOS ── */}
       <section ref={benefitsSection.ref} className="py-16 px-5 border-t border-white/5">
         <div className="max-w-6xl mx-auto">
