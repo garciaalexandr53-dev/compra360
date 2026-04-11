@@ -421,17 +421,17 @@ const AddProdutosCotacaoPage = () => {
       {/* Product list */}
       <div className="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom,0px)+80px)]">
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-3">
               <ShoppingCart className="h-7 w-7 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium text-foreground">
-              {alreadyCount > 0 ? "Sua cotação já tem produtos" : "Nenhum produto ainda"}
+              {alreadyCount > 0 ? "Sua cotação já tem produtos" : "Nenhum produto adicionado"}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-xs text-muted-foreground max-w-[250px]">
               {alreadyCount > 0
                 ? `${alreadyCount} produto(s) já estão prontos para seguir ao próximo passo`
-                : "Adicione itens para começar sua cotação"}
+                : "Digite o nome de um produto no campo acima ou toque em um dos produtos recentes"}
             </p>
           </div>
         ) : (
