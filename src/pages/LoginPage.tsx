@@ -53,6 +53,36 @@ const LoginPage = () => {
     return null;
   }
 
+  const translateAuthError = (msg: string): string => {
+    const map: Record<string, string> = {
+      "Password is known to be weak and easy to guess, please choose a different one.":
+        "A senha é muito fraca e fácil de adivinhar. Por favor, escolha outra.",
+      "Password should be at least 6 characters.":
+        "A senha deve ter pelo menos 6 caracteres.",
+      "Password should contain at least one character of each: abcdefghijklmnopqrstuvwxyz, 0123456789.":
+        "A senha deve conter pelo menos uma letra e um número.",
+      "User already registered":
+        "Este email já está cadastrado.",
+      "Invalid login credentials":
+        "Email ou senha incorretos.",
+      "Email not confirmed":
+        "Email não confirmado. Verifique sua caixa de entrada.",
+      "Signup requires a valid password":
+        "Informe uma senha válida para cadastro.",
+      "Unable to validate email address: invalid format":
+        "Formato de email inválido.",
+      "Email rate limit exceeded":
+        "Muitas tentativas. Aguarde alguns minutos.",
+      "For security purposes, you can only request this once every 60 seconds":
+        "Por segurança, aguarde 60 segundos antes de tentar novamente.",
+    };
+    for (const [en, pt] of Object.entries(map)) {
+      if (msg.includes(en)) return pt;
+    }
+    // Fallback: return original if no match
+    return msg;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -60,14 +90,14 @@ const LoginPage = () => {
     if (isSignUp) {
       const { error } = await signUp(email, password);
       if (error) {
-        toast.error(error.message);
+        toast.error(translateAuthError(error.message));
       } else {
         toast.success("Conta criada! Verifique seu email para confirmar.");
       }
     } else {
       const { error } = await signIn(email, password);
       if (error) {
-        toast.error("Email ou senha incorretos");
+        toast.error(translateAuthError(error.message));
       } else {
         navigate("/dashboard", { replace: true });
       }
@@ -126,7 +156,7 @@ const LoginPage = () => {
                 redirect_uri: window.location.origin,
               });
               if (error) {
-                toast.error("Erro ao entrar com Google");
+                toast.error("Erro ao entrar com Google. Tente novamente.");
                 setGoogleLoading(false);
               }
             }}
