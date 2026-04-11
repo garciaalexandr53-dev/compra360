@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureCheck } from "@/components/FeatureGate";
+import PlanosModal from "@/components/PlanosModal";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
@@ -35,6 +37,7 @@ const ProdutosPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
+  const { checkLimit, checkPlan, showPlanos, setShowPlanos } = useFeatureCheck();
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState<string>("Todos");
   const [modalOpen, setModalOpen] = useState(false);
@@ -346,6 +349,7 @@ const ProdutosPage = () => {
   }, {});
 
   const openAdd = () => {
+    if (!checkLimit("max_produtos", totalCount, "Faça upgrade para cadastrar mais produtos.")) return;
     setEditingId(null);
     setForm(emptyForm);
     setModalOpen(true);
