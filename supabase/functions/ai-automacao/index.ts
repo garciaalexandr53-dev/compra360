@@ -54,6 +54,44 @@ serve(async (req) => {
     const errorResponse = (msg: string, status: number) =>
       new Response(JSON.stringify({ error: msg }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+    const chunkArray = <T,>(items: T[], size: number) => {
+      const chunks: T[][] = [];
+      for (let i = 0; i < items.length; i += size) {
+        chunks.push(items.slice(i, i + size));
+      }
+      return chunks;
+    };
+
+    const extractJsonArray = (content: string) => {
+      const cleaned = content
+        .replace(/```json/gi, "")
+        .replace(/```/g, "")
+        .replace(/[\u0000-\u001F]+/g, " ")
+        .trim();
+
+      const start = cleaned.indexOf("[");
+      const end = cleaned.lastIndexOf("]");
+      if (start === -1 || end === -1 || end <= start) return [];
+
+      const candidate = cleaned
+        .slice(start, end + 1)
+        .replace(/,\s*([}\]])/g, "$1");
+
+      try {
+        const parsed = JSON.parse(candidate);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    };
+
+    const normalizeClassification = (item: any) => {
+      const nome = typeof item?.nome === "string" ? item.nome.trim() : "";
+      const categoria = typeof item?.categoria === "string" ? item.categoria.trim() : "";
+      if (!nome || !categoria) return null;
+      return { nome, categoria };
+    };
+
     // === WHATSAPP MESSAGE GENERATION ===
     if (type === "whatsapp-message") {
       const { fornecedor_id, cotacao_id, loja_id, items } = params;
@@ -106,31 +144,100 @@ Regras:
     // === AUTO-CLASSIFY PRODUCTS ===
     if (type === "classify-products") {
       const { products, existing_categories } = params;
-      const productNames = (products || []).map((p: any) => p.nome).join("\n");
-      const catList = (existing_categories || []).join(", ");
+      if (!products?.length) {
+        return new Response(JSON.stringify({ classifications: [] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
 
-      const result = await callAI([
-        { role: "system", content: "Você classifica produtos de supermercado/atacado em categorias. Retorne APENAS o JSON solicitado." },
-        { role: "user", content: `Classifique cada produto na categoria mais adequada.
+      const catList = (existing_categories || []).join(", ");
+      const BATCH_SIZE = 40;
+      const allClassifications: Array<{ nome: string; categoria: string }> = [];
+
+      for (const batch of chunkArray(products, BATCH_SIZE)) {
+        const productNames = batch
+          .map((p: any) => String(p?.nome || "").trim())
+          .filter(Boolean)
+          .map((name: string) => `- ${name}`)
+          .join("\n");
+
+        if (!productNames) continue;
+
+        const result = await callAI(
+          [
+            {
+              role: "system",
+              content: "Você classifica produtos de supermercado/atacado em categorias. Sempre responda usando a tool call solicitada.",
+            },
+            {
+              role: "user",
+              content: `Classifique cada produto na categoria mais adequada.
 
 Categorias existentes: ${catList || "Nenhuma"}
 
-Se nenhuma categoria existente for adequada, sugira uma nova categoria (em português, curta e genérica tipo: Bebidas, Limpeza, Higiene, Carnes, Laticínios, Hortifruti, Padaria, Mercearia, Descartáveis, etc).
+Se nenhuma categoria existente for adequada, sugira uma nova categoria curta, clara e genérica em português.
+Evite categorias duplicadas com variação mínima de nome.
+Retorne exatamente 1 classificação para cada produto listado.
 
 Produtos:
-${productNames}
+${productNames}`,
+            },
+          ],
+          [
+            {
+              type: "function",
+              function: {
+                name: "classify_products",
+                description: "Classifica produtos em categorias de compra.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    classifications: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          nome: { type: "string" },
+                          categoria: { type: "string" },
+                        },
+                        required: ["nome", "categoria"],
+                        additionalProperties: false,
+                      },
+                    },
+                  },
+                  required: ["classifications"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          ],
+          { type: "function", function: { name: "classify_products" } }
+        );
+        if (result.error) return errorResponse(result.error, result.status);
 
-Retorne um JSON array onde cada item tem: {"nome": "nome do produto", "categoria": "nome da categoria"}
-Retorne APENAS o JSON, sem markdown, sem explicação.` }
-      ]);
-      if (result.error) return errorResponse(result.error, result.status);
+        let batchClassifications: any[] = [];
 
-      let content = result.data.choices?.[0]?.message?.content || "[]";
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
-      if (jsonMatch) content = jsonMatch[0];
-      let classifications;
-      try { classifications = JSON.parse(content); } catch { classifications = []; }
-      return new Response(JSON.stringify({ classifications }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        try {
+          const toolCall = result.data.choices?.[0]?.message?.tool_calls?.[0];
+          if (toolCall?.function?.arguments) {
+            const args = JSON.parse(toolCall.function.arguments);
+            batchClassifications = Array.isArray(args.classifications) ? args.classifications : [];
+          }
+        } catch {
+          batchClassifications = [];
+        }
+
+        if (!batchClassifications.length) {
+          const content = result.data.choices?.[0]?.message?.content || "[]";
+          batchClassifications = extractJsonArray(content);
+        }
+
+        allClassifications.push(
+          ...batchClassifications
+            .map(normalizeClassification)
+            .filter((item): item is { nome: string; categoria: string } => Boolean(item))
+        );
+      }
+
+      return new Response(JSON.stringify({ classifications: allClassifications }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // === SUGGEST QUANTITIES (Phase 3: per-store segmented demand forecasting) ===
