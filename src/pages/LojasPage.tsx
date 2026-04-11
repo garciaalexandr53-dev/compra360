@@ -202,6 +202,7 @@ const LojasPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
   );
 };
