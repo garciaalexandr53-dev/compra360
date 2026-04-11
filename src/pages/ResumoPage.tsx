@@ -144,7 +144,6 @@ const ResumoPage = () => {
     return { totalItems, responderam, itensCotados, cobertura, grandTotal, supplierStats };
   }, [cotacaoProdutos, precos, fornecedores]);
 
-  const navigate = useNavigate();
 
   if (!cotacaoAtiva) {
     return (
