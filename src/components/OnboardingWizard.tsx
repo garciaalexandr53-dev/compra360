@@ -8,9 +8,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Store, Truck, Package, Sparkles, ArrowLeft, ArrowRight, Check, X, Plus, Trash2, PartyPopper } from "lucide-react";
+import { Store, Truck, Package, Sparkles, ArrowLeft, ArrowRight, Check, X, Plus, Trash2, PartyPopper, Download } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getDeviceFingerprint } from "@/lib/fingerprint";
+import CatalogoBaseModal from "@/components/CatalogoBaseModal";
 
 interface OnboardingWizardProps {
   open: boolean;
