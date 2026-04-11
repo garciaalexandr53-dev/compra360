@@ -83,6 +83,9 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   const [fornSavedCount, setFornSavedCount] = useState(0);
   const [prodSavedCount, setProdSavedCount] = useState(0);
 
+  // Catálogo base
+  const [showCatalogo, setShowCatalogo] = useState(false);
+
   // Fingerprint
   const [fingerprint, setFingerprint] = useState<string | null>(null);
 
