@@ -16,7 +16,15 @@ interface RawClassification {
 
 const CLASSIFY_BATCH_SIZE = 60;
 
-const normalizeText = (value: string) => value.trim().toLowerCase();
+const normalizeText = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[–—]/g, "-")
+    .replace(/\s*-\s*/g, " - ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 
 const chunkArray = <T,>(items: T[], size: number) => {
   const chunks: T[][] = [];
