@@ -589,13 +589,22 @@ const ProdutosPage = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setImportOpen(true)}>
+                <DropdownMenuItem onClick={() => {
+                  if (!checkPlan("pro", "Importação em massa")) return;
+                  setImportOpen(true);
+                }}>
                   <Upload className="h-4 w-4 mr-2" /> Importar Produtos
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={autoClassifyProducts} disabled={produtos.length === 0}>
+                <DropdownMenuItem onClick={() => {
+                  if (!checkPlan("business", "Classificação por IA")) return;
+                  autoClassifyProducts();
+                }} disabled={produtos.length === 0}>
                   <Sparkles className="h-4 w-4 mr-2" /> Classificar Categorias IA
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={autoSuggestFatorProducts} disabled={produtos.length === 0}>
+                <DropdownMenuItem onClick={() => {
+                  if (!checkPlan("pro", "Sugestão de fatores por IA")) return;
+                  autoSuggestFatorProducts();
+                }} disabled={produtos.length === 0}>
                   <Package className="h-4 w-4 mr-2" /> Sugerir Fatores IA
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={removeDuplicates} disabled={produtos.length === 0}>
