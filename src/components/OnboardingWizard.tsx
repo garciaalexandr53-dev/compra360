@@ -571,5 +571,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         </div>
       </DialogContent>
     </Dialog>
+    <CatalogoBaseModal open={showCatalogo} onOpenChange={setShowCatalogo} />
+    </>
   );
 }
