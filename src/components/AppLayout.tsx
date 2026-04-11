@@ -21,7 +21,7 @@ export default function AppLayout() {
   const isFuncionarios = location.pathname === "/funcionarios";
 
   useEffect(() => {
-    if (!lojasLoading && lojas.length === 0 && user) {
+    if (!lojasLoading && lojas.length === 0 && user && !localStorage.getItem("onboarding_completed")) {
       setShowOnboarding(true);
     }
   }, [lojasLoading, lojas, user]);

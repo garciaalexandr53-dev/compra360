@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Store, Truck, Package, Sparkles, ArrowLeft, ArrowRight, Check, X } from "lucide-react";
+import { Store, Truck, Package, Sparkles, ArrowLeft, ArrowRight, Check, X, Plus, Trash2, PartyPopper } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getDeviceFingerprint } from "@/lib/fingerprint";
 
@@ -26,6 +26,40 @@ const formatCNPJ = (value: string) => {
     .replace(/(\d{4})(\d)/, "$1-$2");
 };
 
+interface FornecedorDraft {
+  id: string;
+  nome: string;
+  representante: string;
+  telefone: string;
+  email: string;
+  pedido_minimo: string;
+  prazo_pagamento: string;
+  observacoes: string;
+}
+
+interface ProdutoDraft {
+  id: string;
+  nome: string;
+  embalagem: string;
+}
+
+const emptyFornecedor = (): FornecedorDraft => ({
+  id: crypto.randomUUID(),
+  nome: "",
+  representante: "",
+  telefone: "",
+  email: "",
+  pedido_minimo: "",
+  prazo_pagamento: "",
+  observacoes: "",
+});
+
+const emptyProduto = (): ProdutoDraft => ({
+  id: crypto.randomUUID(),
+  nome: "",
+  embalagem: "",
+});
+
 export default function OnboardingWizard({ open, onClose }: OnboardingWizardProps) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -37,15 +71,16 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   const [lojaNome, setLojaNome] = useState("");
   const [lojaCnpj, setLojaCnpj] = useState("");
 
-  // Step 2 - Fornecedor
-  const [fornNome, setFornNome] = useState("");
-  const [fornRepresentante, setFornRepresentante] = useState("");
-  const [fornTelefone, setFornTelefone] = useState("");
-  const [fornEmail, setFornEmail] = useState("");
+  // Step 2 - Fornecedores (múltiplos)
+  const [fornecedores, setFornecedores] = useState<FornecedorDraft[]>([emptyFornecedor()]);
 
-  // Step 3 - Produto
-  const [prodNome, setProdNome] = useState("");
-  const [prodEmbalagem, setProdEmbalagem] = useState("");
+  // Step 3 - Produtos (múltiplos)
+  const [produtos, setProdutos] = useState<ProdutoDraft[]>([emptyProduto()]);
+
+  // Tracking saved state
+  const [lojaSaved, setLojaSaved] = useState(false);
+  const [fornSavedCount, setFornSavedCount] = useState(0);
+  const [prodSavedCount, setProdSavedCount] = useState(0);
 
   // Fingerprint
   const [fingerprint, setFingerprint] = useState<string | null>(null);
@@ -56,8 +91,28 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
     }
   }, [open]);
 
-  const totalSteps = 4;
+  const totalSteps = 5; // Boas-vindas, Loja, Fornecedores, Produtos, Conclusão
   const progress = ((step + 1) / totalSteps) * 100;
+
+  // --- Fornecedor helpers ---
+  const updateFornecedor = (id: string, field: keyof FornecedorDraft, value: string) => {
+    setFornecedores((prev) => prev.map((f) => (f.id === id ? { ...f, [field]: value } : f)));
+  };
+  const addFornecedor = () => setFornecedores((prev) => [...prev, emptyFornecedor()]);
+  const removeFornecedor = (id: string) => {
+    if (fornecedores.length <= 1) return;
+    setFornecedores((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  // --- Produto helpers ---
+  const updateProduto = (id: string, field: keyof ProdutoDraft, value: string) => {
+    setProdutos((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
+  };
+  const addProduto = () => setProdutos((prev) => [...prev, emptyProduto()]);
+  const removeProduto = (id: string) => {
+    if (produtos.length <= 1) return;
+    setProdutos((prev) => prev.filter((p) => p.id !== id));
+  };
 
   const saveStep = async () => {
     setSaving(true);
@@ -65,15 +120,14 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
       if (step === 1) {
         if (!lojaNome.trim()) return;
         const cnpjDigits = lojaCnpj.replace(/\D/g, "");
-        
-        // Check trial eligibility before creating loja
+
+        // Check trial eligibility
         if (cnpjDigits.length === 14 || fingerprint) {
           const { data: eligibility } = await supabase.rpc("check_trial_eligibility", {
             _cnpj: cnpjDigits.length === 14 ? cnpjDigits : null,
             _fingerprint: fingerprint,
             _phone: null,
           });
-          
           if (eligibility && !(eligibility as any).eligible) {
             const reason = (eligibility as any).blocked_by;
             const msgs: Record<string, string> = {
@@ -95,7 +149,6 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         });
         if (error) throw error;
 
-        // Save fingerprint to trial_controls (updates if already exists from trigger)
         if (fingerprint && user?.id) {
           await supabase.from("trial_controls" as any).upsert({
             user_id: user.id,
@@ -103,27 +156,41 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
           }, { onConflict: "user_id" });
         }
 
+        setLojaSaved(true);
         qc.invalidateQueries({ queryKey: ["lojas"] });
         qc.invalidateQueries({ queryKey: ["user-plan"] });
       } else if (step === 2) {
-        if (!fornNome.trim()) return;
-        const { error } = await supabase.from("fornecedores").insert({
-          nome: fornNome.trim(),
-          representante: fornRepresentante.trim() || null,
-          telefone: fornTelefone.trim() || null,
-          email: fornEmail.trim() || null,
+        const validForn = fornecedores.filter((f) => f.nome.trim());
+        if (validForn.length === 0) return;
+
+        const inserts = validForn.map((f) => ({
+          nome: f.nome.trim(),
+          representante: f.representante.trim() || null,
+          telefone: f.telefone.trim() || null,
+          email: f.email.trim() || null,
+          pedido_minimo: f.pedido_minimo ? parseFloat(f.pedido_minimo.replace(",", ".")) : null,
+          prazo_pagamento: f.prazo_pagamento.trim() || null,
+          observacoes: f.observacoes.trim() || null,
           user_id: user?.id,
-        });
+        }));
+
+        const { error } = await supabase.from("fornecedores").insert(inserts);
         if (error) throw error;
+        setFornSavedCount(validForn.length);
         qc.invalidateQueries({ queryKey: ["fornecedores"] });
       } else if (step === 3) {
-        if (!prodNome.trim()) return;
-        const { error } = await supabase.from("produtos").insert({
-          nome: prodNome.trim(),
-          embalagem: prodEmbalagem.trim() || null,
+        const validProd = produtos.filter((p) => p.nome.trim());
+        if (validProd.length === 0) return;
+
+        const inserts = validProd.map((p) => ({
+          nome: p.nome.trim(),
+          embalagem: p.embalagem.trim() || null,
           user_id: user?.id,
-        });
+        }));
+
+        const { error } = await supabase.from("produtos").insert(inserts);
         if (error) throw error;
+        setProdSavedCount(validProd.length);
         qc.invalidateQueries({ queryKey: ["produtos"] });
       }
     } catch (e: any) {
@@ -135,12 +202,14 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   };
 
   const handleNext = async () => {
-    if (step > 0) {
+    if (step >= 1 && step <= 3) {
       await saveStep();
     }
     if (step < totalSteps - 1) {
       setStep(step + 1);
     } else {
+      // Conclusão → marcar como concluído
+      localStorage.setItem("onboarding_completed", "true");
       toast({ title: "🎉 Bem-vindo ao Compra360!", description: "Seu ambiente está pronto. Boas compras!" });
       onClose();
       navigate("/dashboard");
@@ -151,19 +220,24 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
     if (step > 0) setStep(step - 1);
   };
 
+  const handleSkip = () => {
+    localStorage.setItem("onboarding_completed", "true");
+    onClose();
+  };
+
   const canAdvance = () => {
     if (step === 0) return true;
     if (step === 1) return lojaNome.trim().length > 0;
-    if (step === 2) return fornNome.trim().length > 0;
-    if (step === 3) return prodNome.trim().length > 0;
-    return true;
+    if (step === 2) return fornecedores.some((f) => f.nome.trim().length > 0);
+    if (step === 3) return produtos.some((p) => p.nome.trim().length > 0);
+    return true; // conclusão
   };
 
-  const stepIcons = [Sparkles, Store, Truck, Package];
-  const stepLabels = ["Boas-vindas", "Loja", "Fornecedor", "Produto"];
+  const stepIcons = [Sparkles, Store, Truck, Package, PartyPopper];
+  const stepLabels = ["Início", "Loja", "Fornecedores", "Produtos", "Pronto!"];
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={open} onOpenChange={(o) => !o && handleSkip()}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
@@ -187,7 +261,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   }`}
                 >
                   <Icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{label}</span>
+                  <span className="hidden sm:inline truncate">{label}</span>
                 </div>
               );
             })}
@@ -196,7 +270,8 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         </div>
 
         {/* Step content */}
-        <div className="py-4 space-y-4">
+        <div className="py-2 space-y-4">
+          {/* === STEP 0: Boas-vindas === */}
           {step === 0 && (
             <div className="space-y-3 text-center">
               <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -204,8 +279,22 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
               </div>
               <h3 className="text-xl font-semibold">Bem-vindo ao Compra360!</h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Vamos configurar seu ambiente em poucos passos. Você vai cadastrar sua <strong>loja</strong>, seu primeiro <strong>fornecedor</strong> e seu primeiro <strong>produto</strong>. Depois disso, estará pronto para criar cotações e economizar nas compras!
+                Vamos configurar seu ambiente em poucos passos para deixar tudo pronto para uso:
               </p>
+              <div className="text-left space-y-2 text-sm">
+                <div className="flex items-start gap-2">
+                  <Store className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <span><strong>Loja</strong> — cadastre sua unidade com CNPJ</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Truck className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <span><strong>Fornecedores</strong> — adicione seus parceiros com dados de contato, pedido mínimo e prazo</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Package className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <span><strong>Produtos</strong> — cadastre os itens que você compra regularmente</span>
+                </div>
+              </div>
               <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm text-left">
                 <p className="font-medium text-primary">🎁 30 dias grátis no plano Business!</p>
                 <p className="text-muted-foreground mt-1">Aproveite todas as funcionalidades premium durante o período de teste.</p>
@@ -213,11 +302,15 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
             </div>
           )}
 
+          {/* === STEP 1: Loja === */}
           {step === 1 && (
             <div className="space-y-4">
               <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                 <Store className="h-6 w-6 text-primary" />
               </div>
+              <p className="text-sm text-muted-foreground text-center">
+                Cadastre a unidade principal da sua empresa.
+              </p>
               <div className="space-y-2">
                 <Label htmlFor="loja-nome">Nome da Loja *</Label>
                 <Input
@@ -229,7 +322,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="loja-cnpj">CNPJ</Label>
+                <Label htmlFor="loja-cnpj">CNPJ *</Label>
                 <Input
                   id="loja-cnpj"
                   placeholder="00.000.000/0000-00"
@@ -237,90 +330,210 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   onChange={(e) => setLojaCnpj(formatCNPJ(e.target.value))}
                   maxLength={18}
                 />
-                <p className="text-xs text-muted-foreground">Usado para ativar seu período de teste gratuito</p>
+                <p className="text-xs text-muted-foreground">Necessário para ativar o período de teste gratuito</p>
               </div>
             </div>
           )}
 
+          {/* === STEP 2: Fornecedores (múltiplos) === */}
           {step === 2 && (
             <div className="space-y-4">
               <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                 <Truck className="h-6 w-6 text-primary" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="forn-nome">Nome do Fornecedor *</Label>
-                <Input
-                  id="forn-nome"
-                  placeholder="Ex: Distribuidora ABC"
-                  value={fornNome}
-                  onChange={(e) => setFornNome(e.target.value)}
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="forn-rep">Representante</Label>
-                <Input
-                  id="forn-rep"
-                  placeholder="Nome do representante"
-                  value={fornRepresentante}
-                  onChange={(e) => setFornRepresentante(e.target.value)}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="forn-tel">Telefone</Label>
-                  <Input
-                    id="forn-tel"
-                    placeholder="(00) 00000-0000"
-                    value={fornTelefone}
-                    onChange={(e) => setFornTelefone(e.target.value)}
-                  />
+              <p className="text-sm text-muted-foreground text-center">
+                Cadastre seus fornecedores com as informações de contato. Você pode adicionar quantos quiser.
+              </p>
+
+              {fornecedores.map((f, idx) => (
+                <div key={f.id} className="border rounded-lg p-3 space-y-3 relative">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">Fornecedor {idx + 1}</span>
+                    {fornecedores.length > 1 && (
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeFornecedor(f.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Nome *</Label>
+                    <Input
+                      placeholder="Ex: Distribuidora ABC"
+                      value={f.nome}
+                      onChange={(e) => updateFornecedor(f.id, "nome", e.target.value)}
+                      autoFocus={idx === 0}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Representante</Label>
+                      <Input
+                        placeholder="Nome"
+                        value={f.representante}
+                        onChange={(e) => updateFornecedor(f.id, "representante", e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">WhatsApp / Telefone</Label>
+                      <Input
+                        placeholder="(00) 00000-0000"
+                        value={f.telefone}
+                        onChange={(e) => updateFornecedor(f.id, "telefone", e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">E-mail</Label>
+                      <Input
+                        type="email"
+                        placeholder="email@exemplo.com"
+                        value={f.email}
+                        onChange={(e) => updateFornecedor(f.id, "email", e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Pedido Mínimo (R$)</Label>
+                      <Input
+                        placeholder="0,00"
+                        value={f.pedido_minimo}
+                        onChange={(e) => updateFornecedor(f.id, "pedido_minimo", e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Prazo de pagamento / Dia de entrega</Label>
+                    <Input
+                      placeholder="Ex: 28 dias, entrega às terças"
+                      value={f.prazo_pagamento}
+                      onChange={(e) => updateFornecedor(f.id, "prazo_pagamento", e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Observações</Label>
+                    <Input
+                      placeholder="Ex: Só entrega acima de R$500"
+                      value={f.observacoes}
+                      onChange={(e) => updateFornecedor(f.id, "observacoes", e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="forn-email">E-mail</Label>
-                  <Input
-                    id="forn-email"
-                    type="email"
-                    placeholder="email@exemplo.com"
-                    value={fornEmail}
-                    onChange={(e) => setFornEmail(e.target.value)}
-                  />
-                </div>
-              </div>
+              ))}
+
+              <Button variant="outline" size="sm" className="w-full" onClick={addFornecedor}>
+                <Plus className="h-4 w-4 mr-1" />
+                Adicionar outro fornecedor
+              </Button>
             </div>
           )}
 
+          {/* === STEP 3: Produtos (múltiplos) === */}
           {step === 3 && (
             <div className="space-y-4">
               <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                 <Package className="h-6 w-6 text-primary" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="prod-nome">Nome do Produto *</Label>
-                <Input
-                  id="prod-nome"
-                  placeholder="Ex: Arroz 5kg"
-                  value={prodNome}
-                  onChange={(e) => setProdNome(e.target.value)}
-                  autoFocus
-                />
+              <p className="text-sm text-muted-foreground text-center">
+                Cadastre os produtos que você compra regularmente. Você pode adicionar mais depois nas configurações.
+              </p>
+
+              {produtos.map((p, idx) => (
+                <div key={p.id} className="border rounded-lg p-3 space-y-2 relative">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">Produto {idx + 1}</span>
+                    {produtos.length > 1 && (
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeProduto(p.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-2 space-y-1">
+                      <Label className="text-xs">Nome *</Label>
+                      <Input
+                        placeholder="Ex: Arroz 5kg"
+                        value={p.nome}
+                        onChange={(e) => updateProduto(p.id, "nome", e.target.value)}
+                        autoFocus={idx === 0}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Embalagem</Label>
+                      <Input
+                        placeholder="Ex: Pct 5kg"
+                        value={p.embalagem}
+                        onChange={(e) => updateProduto(p.id, "embalagem", e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <Button variant="outline" size="sm" className="w-full" onClick={addProduto}>
+                <Plus className="h-4 w-4 mr-1" />
+                Adicionar outro produto
+              </Button>
+
+              <p className="text-xs text-muted-foreground text-center">
+                💡 Dica: Você também pode importar produtos em massa pela tela de Produtos após concluir a configuração.
+              </p>
+            </div>
+          )}
+
+          {/* === STEP 4: Conclusão === */}
+          {step === 4 && (
+            <div className="space-y-4 text-center">
+              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <PartyPopper className="h-8 w-8 text-primary" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="prod-emb">Embalagem / Unidade</Label>
-                <Input
-                  id="prod-emb"
-                  placeholder="Ex: Pacote 5kg, Caixa 12un"
-                  value={prodEmbalagem}
-                  onChange={(e) => setProdEmbalagem(e.target.value)}
-                />
+              <h3 className="text-xl font-semibold">Tudo pronto! 🎉</h3>
+              <p className="text-muted-foreground text-sm">
+                Seu ambiente foi configurado com sucesso. Veja o resumo:
+              </p>
+
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-left text-sm">
+                <div className="flex items-center gap-2">
+                  <Store className="h-4 w-4 text-primary" />
+                  <span><strong>1</strong> loja cadastrada{lojaSaved && `: ${lojaNome}`}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-primary" />
+                  <span><strong>{fornSavedCount || fornecedores.filter((f) => f.nome.trim()).length}</strong> fornecedor(es) cadastrado(s)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Package className="h-4 w-4 text-primary" />
+                  <span><strong>{prodSavedCount || produtos.filter((p) => p.nome.trim()).length}</strong> produto(s) cadastrado(s)</span>
+                </div>
               </div>
+
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm text-left space-y-2">
+                <p className="font-medium text-primary">📋 Próximos passos:</p>
+                <ol className="list-decimal list-inside text-muted-foreground space-y-1 text-xs">
+                  <li>Acesse o <strong>Painel</strong> e clique em <strong>Nova Cotação</strong></li>
+                  <li>Adicione os produtos que deseja cotar</li>
+                  <li>Selecione os fornecedores e envie os links</li>
+                  <li>Aguarde as respostas e analise os melhores preços</li>
+                </ol>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Você pode gerenciar lojas, fornecedores e produtos a qualquer momento pelo menu <strong>Mais</strong>.
+              </p>
             </div>
           )}
         </div>
 
         {/* Actions */}
         <div className="flex items-center justify-between pt-2 border-t">
-          <Button variant="ghost" size="sm" onClick={onClose} className="text-muted-foreground">
+          <Button variant="ghost" size="sm" onClick={handleSkip} className="text-muted-foreground">
             <X className="h-4 w-4 mr-1" />
             Pular por agora
           </Button>
@@ -335,7 +548,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
               {step === totalSteps - 1 ? (
                 <>
                   <Check className="h-4 w-4 mr-1" />
-                  Concluir
+                  Começar a usar
                 </>
               ) : (
                 <>
