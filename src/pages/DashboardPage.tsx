@@ -35,6 +35,7 @@ const DashboardPage = () => {
   const { lojaAtiva, lojas, setLojaAtivaId } = useLojaAtiva();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { checkPlan, showPlanos, setShowPlanos } = useFeatureCheck();
 
   // Sync subscription after Stripe checkout redirect
   useEffect(() => {
