@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft, Zap, SlidersHorizontal, Handshake } from "lucide-react";
+import { Loader2, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft, Zap, SlidersHorizontal, Handshake, TrendingUp } from "lucide-react";
 import NegociacaoModal from "@/components/analise/NegociacaoModal";
 import SendOrdersModal from "@/components/dashboard/SendOrdersModal";
 import { generateScenarios, type Scenario } from "@/lib/scenarios";
@@ -355,7 +355,16 @@ const AnalisePage = () => {
   const fornecedoresComPedido = activeOrders.filter(o => o.items.length > 0);
   const totalGeral = fornecedoresComPedido.reduce((s, o) => s + o.total, 0);
 
-  if (!cotacaoAtiva) return <div className="p-5 py-10 text-center text-muted-foreground">Nenhuma cotação ativa.</div>;
+  if (!cotacaoAtiva) {
+    return (
+      <div className="p-5 py-16 text-center space-y-4">
+        <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground/40" />
+        <p className="text-muted-foreground">Nenhuma cotação ativa para analisar.</p>
+        <p className="text-xs text-muted-foreground/70">Crie uma cotação no Painel e aguarde os fornecedores responderem.</p>
+        <Button variant="default" size="sm" onClick={() => navigate("/dashboard")}>Ir para o Painel</Button>
+      </div>
+    );
+  }
 
   if (!hasPrecos) return (
     <div className="p-5 space-y-4">

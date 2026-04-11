@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,7 @@ import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 type Fornecedor = Tables<"fornecedores">;
 
 const ResumoPage = () => {
+  const navigate = useNavigate();
   const { lojaAtiva } = useLojaAtiva();
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
@@ -142,8 +144,15 @@ const ResumoPage = () => {
     return { totalItems, responderam, itensCotados, cobertura, grandTotal, supplierStats };
   }, [cotacaoProdutos, precos, fornecedores]);
 
+
   if (!cotacaoAtiva) {
-    return <div className="p-10 text-center text-muted-foreground">Nenhuma cotação ativa.</div>;
+    return (
+      <div className="p-5 py-16 text-center space-y-4">
+        <p className="text-muted-foreground">Nenhuma cotação ativa para analisar.</p>
+        <p className="text-xs text-muted-foreground/70">Crie uma cotação no Painel e aguarde os fornecedores responderem.</p>
+        <button className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground h-9 px-4" onClick={() => navigate("/dashboard")}>Ir para o Painel</button>
+      </div>
+    );
   }
 
   return (
