@@ -665,7 +665,7 @@ const AnalisePage = () => {
           variant="outline"
           size="sm"
           className="ml-3 text-xs shrink-0 gap-1.5"
-          onClick={() => setNegociacaoOpen(true)}
+          onClick={() => { if (!checkPlan("business", "Negociação assistida por IA")) return; setNegociacaoOpen(true); }}
         >
           <Handshake className="h-3.5 w-3.5" />
           Negociar
