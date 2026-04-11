@@ -387,9 +387,19 @@ const ProdutosPage = () => {
 
     try {
       const existingCatNames = categorias.map((c) => c.nome);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        throw new Error("Sessão expirada. Faça login novamente para usar a classificação por IA.");
+      }
+
       setClassifyProgress(25);
 
       const resp = await supabase.functions.invoke("ai-automacao", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
         body: {
           type: "classify-products",
           products: targets.map((p) => ({ nome: p.nome })),
