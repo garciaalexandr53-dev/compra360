@@ -34,6 +34,20 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // Sync subscription after Stripe checkout redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") === "success") {
+      // Remove query param
+      window.history.replaceState({}, "", window.location.pathname);
+      toast.success("Assinatura realizada com sucesso!");
+      // Sync subscription from Stripe
+      supabase.functions.invoke("check-subscription").then(() => {
+        queryClient.invalidateQueries({ queryKey: ["user-plan"] });
+      });
+    }
+  }, []);
+
   const [erpImportOpen, setErpImportOpen] = useState(false);
   const [sendQueueOpen, setSendQueueOpen] = useState(false);
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
