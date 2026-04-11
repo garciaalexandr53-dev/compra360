@@ -396,7 +396,11 @@ const ProdutosPage = () => {
           existing_categories: existingCatNames,
         },
       });
-      if (resp.error) throw new Error(resp.error.message);
+      if (resp.error) throw new Error(
+        resp.error.message?.includes("Failed to send")
+          ? "Falha ao conectar com o servidor. Verifique sua conexão e tente novamente."
+          : resp.error.message || "Erro na classificação"
+      );
 
       setClassifyProgress(50);
       const classifications = resp.data?.classifications || [];
