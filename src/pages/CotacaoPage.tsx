@@ -43,6 +43,7 @@ const CotacaoPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
+  const { checkPlan, showPlanos, setShowPlanos } = useFeatureCheck();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isReviewMode = searchParams.get("review") === "1";
