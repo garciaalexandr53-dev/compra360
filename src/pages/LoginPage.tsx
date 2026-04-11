@@ -156,7 +156,7 @@ const LoginPage = () => {
                 redirect_uri: window.location.origin,
               });
               if (error) {
-                toast.error("Erro ao entrar com Google");
+                toast.error("Erro ao entrar com Google. Tente novamente.");
                 setGoogleLoading(false);
               }
             }}
