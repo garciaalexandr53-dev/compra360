@@ -551,6 +551,7 @@ const CotacaoPage = () => {
   };
 
   const runAiAnalysis = async () => {
+    if (!checkPlan("pro", "Análise de preços com IA")) return;
     if (!cotacaoAtiva?.id) return;
     setAiAnalysisOpen(true); setAiAnalysisText(""); setAiAnalysisLoading(true);
     try {
