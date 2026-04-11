@@ -240,7 +240,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   const stepIcons = [Sparkles, Store, Truck, Package, PartyPopper];
   const stepLabels = ["Início", "Loja", "Fornecedores", "Produtos", "Pronto!"];
 
-  return (
+  return (<>
     <Dialog open={open} onOpenChange={(o) => !o && handleSkip()}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
