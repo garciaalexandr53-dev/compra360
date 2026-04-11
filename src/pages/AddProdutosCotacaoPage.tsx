@@ -307,6 +307,30 @@ const AddProdutosCotacaoPage = () => {
             <span>Cadastrar <strong>"{nome.trim()}"</strong> como novo produto</span>
           </button>
         )}
+
+        {/* Recent products — shown when search is empty and no items staged */}
+        {nome.trim().length < 2 && recentProdutos.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+              <Search className="h-3.5 w-3.5" />
+              Seus produtos recentes — toque para adicionar
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {recentProdutos
+                .filter(p => !items.some(i => i.produtoId === p.id) && !alreadyInCotacao.some(a => a.produto_id === p.id))
+                .slice(0, 12)
+                .map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => handlePickSuggestion(s)}
+                    className="text-xs px-2.5 py-1.5 rounded-full bg-muted hover:bg-primary/20 text-foreground transition-colors border border-border"
+                  >
+                    + {s.nome}
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Quantity Dialog */}
