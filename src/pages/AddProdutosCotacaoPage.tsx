@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Minus, Trash2, ShoppingCart, ArrowLeft, Check, PlusCircle } from "lucide-react";
+import { Plus, Minus, Trash2, ShoppingCart, ArrowLeft, Check, PlusCircle, Search } from "lucide-react";
 import DashboardProgress from "@/components/dashboard/DashboardProgress";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -51,6 +51,20 @@ const AddProdutosCotacaoPage = () => {
     const timer = setTimeout(() => setDebouncedSearch(nome.trim()), 250);
     return () => clearTimeout(timer);
   }, [nome]);
+
+  // Fetch recent products to show when search is empty
+  const { data: recentProdutos = [] } = useQuery({
+    queryKey: ["produtos-recentes"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("produtos")
+        .select("id, nome")
+        .eq("ativo", true)
+        .order("updated_at", { ascending: false })
+        .limit(15);
+      return data || [];
+    },
+  });
 
   const { data: existingProdutos = [] } = useQuery({
     queryKey: ["produtos-search", debouncedSearch],
@@ -293,6 +307,30 @@ const AddProdutosCotacaoPage = () => {
             <span>Cadastrar <strong>"{nome.trim()}"</strong> como novo produto</span>
           </button>
         )}
+
+        {/* Recent products — shown when search is empty and no items staged */}
+        {nome.trim().length < 2 && recentProdutos.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+              <Search className="h-3.5 w-3.5" />
+              Seus produtos recentes — toque para adicionar
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {recentProdutos
+                .filter(p => !items.some(i => i.produtoId === p.id) && !alreadyInCotacao.some(a => a.produto_id === p.id))
+                .slice(0, 12)
+                .map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => handlePickSuggestion(s)}
+                    className="text-xs px-2.5 py-1.5 rounded-full bg-muted hover:bg-primary/20 text-foreground transition-colors border border-border"
+                  >
+                    + {s.nome}
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Quantity Dialog */}
@@ -383,17 +421,17 @@ const AddProdutosCotacaoPage = () => {
       {/* Product list */}
       <div className="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom,0px)+80px)]">
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-3">
               <ShoppingCart className="h-7 w-7 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium text-foreground">
-              {alreadyCount > 0 ? "Sua cotação já tem produtos" : "Nenhum produto ainda"}
+              {alreadyCount > 0 ? "Sua cotação já tem produtos" : "Nenhum produto adicionado"}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-xs text-muted-foreground max-w-[250px]">
               {alreadyCount > 0
                 ? `${alreadyCount} produto(s) já estão prontos para seguir ao próximo passo`
-                : "Adicione itens para começar sua cotação"}
+                : "Digite o nome de um produto no campo acima ou toque em um dos produtos recentes"}
             </p>
           </div>
         ) : (
