@@ -1008,6 +1008,7 @@ const ProdutosPage = () => {
         onOpenChange={setImportOpen}
         categorias={categorias}
       />
+      <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
   );
 };
