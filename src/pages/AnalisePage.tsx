@@ -14,6 +14,8 @@ import { Loader2, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, S
 import NegociacaoModal from "@/components/analise/NegociacaoModal";
 import SendOrdersModal from "@/components/dashboard/SendOrdersModal";
 import { generateScenarios, type Scenario } from "@/lib/scenarios";
+import { useFeatureCheck } from "@/components/FeatureGate";
+import PlanosModal from "@/components/PlanosModal";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -31,6 +33,7 @@ const AnalisePage = () => {
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { checkPlan, showPlanos, setShowPlanos } = useFeatureCheck();
   const [scenarios, setScenarios] = useState<Scenario[] | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
   const [applyingScenario, setApplyingScenario] = useState(false);
