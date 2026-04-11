@@ -864,6 +864,7 @@ const CotacaoPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
     </TooltipProvider>
   );
