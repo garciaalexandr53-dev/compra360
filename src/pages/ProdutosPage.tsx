@@ -15,6 +15,7 @@ import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, ChevronRight,
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
+import CatalogoBaseModal from "@/components/CatalogoBaseModal";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureCheck } from "@/components/FeatureGate";
@@ -44,6 +45,7 @@ const ProdutosPage = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [importOpen, setImportOpen] = useState(false);
+  const [catalogoOpen, setCatalogoOpen] = useState(false);
   const [catSidebarOpen, setCatSidebarOpen] = useState(false);
   const [newCatModalOpen, setNewCatModalOpen] = useState(false);
   const [newCatName, setNewCatName] = useState("");
@@ -595,6 +597,9 @@ const ProdutosPage = () => {
                 }}>
                   <Upload className="h-4 w-4 mr-2" /> Importar Produtos
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setCatalogoOpen(true)}>
+                  <Package className="h-4 w-4 mr-2" /> Catálogo Supermercado
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {
                   if (!checkPlan("business", "Classificação por IA")) return;
                   autoClassifyProducts();
@@ -1008,6 +1013,7 @@ const ProdutosPage = () => {
         onOpenChange={setImportOpen}
         categorias={categorias}
       />
+      <CatalogoBaseModal open={catalogoOpen} onOpenChange={setCatalogoOpen} />
       <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
   );
