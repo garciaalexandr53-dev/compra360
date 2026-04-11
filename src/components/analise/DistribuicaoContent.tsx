@@ -6,12 +6,26 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import { useSubscription } from "@/hooks/useSubscription";
+import FeatureGate from "@/components/FeatureGate";
 
 const DistribuicaoContent = () => {
   const { lojaAtiva } = useLojaAtiva();
+  const { isBusiness } = useSubscription();
   const [analysisText, setAnalysisText] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  if (!isBusiness) {
+    return (
+      <FeatureGate requiredPlan="business" featureLabel="Distribuição inteligente" mode="overlay">
+        <div className="p-8 text-center text-muted-foreground">
+          <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-30" />
+          <p className="text-sm">Distribuição inteligente com IA</p>
+        </div>
+      </FeatureGate>
+    );
+  }
 
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
