@@ -427,6 +427,7 @@ const DashboardPage = () => {
   };
 
   const runFornSuggestion = async () => {
+    if (!checkPlan("pro", "Sugestão de fornecedores por IA")) return;
     if (!cotacaoAtiva?.id) return;
     setFornSuggestLoading(true); setFornSuggestOpen(true); setFornSuggestText(""); setFornSuggestHasHistory(false); setFornSuggestRecommendedIds([]);
     try {
