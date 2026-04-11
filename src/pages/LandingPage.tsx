@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -180,6 +180,173 @@ const faqItems = [
   { q: "Posso cancelar quando quiser?", a: "Sim. Sem fidelidade, sem multa. Cancele quando quiser com um clique." },
 ];
 
+/* ── Demo Animado ── */
+function DemoAnimado() {
+  const section = useInView(0.3);
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    if (!section.visible) return;
+    const timer = setInterval(() => setStep((s) => (s + 1) % 12), 1200);
+    return () => clearInterval(timer);
+  }, [section.visible]);
+
+  // Steps: 0-2 building list, 3 sending link, 4-7 prices arriving, 8-9 comparing, 10-11 order done
+  const products = [
+    { nome: "Arroz 5kg", show: step >= 0 },
+    { nome: "Feijão 1kg", show: step >= 1 },
+    { nome: "Óleo Soja 900ml", show: step >= 2 },
+  ];
+
+  const prices = [
+    { forn: "Silva Dist.", arroz: "R$22,90", feijao: "R$8,50", oleo: "R$6,90", show: step >= 5 },
+    { forn: "Atacado Pop.", arroz: "R$19,90", feijao: "R$7,80", oleo: "R$7,20", show: step >= 6, best: [true, true, false] },
+    { forn: "Centro Norte", arroz: "R$21,50", feijao: "R$8,90", oleo: "R$5,90", show: step >= 7, best: [false, false, true] },
+  ];
+
+  const phase = step < 3 ? "list" : step < 5 ? "send" : step < 8 ? "prices" : step < 10 ? "compare" : "done";
+
+  const phaseLabel = {
+    list: "📝 Montando a lista de produtos...",
+    send: "📤 Enviando link para fornecedores...",
+    prices: "💰 Fornecedores preenchendo preços...",
+    compare: "🔍 Comparando preços automaticamente...",
+    done: "✅ Pedido fechado! Economia de R$47,00",
+  }[phase];
+
+  return (
+    <section ref={section.ref} className="py-16 px-5 border-t border-white/5 bg-slate-900/30">
+      <div className="max-w-4xl mx-auto">
+        <p className={`text-teal-400 text-sm font-medium text-center mb-3 ${anim(section.visible)}`}>
+          Veja na prática
+        </p>
+        <h2 className={`text-2xl sm:text-3xl font-bold text-white text-center mb-3 ${anim(section.visible)}`}>
+          Uma cotação completa em segundos
+        </h2>
+        <p className={`text-slate-400 text-center mb-10 ${anim(section.visible)}`}>
+          Acompanhe o fluxo real do sistema — tudo automatizado
+        </p>
+
+        {/* Progress bar */}
+        <div className={`flex items-center gap-1 max-w-md mx-auto mb-8 ${anim(section.visible)}`} style={{ transitionDelay: "200ms" }}>
+          {["list", "send", "prices", "compare", "done"].map((p, i) => (
+            <div key={p} className="flex-1 h-1.5 rounded-full overflow-hidden bg-slate-800">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${
+                  (phase === p) ? "bg-teal-400 w-full" :
+                  (["list","send","prices","compare","done"].indexOf(phase) > i) ? "bg-teal-500/60 w-full" :
+                  "bg-transparent w-0"
+                }`}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Status label */}
+        <div className={`text-center mb-6 ${anim(section.visible)}`} style={{ transitionDelay: "300ms" }}>
+          <span className="inline-block bg-slate-800 border border-white/10 rounded-full px-4 py-1.5 text-sm text-slate-200 min-w-[280px] transition-all duration-500">
+            {phaseLabel}
+          </span>
+        </div>
+
+        {/* Animated mock UI */}
+        <div className={`relative bg-slate-950 border border-white/10 rounded-2xl overflow-hidden shadow-2xl ${anim(section.visible)}`} style={{ transitionDelay: "400ms" }}>
+          {/* Mock header bar */}
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/5 bg-slate-900/80">
+            <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+              <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
+              <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+            </div>
+            <span className="text-[11px] text-slate-500 ml-2 font-mono">compra360.lovable.app/cotacao</span>
+          </div>
+
+          <div className="p-4 sm:p-6 min-h-[260px]">
+            {/* Phase: List building */}
+            {(phase === "list" || phase === "send") && (
+              <div className="space-y-2">
+                <p className="text-xs text-slate-500 mb-3 font-medium">PRODUTOS DA COTAÇÃO</p>
+                {products.map((p, i) => (
+                  <div
+                    key={p.nome}
+                    className={`flex items-center gap-3 py-2 px-3 rounded-lg border transition-all duration-500 ${
+                      p.show ? "opacity-100 translate-x-0 bg-slate-900 border-white/10" : "opacity-0 -translate-x-4 border-transparent"
+                    }`}
+                  >
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-300 ${p.show ? "border-teal-500 bg-teal-500/20" : "border-slate-700"}`}>
+                      {p.show && <Check className="h-3 w-3 text-teal-300" />}
+                    </div>
+                    <span className="text-sm text-slate-300">{p.nome}</span>
+                  </div>
+                ))}
+                {phase === "send" && (
+                  <div className="mt-4 flex items-center gap-2 text-teal-400 text-sm animate-pulse">
+                    <Send className="h-4 w-4" />
+                    <span>Link enviado via WhatsApp para 3 fornecedores</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Phase: Prices arriving + Compare + Done */}
+            {(phase === "prices" || phase === "compare" || phase === "done") && (
+              <div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-slate-500 text-xs">
+                        <th className="text-left py-2 font-medium">Produto</th>
+                        {prices.map((p) => (
+                          <th key={p.forn} className={`text-right py-2 font-medium transition-all duration-500 ${p.show ? "opacity-100" : "opacity-0"}`}>
+                            {p.forn}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { nome: "Arroz 5kg", idx: 0, vals: prices.map(p => p.arroz) },
+                        { nome: "Feijão 1kg", idx: 1, vals: prices.map(p => p.feijao) },
+                        { nome: "Óleo Soja 900ml", idx: 2, vals: prices.map(p => p.oleo) },
+                      ].map((prod) => (
+                        <tr key={prod.nome} className="border-t border-white/5">
+                          <td className="py-2.5 text-slate-300">{prod.nome}</td>
+                          {prices.map((p, fi) => {
+                            const isBest = phase !== "prices" && p.best?.[prod.idx];
+                            return (
+                              <td key={p.forn} className={`text-right py-2.5 font-mono transition-all duration-500 ${
+                                !p.show ? "opacity-0" : isBest ? "text-teal-300 font-bold" : "text-slate-400"
+                              }`}>
+                                {p.show && (
+                                  <span className={`inline-flex items-center gap-1 ${isBest ? "bg-teal-500/15 px-2 py-0.5 rounded" : ""}`}>
+                                    {prod.vals[fi]}
+                                    {isBest && <span className="text-[10px]">🏆</span>}
+                                  </span>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {phase === "done" && (
+                  <div className="mt-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-center animate-pulse">
+                    <p className="text-emerald-400 font-bold text-sm">✅ Pedido gerado com os melhores preços!</p>
+                    <p className="text-slate-500 text-xs mt-1">3 produtos · 2 fornecedores · Economia de <span className="text-emerald-400 font-semibold">R$47,00</span></p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ── component ── */
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -350,6 +517,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ── DEMO ANIMADO ── */}
+      <DemoAnimado />
 
       {/* ── BENEFÍCIOS ── */}
       <section ref={benefitsSection.ref} className="py-16 px-5 border-t border-white/5">
