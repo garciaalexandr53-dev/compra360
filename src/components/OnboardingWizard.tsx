@@ -80,6 +80,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
 
   // Tracking saved state
   const [lojaSaved, setLojaSaved] = useState(false);
+  const [createdLojaId, setCreatedLojaId] = useState<string | null>(null);
   const [fornSavedCount, setFornSavedCount] = useState(0);
   const [prodSavedCount, setProdSavedCount] = useState(0);
 
