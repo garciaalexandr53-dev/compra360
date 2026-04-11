@@ -226,7 +226,7 @@ const CatalogoBaseModal = ({ open, onOpenChange }: Props) => {
         </div>
 
         {/* Product list */}
-        <ScrollArea className="flex-1 min-h-0 max-h-[300px] border rounded-lg">
+        <ScrollArea className="flex-1 min-h-0 border rounded-lg" style={{ maxHeight: "calc(85vh - 320px)" }}>
           {isLoading ? (
             <div className="p-8 text-center text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
