@@ -823,6 +823,7 @@ const AnalisePage = () => {
         cotacaoId={cotacaoAtiva?.id || null}
         fornecedores={fornecedores}
       />
+      <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
   );
 };
