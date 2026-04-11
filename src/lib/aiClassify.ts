@@ -9,6 +9,11 @@ export interface AiClassificationResult {
   categoria: string;
 }
 
+interface RawClassification {
+  nome?: unknown;
+  categoria?: unknown;
+}
+
 const CLASSIFY_BATCH_SIZE = 60;
 
 const normalizeText = (value: string) => value.trim().toLowerCase();
@@ -70,7 +75,7 @@ export async function classifyProductsInBatches(
       ? resp.data.classifications
       : [];
 
-    classifications.forEach((item: any) => {
+    classifications.forEach((item: RawClassification) => {
       const nome = typeof item?.nome === "string" ? item.nome.trim() : "";
       const categoria = typeof item?.categoria === "string" ? item.categoria.trim() : "";
 
