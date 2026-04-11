@@ -10,6 +10,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ClipboardCheck, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, User, Clock, Filter, CalendarIcon, X, MoreHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useSubscription } from "@/hooks/useSubscription";
+import FeatureGate from "@/components/FeatureGate";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
