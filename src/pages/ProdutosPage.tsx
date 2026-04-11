@@ -34,6 +34,16 @@ const PAGE_SIZE = 80;
 
 const cleanEmbalagem = (raw: string | null | undefined) => raw?.split("|")[0].trim() || "un";
 
+const normalizeProductName = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[–—]/g, "-")
+    .replace(/\s*-\s*/g, " - ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+
 const ProdutosPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -431,7 +441,7 @@ const ProdutosPage = () => {
       for (const [index, cl] of classifications.entries()) {
         const catId = catMap[cl.categoria?.toLowerCase()];
         if (!catId) continue;
-        const prod = targets.find((p) => p.nome.toLowerCase() === cl.nome?.toLowerCase());
+        const prod = targets.find((p) => normalizeProductName(p.nome) === normalizeProductName(cl.nome || ""));
         if (prod) {
           const { error } = await supabase.from("produtos").update({ categoria_id: catId }).eq("id", prod.id);
           if (!error) updated++;
