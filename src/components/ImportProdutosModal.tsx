@@ -57,7 +57,17 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
     setClassifying(true);
     try {
       const existingCatNames = categorias.map((c) => c.nome);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        throw new Error("Sessão expirada. Faça login novamente para usar a classificação por IA.");
+      }
+
       const resp = await supabase.functions.invoke("ai-automacao", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
         body: { type: "classify-products", products: parsedItems, existing_categories: existingCatNames },
       });
       if (resp.error) throw new Error(resp.error.message);
