@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      catalogo_base: {
+        Row: {
+          categoria: string
+          created_at: string
+          embalagem: string
+          fator_embalagem: number
+          id: string
+          nome: string
+          segmento: string
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string
+          embalagem?: string
+          fator_embalagem?: number
+          id?: string
+          nome: string
+          segmento?: string
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          embalagem?: string
+          fator_embalagem?: number
+          id?: string
+          nome?: string
+          segmento?: string
+        }
+        Relationships: []
+      }
       categorias: {
         Row: {
           created_at: string
