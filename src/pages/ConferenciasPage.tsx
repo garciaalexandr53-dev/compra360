@@ -10,6 +10,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ClipboardCheck, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, User, Clock, Filter, CalendarIcon, X, MoreHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useSubscription } from "@/hooks/useSubscription";
+import FeatureGate from "@/components/FeatureGate";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -44,6 +46,7 @@ interface ConferenciaItem {
 }
 
 const ConferenciasPage = () => {
+  const { isBusiness } = useSubscription();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filtroFornecedor, setFiltroFornecedor] = useState<string>("todos");
   const [filtroDivergencia, setFiltroDivergencia] = useState<string>("todos");
@@ -156,6 +159,20 @@ const ConferenciasPage = () => {
     );
   }
 
+
+  if (!isBusiness) {
+    return (
+      <FeatureGate requiredPlan="business" featureLabel="Conferência de pedidos" mode="overlay">
+        <div className="p-10 text-center space-y-4">
+          <ClipboardCheck className="h-12 w-12 mx-auto text-muted-foreground/30" />
+          <h2 className="text-lg font-semibold">Conferência de Pedidos</h2>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            Compare o que foi pedido com o que foi entregue. Identifique divergências de quantidade e preço automaticamente.
+          </p>
+        </div>
+      </FeatureGate>
+    );
+  }
 
   return (
     <div className="space-y-3">

@@ -26,6 +26,8 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useFeatureCheck } from "@/components/FeatureGate";
+import PlanosModal from "@/components/PlanosModal";
 
 type Fornecedor = Tables<"fornecedores">;
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
@@ -41,6 +43,7 @@ const CotacaoPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
+  const { checkPlan, showPlanos, setShowPlanos } = useFeatureCheck();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isReviewMode = searchParams.get("review") === "1";
@@ -548,6 +551,7 @@ const CotacaoPage = () => {
   };
 
   const runAiAnalysis = async () => {
+    if (!checkPlan("pro", "Análise de preços com IA")) return;
     if (!cotacaoAtiva?.id) return;
     setAiAnalysisOpen(true); setAiAnalysisText(""); setAiAnalysisLoading(true);
     try {
@@ -860,6 +864,7 @@ const CotacaoPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
     </TooltipProvider>
   );

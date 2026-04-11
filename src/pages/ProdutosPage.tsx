@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureCheck } from "@/components/FeatureGate";
+import PlanosModal from "@/components/PlanosModal";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
@@ -35,6 +37,7 @@ const ProdutosPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
+  const { checkLimit, checkPlan, showPlanos, setShowPlanos } = useFeatureCheck();
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState<string>("Todos");
   const [modalOpen, setModalOpen] = useState(false);
@@ -346,6 +349,7 @@ const ProdutosPage = () => {
   }, {});
 
   const openAdd = () => {
+    if (!checkLimit("max_produtos", totalCount, "Faça upgrade para cadastrar mais produtos.")) return;
     setEditingId(null);
     setForm(emptyForm);
     setModalOpen(true);
@@ -585,13 +589,22 @@ const ProdutosPage = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setImportOpen(true)}>
+                <DropdownMenuItem onClick={() => {
+                  if (!checkPlan("pro", "Importação em massa")) return;
+                  setImportOpen(true);
+                }}>
                   <Upload className="h-4 w-4 mr-2" /> Importar Produtos
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={autoClassifyProducts} disabled={produtos.length === 0}>
+                <DropdownMenuItem onClick={() => {
+                  if (!checkPlan("business", "Classificação por IA")) return;
+                  autoClassifyProducts();
+                }} disabled={produtos.length === 0}>
                   <Sparkles className="h-4 w-4 mr-2" /> Classificar Categorias IA
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={autoSuggestFatorProducts} disabled={produtos.length === 0}>
+                <DropdownMenuItem onClick={() => {
+                  if (!checkPlan("pro", "Sugestão de fatores por IA")) return;
+                  autoSuggestFatorProducts();
+                }} disabled={produtos.length === 0}>
                   <Package className="h-4 w-4 mr-2" /> Sugerir Fatores IA
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={removeDuplicates} disabled={produtos.length === 0}>
@@ -995,6 +1008,7 @@ const ProdutosPage = () => {
         onOpenChange={setImportOpen}
         categorias={categorias}
       />
+      <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
   );
 };

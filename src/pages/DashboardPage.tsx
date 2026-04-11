@@ -26,6 +26,8 @@ import ModalFornecedores from "@/components/cotacao/ModalFornecedores";
 import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugestao";
 import ModalNovaCotacao from "@/components/cotacao/ModalNovaCotacao";
 import TrialBanner from "@/components/dashboard/TrialBanner";
+import { useFeatureCheck } from "@/components/FeatureGate";
+import PlanosModal from "@/components/PlanosModal";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -33,6 +35,7 @@ const DashboardPage = () => {
   const { lojaAtiva, lojas, setLojaAtivaId } = useLojaAtiva();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { checkPlan, showPlanos, setShowPlanos } = useFeatureCheck();
 
   // Sync subscription after Stripe checkout redirect
   useEffect(() => {
@@ -424,6 +427,7 @@ const DashboardPage = () => {
   };
 
   const runFornSuggestion = async () => {
+    if (!checkPlan("pro", "Sugestão de fornecedores por IA")) return;
     if (!cotacaoAtiva?.id) return;
     setFornSuggestLoading(true); setFornSuggestOpen(true); setFornSuggestText(""); setFornSuggestHasHistory(false); setFornSuggestRecommendedIds([]);
     try {
@@ -488,6 +492,7 @@ const DashboardPage = () => {
         </Button>
       )}
       <Button variant="outline" className="w-full justify-start gap-3 h-12" onClick={() => {
+        if (!checkPlan("pro", "Importação do ERP")) return;
         if (cotacaoAtiva?.id) setErpImportOpen(true);
         else { toast.info("Crie uma cotação primeiro na aba Cotação"); navigate("/cotacao"); }
       }}>
@@ -947,6 +952,7 @@ const DashboardPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
   );
 };

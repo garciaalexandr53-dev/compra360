@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/hooks/useAuth";
 import { generateScenarios, type Scenario } from "@/lib/scenarios";
+import { useSubscription } from "@/hooks/useSubscription";
+import FeatureGate from "@/components/FeatureGate";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -18,6 +20,7 @@ const ResumoDistribuicaoContent = () => {
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { isBusiness } = useSubscription();
   const [suppliersOpen, setSuppliersOpen] = useState(true);
   const [distOpen, setDistOpen] = useState(false);
   const [analysisText, setAnalysisText] = useState("");

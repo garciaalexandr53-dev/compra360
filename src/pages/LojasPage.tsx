@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Pencil, Trash2, Store, Check } from "lucide-react";
 import { toast } from "sonner";
+import { useFeatureCheck } from "@/components/FeatureGate";
+import PlanosModal from "@/components/PlanosModal";
 
 const formatCNPJ = (value: string) => {
   const digits = value.replace(/\D/g, "").slice(0, 14);
@@ -26,6 +28,7 @@ const LojasPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva, setLojaAtivaId } = useLojaAtiva();
   const { user } = useAuth();
+  const { checkLimit, showPlanos, setShowPlanos } = useFeatureCheck();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -78,7 +81,10 @@ const LojasPage = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const openAdd = () => { setEditingId(null); setForm(emptyForm); setModalOpen(true); };
+  const openAdd = () => {
+    if (!checkLimit("max_lojas", lojas.length, "Faça upgrade para cadastrar mais lojas.")) return;
+    setEditingId(null); setForm(emptyForm); setModalOpen(true);
+  };
   const openEdit = (l: any) => {
     setEditingId(l.id);
     setForm({
@@ -196,8 +202,10 @@ const LojasPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
   );
 };
 
 export default LojasPage;
+

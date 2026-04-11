@@ -14,6 +14,8 @@ import { Loader2, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, S
 import NegociacaoModal from "@/components/analise/NegociacaoModal";
 import SendOrdersModal from "@/components/dashboard/SendOrdersModal";
 import { generateScenarios, type Scenario } from "@/lib/scenarios";
+import { useFeatureCheck } from "@/components/FeatureGate";
+import PlanosModal from "@/components/PlanosModal";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -31,6 +33,7 @@ const AnalisePage = () => {
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { checkPlan, showPlanos, setShowPlanos } = useFeatureCheck();
   const [scenarios, setScenarios] = useState<Scenario[] | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
   const [applyingScenario, setApplyingScenario] = useState(false);
@@ -662,7 +665,7 @@ const AnalisePage = () => {
           variant="outline"
           size="sm"
           className="ml-3 text-xs shrink-0 gap-1.5"
-          onClick={() => setNegociacaoOpen(true)}
+          onClick={() => { if (!checkPlan("business", "Negociação assistida por IA")) return; setNegociacaoOpen(true); }}
         >
           <Handshake className="h-3.5 w-3.5" />
           Negociar
@@ -820,6 +823,7 @@ const AnalisePage = () => {
         cotacaoId={cotacaoAtiva?.id || null}
         fornecedores={fornecedores}
       />
+      <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
   );
 };
