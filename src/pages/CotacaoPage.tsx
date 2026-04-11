@@ -26,6 +26,8 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useFeatureCheck } from "@/components/FeatureGate";
+import PlanosModal from "@/components/PlanosModal";
 
 type Fornecedor = Tables<"fornecedores">;
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
