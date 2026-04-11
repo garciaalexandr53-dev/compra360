@@ -52,6 +52,20 @@ const AddProdutosCotacaoPage = () => {
     return () => clearTimeout(timer);
   }, [nome]);
 
+  // Fetch recent products to show when search is empty
+  const { data: recentProdutos = [] } = useQuery({
+    queryKey: ["produtos-recentes"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("produtos")
+        .select("id, nome")
+        .eq("ativo", true)
+        .order("updated_at", { ascending: false })
+        .limit(15);
+      return data || [];
+    },
+  });
+
   const { data: existingProdutos = [] } = useQuery({
     queryKey: ["produtos-search", debouncedSearch],
     queryFn: async () => {
