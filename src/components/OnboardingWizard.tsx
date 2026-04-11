@@ -146,12 +146,15 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
           }
         }
 
-        const { error } = await supabase.from("lojas").insert({
+        const { data: lojaData, error } = await supabase.from("lojas").insert({
           nome: lojaNome.trim(),
           cnpj: cnpjDigits.length === 14 ? cnpjDigits : null,
           user_id: user?.id,
-        });
+        }).select("id").single();
         if (error) throw error;
+
+        // Store loja ID for linking fornecedores later
+        if (lojaData) setCreatedLojaId(lojaData.id);
 
         if (fingerprint && user?.id) {
           await supabase.from("trial_controls" as any).upsert({
