@@ -8,9 +8,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Store, Truck, Package, Sparkles, ArrowLeft, ArrowRight, Check, X, Plus, Trash2, PartyPopper } from "lucide-react";
+import { Store, Truck, Package, Sparkles, ArrowLeft, ArrowRight, Check, X, Plus, Trash2, PartyPopper, Download } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getDeviceFingerprint } from "@/lib/fingerprint";
+import CatalogoBaseModal from "@/components/CatalogoBaseModal";
 
 interface OnboardingWizardProps {
   open: boolean;
@@ -81,6 +82,9 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   const [lojaSaved, setLojaSaved] = useState(false);
   const [fornSavedCount, setFornSavedCount] = useState(0);
   const [prodSavedCount, setProdSavedCount] = useState(0);
+
+  // Catálogo base
+  const [showCatalogo, setShowCatalogo] = useState(false);
 
   // Fingerprint
   const [fingerprint, setFingerprint] = useState<string | null>(null);
@@ -236,7 +240,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   const stepIcons = [Sparkles, Store, Truck, Package, PartyPopper];
   const stepLabels = ["Início", "Loja", "Fornecedores", "Produtos", "Pronto!"];
 
-  return (
+  return (<>
     <Dialog open={open} onOpenChange={(o) => !o && handleSkip()}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -477,13 +481,19 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                 </div>
               ))}
 
-              <Button variant="outline" size="sm" className="w-full" onClick={addProduto}>
-                <Plus className="h-4 w-4 mr-1" />
-                Adicionar outro produto
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1" onClick={addProduto}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Adicionar manualmente
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1" onClick={() => setShowCatalogo(true)}>
+                  <Download className="h-4 w-4 mr-1" />
+                  Importar do catálogo
+                </Button>
+              </div>
 
               <p className="text-xs text-muted-foreground text-center">
-                💡 Dica: Você também pode importar produtos em massa pela tela de Produtos após concluir a configuração.
+                💡 O catálogo contém ~2.000 produtos pré-cadastrados de supermercado prontos para importação.
               </p>
             </div>
           )}
@@ -561,5 +571,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         </div>
       </DialogContent>
     </Dialog>
+    <CatalogoBaseModal open={showCatalogo} onOpenChange={setShowCatalogo} />
+    </>
   );
 }
