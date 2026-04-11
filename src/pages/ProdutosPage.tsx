@@ -45,6 +45,7 @@ const ProdutosPage = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [importOpen, setImportOpen] = useState(false);
+  const [catalogoOpen, setCatalogoOpen] = useState(false);
   const [catSidebarOpen, setCatSidebarOpen] = useState(false);
   const [newCatModalOpen, setNewCatModalOpen] = useState(false);
   const [newCatName, setNewCatName] = useState("");
