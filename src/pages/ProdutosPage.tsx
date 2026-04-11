@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
 import type { Tables } from "@/integrations/supabase/types";
+import { classifyProductsInBatches } from "@/lib/aiClassify";
 
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 type Categoria = Tables<"categorias">;
@@ -387,33 +388,18 @@ const ProdutosPage = () => {
 
     try {
       const existingCatNames = categorias.map((c) => c.nome);
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
+      setClassifyProgress(20);
 
-      if (!accessToken) {
-        throw new Error("Sessão expirada. Faça login novamente para usar a classificação por IA.");
-      }
-
-      setClassifyProgress(25);
-
-      const resp = await supabase.functions.invoke("ai-automacao", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: {
-          type: "classify-products",
-          products: targets.map((p) => ({ nome: p.nome })),
-          existing_categories: existingCatNames,
-        },
-      });
-      if (resp.error) throw new Error(
-        resp.error.message?.includes("Failed to send")
-          ? "Falha ao conectar com o servidor. Verifique sua conexão e tente novamente."
-          : resp.error.message || "Erro na classificação"
+      const classifications = await classifyProductsInBatches(
+        targets.map((p) => ({ nome: p.nome })),
+        existingCatNames,
+        {
+          onProgress: (processed, total) => {
+            setClassifyProgress(20 + Math.round((processed / total) * 40));
+          },
+        }
       );
 
-      setClassifyProgress(50);
-      const classifications = resp.data?.classifications || [];
       if (!classifications.length) {
         setClassifyError("IA não conseguiu classificar os produtos.");
         setClassifyStatus("error");
@@ -427,26 +413,32 @@ const ProdutosPage = () => {
       // Create new categories
       const allCatNames = classifications.map((c: any) => String(c.categoria || "")).filter((c: string) => c && !catMap[c.toLowerCase()]);
       const newCats = Array.from(new Set<string>(allCatNames));
-      let newCatCount = 0;
-      for (const catName of newCats) {
+      for (const [index, catName] of newCats.entries()) {
         const { data, error } = await supabase.from("categorias").insert([{ nome: catName, user_id: user?.id }]).select("id").single();
         if (!error && data) {
           catMap[catName.toLowerCase()] = data.id;
-          newCatCount++;
+        }
+
+        if (newCats.length > 0 && (index === newCats.length - 1 || index % 5 === 0)) {
+          setClassifyProgress(60 + Math.round(((index + 1) / newCats.length) * 10));
         }
       }
 
-      setClassifyProgress(75);
+      setClassifyProgress(70);
 
       // Update products
       let updated = 0;
-      for (const cl of classifications) {
+      for (const [index, cl] of classifications.entries()) {
         const catId = catMap[cl.categoria?.toLowerCase()];
         if (!catId) continue;
         const prod = targets.find((p) => p.nome.toLowerCase() === cl.nome?.toLowerCase());
         if (prod) {
           const { error } = await supabase.from("produtos").update({ categoria_id: catId }).eq("id", prod.id);
           if (!error) updated++;
+        }
+
+        if (index === classifications.length - 1 || index % 20 === 0) {
+          setClassifyProgress(70 + Math.round(((index + 1) / classifications.length) * 25));
         }
       }
 

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import * as XLSX from "xlsx";
+import { classifyProductsInBatches } from "@/lib/aiClassify";
 
 interface Props {
   open: boolean;
@@ -57,21 +58,8 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
     setClassifying(true);
     try {
       const existingCatNames = categorias.map((c) => c.nome);
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
+      const classifications = await classifyProductsInBatches(parsedItems, existingCatNames);
 
-      if (!accessToken) {
-        throw new Error("Sessão expirada. Faça login novamente para usar a classificação por IA.");
-      }
-
-      const resp = await supabase.functions.invoke("ai-automacao", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: { type: "classify-products", products: parsedItems, existing_categories: existingCatNames },
-      });
-      if (resp.error) throw new Error(resp.error.message);
-      const classifications = resp.data?.classifications || [];
       if (classifications.length) {
         const updated = parsedItems.map((p) => {
           const match = classifications.find((c: any) => c.nome?.toLowerCase() === p.nome.toLowerCase());
