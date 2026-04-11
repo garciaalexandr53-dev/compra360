@@ -182,10 +182,21 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
           user_id: user?.id,
         }));
 
-        const { error } = await supabase.from("fornecedores").insert(inserts);
+        const { data: insertedForn, error } = await supabase.from("fornecedores").insert(inserts).select("id");
         if (error) throw error;
+
+        // Link fornecedores to the loja created in step 1
+        if (createdLojaId && insertedForn?.length) {
+          const links = insertedForn.map((f) => ({
+            fornecedor_id: f.id,
+            loja_id: createdLojaId,
+          }));
+          await supabase.from("fornecedor_lojas").insert(links);
+        }
+
         setFornSavedCount(validForn.length);
         qc.invalidateQueries({ queryKey: ["fornecedores"] });
+        qc.invalidateQueries({ queryKey: ["fornecedor-lojas"] });
       } else if (step === 3) {
         const validProd = produtos.filter((p) => p.nome.trim());
         if (validProd.length === 0) return;
