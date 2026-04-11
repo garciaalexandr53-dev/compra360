@@ -1013,6 +1013,7 @@ const ProdutosPage = () => {
         onOpenChange={setImportOpen}
         categorias={categorias}
       />
+      <CatalogoBaseModal open={catalogoOpen} onOpenChange={setCatalogoOpen} />
       <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
   );
