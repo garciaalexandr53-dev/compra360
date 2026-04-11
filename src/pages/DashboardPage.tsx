@@ -492,6 +492,7 @@ const DashboardPage = () => {
         </Button>
       )}
       <Button variant="outline" className="w-full justify-start gap-3 h-12" onClick={() => {
+        if (!checkPlan("pro", "Importação do ERP")) return;
         if (cotacaoAtiva?.id) setErpImportOpen(true);
         else { toast.info("Crie uma cotação primeiro na aba Cotação"); navigate("/cotacao"); }
       }}>
@@ -951,6 +952,7 @@ const DashboardPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
   );
 };
