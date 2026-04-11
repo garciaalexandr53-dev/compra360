@@ -160,6 +160,20 @@ const ConferenciasPage = () => {
   }
 
 
+  if (!isBusiness) {
+    return (
+      <FeatureGate requiredPlan="business" featureLabel="Conferência de pedidos" mode="overlay">
+        <div className="p-10 text-center space-y-4">
+          <ClipboardCheck className="h-12 w-12 mx-auto text-muted-foreground/30" />
+          <h2 className="text-lg font-semibold">Conferência de Pedidos</h2>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            Compare o que foi pedido com o que foi entregue. Identifique divergências de quantidade e preço automaticamente.
+          </p>
+        </div>
+      </FeatureGate>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {/* Compact header */}
