@@ -597,6 +597,9 @@ const ProdutosPage = () => {
                 }}>
                   <Upload className="h-4 w-4 mr-2" /> Importar Produtos
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setCatalogoOpen(true)}>
+                  <Package className="h-4 w-4 mr-2" /> Catálogo Supermercado
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {
                   if (!checkPlan("business", "Classificação por IA")) return;
                   autoClassifyProducts();
