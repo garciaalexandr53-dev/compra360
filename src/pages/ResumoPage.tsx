@@ -10,6 +10,7 @@ import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 type Fornecedor = Tables<"fornecedores">;
 
 const ResumoPage = () => {
+  const navigate = useNavigate();
   const { lojaAtiva } = useLojaAtiva();
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
