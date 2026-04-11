@@ -481,13 +481,19 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                 </div>
               ))}
 
-              <Button variant="outline" size="sm" className="w-full" onClick={addProduto}>
-                <Plus className="h-4 w-4 mr-1" />
-                Adicionar outro produto
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1" onClick={addProduto}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Adicionar manualmente
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1" onClick={() => setShowCatalogo(true)}>
+                  <Download className="h-4 w-4 mr-1" />
+                  Importar do catálogo
+                </Button>
+              </div>
 
               <p className="text-xs text-muted-foreground text-center">
-                💡 Dica: Você também pode importar produtos em massa pela tela de Produtos após concluir a configuração.
+                💡 O catálogo contém ~2.000 produtos pré-cadastrados de supermercado prontos para importação.
               </p>
             </div>
           )}
