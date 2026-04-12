@@ -353,7 +353,23 @@ const ProdutosPage = () => {
     toast.success(`${toDelete.length} duplicata${toDelete.length > 1 ? "s" : ""} removida${toDelete.length > 1 ? "s" : ""} com sucesso!`);
   };
 
-  const filtered = useMemo(() => produtos.filter((p) => {
+  const runGestorAnalise = async () => {
+    setGestorLoading(true);
+    setGestorResult(null);
+    const semCat = produtos.filter(p => !p.categoria_id).length;
+    const seen = new Set<string>();
+    let dupCount = 0;
+    for (const p of produtos) {
+      const key = normalizeProductName(p.nome);
+      if (seen.has(key)) dupCount++;
+      else seen.add(key);
+    }
+    const total = semCat + dupCount;
+    setGestorBadge(total);
+    setGestorResult({ semCategoria: semCat, duplicatas: dupCount });
+    setGestorLoading(false);
+  };
+
     const matchCat = selectedCat === "Todos" || p.categorias?.nome === selectedCat;
     return matchCat;
   }), [produtos, selectedCat]);
