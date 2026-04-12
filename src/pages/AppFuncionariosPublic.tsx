@@ -17,6 +17,7 @@ interface ItemEntry {
   nome: string;
   quantidade: number;
   embalagem: string;
+  fator: number;
 }
 
 interface ProdutoPublico {
