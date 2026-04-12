@@ -27,17 +27,20 @@ const LojaContext = createContext<LojaContextType>({
 });
 
 export function LojaProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+
   const [lojaAtivaId, setLojaAtivaId] = useState<string | null>(() => {
     return localStorage.getItem("loja_ativa_id");
   });
 
   const { data: lojas = [], isLoading } = useQuery({
-    queryKey: ["lojas"],
+    queryKey: ["lojas", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.from("lojas").select("*").order("nome");
       if (error) throw error;
       return data as Loja[];
     },
+    enabled: !!user,
   });
 
   // Auto-select first loja if none selected
