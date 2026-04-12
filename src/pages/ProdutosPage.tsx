@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, ChevronRight, Sparkles, Loader2, MoreHorizontal, ArrowRight, Package, CheckCircle2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, Sparkles, Loader2, MoreHorizontal, ArrowRight, Package, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
@@ -66,6 +66,16 @@ const ProdutosPage = () => {
   // Delete confirmation
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [deleteAllConfirm, setDeleteAllConfirm] = useState(false);
+
+  // Gestor IA
+  const [gestorOpen, setGestorOpen] = useState(false);
+  const [gestorBadge, setGestorBadge] = useState(0);
+  const [gestorLoading, setGestorLoading] = useState(false);
+  const [gestorResult, setGestorResult] = useState<{
+    semCategoria: number;
+    duplicatas: number;
+  } | null>(null);
 
   // AI classify modal state
   const [classifyModalOpen, setClassifyModalOpen] = useState(false);
