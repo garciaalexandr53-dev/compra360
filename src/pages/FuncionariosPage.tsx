@@ -14,6 +14,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ConferenciaPedidos from "@/components/ConferenciaPedidos";
+const parseFatorFromObs = (obs: string | null): number => {
+  const match = obs?.match(/Fator:\s*(\d+)/);
+  return match ? parseInt(match[1]) : 1;
+};
+const parseEmbFromObs = (obs: string | null): string => {
+  const match = obs?.match(/Embalagem:\s*(\S+)/);
+  return match ? match[1] : "un";
+};
 
 const FuncionariosPage = () => {
   const queryClient = useQueryClient();
