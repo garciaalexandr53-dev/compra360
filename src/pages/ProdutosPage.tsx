@@ -21,7 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
 import type { Tables } from "@/integrations/supabase/types";
-import { classifyProductsInBatches } from "@/lib/aiClassify";
+
 
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 type Categoria = Tables<"categorias">;
@@ -380,7 +380,14 @@ const ProdutosPage = () => {
     setModalOpen(true);
   };
 
-  // --- AI Classify with progress modal ---
+  // --- Helper to chunk arrays ---
+  const chunkArray = <T,>(arr: T[], size: number): T[][] => {
+    const chunks: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size));
+    return chunks;
+  };
+
+  // --- AI Classify with progress modal (frontend batching) ---
   const autoClassifyProducts = async () => {
     const uncategorized = produtos.filter((p) => !p.categoria_id);
     const targets = uncategorized.length > 0 ? uncategorized : filtered;
@@ -392,76 +399,85 @@ const ProdutosPage = () => {
     setClassifyModalOpen(true);
     setClassifyMode("classify");
     setClassifyStatus("running");
-    setClassifyProgress(10);
+    setClassifyProgress(0);
     setClassifyError("");
     setClassifyResult({ updated: 0, categories: 0 });
 
+    const FRONTEND_BATCH = 150;
+    let currentCatNames = categorias.map((c) => c.nome);
+    let totalUpdated = 0;
+
     try {
-      const existingCatNames = categorias.map((c) => c.nome);
-      setClassifyProgress(20);
+      const batches = chunkArray(targets, FRONTEND_BATCH);
 
-      const classifications = await classifyProductsInBatches(
-        targets.map((p) => ({ nome: p.nome })),
-        existingCatNames,
-        {
-          onProgress: (processed, total) => {
-            setClassifyProgress(20 + Math.round((processed / total) * 40));
+      for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        setClassifyProgress(Math.round((i / batches.length) * 80));
+
+        const resp = await supabase.functions.invoke("ai-automacao", {
+          body: {
+            type: "classify-products",
+            products: batch.map((p) => ({ nome: p.nome })),
+            existing_categories: currentCatNames,
           },
-        }
-      );
+        });
 
-      if (!classifications.length) {
-        setClassifyError("IA não conseguiu classificar os produtos.");
-        setClassifyStatus("error");
-        return;
+        if (resp.error) throw new Error(resp.error.message);
+
+        const classifications: { nome?: string; categoria?: string }[] = resp.data?.classifications || [];
+        if (!classifications.length) continue;
+
+        // Refresh category map from DB
+        const catMap: Record<string, string> = {};
+        categorias.forEach((c) => { catMap[c.nome.toLowerCase()] = c.id; });
+        const { data: freshCats } = await supabase.from("categorias").select("id, nome").order("nome");
+        (freshCats || []).forEach((c: any) => { catMap[c.nome.toLowerCase()] = c.id; });
+
+        // Create new categories
+        const newCatNames = classifications
+          .map((c) => String(c.categoria || "").trim())
+          .filter((name) => name && !catMap[name.toLowerCase()]);
+        const uniqueNewCats = Array.from(new Set(newCatNames));
+
+        for (const catName of uniqueNewCats) {
+          const { data, error } = await supabase
+            .from("categorias")
+            .insert([{ nome: catName, user_id: user?.id }])
+            .select("id, nome")
+            .single();
+          if (!error && data) {
+            catMap[catName.toLowerCase()] = data.id;
+            currentCatNames.push(catName);
+          }
+        }
+
+        // Update products in this batch
+        for (const cl of classifications) {
+          const catId = catMap[cl.categoria?.toLowerCase() || ""];
+          if (!catId) continue;
+          const prod = batch.find((p) => normalizeProductName(p.nome) === normalizeProductName(cl.nome || ""));
+          if (prod) {
+            const { error } = await supabase
+              .from("produtos")
+              .update({ categoria_id: catId })
+              .eq("id", prod.id);
+            if (!error) totalUpdated++;
+          }
+        }
+
+        // Refresh UI after each batch
+        queryClient.invalidateQueries({ queryKey: ["produtos"] });
+        queryClient.invalidateQueries({ queryKey: ["categorias"] });
       }
-
-      // Build cat map
-      const catMap: Record<string, string> = {};
-      categorias.forEach((c) => { catMap[c.nome.toLowerCase()] = c.id; });
-
-      // Create new categories
-      const allCatNames = classifications.map((c: any) => String(c.categoria || "")).filter((c: string) => c && !catMap[c.toLowerCase()]);
-      const newCats = Array.from(new Set<string>(allCatNames));
-      for (const [index, catName] of newCats.entries()) {
-        const { data, error } = await supabase.from("categorias").insert([{ nome: catName, user_id: user?.id }]).select("id").single();
-        if (!error && data) {
-          catMap[catName.toLowerCase()] = data.id;
-        }
-
-        if (newCats.length > 0 && (index === newCats.length - 1 || index % 5 === 0)) {
-          setClassifyProgress(60 + Math.round(((index + 1) / newCats.length) * 10));
-        }
-      }
-
-      setClassifyProgress(70);
-
-      // Update products
-      let updated = 0;
-      for (const [index, cl] of classifications.entries()) {
-        const catId = catMap[cl.categoria?.toLowerCase()];
-        if (!catId) continue;
-        const prod = targets.find((p) => normalizeProductName(p.nome) === normalizeProductName(cl.nome || ""));
-        if (prod) {
-          const { error } = await supabase.from("produtos").update({ categoria_id: catId }).eq("id", prod.id);
-          if (!error) updated++;
-        }
-
-        if (index === classifications.length - 1 || index % 20 === 0) {
-          setClassifyProgress(70 + Math.round(((index + 1) / classifications.length) * 25));
-        }
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["produtos"] });
-      queryClient.invalidateQueries({ queryKey: ["categorias"] });
 
       setClassifyProgress(100);
-      const uniqueCats = new Set(classifications.map((c: any) => c.categoria).filter(Boolean));
-      setClassifyResult({ updated, categories: uniqueCats.size });
+      setClassifyResult({ updated: totalUpdated, categories: 0 });
       setClassifyStatus("done");
+      toast.success(`🤖 ${totalUpdated} produtos classificados pela IA!`);
     } catch (e: any) {
       setClassifyError(e.message || "Erro na classificação automática");
       setClassifyStatus("error");
+      toast.error(e.message || "Erro na classificação automática");
     }
   };
 
