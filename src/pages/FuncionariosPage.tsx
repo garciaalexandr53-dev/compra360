@@ -14,6 +14,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ConferenciaPedidos from "@/components/ConferenciaPedidos";
+const parseFatorFromObs = (obs: string | null): number => {
+  const match = obs?.match(/Fator:\s*(\d+)/);
+  return match ? parseInt(match[1]) : 1;
+};
+const parseEmbFromObs = (obs: string | null): string => {
+  const match = obs?.match(/Embalagem:\s*(\S+)/);
+  return match ? match[1] : "un";
+};
 
 const FuncionariosPage = () => {
   const queryClient = useQueryClient();
@@ -143,9 +151,11 @@ const FuncionariosPage = () => {
       const newItems = itemsToImport.filter((i: any) => !existingNames.has(i.nome.toLowerCase().trim()));
       const dupCount = itemsToImport.length - newItems.length;
 
+
       const inserts = newItems.map((item: any) => ({
         nome: item.nome,
-        embalagem: item.observacao?.replace("Embalagem: ", "") || "un",
+        embalagem: parseEmbFromObs(item.observacao),
+        fator_embalagem: parseFatorFromObs(item.observacao),
         ativo: true,
         user_id: user.id,
       }));
@@ -175,10 +185,14 @@ const FuncionariosPage = () => {
             .filter((p) => !existingProdIds.has(p.id))
             .map((p) => {
               const item = itemsToImport.find((i: any) => i.nome.toLowerCase().trim() === p.nome.toLowerCase().trim());
+              const fator = parseFatorFromObs(item?.observacao);
+              const emb = parseEmbFromObs(item?.observacao);
               return {
                 cotacao_id: cotacaoId,
                 produto_id: p.id,
                 quantidade: item?.quantidade || 1,
+                fator_embalagem: fator,
+                tipo_embalagem: emb.toUpperCase(),
               };
             });
           if (cpInserts.length) {
@@ -234,9 +248,12 @@ const FuncionariosPage = () => {
       const existingNames = new Set(allExisting.map((p) => p.nome.toLowerCase().trim()));
 
       if (!existingNames.has(item.nome.toLowerCase().trim())) {
+        const singleFator = parseFatorFromObs(item.observacao);
+        const singleEmb = parseEmbFromObs(item.observacao);
         const { error: prodErr } = await supabase.from("produtos").insert({
           nome: item.nome,
-          embalagem: item.observacao?.replace("Embalagem: ", "") || "un",
+          embalagem: singleEmb,
+          fator_embalagem: singleFator,
           ativo: true,
           user_id: user.id,
         });
@@ -283,11 +300,17 @@ const FuncionariosPage = () => {
 
             const cpInserts = matchedProds
               .filter((p) => !existingProdIds.has(p.id))
-              .map((p) => ({
-                cotacao_id: cot.id,
-                produto_id: p.id,
-                quantidade: item.quantidade || 1,
-              }));
+              .map((p) => {
+                const itemFator = parseFatorFromObs(item.observacao);
+                const itemEmb = parseEmbFromObs(item.observacao);
+                return {
+                  cotacao_id: cot.id,
+                  produto_id: p.id,
+                  quantidade: item.quantidade || 1,
+                  fator_embalagem: itemFator,
+                  tipo_embalagem: itemEmb.toUpperCase(),
+                };
+              });
             if (cpInserts.length) {
               await supabase.from("cotacao_produtos").insert(cpInserts);
             }

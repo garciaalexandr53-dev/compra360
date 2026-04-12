@@ -17,6 +17,7 @@ interface ItemEntry {
   nome: string;
   quantidade: number;
   embalagem: string;
+  fator: number;
 }
 
 interface ProdutoPublico {
@@ -257,7 +258,7 @@ const AppFuncionariosPublic = () => {
     if (!trimmed) return;
     setItems((prev) => [
       ...prev,
-      { nome: trimmed, quantidade: parseInt(currentQtd) || 1, embalagem: currentEmbal || "un" },
+      { nome: trimmed, quantidade: parseInt(currentQtd) || 1, embalagem: currentEmbal || "un", fator: 1 },
     ]);
     setCurrent("");
     setCurrentQtd("1");
@@ -288,6 +289,7 @@ const AppFuncionariosPublic = () => {
       nome: dialogProduct.nome,
       quantidade: qty,
       embalagem: embLabel,
+      fator,
     }]);
 
     setProductSearch("");
@@ -342,18 +344,20 @@ const AppFuncionariosPublic = () => {
     setSending(true);
     try {
       const lojaLabel = selectedLojaName ? ` [${selectedLojaName}]` : "";
-      const inserts = items.map((item) => ({
-        nome: item.nome,
-        quantidade: item.quantidade,
-        observacao: [
-          item.embalagem !== "un" ? `Embalagem: ${item.embalagem}` : null,
-          lojaLabel || null,
-        ]
-          .filter(Boolean)
-          .join(" | ") || null,
-        registrado_por: "Funcionário" + lojaLabel,
-        loja_id: selectedLojaId || (lojas.length === 1 ? lojas[0].id : null),
-      }));
+      const inserts = items.map((item) => {
+        const fator = item.fator || 1;
+        const obsParts: string[] = [];
+        if (item.embalagem !== "un") obsParts.push(`Embalagem: ${item.embalagem}`);
+        if (fator > 1) obsParts.push(`Fator: ${fator}`);
+        if (lojaLabel) obsParts.push(lojaLabel.trim());
+        return {
+          nome: item.nome,
+          quantidade: item.quantidade,
+          observacao: obsParts.length ? obsParts.join(" | ") : null,
+          registrado_por: "Funcionário" + lojaLabel,
+          loja_id: selectedLojaId || (lojas.length === 1 ? lojas[0].id : null),
+        };
+      });
 
       const { error } = await supabase.from("itens_faltantes").insert(inserts as never);
       if (error) throw error;
