@@ -357,8 +357,9 @@ const AppFuncionariosPublic = () => {
           quantidade: item.quantidade,
           observacao: obsParts.length ? obsParts.join(" | ") : null,
           registrado_por: "Funcionário" + lojaLabel,
-        loja_id: selectedLojaId || (lojas.length === 1 ? lojas[0].id : null),
-      }));
+          loja_id: selectedLojaId || (lojas.length === 1 ? lojas[0].id : null),
+        };
+      });
 
       const { error } = await supabase.from("itens_faltantes").insert(inserts as never);
       if (error) throw error;
