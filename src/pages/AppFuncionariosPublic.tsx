@@ -51,6 +51,7 @@ const AppFuncionariosPublic = () => {
   const [dialogProduct, setDialogProduct] = useState<ProdutoPublico | null>(null);
   const [dialogQtd, setDialogQtd] = useState("1");
   const [dialogEmbal, setDialogEmbal] = useState("UNI");
+  const [dialogFator, setDialogFator] = useState("1");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Keep title consistent and capture install prompt
@@ -176,7 +177,7 @@ const AppFuncionariosPublic = () => {
 
       let query = supabase
         .from("produtos")
-        .select("nome, embalagem, categorias(nome)", { count: "exact" })
+        .select("nome, embalagem, fator_embalagem, categorias(nome)", { count: "exact" })
         .eq("ativo", true)
         .order("nome")
         .range(from, to);
@@ -269,19 +270,31 @@ const AppFuncionariosPublic = () => {
     setDialogProduct(product);
     setDialogQtd("1");
     setDialogEmbal((product.embalagem || "UNI").toUpperCase());
+    setDialogFator(String(product.fator_embalagem || 1));
   }, []);
 
   const confirmProductDialog = useCallback(() => {
     if (!dialogProduct) return;
     const productKey = getProductKey(dialogProduct);
     const qty = parseInt(dialogQtd) || 1;
+    const fator = parseInt(dialogFator) || 1;
 
-    setItems((prev) => [...prev, { nome: dialogProduct.nome, quantidade: qty, embalagem: dialogEmbal.toLowerCase() }]);
+    const embLabel = dialogEmbal.toLowerCase();
+    const obsParts: string[] = [];
+    if (embLabel !== "uni") obsParts.push(`Embalagem: ${dialogEmbal}`);
+    if (fator > 1) obsParts.push(`${fator}un por ${dialogEmbal}`);
+
+    setItems((prev) => [...prev, {
+      nome: dialogProduct.nome,
+      quantidade: qty,
+      embalagem: embLabel,
+    }]);
 
     setProductSearch("");
     setTimeout(() => searchInputRef.current?.focus(), 100);
 
-    toast.success(`✅ ${dialogProduct.nome} adicionado!`, { duration: 1000, position: "top-center" });
+    const totalUn = fator > 1 ? ` (${qty * fator}un)` : "";
+    toast.success(`✅ ${dialogProduct.nome} — ${qty} ${dialogEmbal}${totalUn}`, { duration: 1500, position: "top-center" });
 
     setJustAdded((prev) => new Set(prev).add(productKey));
     setTimeout(() => {
@@ -293,7 +306,7 @@ const AppFuncionariosPublic = () => {
     }, 1200);
 
     setDialogProduct(null);
-  }, [dialogProduct, dialogQtd, dialogEmbal]);
+  }, [dialogProduct, dialogQtd, dialogEmbal, dialogFator]);
 
   const removeItem = (index: number) => setItems((prev) => prev.filter((_, i) => i !== index));
 
