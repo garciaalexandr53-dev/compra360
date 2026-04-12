@@ -10,6 +10,11 @@ import { useTheme } from "@/hooks/useTheme";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import BottomNav from "@/components/BottomNav";
 import OnboardingWizard from "@/components/OnboardingWizard";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function AppLayout() {
   const { user, loading, signOut } = useAuth();
