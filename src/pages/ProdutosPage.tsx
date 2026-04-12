@@ -1169,7 +1169,7 @@ const ProdutosPage = () => {
       </AlertDialog>
 
       {/* Sheet de categorias */}
-      <Sheet open={catSheetOpen} onOpenChange={setCatSheetOpen}>
+      <Sheet open={catSheetOpen} onOpenChange={(open) => { setCatSheetOpen(open); if (!open) setCatSearch(""); }}>
         <SheetContent side="bottom" className="h-[70vh] flex flex-col rounded-t-2xl">
           <SheetHeader className="pb-2 shrink-0">
             <SheetTitle className="text-base">Filtrar por categoria</SheetTitle>
