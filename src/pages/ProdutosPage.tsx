@@ -370,6 +370,7 @@ const ProdutosPage = () => {
     setGestorLoading(false);
   };
 
+  const filtered = useMemo(() => produtos.filter((p) => {
     const matchCat = selectedCat === "Todos" || p.categorias?.nome === selectedCat;
     return matchCat;
   }), [produtos, selectedCat]);
