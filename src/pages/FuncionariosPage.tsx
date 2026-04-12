@@ -248,9 +248,12 @@ const FuncionariosPage = () => {
       const existingNames = new Set(allExisting.map((p) => p.nome.toLowerCase().trim()));
 
       if (!existingNames.has(item.nome.toLowerCase().trim())) {
+        const singleFator = parseFatorFromObs(item.observacao);
+        const singleEmb = parseEmbFromObs(item.observacao);
         const { error: prodErr } = await supabase.from("produtos").insert({
           nome: item.nome,
-          embalagem: item.observacao?.replace("Embalagem: ", "") || "un",
+          embalagem: singleEmb,
+          fator_embalagem: singleFator,
           ativo: true,
           user_id: user.id,
         });
@@ -297,11 +300,17 @@ const FuncionariosPage = () => {
 
             const cpInserts = matchedProds
               .filter((p) => !existingProdIds.has(p.id))
-              .map((p) => ({
-                cotacao_id: cot.id,
-                produto_id: p.id,
-                quantidade: item.quantidade || 1,
-              }));
+              .map((p) => {
+                const itemFator = parseFatorFromObs(item.observacao);
+                const itemEmb = parseEmbFromObs(item.observacao);
+                return {
+                  cotacao_id: cot.id,
+                  produto_id: p.id,
+                  quantidade: item.quantidade || 1,
+                  fator_embalagem: itemFator,
+                  tipo_embalagem: itemEmb.toUpperCase(),
+                };
+              });
             if (cpInserts.length) {
               await supabase.from("cotacao_produtos").insert(cpInserts);
             }
