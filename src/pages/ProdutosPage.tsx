@@ -576,99 +576,121 @@ const ProdutosPage = () => {
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <div className="p-3 border-b bg-card/80 space-y-3">
-          <div>
-            <h1 className="text-lg font-bold text-foreground">Adicionar produtos</h1>
-            <p className="text-xs text-muted-foreground">Monte sua lista para cotação</p>
-          </div>
-
-          <div className="flex items-center gap-2 text-xs">
-            <Badge variant="default" className="text-[10px] px-2 py-0.5 gap-1">
-              <CheckCircle2 className="h-3 w-3" />1. Produtos
-            </Badge>
-            <div className="h-px flex-1 bg-border" />
-            <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-muted-foreground">2. Fornecedores</Badge>
-            <div className="h-px flex-1 bg-border" />
-            <Badge variant="outline" className="text-[10px] px-2 py-0.5 text-muted-foreground">3. Resultado</Badge>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {cotacaoItemCount > 0 ? (
-              <Badge variant="secondary" className="text-[10px] gap-1 bg-primary/10 text-primary border-primary/20">
-                <Check className="h-3 w-3" />
-                {cotacaoItemCount} produto{cotacaoItemCount !== 1 ? "s" : ""} na cotação
-              </Badge>
-            ) : (
-              <p className="text-[11px] text-muted-foreground">Adicione produtos para iniciar a cotação</p>
-            )}
-          </div>
-
-          {/* Search + actions */}
-          <div className="flex items-center gap-3">
-            {!catSidebarOpen && (
-              <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0" onClick={() => setCatSidebarOpen(true)} title="Mostrar categorias">
-                <ChevronRight className="h-4 w-4" />
+        <div className="p-3 border-b bg-card/80 space-y-2">
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg font-bold text-foreground">Banco de Produtos</h1>
+            <div className="flex items-center gap-2">
+              <Button size="sm" onClick={openAdd}>
+                <Plus className="h-4 w-4 mr-1" /> Novo Produto
               </Button>
-            )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="shrink-0 gap-1">
+                    <MoreHorizontal className="h-4 w-4" />
+                    <span className="text-xs">Mais</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={() => {
+                    if (!checkPlan("pro", "Importação em massa")) return;
+                    setImportOpen(true);
+                  }}>
+                    <Upload className="h-4 w-4 mr-2" /> Importar Produtos
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setCatalogoOpen(true)}>
+                    <Package className="h-4 w-4 mr-2" /> Catálogo Supermercado
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    if (!checkPlan("pro", "Sugestão de fatores por IA")) return;
+                    autoSuggestFatorProducts();
+                  }} disabled={produtos.length === 0}>
+                    <Sparkles className="h-4 w-4 mr-2" /> Sugerir Fatores IA
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setGestorOpen(true)}
+                    disabled={produtos.length === 0}
+                  >
+                    <div className="flex items-center flex-1">
+                      <Sparkles className="h-4 w-4 mr-2 text-primary" />
+                      <span className="font-medium">Gestor IA</span>
+                      {gestorBadge > 0 && (
+                        <span className="ml-auto text-[10px] font-bold bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">
+                          {gestorBadge}
+                        </span>
+                      )}
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => setDeleteAllConfirm(true)}
+                    disabled={deleteAllMutation.isPending || produtos.length === 0}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" /> Excluir Todos
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          {/* Search com X para limpar */}
+          <div className="flex items-center gap-2">
             <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar produto..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                className="pl-9 pr-8"
               />
-            </div>
-            <span className="text-sm text-muted-foreground whitespace-nowrap">{filtered.length}{totalCount > filtered.length ? `/${totalCount}` : ""}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" onClick={openAdd}>
-              <Plus className="h-4 w-4 mr-1" /> Novo
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="shrink-0 gap-1">
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span className="text-xs">Mais</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => {
-                  if (!checkPlan("pro", "Importação em massa")) return;
-                  setImportOpen(true);
-                }}>
-                  <Upload className="h-4 w-4 mr-2" /> Importar Produtos
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setCatalogoOpen(true)}>
-                  <Package className="h-4 w-4 mr-2" /> Catálogo Supermercado
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                  if (!checkPlan("business", "Classificação por IA")) return;
-                  autoClassifyProducts();
-                }} disabled={produtos.length === 0}>
-                  <Sparkles className="h-4 w-4 mr-2" /> Classificar Categorias IA
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                  if (!checkPlan("pro", "Sugestão de fatores por IA")) return;
-                  autoSuggestFatorProducts();
-                }} disabled={produtos.length === 0}>
-                  <Package className="h-4 w-4 mr-2" /> Sugerir Fatores IA
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={removeDuplicates} disabled={produtos.length === 0}>
-                  <span className="mr-2">🧹</span> Remover duplicatas
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={() => {
-                    if (confirm(`Excluir TODOS os ${produtos.length} produtos?`)) deleteAllMutation.mutate();
-                  }}
-                  disabled={deleteAllMutation.isPending || produtos.length === 0}
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" /> Excluir Todos
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+              {filtered.length}/{totalCount}
+            </span>
+          </div>
+
+          {/* Chips de categoria — scroll horizontal */}
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none -mx-3 px-3">
+            <button
+              onClick={() => setSelectedCat("Todos")}
+              className={`shrink-0 text-xs px-3 py-1 rounded-full border transition-colors whitespace-nowrap ${
+                selectedCat === "Todos"
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border text-muted-foreground hover:border-primary/40"
+              }`}
+            >
+              Todos ({totalCount})
+            </button>
+            {categorias.slice(0, 10).map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCat(cat.nome)}
+                className={`shrink-0 text-xs px-3 py-1 rounded-full border transition-colors whitespace-nowrap ${
+                  selectedCat === cat.nome
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border text-muted-foreground hover:border-primary/40"
+                }`}
+              >
+                {cat.nome} ({catCounts[cat.nome] || 0})
+              </button>
+            ))}
+            {categorias.length > 10 && (
+              <button
+                onClick={() => setCatSidebarOpen(true)}
+                className="shrink-0 text-xs px-3 py-1 rounded-full border border-dashed border-border text-muted-foreground hover:border-primary/40 transition-colors whitespace-nowrap"
+              >
+                +{categorias.length - 10} mais
+              </button>
+            )}
           </div>
         </div>
 
