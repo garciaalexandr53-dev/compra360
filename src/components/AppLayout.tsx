@@ -21,6 +21,7 @@ export default function AppLayout() {
   const { theme, toggle } = useTheme();
   const { lojas, loading: lojasLoading } = useLojaAtiva();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const location = useLocation();
   const isDashboard = location.pathname === "/dashboard";
   const isFuncionarios = location.pathname === "/funcionarios";
