@@ -258,7 +258,7 @@ const AppFuncionariosPublic = () => {
     if (!trimmed) return;
     setItems((prev) => [
       ...prev,
-      { nome: trimmed, quantidade: parseInt(currentQtd) || 1, embalagem: currentEmbal || "un" },
+      { nome: trimmed, quantidade: parseInt(currentQtd) || 1, embalagem: currentEmbal || "un", fator: 1 },
     ]);
     setCurrent("");
     setCurrentQtd("1");
@@ -289,6 +289,7 @@ const AppFuncionariosPublic = () => {
       nome: dialogProduct.nome,
       quantidade: qty,
       embalagem: embLabel,
+      fator,
     }]);
 
     setProductSearch("");
