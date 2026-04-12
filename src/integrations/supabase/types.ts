@@ -837,6 +837,8 @@ export type Database = {
         }
         Returns: number
       }
+      pedido_is_enviado: { Args: { _pedido_id: string }; Returns: boolean }
+      pedido_owner: { Args: { _pedido_id: string }; Returns: string }
       produto_belongs_to_loja_owner: {
         Args: { _user_id: string }
         Returns: boolean
