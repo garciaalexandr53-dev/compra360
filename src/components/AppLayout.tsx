@@ -10,12 +10,18 @@ import { useTheme } from "@/hooks/useTheme";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import BottomNav from "@/components/BottomNav";
 import OnboardingWizard from "@/components/OnboardingWizard";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function AppLayout() {
   const { user, loading, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const { lojas, loading: lojasLoading } = useLojaAtiva();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const location = useLocation();
   const isDashboard = location.pathname === "/dashboard";
   const isFuncionarios = location.pathname === "/funcionarios";
@@ -61,7 +67,7 @@ export default function AppLayout() {
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={toggle}>
                 {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
               </Button>
-              <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={signOut}>
+              <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setShowLogoutConfirm(true)}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Sair
               </Button>
@@ -74,6 +80,20 @@ export default function AppLayout() {
       </div>
       <BottomNav />
       <OnboardingWizard open={showOnboarding} onClose={() => setShowOnboarding(false)} />
+      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deseja sair da conta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você precisará fazer login novamente para acessar o sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={signOut}>Sair</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }
