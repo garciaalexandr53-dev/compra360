@@ -342,16 +342,21 @@ const AppFuncionariosPublic = () => {
     setSending(true);
     try {
       const lojaLabel = selectedLojaName ? ` [${selectedLojaName}]` : "";
-      const inserts = items.map((item) => ({
-        nome: item.nome,
-        quantidade: item.quantidade,
-        observacao: [
-          item.embalagem !== "un" ? `Embalagem: ${item.embalagem}` : null,
-          lojaLabel || null,
-        ]
-          .filter(Boolean)
-          .join(" | ") || null,
-        registrado_por: "Funcionário" + lojaLabel,
+      const inserts = items.map((item) => {
+        // Find fator from the product catalog if available
+        const matched = filteredProducts.find(
+          (p) => p.nome.toLowerCase() === item.nome.toLowerCase()
+        );
+        const fator = matched?.fator_embalagem || 1;
+        const obsParts: string[] = [];
+        if (item.embalagem !== "un") obsParts.push(`Embalagem: ${item.embalagem}`);
+        if (fator > 1) obsParts.push(`Fator: ${fator}`);
+        if (lojaLabel) obsParts.push(lojaLabel.trim());
+        return {
+          nome: item.nome,
+          quantidade: item.quantidade,
+          observacao: obsParts.length ? obsParts.join(" | ") : null,
+          registrado_por: "Funcionário" + lojaLabel,
         loja_id: selectedLojaId || (lojas.length === 1 ? lojas[0].id : null),
       }));
 
