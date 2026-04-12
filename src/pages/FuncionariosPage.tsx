@@ -143,9 +143,19 @@ const FuncionariosPage = () => {
       const newItems = itemsToImport.filter((i: any) => !existingNames.has(i.nome.toLowerCase().trim()));
       const dupCount = itemsToImport.length - newItems.length;
 
+      const parseFatorFromObs = (obs: string | null): number => {
+        const match = obs?.match(/Fator:\s*(\d+)/);
+        return match ? parseInt(match[1]) : 1;
+      };
+      const parseEmbFromObs = (obs: string | null): string => {
+        const match = obs?.match(/Embalagem:\s*(\S+)/);
+        return match ? match[1] : "un";
+      };
+
       const inserts = newItems.map((item: any) => ({
         nome: item.nome,
-        embalagem: item.observacao?.replace("Embalagem: ", "") || "un",
+        embalagem: parseEmbFromObs(item.observacao),
+        fator_embalagem: parseFatorFromObs(item.observacao),
         ativo: true,
         user_id: user.id,
       }));
@@ -175,10 +185,14 @@ const FuncionariosPage = () => {
             .filter((p) => !existingProdIds.has(p.id))
             .map((p) => {
               const item = itemsToImport.find((i: any) => i.nome.toLowerCase().trim() === p.nome.toLowerCase().trim());
+              const fator = parseFatorFromObs(item?.observacao);
+              const emb = parseEmbFromObs(item?.observacao);
               return {
                 cotacao_id: cotacaoId,
                 produto_id: p.id,
                 quantidade: item?.quantidade || 1,
+                fator_embalagem: fator,
+                tipo_embalagem: emb.toUpperCase(),
               };
             });
           if (cpInserts.length) {
