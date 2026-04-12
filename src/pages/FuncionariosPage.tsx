@@ -151,14 +151,6 @@ const FuncionariosPage = () => {
       const newItems = itemsToImport.filter((i: any) => !existingNames.has(i.nome.toLowerCase().trim()));
       const dupCount = itemsToImport.length - newItems.length;
 
-      const parseFatorFromObs = (obs: string | null): number => {
-        const match = obs?.match(/Fator:\s*(\d+)/);
-        return match ? parseInt(match[1]) : 1;
-      };
-      const parseEmbFromObs = (obs: string | null): string => {
-        const match = obs?.match(/Embalagem:\s*(\S+)/);
-        return match ? match[1] : "un";
-      };
 
       const inserts = newItems.map((item: any) => ({
         nome: item.nome,
