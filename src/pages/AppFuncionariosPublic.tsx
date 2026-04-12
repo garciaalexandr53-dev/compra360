@@ -22,6 +22,7 @@ interface ItemEntry {
 interface ProdutoPublico {
   nome: string;
   embalagem: string | null;
+  fator_embalagem: number;
   categorias: {
     nome: string;
   } | null;
@@ -50,6 +51,7 @@ const AppFuncionariosPublic = () => {
   const [dialogProduct, setDialogProduct] = useState<ProdutoPublico | null>(null);
   const [dialogQtd, setDialogQtd] = useState("1");
   const [dialogEmbal, setDialogEmbal] = useState("UNI");
+  const [dialogFator, setDialogFator] = useState("1");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Keep title consistent and capture install prompt
@@ -175,7 +177,7 @@ const AppFuncionariosPublic = () => {
 
       let query = supabase
         .from("produtos")
-        .select("nome, embalagem, categorias(nome)", { count: "exact" })
+        .select("nome, embalagem, fator_embalagem, categorias(nome)", { count: "exact" })
         .eq("ativo", true)
         .order("nome")
         .range(from, to);
@@ -268,19 +270,31 @@ const AppFuncionariosPublic = () => {
     setDialogProduct(product);
     setDialogQtd("1");
     setDialogEmbal((product.embalagem || "UNI").toUpperCase());
+    setDialogFator(String(product.fator_embalagem || 1));
   }, []);
 
   const confirmProductDialog = useCallback(() => {
     if (!dialogProduct) return;
     const productKey = getProductKey(dialogProduct);
     const qty = parseInt(dialogQtd) || 1;
+    const fator = parseInt(dialogFator) || 1;
 
-    setItems((prev) => [...prev, { nome: dialogProduct.nome, quantidade: qty, embalagem: dialogEmbal.toLowerCase() }]);
+    const embLabel = dialogEmbal.toLowerCase();
+    const obsParts: string[] = [];
+    if (embLabel !== "uni") obsParts.push(`Embalagem: ${dialogEmbal}`);
+    if (fator > 1) obsParts.push(`${fator}un por ${dialogEmbal}`);
+
+    setItems((prev) => [...prev, {
+      nome: dialogProduct.nome,
+      quantidade: qty,
+      embalagem: embLabel,
+    }]);
 
     setProductSearch("");
     setTimeout(() => searchInputRef.current?.focus(), 100);
 
-    toast.success(`✅ ${dialogProduct.nome} adicionado!`, { duration: 1000, position: "top-center" });
+    const totalUn = fator > 1 ? ` (${qty * fator}un)` : "";
+    toast.success(`✅ ${dialogProduct.nome} — ${qty} ${dialogEmbal}${totalUn}`, { duration: 1500, position: "top-center" });
 
     setJustAdded((prev) => new Set(prev).add(productKey));
     setTimeout(() => {
@@ -292,7 +306,7 @@ const AppFuncionariosPublic = () => {
     }, 1200);
 
     setDialogProduct(null);
-  }, [dialogProduct, dialogQtd, dialogEmbal]);
+  }, [dialogProduct, dialogQtd, dialogEmbal, dialogFator]);
 
   const removeItem = (index: number) => setItems((prev) => prev.filter((_, i) => i !== index));
 
@@ -789,7 +803,12 @@ const AppFuncionariosPublic = () => {
                 {["UNI", "CX", "DZ", "FD", "KG", "PCT", "LT"].map((emb) => (
                   <button
                     key={emb}
-                    onClick={() => setDialogEmbal(emb)}
+                    onClick={() => {
+                      setDialogEmbal(emb);
+                      // Auto-set default fator when changing embalagem
+                      const defaults: Record<string, number> = { UNI: 1, CX: 12, DZ: 12, FD: 6, KG: 1, PCT: 1, LT: 1 };
+                      setDialogFator(String(defaults[emb] || 1));
+                    }}
                     className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                       dialogEmbal === emb
                         ? "bg-primary text-primary-foreground border-primary"
@@ -801,6 +820,32 @@ const AppFuncionariosPublic = () => {
                 ))}
               </div>
             </div>
+
+            {/* Editable fator */}
+            {dialogEmbal !== "UNI" && dialogEmbal !== "KG" && dialogEmbal !== "LT" && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Qtd por embalagem</label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    value={dialogFator}
+                    onChange={(e) => setDialogFator(e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    className="h-9 w-20 text-center font-bold"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    unidades por {dialogEmbal}
+                  </span>
+                </div>
+                {(parseInt(dialogQtd) || 1) > 0 && (parseInt(dialogFator) || 1) > 1 && (
+                  <p className="text-xs text-primary mt-1 font-medium">
+                    Total: {(parseInt(dialogQtd) || 1) * (parseInt(dialogFator) || 1)} unidades
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <DialogFooter className="flex-row gap-2">
