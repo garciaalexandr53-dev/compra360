@@ -22,6 +22,7 @@ interface ItemEntry {
 interface ProdutoPublico {
   nome: string;
   embalagem: string | null;
+  fator_embalagem: number;
   categorias: {
     nome: string;
   } | null;
