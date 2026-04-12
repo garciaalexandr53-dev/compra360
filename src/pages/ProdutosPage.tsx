@@ -11,7 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, Sparkles, Loader2, MoreHorizontal, ArrowRight, Package, X } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, Sparkles, Loader2, MoreHorizontal, ArrowRight, Package, X, Filter } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
@@ -57,7 +58,8 @@ const ProdutosPage = () => {
   const [form, setForm] = useState(emptyForm);
   const [importOpen, setImportOpen] = useState(false);
   const [catalogoOpen, setCatalogoOpen] = useState(false);
-  const [catSidebarOpen, setCatSidebarOpen] = useState(false);
+  const [catSheetOpen, setCatSheetOpen] = useState(false);
+  const [catSearch, setCatSearch] = useState("");
   const [newCatModalOpen, setNewCatModalOpen] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [showFooter, setShowFooter] = useState(false);
@@ -675,40 +677,32 @@ const ProdutosPage = () => {
             </span>
           </div>
 
-          {/* Chips de categoria — scroll horizontal */}
-          <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none -mx-3 px-3">
-            <button
-              onClick={() => setSelectedCat("Todos")}
-              className={`shrink-0 text-xs px-3 py-1 rounded-full border transition-colors whitespace-nowrap ${
-                selectedCat === "Todos"
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "border-border text-muted-foreground hover:border-primary/40"
-              }`}
-            >
-              Todos ({totalCount})
-            </button>
-            {categorias.slice(0, 10).map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCat(cat.nome)}
-                className={`shrink-0 text-xs px-3 py-1 rounded-full border transition-colors whitespace-nowrap ${
-                  selectedCat === cat.nome
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "border-border text-muted-foreground hover:border-primary/40"
-                }`}
+          {/* Filtro de categoria */}
+          <button
+            onClick={() => setCatSheetOpen(true)}
+            className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg border text-sm transition-colors ${
+              selectedCat !== "Todos"
+                ? "border-primary bg-primary/5 text-primary font-medium"
+                : "border-border text-muted-foreground hover:border-primary/40"
+            }`}
+          >
+            <Filter className="h-4 w-4 shrink-0" />
+            <span className="truncate flex-1 text-left">
+              {selectedCat === "Todos" ? "Todas as categorias" : selectedCat}
+            </span>
+            {selectedCat !== "Todos" ? (
+              <span
+                onClick={(e) => { e.stopPropagation(); setSelectedCat("Todos"); }}
+                className="text-xs text-primary hover:underline shrink-0"
               >
-                {cat.nome} ({catCounts[cat.nome] || 0})
-              </button>
-            ))}
-            {categorias.length > 10 && (
-              <button
-                onClick={() => setCatSidebarOpen(true)}
-                className="shrink-0 text-xs px-3 py-1 rounded-full border border-dashed border-border text-muted-foreground hover:border-primary/40 transition-colors whitespace-nowrap"
-              >
-                +{categorias.length - 10} mais
-              </button>
+                ✕ limpar
+              </span>
+            ) : (
+              <span className="text-xs text-muted-foreground shrink-0">
+                {categorias.length} categorias
+              </span>
             )}
-          </div>
+          </button>
         </div>
 
         <div ref={scrollRef} onScroll={handleScroll} className={`flex-1 overflow-y-auto ${cotacaoItemCount > 0 ? "pb-24" : ""}`}>
