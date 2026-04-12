@@ -1096,6 +1096,127 @@ const ProdutosPage = () => {
       />
       <CatalogoBaseModal open={catalogoOpen} onOpenChange={setCatalogoOpen} />
       <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
+
+      {/* Gestor IA Dialog */}
+      <Dialog open={gestorOpen} onOpenChange={setGestorOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Gestor IA de Produtos
+            </DialogTitle>
+            <DialogDescription>
+              Analisa seu banco e sugere melhorias automáticas
+            </DialogDescription>
+          </DialogHeader>
+
+          {!gestorResult && !gestorLoading && (
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground">
+                O Gestor verifica produtos sem categoria e possíveis duplicatas no seu banco de {totalCount} produtos.
+              </p>
+              <Button
+                className="w-full bg-gradient-to-r from-primary to-primary/80"
+                onClick={runGestorAnalise}
+              >
+                <Sparkles className="h-4 w-4 mr-2" /> Analisar agora
+              </Button>
+            </div>
+          )}
+
+          {gestorLoading && (
+            <div className="flex items-center justify-center py-8 gap-3">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <span className="text-sm text-muted-foreground">Analisando produtos...</span>
+            </div>
+          )}
+
+          {gestorResult && !gestorLoading && (
+            <div className="space-y-3 py-2">
+              {gestorResult.semCategoria === 0 && gestorResult.duplicatas === 0 ? (
+                <div className="text-center py-4 space-y-2">
+                  <div className="text-3xl">✅</div>
+                  <p className="text-sm font-medium">Tudo em ordem!</p>
+                  <p className="text-xs text-muted-foreground">Nenhuma melhoria necessária.</p>
+                </div>
+              ) : (
+                <>
+                  {gestorResult.semCategoria > 0 && (
+                    <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl">
+                      <div>
+                        <div className="text-sm font-semibold">Sem categoria</div>
+                        <div className="text-xs text-muted-foreground">
+                          {gestorResult.semCategoria} produto{gestorResult.semCategoria > 1 ? "s" : ""}
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setGestorOpen(false);
+                          if (!checkPlan("business", "Classificação por IA")) return;
+                          autoClassifyProducts();
+                        }}
+                      >
+                        Classificar IA
+                      </Button>
+                    </div>
+                  )}
+                  {gestorResult.duplicatas > 0 && (
+                    <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl">
+                      <div>
+                        <div className="text-sm font-semibold">Duplicatas</div>
+                        <div className="text-xs text-muted-foreground">
+                          {gestorResult.duplicatas} produto{gestorResult.duplicatas > 1 ? "s" : ""} repetido{gestorResult.duplicatas > 1 ? "s" : ""}
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          setGestorOpen(false);
+                          removeDuplicates();
+                          setGestorBadge(prev => Math.max(0, prev - gestorResult.duplicatas));
+                        }}
+                      >
+                        Remover
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full gap-1"
+                onClick={runGestorAnalise}
+              >
+                <Loader2 className="h-3.5 w-3.5" /> Reanalisar
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmação Excluir Todos */}
+      <AlertDialog open={deleteAllConfirm} onOpenChange={setDeleteAllConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir todos os produtos?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação removerá permanentemente todos os {totalCount} produtos e categorias. Não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { deleteAllMutation.mutate(); setDeleteAllConfirm(false); }}
+            >
+              Excluir tudo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
