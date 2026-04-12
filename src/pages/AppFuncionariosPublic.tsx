@@ -166,44 +166,43 @@ const AppFuncionariosPublic = () => {
     queryKey: ["produtos-public", debouncedProductSearch, selectedLojaId],
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
-      const from = pageParam * PRODUCT_PAGE_SIZE;
-      const to = from + PRODUCT_PAGE_SIZE - 1;
+      const offset = pageParam * PRODUCT_PAGE_SIZE;
       const searchTerms = debouncedProductSearch.toLowerCase().split(/\s+/).filter(Boolean);
+      const searchParam = searchTerms.length > 0 ? searchTerms[0] : null;
 
-      let ownerUserId: string | null = null;
-      if (selectedLojaId) {
-        const { data: ownerId } = await supabase.rpc("get_loja_owner", { _loja_id: selectedLojaId });
-        ownerUserId = ownerId || null;
+      if (!selectedLojaId) {
+        return { products: [] as ProdutoPublico[], nextPage: undefined };
       }
 
-      let query = supabase
-        .from("produtos")
-        .select("nome, embalagem, fator_embalagem, categorias(nome)", { count: "exact" })
-        .eq("ativo", true)
-        .order("nome")
-        .range(from, to);
+      const { data, error } = await supabase.rpc("get_produtos_for_loja", {
+        _loja_id: selectedLojaId,
+        _search: searchParam,
+        _limit: PRODUCT_PAGE_SIZE,
+        _offset: offset,
+      });
 
-      if (ownerUserId) {
-        query = query.eq("user_id", ownerUserId);
-      }
-
-      if (searchTerms.length > 0) {
-        query = query.ilike("nome", `%${searchTerms[0]}%`);
-      }
-
-      const { data, error, count } = await query;
       if (error) throw error;
 
-      const products = ((data || []) as ProdutoPublico[]).filter((product) => {
-        if (searchTerms.length === 0) return true;
+      const totalCount = (data && data.length > 0) ? Number((data[0] as any).total_count) : 0;
+
+      const products: ProdutoPublico[] = ((data || []) as any[]).map((row) => ({
+        nome: row.nome,
+        embalagem: row.embalagem,
+        fator_embalagem: row.fator_embalagem,
+        categorias: row.categoria_nome ? { nome: row.categoria_nome } : null,
+      }));
+
+      // Client-side multi-term filter (RPC only filters first term)
+      const filtered = products.filter((product) => {
+        if (searchTerms.length <= 1) return true;
         const productName = product.nome.toLowerCase();
         return searchTerms.every((term) => productName.includes(term));
       });
 
-      const nextOffset = from + (data?.length || 0);
+      const nextOffset = offset + products.length;
       return {
-        products,
-        nextPage: count !== null && nextOffset < count ? pageParam + 1 : undefined,
+        products: filtered,
+        nextPage: nextOffset < totalCount ? pageParam + 1 : undefined,
       };
     },
     getNextPageParam: (lastPage) => lastPage.nextPage,
