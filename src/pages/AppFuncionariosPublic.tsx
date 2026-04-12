@@ -345,11 +345,7 @@ const AppFuncionariosPublic = () => {
     try {
       const lojaLabel = selectedLojaName ? ` [${selectedLojaName}]` : "";
       const inserts = items.map((item) => {
-        // Find fator from the product catalog if available
-        const matched = filteredProducts.find(
-          (p) => p.nome.toLowerCase() === item.nome.toLowerCase()
-        );
-        const fator = matched?.fator_embalagem || 1;
+        const fator = item.fator || 1;
         const obsParts: string[] = [];
         if (item.embalagem !== "un") obsParts.push(`Embalagem: ${item.embalagem}`);
         if (fator > 1) obsParts.push(`Fator: ${fator}`);
