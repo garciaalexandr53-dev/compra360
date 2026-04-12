@@ -80,6 +80,20 @@ export default function AppLayout() {
       </div>
       <BottomNav />
       <OnboardingWizard open={showOnboarding} onClose={() => setShowOnboarding(false)} />
+      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deseja sair da conta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você precisará fazer login novamente para acessar o sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={signOut}>Sair</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }
