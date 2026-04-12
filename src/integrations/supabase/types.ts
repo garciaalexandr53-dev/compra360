@@ -817,6 +817,21 @@ export type Database = {
           nome: string
         }[]
       }
+      get_produtos_for_loja: {
+        Args: {
+          _limit?: number
+          _loja_id: string
+          _offset?: number
+          _search?: string
+        }
+        Returns: {
+          categoria_nome: string
+          embalagem: string
+          fator_embalagem: number
+          nome: string
+          total_count: number
+        }[]
+      }
       get_supplier_id_from_token: { Args: { _token: string }; Returns: string }
       get_supplier_info: {
         Args: { _token: string }
