@@ -67,7 +67,7 @@ export default function AppLayout() {
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={toggle}>
                 {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
               </Button>
-              <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={signOut}>
+              <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setShowLogoutConfirm(true)}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Sair
               </Button>
