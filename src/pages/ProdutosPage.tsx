@@ -549,50 +549,6 @@ const ProdutosPage = () => {
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
-      {/* Category sidebar - collapsible */}
-      {catSidebarOpen && (
-        <div className="w-56 flex-shrink-0 bg-card border-r flex flex-col">
-          <div className="p-3 border-b flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Categorias</span>
-            <button onClick={() => setCatSidebarOpen(false)} className="text-muted-foreground hover:text-foreground">
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-          </div>
-          <ScrollArea className="flex-1">
-            <div className="p-1">
-              <button
-                onClick={() => setSelectedCat("Todos")}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
-                  selectedCat === "Todos" ? "bg-accent text-accent-foreground font-semibold" : "text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                <span className="truncate">Todos</span>
-                <span className="text-[10px] font-bold bg-muted px-1.5 py-0.5 rounded-full">{totalCount}</span>
-              </button>
-              {categorias.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCat(cat.nome)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
-                    selectedCat === cat.nome ? "bg-accent text-accent-foreground font-semibold" : "text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  <span className="truncate">{cat.nome}</span>
-                  <span className="text-[10px] font-bold bg-muted px-1.5 py-0.5 rounded-full">{catCounts[cat.nome] || 0}</span>
-                </button>
-              ))}
-              <button
-                onClick={() => setNewCatModalOpen(true)}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-primary hover:bg-muted transition-colors mt-1"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Nova Categoria
-              </button>
-            </div>
-          </ScrollArea>
-        </div>
-      )}
-
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <div className="p-3 border-b bg-card/80 space-y-2">
@@ -1211,6 +1167,62 @@ const ProdutosPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Sheet de categorias */}
+      <Sheet open={catSheetOpen} onOpenChange={(open) => { setCatSheetOpen(open); if (!open) setCatSearch(""); }}>
+        <SheetContent side="bottom" className="max-h-[70vh] flex flex-col">
+          <SheetHeader>
+            <SheetTitle>Filtrar por categoria</SheetTitle>
+          </SheetHeader>
+
+          <div className="relative mt-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar categoria..."
+              value={catSearch}
+              onChange={(e) => setCatSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          <ScrollArea className="flex-1 mt-3 -mx-6 px-6">
+            <div className="space-y-1 pb-4">
+              <button
+                onClick={() => { setSelectedCat("Todos"); setCatSheetOpen(false); setCatSearch(""); }}
+                className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                  selectedCat === "Todos"
+                    ? "bg-primary text-primary-foreground font-semibold"
+                    : "hover:bg-muted text-foreground"
+                }`}
+              >
+                Todos os produtos
+                <span className="text-xs opacity-70">{totalCount}</span>
+              </button>
+
+              {categorias
+                .filter(cat => !catSearch || cat.nome.toLowerCase().includes(catSearch.toLowerCase()))
+                .map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => { setSelectedCat(cat.nome); setCatSheetOpen(false); setCatSearch(""); }}
+                    className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                      selectedCat === cat.nome
+                        ? "bg-primary text-primary-foreground font-semibold"
+                        : "hover:bg-muted text-foreground"
+                    }`}
+                  >
+                    {cat.nome}
+                    <span className="text-xs opacity-70">{catCounts[cat.nome] || 0}</span>
+                  </button>
+                ))}
+
+              {categorias.filter(cat => !catSearch || cat.nome.toLowerCase().includes(catSearch.toLowerCase())).length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">Nenhuma categoria encontrada</p>
+              )}
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
