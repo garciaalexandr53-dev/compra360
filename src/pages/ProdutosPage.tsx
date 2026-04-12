@@ -1170,23 +1170,21 @@ const ProdutosPage = () => {
 
       {/* Sheet de categorias */}
       <Sheet open={catSheetOpen} onOpenChange={(open) => { setCatSheetOpen(open); if (!open) setCatSearch(""); }}>
-        <SheetContent side="bottom" className="max-h-[70vh] flex flex-col">
-          <SheetHeader>
-            <SheetTitle>Filtrar por categoria</SheetTitle>
+        <SheetContent side="bottom" className="h-[70vh] flex flex-col rounded-t-2xl">
+          <SheetHeader className="pb-2 shrink-0">
+            <SheetTitle className="text-base">Filtrar por categoria</SheetTitle>
           </SheetHeader>
-
-          <div className="relative mt-2">
+          <div className="relative mb-3 shrink-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar categoria..."
+              className="pl-9"
               value={catSearch}
               onChange={(e) => setCatSearch(e.target.value)}
-              className="pl-9"
             />
           </div>
-
-          <ScrollArea className="flex-1 mt-3 -mx-6 px-6">
-            <div className="space-y-1 pb-4">
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="space-y-1 pb-6">
               <button
                 onClick={() => { setSelectedCat("Todos"); setCatSheetOpen(false); setCatSearch(""); }}
                 className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm transition-colors ${
@@ -1195,10 +1193,11 @@ const ProdutosPage = () => {
                     : "hover:bg-muted text-foreground"
                 }`}
               >
-                Todos os produtos
-                <span className="text-xs opacity-70">{totalCount}</span>
+                <span>Todos os produtos</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                  selectedCat === "Todos" ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}>{totalCount}</span>
               </button>
-
               {categorias
                 .filter(cat => !catSearch || cat.nome.toLowerCase().includes(catSearch.toLowerCase()))
                 .map((cat) => (
@@ -1211,16 +1210,18 @@ const ProdutosPage = () => {
                         : "hover:bg-muted text-foreground"
                     }`}
                   >
-                    {cat.nome}
-                    <span className="text-xs opacity-70">{catCounts[cat.nome] || 0}</span>
+                    <span className="truncate text-left flex-1 mr-2">{cat.nome}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold shrink-0 ${
+                      selectedCat === cat.nome ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"
+                    }`}>{catCounts[cat.nome] || 0}</span>
                   </button>
-                ))}
-
+                ))
+              }
               {categorias.filter(cat => !catSearch || cat.nome.toLowerCase().includes(catSearch.toLowerCase())).length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">Nenhuma categoria encontrada</p>
               )}
             </div>
-          </ScrollArea>
+          </div>
         </SheetContent>
       </Sheet>
     </div>
