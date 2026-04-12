@@ -803,7 +803,12 @@ const AppFuncionariosPublic = () => {
                 {["UNI", "CX", "DZ", "FD", "KG", "PCT", "LT"].map((emb) => (
                   <button
                     key={emb}
-                    onClick={() => setDialogEmbal(emb)}
+                    onClick={() => {
+                      setDialogEmbal(emb);
+                      // Auto-set default fator when changing embalagem
+                      const defaults: Record<string, number> = { UNI: 1, CX: 12, DZ: 12, FD: 6, KG: 1, PCT: 1, LT: 1 };
+                      setDialogFator(String(defaults[emb] || 1));
+                    }}
                     className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                       dialogEmbal === emb
                         ? "bg-primary text-primary-foreground border-primary"
@@ -815,6 +820,32 @@ const AppFuncionariosPublic = () => {
                 ))}
               </div>
             </div>
+
+            {/* Editable fator */}
+            {dialogEmbal !== "UNI" && dialogEmbal !== "KG" && dialogEmbal !== "LT" && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Qtd por embalagem</label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    value={dialogFator}
+                    onChange={(e) => setDialogFator(e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    className="h-9 w-20 text-center font-bold"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    unidades por {dialogEmbal}
+                  </span>
+                </div>
+                {(parseInt(dialogQtd) || 1) > 0 && (parseInt(dialogFator) || 1) > 1 && (
+                  <p className="text-xs text-primary mt-1 font-medium">
+                    Total: {(parseInt(dialogQtd) || 1) * (parseInt(dialogFator) || 1)} unidades
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <DialogFooter className="flex-row gap-2">
