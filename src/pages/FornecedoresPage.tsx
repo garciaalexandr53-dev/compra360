@@ -7,11 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal } from "lucide-react";
+import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal, X, Phone, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
@@ -233,19 +231,29 @@ const FornecedoresPage = () => {
   return (
     <div className="p-5">
       {/* Toolbar */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-2 mb-4">
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar fornecedor..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
+            className="pl-9 pr-8"
           />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
-        <span className="text-sm text-muted-foreground whitespace-nowrap">{fornecedores.length}</span>
+        <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+          {fornecedores.length}
+        </span>
         <Button size="sm" onClick={openAdd}>
-          <Plus className="h-4 w-4 mr-1" /> Novo
+          <Plus className="h-4 w-4 mr-1" /> Novo Fornecedor
         </Button>
       </div>
 
@@ -254,91 +262,104 @@ const FornecedoresPage = () => {
           <TabsTrigger value="cadastro" className="flex items-center gap-2">
             <Users className="h-4 w-4" /> Cadastro
           </TabsTrigger>
-          <TabsTrigger value="links" className="flex items-center gap-2">
+          <TabsTrigger
+            value="links"
+            disabled={!cotacaoAtiva}
+            className={`flex items-center gap-2 ${!cotacaoAtiva ? "opacity-40 cursor-not-allowed" : ""}`}
+          >
             <Link2 className="h-4 w-4" /> Links
+            {!cotacaoAtiva && <span className="text-[9px] ml-1 opacity-70">sem cotação</span>}
           </TabsTrigger>
         </TabsList>
 
         {/* ===== Tab Cadastro ===== */}
         <TabsContent value="cadastro">
-          <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="font-bold">Fornecedor</TableHead>
-                    <TableHead>Representante</TableHead>
-                    <TableHead>Contato</TableHead>
-                    <TableHead className="text-right">Pedido Mín.</TableHead>
-                    <TableHead>Lojas</TableHead>
-                    <TableHead className="w-[100px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Carregando...</TableCell></TableRow>
-                  ) : filteredFornecedores.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                      {searchTerm ? "Nenhum fornecedor encontrado." : "Nenhum fornecedor cadastrado."}
-                      {!searchTerm && <><br /><Button onClick={openAdd} variant="outline" size="sm" className="mt-3">+ Adicionar primeiro fornecedor</Button></>}
-                    </TableCell></TableRow>
-                  ) : filteredFornecedores.map((f) => {
-                    const lojaNames = getLojaNames(f.id);
-                    return (
-                      <TableRow key={f.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => openEdit(f)}>
-                        <TableCell>
-                          <div className="font-bold text-foreground">{f.nome}</div>
-                          {f.observacoes && <div className="text-xs text-muted-foreground truncate max-w-[180px]">{f.observacoes}</div>}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{f.representante || "-"}</TableCell>
-                        <TableCell>
-                          {f.telefone && <span className="text-primary text-sm block" onClick={(e) => e.stopPropagation()}><a href={`tel:${f.telefone}`} className="hover:underline">{f.telefone}</a></span>}
-                          {f.email && <span className="text-muted-foreground text-xs block" onClick={(e) => e.stopPropagation()}><a href={`mailto:${f.email}`} className="hover:underline">{f.email}</a></span>}
-                          {!f.telefone && !f.email && <span className="text-muted-foreground">-</span>}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
-                            f.pedido_minimo && f.pedido_minimo > 0 ? "bg-amber-100 text-amber-700" : "bg-muted text-muted-foreground"
-                          }`}>
-                            {f.pedido_minimo && f.pedido_minimo > 0 ? formatBRL(f.pedido_minimo) : "-"}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {lojaNames.length > 0 ? lojaNames.map((name, i) => (
-                              <span key={i} className="text-[10px] px-1.5 py-0.5 bg-accent rounded text-accent-foreground">{name}</span>
-                            )) : <span className="text-xs text-muted-foreground">Todas</span>}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => showLink(f)} title="Ver link">
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => {
-                              if (confirm(`Remover "${f.nome}" e todos os preços dele?`)) deleteMutation.mutate(f.id);
-                            }} title="Remover">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+          {isLoading ? (
+            <div className="py-10 text-center text-muted-foreground">Carregando...</div>
+          ) : filteredFornecedores.length === 0 ? (
+            <div className="py-10 text-center text-muted-foreground space-y-3">
+              <p>{searchTerm ? "Nenhum fornecedor encontrado." : "Nenhum fornecedor cadastrado."}</p>
+              {!searchTerm && (
+                <Button onClick={openAdd} variant="outline" size="sm">
+                  + Adicionar primeiro fornecedor
+                </Button>
+              )}
             </div>
-          </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredFornecedores.map((f) => {
+                const lojaNames = getLojaNames(f.id);
+                return (
+                  <div
+                    key={f.id}
+                    className="bg-card border rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                    onClick={() => openEdit(f)}
+                  >
+                    {/* Header do card */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-foreground text-sm">{f.nome}</div>
+                        {f.representante && (
+                          <div className="text-xs text-muted-foreground mt-0.5">{f.representante}</div>
+                        )}
+                      </div>
+                      {f.pedido_minimo && f.pedido_minimo > 0 && (
+                        <span className="text-[11px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full shrink-0">
+                          Mín. {formatBRL(f.pedido_minimo)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Rodapé do card */}
+                    <div className="flex items-center justify-between mt-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {f.telefone && (
+                          <span
+                            className="flex items-center gap-1 text-xs text-primary hover:underline"
+                            onClick={(e) => { e.stopPropagation(); window.open(`tel:${f.telefone}`); }}
+                          >
+                            <Phone className="h-3 w-3" /> {f.telefone}
+                          </span>
+                        )}
+                        {lojaNames.length > 0 ? lojaNames.map((name, i) => (
+                          <span key={i} className="text-[10px] px-1.5 py-0.5 bg-accent rounded text-accent-foreground">
+                            {name}
+                          </span>
+                        )) : (
+                          <span className="text-[10px] text-muted-foreground">Todas as lojas</span>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`Remover "${f.nome}" e todos os preços dele?`)) deleteMutation.mutate(f.id);
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                    {f.observacoes && (
+                      <div className="text-xs text-muted-foreground mt-2 pt-2 border-t truncate">
+                        {f.observacoes}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </TabsContent>
 
         {/* ===== Tab Links ===== */}
         <TabsContent value="links">
-          <div className="bg-card border rounded-xl p-4 mb-4 shadow-sm">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              📱 Envie o link ao fornecedor. Ele abre no celular, preenche os preços e envia.
-              Os preços são importados automaticamente na sua cotação em tempo real.
-            </p>
-          </div>
+          {/* Instrução compacta */}
+          <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1.5">
+            <span>📱</span>
+            Envie o link para o fornecedor preencher os preços em tempo real.
+          </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {(cotacaoAtiva && selectedFornecedorIds.length > 0
@@ -350,32 +371,49 @@ const FornecedoresPage = () => {
               return (
                 <div
                   key={f.id}
-                  className={`bg-card border rounded-xl p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${
-                    recv ? "border-l-[3px] border-l-green-500" : ""
+                  className={`bg-card border-l-4 border rounded-xl p-4 shadow-sm transition-all hover:shadow-md cursor-pointer ${
+                    recv ? "border-l-green-500" : "border-l-amber-400"
                   }`}
                   onClick={() => showLink(f)}
                 >
-                  <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <div className="flex items-center justify-between mb-3">
                     <span className="text-sm font-bold text-foreground">{f.nome}</span>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      recv ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      recv
+                        ? "bg-green-100 text-green-700"
+                        : "bg-amber-50 text-amber-600"
                     }`}>
                       {recv ? "✓ Recebido" : "Aguardando"}
                     </span>
                   </div>
 
-                  {recv && (
-                    <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                      <span>Preços enviados</span>
-                      <span className="font-bold text-green-700">{count}</span>
+                  {recv ? (
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
+                      <span className="flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3 text-green-500" /> Preços enviados
+                      </span>
+                      <span className="font-bold text-green-700">{count} itens</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-xs text-amber-500 mb-3">
+                      <Clock className="h-3 w-3" /> Aguardando resposta
                     </div>
                   )}
 
-                  <div className="flex gap-2 mt-3">
-                    <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={(e) => { e.stopPropagation(); copyLink(f); }}>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 text-xs"
+                      onClick={(e) => { e.stopPropagation(); copyLink(f); }}
+                    >
                       <Copy className="h-3 w-3 mr-1" /> Copiar
                     </Button>
-                    <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs" onClick={(e) => { e.stopPropagation(); openWhatsApp(f); }}>
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs"
+                      onClick={(e) => { e.stopPropagation(); openWhatsApp(f); }}
+                    >
                       📱 WhatsApp
                     </Button>
                   </div>
@@ -390,8 +428,8 @@ const FornecedoresPage = () => {
           ).length === 0 && (
             <div className="text-center py-10 text-muted-foreground">
               {cotacaoAtiva && selectedFornecedorIds.length === 0
-                ? "Nenhum fornecedor selecionado na cotação. Selecione os participantes na aba Cotação."
-                : searchTerm ? "Nenhum fornecedor encontrado." : "Nenhum fornecedor cadastrado. Adicione na aba \"Cadastro\"."}
+                ? "Nenhum fornecedor selecionado na cotação."
+                : searchTerm ? "Nenhum fornecedor encontrado." : "Nenhum fornecedor cadastrado."}
             </div>
           )}
         </TabsContent>
