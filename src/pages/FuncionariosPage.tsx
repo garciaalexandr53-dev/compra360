@@ -48,6 +48,7 @@ const FuncionariosPage = () => {
     : lojaAtiva;
   const lojaEfetivaId = lojaEfetiva?.id;
 
+  const { data: itens = [], isLoading } = useQuery({
     queryKey: ["itens-faltantes"],
     queryFn: async () => {
       const { data, error } = await supabase
