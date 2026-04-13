@@ -231,14 +231,15 @@ const FornecedoresPage = () => {
   return (
     <div className="p-5">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 mb-4">
-        <div className="relative flex-1 min-w-0">
+      <div className="space-y-2 mb-4">
+        {/* Linha 1 — busca */}
+        <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar fornecedor..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 pr-8"
+            className="pl-9 pr-8 w-full"
           />
           {searchTerm && (
             <button
@@ -249,12 +250,15 @@ const FornecedoresPage = () => {
             </button>
           )}
         </div>
-        <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-          {fornecedores.length}
-        </span>
-        <Button size="sm" onClick={openAdd}>
-          <Plus className="h-4 w-4 mr-1" /> Novo Fornecedor
-        </Button>
+        {/* Linha 2 — contador + botão */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">
+            {fornecedores.length} fornecedor{fornecedores.length !== 1 ? "es" : ""}
+          </span>
+          <Button size="sm" onClick={openAdd}>
+            <Plus className="h-4 w-4 mr-1" /> Novo Fornecedor
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="cadastro" className="w-full">
