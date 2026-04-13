@@ -39,7 +39,15 @@ const FuncionariosPage = () => {
   const [editQty, setEditQty] = useState<string>("");
   const [linkCopiado, setLinkCopiado] = useState(false);
 
-  const { data: itens = [], isLoading } = useQuery({
+  const effectiveLinkLojaId = lojas.length === 1 ? lojas[0].id : linkLojaId;
+  const effectiveLinkLoja = lojas.find((l) => l.id === effectiveLinkLojaId);
+
+  // Loja efetiva para filtrar itens: usa linkLojaId se selecionado, senão lojaAtiva
+  const lojaEfetiva = effectiveLinkLojaId
+    ? lojas.find((l) => l.id === effectiveLinkLojaId)
+    : lojaAtiva;
+  const lojaEfetivaId = lojaEfetiva?.id;
+
     queryKey: ["itens-faltantes"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -427,14 +435,6 @@ const FuncionariosPage = () => {
     }
   };
 
-  const effectiveLinkLojaId = lojas.length === 1 ? lojas[0].id : linkLojaId;
-  const effectiveLinkLoja = lojas.find((l) => l.id === effectiveLinkLojaId);
-
-  // Loja efetiva para filtrar itens: usa linkLojaId se selecionado, senão lojaAtiva
-  const lojaEfetiva = effectiveLinkLojaId
-    ? lojas.find((l) => l.id === effectiveLinkLojaId)
-    : lojaAtiva;
-  const lojaEfetivaId = lojaEfetiva?.id;
   const publicOrigin = import.meta.env.VITE_APP_PUBLIC_URL || "https://compra360.lovable.app";
   const baseUrl = `${publicOrigin.replace(/\/$/, "")}/app-funcionarios`;
   const appUrl = effectiveLinkLojaId
