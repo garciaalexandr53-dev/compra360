@@ -527,7 +527,12 @@ const FuncionariosPage = () => {
         <div className="px-4 py-3 border-b flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4 text-amber-600" />
-            <span className="font-bold text-sm">Itens Pendentes</span>
+            <div>
+              <span className="font-bold text-sm">Itens Pendentes</span>
+              {lojaEfetiva && (
+                <div className="text-[10px] text-muted-foreground">{lojaEfetiva.nome}</div>
+              )}
+            </div>
             <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
               {pendentes.length}
             </span>
