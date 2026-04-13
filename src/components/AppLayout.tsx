@@ -25,6 +25,8 @@ export default function AppLayout() {
   const location = useLocation();
   const isDashboard = location.pathname === "/dashboard";
   const isFuncionarios = location.pathname === "/funcionarios";
+  const isLojas = location.pathname === "/lojas";
+  const isFornecedores = location.pathname === "/fornecedores";
 
   useEffect(() => {
     if (!lojasLoading && lojas.length === 0 && user && !localStorage.getItem("onboarding_completed")) {
@@ -59,6 +61,10 @@ export default function AppLayout() {
                 <span className="text-lg font-bold text-primary tracking-tight">Compra360</span>
               ) : isFuncionarios ? (
                 <span className="text-lg font-bold text-primary tracking-tight">App Funcionários</span>
+              ) : isLojas ? (
+                <span className="text-lg font-bold text-primary tracking-tight">Lojas</span>
+              ) : isFornecedores ? (
+                <span className="text-lg font-bold text-primary tracking-tight">Fornecedores</span>
               ) : (
                 <LojaSelector />
               )}
