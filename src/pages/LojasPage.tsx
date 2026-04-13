@@ -98,10 +98,7 @@ const LojasPage = () => {
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold flex items-center gap-2">
-          <Store className="h-5 w-5 text-primary" /> Lojas
-        </h1>
+      <div className="flex justify-end mb-4">
         <Button onClick={openAdd} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Nova Loja
         </Button>
