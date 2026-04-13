@@ -53,20 +53,20 @@ const FuncionariosPage = () => {
 
   // Fetch active cotação for the active store
   const { data: cotacaoAtivaLoja } = useQuery({
-    queryKey: ["cotacao-ativa-loja", lojaAtiva?.id],
+    queryKey: ["cotacao-ativa-loja", lojaEfetivaId],
     queryFn: async () => {
-      if (!lojaAtiva?.id) return null;
+      if (!lojaEfetivaId) return null;
       const { data, error } = await supabase
         .from("cotacoes")
         .select("id, loja_id")
         .eq("status", "ativa")
-        .eq("loja_id", lojaAtiva.id)
+        .eq("loja_id", lojaEfetivaId)
         .limit(1)
         .maybeSingle();
       if (error) throw error;
       return data;
     },
-    enabled: !!lojaAtiva?.id,
+    enabled: !!lojaEfetivaId,
   });
 
   // Check if any supplier has sent prices for the active cotação
@@ -97,11 +97,15 @@ const FuncionariosPage = () => {
   // Filter items: only show items from the active store
   const allPendentes = itens.filter((i: any) => !i.importado);
   const pendentes = allPendentes.filter((i: any) => {
-    if (!lojaAtiva?.id) return true;
-    return i.loja_id === lojaAtiva.id || !i.loja_id;
+    if (!lojaEfetivaId) return true;
+    return i.loja_id === lojaEfetivaId || !i.loja_id;
   });
-  const importados = itens.filter((i: any) => i.importado && (i.loja_id === lojaAtiva?.id || !i.loja_id));
-  const outrasLojas = allPendentes.filter((i: any) => lojaAtiva?.id && i.loja_id && i.loja_id !== lojaAtiva.id);
+  const importados = itens.filter((i: any) =>
+    i.importado && (i.loja_id === lojaEfetivaId || !i.loja_id)
+  );
+  const outrasLojas = allPendentes.filter((i: any) =>
+    lojaEfetivaId && i.loja_id && i.loja_id !== lojaEfetivaId
+  );
 
   // Allow import if: no active cotação OR cotação has no prices yet
   const canImport = !cotacaoAtivaLoja || !cotacaoTemPrecos;
@@ -116,7 +120,7 @@ const FuncionariosPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      const targetLojaId = lojaAtiva?.id;
+      const targetLojaId = lojaEfetivaId;
       if (!targetLojaId) throw new Error("Selecione uma loja ativa");
 
       // Ensure active cotação exists for the active store
@@ -425,6 +429,12 @@ const FuncionariosPage = () => {
 
   const effectiveLinkLojaId = lojas.length === 1 ? lojas[0].id : linkLojaId;
   const effectiveLinkLoja = lojas.find((l) => l.id === effectiveLinkLojaId);
+
+  // Loja efetiva para filtrar itens: usa linkLojaId se selecionado, senão lojaAtiva
+  const lojaEfetiva = effectiveLinkLojaId
+    ? lojas.find((l) => l.id === effectiveLinkLojaId)
+    : lojaAtiva;
+  const lojaEfetivaId = lojaEfetiva?.id;
   const publicOrigin = import.meta.env.VITE_APP_PUBLIC_URL || "https://compra360.lovable.app";
   const baseUrl = `${publicOrigin.replace(/\/$/, "")}/app-funcionarios`;
   const appUrl = effectiveLinkLojaId
