@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal } from "lucide-react";
+import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal, X, Phone, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
