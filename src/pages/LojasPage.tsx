@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Pencil, Trash2, Store, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useFeatureCheck } from "@/components/FeatureGate";
@@ -98,14 +97,11 @@ const LojasPage = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Store className="h-6 w-6 text-primary" /> Lojas
-          </h1>
-          <p className="text-sm text-muted-foreground">Cadastre as lojas e selecione a loja ativa</p>
-        </div>
+    <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-bold flex items-center gap-2">
+          <Store className="h-5 w-5 text-primary" /> Lojas
+        </h1>
         <Button onClick={openAdd} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Nova Loja
         </Button>
@@ -120,50 +116,89 @@ const LojasPage = () => {
           <Button onClick={openAdd} className="mt-4" size="sm"><Plus className="h-4 w-4 mr-1" /> Cadastrar Loja</Button>
         </div>
       ) : (
-        <div className="bg-card border rounded-xl overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10"></TableHead>
-                <TableHead>Nome</TableHead>
-                <TableHead>CNPJ</TableHead>
-                <TableHead>Endereço</TableHead>
-                <TableHead className="w-24 text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {lojas.map((l: any) => {
-                const isActive = lojaAtiva?.id === l.id;
-                return (
-                  <TableRow key={l.id} className={isActive ? "bg-primary/5" : ""}>
-                    <TableCell>
-                      <Button
-                        variant={isActive ? "default" : "outline"}
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => { setLojaAtivaId(l.id); toast.success(`Loja "${l.nome}" selecionada`); }}
-                        title="Selecionar como loja ativa"
-                      >
-                        {isActive ? <Check className="h-4 w-4" /> : <Store className="h-3.5 w-3.5" />}
-                      </Button>
-                    </TableCell>
-                    <TableCell className="font-semibold">
-                      {l.nome}
-                      {isActive && <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-primary text-primary-foreground rounded-full font-bold">ATIVA</span>}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{l.cnpj || "—"}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{l.endereco || "—"}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(l)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(l.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+        <div className="space-y-2">
+          {lojas.map((l: any) => {
+            const isActive = lojaAtiva?.id === l.id;
+            return (
+              <div
+                key={l.id}
+                className={`bg-card border rounded-xl p-4 shadow-sm transition-all ${
+                  isActive
+                    ? "border-primary/40 bg-primary/5 shadow-primary/10"
+                    : "hover:shadow-md"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <button
+                      onClick={() => { setLojaAtivaId(l.id); toast.success(`Loja "${l.nome}" selecionada`); }}
+                      className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary border border-border"
+                      }`}
+                      title="Selecionar como loja ativa"
+                    >
+                      {isActive ? <Check className="h-4 w-4" /> : <Store className="h-4 w-4" />}
+                    </button>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-foreground text-sm">{l.nome}</span>
+                        {isActive && (
+                          <span className="text-[10px] px-2 py-0.5 bg-primary text-primary-foreground rounded-full font-bold">
+                            ATIVA
+                          </span>
+                        )}
                       </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                      {l.razao_social && (
+                        <div className="text-xs text-muted-foreground mt-0.5 truncate">{l.razao_social}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-1 shrink-0">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(l)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => {
+                        if (confirm(`Remover "${l.nome}"?`)) deleteMutation.mutate(l.id);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+
+                {(l.cnpj || l.endereco) && (
+                  <div className="mt-3 pt-3 border-t space-y-1">
+                    {l.cnpj && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground w-10 shrink-0">CNPJ</span>
+                        <span>{l.cnpj}</span>
+                      </div>
+                    )}
+                    {l.inscricao_estadual && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground w-10 shrink-0">IE</span>
+                        <span>{l.inscricao_estadual}</span>
+                      </div>
+                    )}
+                    {l.endereco && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground w-10 shrink-0">End.</span>
+                        <span className="truncate">{l.endereco}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -208,4 +243,3 @@ const LojasPage = () => {
 };
 
 export default LojasPage;
-
