@@ -823,6 +823,15 @@ const AnalisePage = () => {
                     </Button>
                   </div>
                 </div>
+                {!minimoOk && (
+                  <div className="flex items-center gap-1.5 mx-4 mb-2 px-2 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <span className="text-amber-600 text-xs">⚠️</span>
+                    <span className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                      Abaixo do mínimo: {formatBRL(total)} de {formatBRL(f.pedido_minimo || 0)}
+                      {" "}(falta {formatBRL((f.pedido_minimo || 0) - total)})
+                    </span>
+                  </div>
+                )}
                 <div className="border-t">
                   <table className="w-full text-sm">
                     <thead><tr className="bg-muted/50">
