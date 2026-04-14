@@ -331,18 +331,24 @@ function scenarioEconomiaInteligente(
 
   if (!madeChanges) return null;
 
-  const { suppliers, total, semPreco } = buildSupplierResult(assignments, cotacaoProdutos, fornecedorMap);
+  const { suppliers, total, semPreco } = buildSupplierResult(assignments, cotacaoProdutos, fornecedorMap, qtyOverrides);
   const diff = total - baselineTotal;
   const aindaAbaixo = suppliers.filter(s => !s.minimoOk);
+  const hasBoosts = Object.keys(qtyOverrides).length > 0;
 
+  const parts: string[] = [];
+  if (hasBoosts) parts.push("ajustou quantidades");
+  if (madeChanges && !hasBoosts) parts.push("redistribuiu itens");
+  else if (madeChanges && hasBoosts) parts.push("redistribuiu itens");
+  
   const descricao = aindaAbaixo.length > 0
-    ? `Redistribuiu itens para atingir pedidos mínimos. ${aindaAbaixo.length} fornecedor(es) sem alternativa suficiente.`
-    : "Todos os fornecedores atingem o pedido mínimo com o menor custo adicional possível.";
+    ? `${parts.join(" e ")} para atingir pedidos mínimos. ${aindaAbaixo.length} fornecedor(es) sem alternativa suficiente.`
+    : `Todos os fornecedores atingem o pedido mínimo${hasBoosts ? " (com ajuste de quantidades)" : ""}.`;
 
   return {
     id: "sem-minimo-abaixo",
     nome: aindaAbaixo.length > 0 ? "Economia inteligente (parcial)" : "Economia inteligente",
-    descricao,
+    descricao: descricao.charAt(0).toUpperCase() + descricao.slice(1),
     icon: aindaAbaixo.length > 0 ? "⚠️" : "✅",
     totalGeral: total,
     diffVsBaseline: diff,
