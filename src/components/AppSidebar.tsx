@@ -30,8 +30,6 @@ const maisMenu = [
 export function AppSidebar() {
   const { state, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
-  const { signOut } = useAuth();
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const location = useLocation();
   const isMobile = useIsMobile();
   const { lojaAtiva } = useLojaAtiva();
