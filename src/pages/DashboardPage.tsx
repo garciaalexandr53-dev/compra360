@@ -477,22 +477,22 @@ const DashboardPage = () => {
 
   // Backlog alert from remanejamento
   useEffect(() => {
-    const backlog = JSON.parse(localStorage.getItem("compra360_backlog") || "[]");
-    if (backlog.length > 0 && state === 1) {
-      const fornecedoresNomes = [...new Set(backlog.map((i: any) => i.fornecedorNome))];
+    if (state !== 1) return;
+    try {
+      const backlog = JSON.parse(localStorage.getItem("compra360_backlog") || "[]");
+      if (backlog.length === 0) return;
+      const fornecedoresNomes = [...new Set(backlog.map((i: any) => i.fornecedorNome))] as string[];
       toast.info(
-        `📁 Você tem ${backlog.length} ite${backlog.length === 1 ? "m" : "ns"} remanejado${backlog.length === 1 ? "" : "s"} de ${fornecedoresNomes.join(", ")} para incluir nesta cotação.`,
+        `📁 ${backlog.length} ite${backlog.length === 1 ? "m remanejado" : "ns remanejados"} de ${fornecedoresNomes.slice(0, 2).join(", ")}${fornecedoresNomes.length > 2 ? ` e mais ${fornecedoresNomes.length - 2}` : ""} aguardam esta cotação.`,
         {
-          duration: 8000,
+          duration: 10000,
           action: {
-            label: "Ver itens",
-            onClick: () => {
-              console.log("Backlog:", backlog);
-            },
+            label: "Limpar",
+            onClick: () => localStorage.removeItem("compra360_backlog"),
           },
         }
       );
-    }
+    } catch { /* ignore */ }
   }, [state]);
 
   const handleRevisarCotacao = () => {
