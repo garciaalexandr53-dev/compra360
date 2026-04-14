@@ -1,4 +1,4 @@
-import { } from "react";
+
 import { useQuery } from "@tanstack/react-query";
 import logoCompra360 from "/compra360-icon.png";
 import { supabase } from "@/integrations/supabase/client";
