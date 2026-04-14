@@ -7,6 +7,7 @@ export interface ScenarioItem {
   produto: string;
   embalagem: string;
   quantidade: number;
+  quantidadeOriginal?: number; // set when quantity was boosted to fill gap
   fator: number;
   preco: number;
   total: number;
