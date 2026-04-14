@@ -743,12 +743,19 @@ const AnalisePage = () => {
 
       {/* ── PAINEL DE OPORTUNIDADES ── */}
       {gapAnalyses.length > 0 && (
-        <div className="space-y-3 animate-fade-in">
+        <div className="space-y-3 animate-fade-in bg-orange-50/80 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-xl p-4 shadow-sm shadow-orange-200/50 dark:shadow-orange-900/30">
+          {/* Concierge message */}
+          <div className="bg-white/60 dark:bg-white/5 rounded-lg p-3 border border-orange-100 dark:border-orange-900/40">
+            <p className="text-xs text-orange-800 dark:text-orange-300 leading-relaxed">
+              ⚡ <span className="font-bold">Dica do Concierge:</span> {user?.email?.split("@")[0] || "Alexandre"}, identifiquei fornecedores excelentes que não atingiram o mínimo. Recomendo o <span className="font-bold">Ajuste Inteligente</span> nos itens com maior desconto para liberarmos esses pedidos agora.
+            </p>
+          </div>
+
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-orange-500" />
             <div>
               <h3 className="text-sm font-bold text-foreground">⚡ Oportunidades</h3>
-              <p className="text-[10px] text-muted-foreground">Fornecedores próximos do mínimo</p>
+              <p className="text-[10px] text-muted-foreground">Fornecedores próximos do mínimo — cenário: {scenarioAtivo?.nome || "ativo"}</p>
             </div>
           </div>
 
