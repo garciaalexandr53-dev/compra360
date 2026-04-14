@@ -778,7 +778,11 @@ const AnalisePage = () => {
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-foreground truncate">{gap.fornecedorNome}</p>
                     <p className="text-[10px] text-muted-foreground">
-                      Melhor preço em {gap.ajuste?.itens.length || "?"} itens
+                      {(() => {
+                        const count = gap.ajuste?.itens.length ||
+                          scenarioAtivo?.fornecedores.find(sf => sf.fornecedorId === gap.fornecedorId)?.items.length || 0;
+                        return `Melhor preço em ${count} ite${count === 1 ? "m" : "ns"}`;
+                      })()}
                     </p>
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
