@@ -7,6 +7,7 @@ export interface ScenarioItem {
   produto: string;
   embalagem: string;
   quantidade: number;
+  quantidadeOriginal?: number; // set when quantity was boosted to fill gap
   fator: number;
   preco: number;
   total: number;
@@ -76,7 +77,8 @@ function buildPriceMap(
 function buildSupplierResult(
   assignments: Record<string, { fornecedorId: string; preco: number }>,
   cotacaoProdutos: CpInfo[],
-  fornecedorMap: Record<string, FornecedorInfo>
+  fornecedorMap: Record<string, FornecedorInfo>,
+  qtyOverrides?: Record<string, number>
 ): { suppliers: ScenarioSupplier[]; total: number; semPreco: number } {
   const buckets: Record<string, ScenarioItem[]> = {};
   let semPreco = 0;
@@ -86,13 +88,16 @@ function buildSupplierResult(
     if (!assignment) { semPreco++; continue; }
     const { fornecedorId, preco } = assignment;
     if (!buckets[fornecedorId]) buckets[fornecedorId] = [];
+    const qty = qtyOverrides?.[cp.id] ?? cp.quantidade;
+    const boosted = qtyOverrides?.[cp.id] != null && qtyOverrides[cp.id] !== cp.quantidade;
     buckets[fornecedorId].push({
       produto: cp.produtoNome,
       embalagem: cp.embalagem,
-      quantidade: cp.quantidade,
+      quantidade: qty,
+      ...(boosted ? { quantidadeOriginal: cp.quantidade } : {}),
       fator: cp.fator,
       preco,
-      total: preco * cp.quantidade * cp.fator,
+      total: preco * qty * cp.fator,
       cpId: cp.id,
       fornecedorId,
     });
@@ -153,13 +158,12 @@ function scenarioMelhorPreco(
 }
 
 /**
- * Scenario 2: Economia Inteligente — fill gap by pulling items FROM other suppliers
+ * Scenario 2: Economia Inteligente — fill gap using 3 strategies in priority order:
  * 
- * Strategy: For each supplier below minimum, find items currently assigned to OTHER
- * suppliers where this supplier also has a price. Sort by lowest cost increase (price diff).
- * Pull items until the minimum is met OR no more items can be pulled.
- * 
- * This avoids the old "discard everything" approach that was commercially nonsensical.
+ * 1. BOOST QUANTITY: Increase qty of items already assigned to the below-min supplier
+ *    (cheapest items first). This keeps the best price and only adds what's needed.
+ * 2. PULL ITEMS: Move items from other suppliers where cost increase is minimal.
+ * 3. DISCARD: As last resort, move all items away from the supplier.
  */
 function scenarioEconomiaInteligente(
   cotacaoProdutos: CpInfo[],
@@ -167,8 +171,10 @@ function scenarioEconomiaInteligente(
   fornecedorMap: Record<string, FornecedorInfo>,
   baselineTotal: number
 ): Scenario | null {
-  // Start from best-price assignments
+  // Start from best-price assignments, tracking quantity overrides
   const assignments: Record<string, { fornecedorId: string; preco: number }> = {};
+  const qtyOverrides: Record<string, number> = {}; // cpId -> new quantity (when boosted)
+
   for (const cp of cotacaoProdutos) {
     const prices = priceMap[cp.id];
     if (prices && prices.length > 0) {
@@ -176,13 +182,18 @@ function scenarioEconomiaInteligente(
     }
   }
 
-  // Check if any supplier is below minimum
+  const getQty = (cpId: string): number => {
+    const cp = cotacaoProdutos.find(c => c.id === cpId);
+    return qtyOverrides[cpId] ?? cp?.quantidade ?? 1;
+  };
+
   const getSupplierTotals = (): Record<string, number> => {
     const totals: Record<string, number> = {};
     for (const [cpId, a] of Object.entries(assignments)) {
       const cp = cotacaoProdutos.find(c => c.id === cpId);
       if (!cp) continue;
-      totals[a.fornecedorId] = (totals[a.fornecedorId] || 0) + a.preco * cp.quantidade * cp.fator;
+      const qty = getQty(cpId);
+      totals[a.fornecedorId] = (totals[a.fornecedorId] || 0) + a.preco * qty * cp.fator;
     }
     return totals;
   };
@@ -202,7 +213,6 @@ function scenarioEconomiaInteligente(
         return minimo > 0 && total < minimo;
       })
       .sort((a, b) => {
-        // Prioritize suppliers closest to their minimum (smallest gap %)
         const gapA = (fornecedorMap[a[0]]?.pedido_minimo || 0) - a[1];
         const gapB = (fornecedorMap[b[0]]?.pedido_minimo || 0) - b[1];
         return gapA - gapB;
@@ -212,43 +222,70 @@ function scenarioEconomiaInteligente(
 
     const [targetFId, currentTotal] = belowMin[0];
     const targetMinimo = fornecedorMap[targetFId]?.pedido_minimo || 0;
-    const gap = targetMinimo - currentTotal;
+    let gap = targetMinimo - currentTotal;
 
-    // Find items from OTHER suppliers that the target supplier also has a price for
+    // === STRATEGY 1: Boost quantity of items already in this supplier ===
+    // Find items assigned to target supplier, sorted by cheapest unit price
+    const targetItems = Object.entries(assignments)
+      .filter(([, a]) => a.fornecedorId === targetFId)
+      .map(([cpId, a]) => {
+        const cp = cotacaoProdutos.find(c => c.id === cpId)!;
+        return { cpId, preco: a.preco, fator: cp.fator, unitCost: a.preco * cp.fator };
+      })
+      .sort((a, b) => a.unitCost - b.unitCost); // cheapest first
+
+    for (const item of targetItems) {
+      if (gap <= 0) break;
+      // How many extra units needed to fill gap?
+      const unitsNeeded = Math.ceil(gap / item.unitCost);
+      // Cap at reasonable boost (max 50% increase or 5 units, whichever is more)
+      const cp = cotacaoProdutos.find(c => c.id === item.cpId)!;
+      const currentQty = getQty(item.cpId);
+      const maxBoost = Math.max(Math.ceil(currentQty * 0.5), 5);
+      const actualBoost = Math.min(unitsNeeded, maxBoost);
+
+      if (actualBoost > 0) {
+        qtyOverrides[item.cpId] = currentQty + actualBoost;
+        gap -= actualBoost * item.unitCost;
+        madeChanges = true;
+      }
+    }
+
+    if (gap <= 0) continue; // Successfully filled gap with quantity boosts
+
+    // === STRATEGY 2: Pull items from other suppliers ===
     type PullCandidate = {
       cpId: string;
       currentFId: string;
       currentPreco: number;
       targetPreco: number;
-      costIncrease: number; // total cost difference if we move this item
-      itemTotal: number; // how much this item adds to target supplier total
+      costIncrease: number;
+      itemTotal: number;
     };
 
     const candidates: PullCandidate[] = [];
     for (const [cpId, a] of Object.entries(assignments)) {
-      if (a.fornecedorId === targetFId) continue; // already assigned to target
+      if (a.fornecedorId === targetFId) continue;
       const cp = cotacaoProdutos.find(c => c.id === cpId);
       if (!cp) continue;
 
-      // Does the target supplier have a price for this item?
       const prices = priceMap[cpId];
       if (!prices) continue;
       const targetPrice = prices.find(p => p.fornecedorId === targetFId);
       if (!targetPrice) continue;
 
-      const currentItemTotal = a.preco * cp.quantidade * cp.fator;
-      const newItemTotal = targetPrice.preco * cp.quantidade * cp.fator;
+      const qty = getQty(cpId);
+      const currentItemTotal = a.preco * qty * cp.fator;
+      const newItemTotal = targetPrice.preco * qty * cp.fator;
       const costIncrease = newItemTotal - currentItemTotal;
 
-      // Check if pulling this item would drop the source supplier below THEIR minimum
       const sourceFId = a.fornecedorId;
       const sourceMinimo = fornecedorMap[sourceFId]?.pedido_minimo || 0;
       const sourceTotal = totals[sourceFId] || 0;
       const sourceAfterPull = sourceTotal - currentItemTotal;
 
-      // Only pull if source stays above minimum OR source is also below minimum (will be handled later)
       if (sourceMinimo > 0 && sourceTotal >= sourceMinimo && sourceAfterPull < sourceMinimo) {
-        continue; // would break source supplier's minimum
+        continue;
       }
 
       candidates.push({
@@ -261,56 +298,57 @@ function scenarioEconomiaInteligente(
       });
     }
 
-    if (candidates.length === 0) {
-      // Can't fill gap — try discarding this supplier entirely as last resort
-      // Move all its items to next cheapest alternative
-      let discarded = false;
-      for (const [cpId, a] of Object.entries(assignments)) {
-        if (a.fornecedorId !== targetFId) continue;
-        const prices = priceMap[cpId];
-        if (!prices) continue;
-        const next = prices.find(p => p.fornecedorId !== targetFId);
-        if (next) {
-          assignments[cpId] = { fornecedorId: next.fornecedorId, preco: next.preco };
-          discarded = true;
-          madeChanges = true;
-        }
+    if (candidates.length > 0) {
+      candidates.sort((a, b) => a.costIncrease - b.costIncrease);
+      let pulledAny = false;
+      for (const c of candidates) {
+        if (gap <= 0) break;
+        assignments[c.cpId] = { fornecedorId: targetFId, preco: c.targetPreco };
+        gap -= c.itemTotal;
+        pulledAny = true;
+        madeChanges = true;
       }
-      if (!discarded) break;
-      continue;
+      if (pulledAny) continue;
     }
 
-    // Sort candidates: prefer lowest cost increase first
-    candidates.sort((a, b) => a.costIncrease - b.costIncrease);
-
-    // Pull items until gap is filled
-    let remaining = gap;
-    let pulledAny = false;
-    for (const c of candidates) {
-      if (remaining <= 0) break;
-      assignments[c.cpId] = { fornecedorId: targetFId, preco: c.targetPreco };
-      remaining -= c.itemTotal;
-      pulledAny = true;
-      madeChanges = true;
+    // === STRATEGY 3: Discard supplier as last resort ===
+    let discarded = false;
+    for (const [cpId, a] of Object.entries(assignments)) {
+      if (a.fornecedorId !== targetFId) continue;
+      const prices = priceMap[cpId];
+      if (!prices) continue;
+      const next = prices.find(p => p.fornecedorId !== targetFId);
+      if (next) {
+        assignments[cpId] = { fornecedorId: next.fornecedorId, preco: next.preco };
+        // Reset any qty boost for this item
+        delete qtyOverrides[cpId];
+        discarded = true;
+        madeChanges = true;
+      }
     }
-
-    if (!pulledAny) break;
+    if (!discarded) break;
   }
 
   if (!madeChanges) return null;
 
-  const { suppliers, total, semPreco } = buildSupplierResult(assignments, cotacaoProdutos, fornecedorMap);
+  const { suppliers, total, semPreco } = buildSupplierResult(assignments, cotacaoProdutos, fornecedorMap, qtyOverrides);
   const diff = total - baselineTotal;
   const aindaAbaixo = suppliers.filter(s => !s.minimoOk);
+  const hasBoosts = Object.keys(qtyOverrides).length > 0;
 
+  const parts: string[] = [];
+  if (hasBoosts) parts.push("ajustou quantidades");
+  if (madeChanges && !hasBoosts) parts.push("redistribuiu itens");
+  else if (madeChanges && hasBoosts) parts.push("redistribuiu itens");
+  
   const descricao = aindaAbaixo.length > 0
-    ? `Redistribuiu itens para atingir pedidos mínimos. ${aindaAbaixo.length} fornecedor(es) sem alternativa suficiente.`
-    : "Todos os fornecedores atingem o pedido mínimo com o menor custo adicional possível.";
+    ? `${parts.join(" e ")} para atingir pedidos mínimos. ${aindaAbaixo.length} fornecedor(es) sem alternativa suficiente.`
+    : `Todos os fornecedores atingem o pedido mínimo${hasBoosts ? " (com ajuste de quantidades)" : ""}.`;
 
   return {
     id: "sem-minimo-abaixo",
     nome: aindaAbaixo.length > 0 ? "Economia inteligente (parcial)" : "Economia inteligente",
-    descricao,
+    descricao: descricao.charAt(0).toUpperCase() + descricao.slice(1),
     icon: aindaAbaixo.length > 0 ? "⚠️" : "✅",
     totalGeral: total,
     diffVsBaseline: diff,

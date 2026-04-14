@@ -844,7 +844,13 @@ const AnalisePage = () => {
                       {items.map((it, i) => (
                         <tr key={i} className={i % 2 === 0 ? "bg-muted/20" : ""}>
                           <td className="px-3 py-1.5 text-xs font-medium">{it.produto}</td>
-                          <td className="px-3 py-1.5 text-center text-xs">{it.quantidade}</td>
+                          <td className="px-3 py-1.5 text-center text-xs">
+                            {(it as any).quantidadeOriginal ? (
+                              <span className="text-green-600 dark:text-green-400 font-bold" title={`Original: ${(it as any).quantidadeOriginal} → Ajustado: ${it.quantidade}`}>
+                                {it.quantidade} <span className="text-[9px]">↑</span>
+                              </span>
+                            ) : it.quantidade}
+                          </td>
                           <td className="px-3 py-1.5 text-right text-xs font-mono">R${formatNumber(it.preco)}</td>
                           <td className="px-3 py-1.5 text-right text-xs font-mono font-bold">{formatBRL(it.total)}</td>
                         </tr>
