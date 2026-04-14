@@ -1081,7 +1081,10 @@ const AnalisePage = () => {
                           <td className="px-3 py-1.5 text-center text-xs">
                             {(it as any).quantidadeOriginal ? (
                               <span className="text-green-600 dark:text-green-400 font-bold" title={`Original: ${(it as any).quantidadeOriginal} → Ajustado: ${it.quantidade}`}>
-                                {it.quantidade} <span className="text-[9px]">↑</span>
+                                {it.quantidade}
+                                <span className="text-[9px] ml-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-1 rounded">
+                                  +{it.quantidade - (it as any).quantidadeOriginal}
+                                </span>
                               </span>
                             ) : it.quantidade}
                           </td>
