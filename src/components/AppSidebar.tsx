@@ -1,21 +1,16 @@
-import { useState } from "react";
+
 import { useQuery } from "@tanstack/react-query";
 import logoCompra360 from "/compra360-icon.png";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink, useLocation } from "react-router-dom";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
-import { useAuth } from "@/hooks/useAuth";
+
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, Package, Users, TrendingUp, History, UserCheck, ClipboardCheck, Store, LayoutDashboard, LogOut } from "lucide-react";
+import { BarChart3, Package, Users, TrendingUp, History, UserCheck, ClipboardCheck, Store, LayoutDashboard } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 const mainMenu = [
   { title: "Painel", url: "/dashboard", icon: LayoutDashboard, emoji: "🏠" },
@@ -35,8 +30,6 @@ const maisMenu = [
 export function AppSidebar() {
   const { state, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
-  const { signOut } = useAuth();
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const location = useLocation();
   const isMobile = useIsMobile();
   const { lojaAtiva } = useLojaAtiva();
@@ -151,29 +144,7 @@ export function AppSidebar() {
             </div>
           </div>
         )}
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => setShowLogoutConfirm(true)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
-              <LogOut className="h-4 w-4" />
-              {!collapsed && <span>Sair</span>}
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
       </SidebarFooter>
-      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Deseja sair da conta?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Você precisará fazer login novamente para acessar o sistema.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={signOut}>Sair</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Sidebar>
   );
 }
