@@ -15,7 +15,7 @@ import ReactMarkdown from "react-markdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import NegociacaoModal from "@/components/analise/NegociacaoModal";
 import SendOrdersModal from "@/components/dashboard/SendOrdersModal";
-import { generateScenarios, type Scenario } from "@/lib/scenarios";
+import { generateScenarios, analyzeGaps, type Scenario, type GapAnalysis } from "@/lib/scenarios";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
 
@@ -54,6 +54,8 @@ const AnalisePage = () => {
   const [aiAnalysisText, setAiAnalysisText] = useState("");
   const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
   const [aiAnalysisOpen, setAiAnalysisOpen] = useState(false);
+  const [gapResolutions, setGapResolutions] = useState<Record<string, string>>({});
+  const [applyingGap, setApplyingGap] = useState<string | null>(null);
 
   // ---- Data fetching ----
   const { data: cotacaoAtiva } = useQuery({
@@ -225,6 +227,13 @@ const AnalisePage = () => {
     return { scenario: chosen, warning, label: chosen.nome };
   }, [scenarioEconomia, scenarioMelhorPreco, scenarioConsolidado]);
 
+  // ---- Gap analysis ----
+  const scenarioAtivo = selectedScenario ?? autoDecision.scenario;
+  const gapAnalyses = useMemo(() => {
+    if (!scenarioAtivo) return [];
+    return analyzeGaps(scenarioAtivo, cotacaoProdutos, precos, fornecedores);
+  }, [scenarioAtivo, cotacaoProdutos, precos, fornecedores]);
+
   // ---- Apply selected scenario (create pedidos) ----
   const applyScenario = async (scenario: Scenario) => {
     if (!cotacaoAtiva?.id || !user?.id) return;
@@ -376,6 +385,50 @@ const AnalisePage = () => {
 
   const fornecedoresComPedido = activeOrders.filter(o => o.items.length > 0);
   const totalGeral = fornecedoresComPedido.reduce((s, o) => s + o.total, 0);
+
+  // ---- Gap handlers ----
+  const applyGapAjuste = async (gap: GapAnalysis) => {
+    if (!gap.ajuste?.viavel || !cotacaoAtiva?.id) return;
+    setApplyingGap(gap.fornecedorId);
+    try {
+      for (const item of gap.ajuste.itens) {
+        if (item.qtdExtra <= 0) continue;
+        await supabase
+          .from("cotacao_produtos")
+          .update({ quantidade: item.qtdSugerida })
+          .eq("id", item.cpId);
+      }
+      queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
+      queryClient.invalidateQueries({ queryKey: ["precos"] });
+      setScenarios(null); // Force re-generation
+      setGapResolutions(prev => ({ ...prev, [gap.fornecedorId]: "done" }));
+      toast.success(`✅ Quantidades ajustadas! ${gap.fornecedorNome} agora atinge o pedido mínimo.`);
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao ajustar quantidades");
+    }
+    setApplyingGap(null);
+  };
+
+  const openGapNegociacao = (gap: GapAnalysis, f: Fornecedor) => {
+    const comprador = lojaAtiva?.nome || "Compra360";
+    const vendedor = f.representante || f.nome;
+    const msg = `Olá ${vendedor}! Aqui é o comprador da ${comprador}.\n\nEstou fechando um pedido com vocês no Compra360. O valor total ficou em *${formatBRL(gap.valorAtual)}*, um pouco abaixo do mínimo de *${formatBRL(gap.pedidoMinimo)}* (faltam apenas ${formatBRL(gap.gap)}).\n\nConsegue liberar o faturamento dessa vez para fecharmos agora? Se preferir, podemos ajustar algum item. No aguardo! 🙏`;
+    window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
+    setGapResolutions(prev => ({ ...prev, [gap.fornecedorId]: "negociar" }));
+  };
+
+  const openRemanejar = (gap: GapAnalysis) => {
+    const backlog = JSON.parse(localStorage.getItem("compra360_backlog") || "[]");
+    const novos = gap.ajuste?.itens.map(i => ({
+      cpId: i.cpId,
+      produto: i.produto,
+      fornecedorNome: gap.fornecedorNome,
+      savedAt: new Date().toISOString(),
+    })) || [];
+    localStorage.setItem("compra360_backlog", JSON.stringify([...backlog, ...novos]));
+    setGapResolutions(prev => ({ ...prev, [gap.fornecedorId]: "remanejar" }));
+    toast.success(`📁 ${novos.length} itens salvos para a próxima cotação.`);
+  };
 
   const runAiDistribution = async () => {
     if (!cotacaoAtiva?.id) return;
@@ -675,6 +728,154 @@ const AnalisePage = () => {
           {mode === "auto" ? "O Compra360 já escolheu a melhor opção para você" : "Compare e escolha como deseja comprar"}
         </p>
       </div>
+
+      {/* ── PAINEL DE OPORTUNIDADES ── */}
+      {gapAnalyses.length > 0 && (
+        <div className="space-y-3 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-orange-500" />
+            <div>
+              <h3 className="text-sm font-bold text-foreground">⚡ Oportunidades</h3>
+              <p className="text-[10px] text-muted-foreground">Fornecedores próximos do mínimo</p>
+            </div>
+          </div>
+
+          {gapAnalyses.map((gap) => {
+            const fornecedor = fornecedores.find(f => f.id === gap.fornecedorId);
+            const resolution = gapResolutions[gap.fornecedorId];
+            const isDone = resolution === "done";
+
+            const barColor =
+              gap.percentual >= 85 ? "bg-orange-400" :
+              gap.percentual >= 60 ? "bg-amber-400" : "bg-gray-400";
+            const barBg =
+              gap.percentual >= 85 ? "bg-orange-100 dark:bg-orange-950/30" :
+              gap.percentual >= 60 ? "bg-amber-100 dark:bg-amber-950/30" : "bg-gray-100 dark:bg-gray-800";
+            const borderColor =
+              gap.percentual >= 85 ? "border-orange-300 dark:border-orange-800" :
+              gap.percentual >= 60 ? "border-amber-300 dark:border-amber-800" : "border-gray-200 dark:border-gray-700";
+
+            return (
+              <div key={gap.fornecedorId} className={`bg-card border ${borderColor} rounded-xl p-4 shadow-sm`}>
+                {/* Header */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-foreground truncate">{gap.fornecedorNome}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Melhor preço em {gap.ajuste?.itens.length || "?"} itens
+                    </p>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                    gap.percentual >= 85 ? "bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400" :
+                    gap.percentual >= 60 ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400" :
+                    "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                  }`}>
+                    {gap.percentual >= 85 ? "⚡ Quase lá!" : gap.percentual >= 60 ? "🤝 Negociar" : "📁 Remanejar"}
+                  </span>
+                </div>
+
+                {/* Progress bar */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="font-bold text-foreground">{formatBRL(gap.valorAtual)}</span>
+                    <span className="text-muted-foreground">{formatBRL(gap.pedidoMinimo)} mínimo</span>
+                  </div>
+                  <div className={`h-2.5 rounded-full ${barBg} overflow-hidden`}>
+                    <div
+                      className={`h-full rounded-full ${barColor} transition-all duration-500 ${gap.percentual >= 85 && !isDone ? "animate-pulse" : ""}`}
+                      style={{ width: `${Math.min(gap.percentual, 100)}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-muted-foreground">{gap.percentual}% atingido</span>
+                    <span className={isDone ? "text-green-600 dark:text-green-400 font-bold" : "font-medium text-foreground"}>
+                      {isDone ? "✅ Mínimo atingido!" : `Faltam ${formatBRL(gap.gap)}`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Ajuste preview */}
+                {gap.estrategia === "ajuste" && gap.ajuste?.viavel && !isDone && (
+                  <div className="mt-3 space-y-1.5 bg-muted/40 rounded-lg p-2.5">
+                    <p className="text-[10px] font-bold text-foreground">📦 Sugestão de ajuste:</p>
+                    {gap.ajuste.itens.filter(i => i.qtdExtra > 0).slice(0, 3).map(item => (
+                      <div key={item.cpId} className="flex items-center justify-between text-[10px]">
+                        <span className="text-muted-foreground truncate mr-2">{item.produto}</span>
+                        <span className="text-green-600 dark:text-green-400 font-bold shrink-0">
+                          +{item.qtdExtra}un
+                        </span>
+                      </div>
+                    ))}
+                    {gap.ajuste.economiaVsAlternativa > 0 && (
+                      <div className="text-[10px] text-green-600 dark:text-green-400 font-medium pt-1 border-t border-border/50">
+                        💰 Economia vs alternativa: {formatBRL(gap.ajuste.economiaVsAlternativa)}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 3 Action buttons */}
+                {!isDone && (
+                  <div className="grid grid-cols-3 gap-2 mt-3">
+                    <button
+                      onClick={() => applyGapAjuste(gap)}
+                      disabled={gap.estrategia !== "ajuste" || !gap.ajuste?.viavel || applyingGap === gap.fornecedorId}
+                      title={
+                        gap.percentual < 85 ? `Disponível quando atingir 85% (atual: ${gap.percentual}%)` :
+                        gap.ajuste?.viavel ? "Ajustar quantidades para atingir o mínimo" :
+                        "Boost máximo insuficiente — tente negociar"
+                      }
+                      className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-lg text-[11px] font-semibold transition-all ${
+                        gap.estrategia === "ajuste" && gap.ajuste?.viavel
+                          ? "bg-primary text-primary-foreground hover:opacity-90 shadow-sm"
+                          : "bg-muted text-muted-foreground cursor-not-allowed opacity-40"
+                      }`}
+                    >
+                      {applyingGap === gap.fornecedorId ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : <span>🚀</span>}
+                      Ajuste
+                    </button>
+
+                    <button
+                      onClick={() => fornecedor && openGapNegociacao(gap, fornecedor)}
+                      disabled={gap.estrategia === "remanejar"}
+                      className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-lg text-[11px] font-semibold transition-all ${
+                        gap.estrategia !== "remanejar"
+                          ? "bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-950/60"
+                          : "bg-muted text-muted-foreground cursor-not-allowed opacity-40"
+                      }`}
+                    >
+                      <span>🤝</span>
+                      Negociar
+                    </button>
+
+                    <button
+                      onClick={() => openRemanejar(gap)}
+                      className="flex flex-col items-center justify-center gap-1 p-2.5 rounded-lg text-[11px] font-semibold bg-muted text-muted-foreground hover:bg-muted/80 transition-all"
+                    >
+                      <span>📁</span>
+                      Remanejar
+                    </button>
+                  </div>
+                )}
+
+                {/* Resolution feedback */}
+                {resolution === "negociar" && (
+                  <div className="mt-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg px-3 py-2">
+                    <p className="text-[10px] text-amber-700 dark:text-amber-400 font-medium">🤝 WhatsApp aberto — aguardando resposta do fornecedor</p>
+                  </div>
+                )}
+                {resolution === "remanejar" && (
+                  <div className="mt-2 bg-muted/60 rounded-lg px-3 py-2">
+                    <p className="text-[10px] text-muted-foreground font-medium">📁 Itens salvos para a próxima cotação</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* 2. MODO AUTOMÁTICO — Card de decisão */}
       {mode === "auto" && !selectedScenario && autoDecision.scenario && (
