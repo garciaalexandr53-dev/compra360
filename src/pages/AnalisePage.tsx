@@ -738,19 +738,30 @@ const AnalisePage = () => {
         </div>
       )}
 
-      <div className="bg-muted/50 border rounded-xl px-4 py-3 flex items-center justify-between">
-        <p className="text-xs text-muted-foreground flex-1">
+      <div className="bg-muted/50 border rounded-xl px-4 py-3 space-y-2">
+        <p className="text-xs text-muted-foreground">
           🤖 O sistema analisou {cotacaoProdutos.length} produto(s) e {fornecedores.length} fornecedor(es) para encontrar a combinação ideal de preço e operação.
         </p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="ml-3 text-xs shrink-0 gap-1.5"
-          onClick={() => { if (!checkPlan("business", "Negociação assistida por IA")) return; setNegociacaoOpen(true); }}
-        >
-          <Handshake className="h-3.5 w-3.5" />
-          Negociar
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            className="text-xs gap-1.5 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
+            onClick={runAiDistribution}
+            disabled={aiAnalysisLoading}
+          >
+            {aiAnalysisLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            Análise IA
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs shrink-0 gap-1.5"
+            onClick={() => { if (!checkPlan("business", "Negociação assistida por IA")) return; setNegociacaoOpen(true); }}
+          >
+            <Handshake className="h-3.5 w-3.5" />
+            Negociar
+          </Button>
+        </div>
       </div>
 
       {/* PEDIDOS — accordion */}
