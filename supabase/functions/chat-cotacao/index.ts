@@ -212,7 +212,11 @@ REGRAS:
 - Seja conciso mas completo.
 - Se não tiver dados suficientes, diga isso claramente.
 - Quando perguntar sobre economia, compare os preços entre fornecedores.
-- Ao recomendar, considere pedido mínimo dos fornecedores.`;
+- Ao recomendar, considere pedido mínimo dos fornecedores.
+- IMPORTANTE: Quando um fornecedor NÃO atingir o pedido mínimo, PROATIVAMENTE sugira quais itens podem ser redistribuídos para ele (priorizando empates e itens com menor diferença de preço) para viabilizar o pedido.
+- Em caso de EMPATES, sugira direcionar o item para o fornecedor que mais precisa atingir o pedido mínimo.
+- Sempre que possível, apresente os dados em tabelas markdown para facilitar a visualização.
+- Quando o usuário pedir uma análise geral, inclua: resumo de economia, fornecedores abaixo do mínimo, empates e sugestão de redistribuição.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
