@@ -687,6 +687,22 @@ const AnalisePage = () => {
               Essa opção equilibra menor custo com pedidos válidos.
             </p>
 
+            {/* Show suppliers below minimum order */}
+            {autoDecision.scenario && autoDecision.scenario.fornecedores.filter(f => !f.minimoOk).length > 0 && (
+              <div className="mt-3 space-y-1.5">
+                {autoDecision.scenario.fornecedores.filter(f => !f.minimoOk).map(f => (
+                  <div key={f.fornecedorId} className="bg-amber-500/10 rounded-lg px-3 py-2">
+                    <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                      ⚠️ {f.fornecedorNome}: {formatBRL(f.total)} de {formatBRL(f.pedidoMinimo)} (falta {formatBRL(f.pedidoMinimo - f.total)})
+                    </p>
+                  </div>
+                ))}
+                <p className="text-[10px] text-muted-foreground text-center">
+                  Use a Análise IA para sugestões de como ajustar esses pedidos
+                </p>
+              </div>
+            )}
+
             {autoDecision.warning && (
               <div className="mt-3 bg-amber-500/10 rounded-lg px-3 py-2">
                 <p className="text-xs font-medium text-amber-600 dark:text-amber-400">{autoDecision.warning}</p>
