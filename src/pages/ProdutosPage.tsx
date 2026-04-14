@@ -694,15 +694,6 @@ const ProdutosPage = () => {
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)} title="Editar">
                             <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => { setDeleteConfirmId(p.id); setDeleteConfirmName(p.nome); }}
-                            title="Excluir"
-                          >
-                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                          </Button>
                           {inCotacao ? (
                             <Button
                               size="sm"
@@ -1003,7 +994,20 @@ const ProdutosPage = () => {
               </div>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            {editingId && (
+              <Button
+                variant="ghost"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 mr-auto"
+                onClick={() => {
+                  setDeleteConfirmId(editingId);
+                  setDeleteConfirmName(form.nome);
+                  setModalOpen(false);
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-1" /> Excluir
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
             <Button onClick={() => { if (!form.nome.trim()) { toast.error("Digite o nome"); return; } saveMutation.mutate(); }} disabled={saveMutation.isPending}>
               {saveMutation.isPending ? "Salvando..." : "Salvar"}
