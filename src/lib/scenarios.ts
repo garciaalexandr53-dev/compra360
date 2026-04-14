@@ -362,7 +362,9 @@ export function generateScenarios(
   if (consolidado) candidates.push(consolidado);
 
   // 1. Remove dominated scenarios (strictly worse in both total AND supplier count)
+  // NEVER remove "sem-minimo-abaixo" — it solves minimum order issues which is a distinct value
   candidates = candidates.filter(s1 =>
+    s1.id === "sem-minimo-abaixo" ||
     !candidates.some(s2 =>
       s2 !== s1 &&
       s2.totalGeral <= s1.totalGeral &&
