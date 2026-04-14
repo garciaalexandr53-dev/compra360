@@ -192,24 +192,30 @@ const AnalisePage = () => {
   const melhorPrecoMinIssues = scenarioMelhorPreco?.fornecedores.filter(s => !s.minimoOk).length || 0;
 
   const autoDecision = useMemo(() => {
-    if (!scenarioEconomia) return { scenario: null, warning: null, label: "" };
+    if (!scenarioEconomia && !scenarioMelhorPreco) return { scenario: null, warning: null, label: "" };
 
-    let chosen = scenarioEconomia;
+    let chosen = scenarioEconomia || scenarioMelhorPreco!;
     let warning: string | null = null;
 
-    // EXCEÇÃO 2: Menos fornecedores reduz ≥1 fornecedor com custo ≤5%
+    // Só trocar para consolidado se ele resolve melhor os mínimos
     if (scenarioConsolidado && scenarioEconomia) {
       const aumento = (scenarioConsolidado.totalGeral - scenarioEconomia.totalGeral) / scenarioEconomia.totalGeral;
+      const consolidadoAbaixo = scenarioConsolidado.fornecedores.filter(f => !f.minimoOk).length;
+      const economiaAbaixo = scenarioEconomia.fornecedores.filter(f => !f.minimoOk).length;
       if (
         scenarioConsolidado.numFornecedores < scenarioEconomia.numFornecedores &&
-        aumento <= 0.05
+        aumento <= 0.05 &&
+        consolidadoAbaixo <= economiaAbaixo
       ) {
         chosen = scenarioConsolidado;
       }
     }
 
-    // EXCEÇÃO 1: Melhor preço é >10% mais barato
-    if (scenarioMelhorPreco && scenarioEconomia && scenarioMelhorPreco.id !== scenarioEconomia.id) {
+    // Aviso se ainda há fornecedores abaixo do mínimo
+    const aindaAbaixo = chosen.fornecedores.filter(f => !f.minimoOk);
+    if (aindaAbaixo.length > 0) {
+      warning = `⚠️ ${aindaAbaixo.length} fornecedor(es) ainda abaixo do pedido mínimo — esses itens não têm alternativa de preço.`;
+    } else if (scenarioMelhorPreco && scenarioEconomia && scenarioMelhorPreco.id !== scenarioEconomia.id) {
       const diff = (scenarioEconomia.totalGeral - scenarioMelhorPreco.totalGeral) / scenarioEconomia.totalGeral;
       if (diff > 0.10) {
         warning = "💰 Existe uma opção mais barata, mas alguns pedidos podem não atingir o mínimo.";
@@ -222,6 +228,17 @@ const AnalisePage = () => {
   // ---- Apply selected scenario (create pedidos) ----
   const applyScenario = async (scenario: Scenario) => {
     if (!cotacaoAtiva?.id || !user?.id) return;
+
+    // Aviso se há fornecedores abaixo do mínimo
+    const abaixo = scenario.fornecedores.filter(s => !s.minimoOk);
+    if (abaixo.length > 0) {
+      const nomes = abaixo.map(s => `${s.fornecedorNome} (${formatBRL(s.total)} de ${formatBRL(s.pedidoMinimo)})`).join(", ");
+      const continuar = confirm(
+        `⚠️ Atenção: ${abaixo.length} fornecedor(es) abaixo do pedido mínimo:\n\n${nomes}\n\nDeseja aplicar mesmo assim?`
+      );
+      if (!continuar) return;
+    }
+
     setApplyingScenario(true);
     try {
       for (const sf of scenario.fornecedores) {
@@ -797,7 +814,7 @@ const AnalisePage = () => {
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <span className="text-green-600">✅</span>
                     <span className="font-bold text-foreground text-sm truncate">{f.nome}</span>
-                    {!minimoOk && <span className="text-[10px] text-amber-600 dark:text-amber-400">⚠️ abaixo do mín.</span>}
+                    {!minimoOk && <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">⚠️ mín.</span>}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-sm font-extrabold font-mono text-foreground">{formatBRL(total)}</span>
@@ -806,6 +823,15 @@ const AnalisePage = () => {
                     </Button>
                   </div>
                 </div>
+                {!minimoOk && (
+                  <div className="flex items-center gap-1.5 mx-4 mb-2 px-2 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <span className="text-amber-600 text-xs">⚠️</span>
+                    <span className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                      Abaixo do mínimo: {formatBRL(total)} de {formatBRL(f.pedido_minimo || 0)}
+                      {" "}(falta {formatBRL((f.pedido_minimo || 0) - total)})
+                    </span>
+                  </div>
+                )}
                 <div className="border-t">
                   <table className="w-full text-sm">
                     <thead><tr className="bg-muted/50">
