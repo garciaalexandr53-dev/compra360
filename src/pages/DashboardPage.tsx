@@ -475,6 +475,26 @@ const DashboardPage = () => {
     }
   }, [cotacaoAtiva?.id]);
 
+  // Backlog alert from remanejamento
+  useEffect(() => {
+    const backlog = JSON.parse(localStorage.getItem("compra360_backlog") || "[]");
+    if (backlog.length > 0 && state === 1) {
+      const fornecedoresNomes = [...new Set(backlog.map((i: any) => i.fornecedorNome))];
+      toast.info(
+        `📁 Você tem ${backlog.length} ite${backlog.length === 1 ? "m" : "ns"} remanejado${backlog.length === 1 ? "" : "s"} de ${fornecedoresNomes.join(", ")} para incluir nesta cotação.`,
+        {
+          duration: 8000,
+          action: {
+            label: "Ver itens",
+            onClick: () => {
+              console.log("Backlog:", backlog);
+            },
+          },
+        }
+      );
+    }
+  }, [state]);
+
   const handleRevisarCotacao = () => {
     if (cotacaoAtiva?.id) {
       localStorage.setItem(`cotacao_revisada_${cotacaoAtiva.id}`, "true");

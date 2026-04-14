@@ -419,15 +419,27 @@ const AnalisePage = () => {
 
   const openRemanejar = (gap: GapAnalysis) => {
     const backlog = JSON.parse(localStorage.getItem("compra360_backlog") || "[]");
-    const novos = gap.ajuste?.itens.map(i => ({
+    // Usar itens do scenario diretamente quando ajuste é null
+    const scenarioForn = scenarioAtivo?.fornecedores.find(
+      sf => sf.fornecedorId === gap.fornecedorId
+    );
+    const fonte = gap.ajuste?.itens || scenarioForn?.items.map(i => ({
+      cpId: i.cpId,
+      produto: i.produto,
+    })) || [];
+    const novos = fonte.map((i: any) => ({
       cpId: i.cpId,
       produto: i.produto,
       fornecedorNome: gap.fornecedorNome,
+      valorAtual: gap.valorAtual,
+      pedidoMinimo: gap.pedidoMinimo,
       savedAt: new Date().toISOString(),
-    })) || [];
-    localStorage.setItem("compra360_backlog", JSON.stringify([...backlog, ...novos]));
+    }));
+    if (novos.length > 0) {
+      localStorage.setItem("compra360_backlog", JSON.stringify([...backlog, ...novos]));
+    }
     setGapResolutions(prev => ({ ...prev, [gap.fornecedorId]: "remanejar" }));
-    toast.success(`📁 ${novos.length} itens salvos para a próxima cotação.`);
+    toast.success(`📁 ${novos.length} ite${novos.length === 1 ? "m salvo" : "ns salvos"} para a próxima cotação.`);
   };
 
   const runAiDistribution = async () => {
@@ -756,7 +768,11 @@ const AnalisePage = () => {
               gap.percentual >= 60 ? "border-amber-300 dark:border-amber-800" : "border-gray-200 dark:border-gray-700";
 
             return (
-              <div key={gap.fornecedorId} className={`bg-card border ${borderColor} rounded-xl p-4 shadow-sm`}>
+              <div key={gap.fornecedorId} className={`bg-card border rounded-xl p-4 shadow-sm transition-all duration-500 ${
+                  isDone
+                    ? "border-green-400 dark:border-green-600 bg-green-50/50 dark:bg-green-950/20 shadow-green-100 dark:shadow-green-950/30"
+                    : borderColor
+                }`}>
                 {/* Header */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="min-w-0">
@@ -782,8 +798,12 @@ const AnalisePage = () => {
                   </div>
                   <div className={`h-2.5 rounded-full ${barBg} overflow-hidden`}>
                     <div
-                      className={`h-full rounded-full ${barColor} transition-all duration-500 ${gap.percentual >= 85 && !isDone ? "animate-pulse" : ""}`}
-                      style={{ width: `${Math.min(gap.percentual, 100)}%` }}
+                      className={`h-full rounded-full transition-all duration-700 ${
+                        isDone
+                          ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+                          : `${barColor} ${gap.percentual >= 85 ? "animate-pulse" : ""}`
+                      }`}
+                      style={{ width: isDone ? "100%" : `${Math.min(gap.percentual, 100)}%` }}
                     />
                   </div>
                   <div className="flex items-center justify-between text-[10px]">
@@ -819,7 +839,7 @@ const AnalisePage = () => {
                   <div className="grid grid-cols-3 gap-2 mt-3">
                     <button
                       onClick={() => applyGapAjuste(gap)}
-                      disabled={gap.estrategia !== "ajuste" || !gap.ajuste?.viavel || applyingGap === gap.fornecedorId}
+                      disabled={gap.estrategia !== "ajuste" || !gap.ajuste?.viavel || !!applyingGap}
                       title={
                         gap.percentual < 85 ? `Disponível quando atingir 85% (atual: ${gap.percentual}%)` :
                         gap.ajuste?.viavel ? "Ajustar quantidades para atingir o mínimo" :
@@ -839,9 +859,9 @@ const AnalisePage = () => {
 
                     <button
                       onClick={() => fornecedor && openGapNegociacao(gap, fornecedor)}
-                      disabled={gap.estrategia === "remanejar"}
+                      disabled={gap.estrategia === "remanejar" || !!applyingGap}
                       className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-lg text-[11px] font-semibold transition-all ${
-                        gap.estrategia !== "remanejar"
+                        gap.estrategia !== "remanejar" && !applyingGap
                           ? "bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-950/60"
                           : "bg-muted text-muted-foreground cursor-not-allowed opacity-40"
                       }`}
@@ -852,7 +872,8 @@ const AnalisePage = () => {
 
                     <button
                       onClick={() => openRemanejar(gap)}
-                      className="flex flex-col items-center justify-center gap-1 p-2.5 rounded-lg text-[11px] font-semibold bg-muted text-muted-foreground hover:bg-muted/80 transition-all"
+                      disabled={!!applyingGap}
+                      className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-lg text-[11px] font-semibold bg-muted text-muted-foreground transition-all ${!!applyingGap ? "opacity-40 cursor-not-allowed" : "hover:bg-muted/80"}`}
                     >
                       <span>📁</span>
                       Remanejar
@@ -861,6 +882,14 @@ const AnalisePage = () => {
                 )}
 
                 {/* Resolution feedback */}
+                {isDone && (
+                  <div className="mt-3 flex items-center justify-center gap-2 py-2 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+                    <span className="text-base">✅</span>
+                    <span className="text-xs font-bold text-green-700 dark:text-green-400">
+                      Pedido mínimo atingido! Pronto para enviar.
+                    </span>
+                  </div>
+                )}
                 {resolution === "negociar" && (
                   <div className="mt-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg px-3 py-2">
                     <p className="text-[10px] text-amber-700 dark:text-amber-400 font-medium">🤝 WhatsApp aberto — aguardando resposta do fornecedor</p>
