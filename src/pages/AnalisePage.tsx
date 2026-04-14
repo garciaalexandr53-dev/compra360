@@ -953,14 +953,14 @@ const AnalisePage = () => {
       </Dialog>
       {/* AI Distribution Analysis Dialog */}
       <Dialog open={aiAnalysisOpen} onOpenChange={setAiAnalysisOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0">
+          <DialogHeader className="px-5 pt-5 pb-0 shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
               Análise Inteligente
             </DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1 pr-2">
+          <div className="flex-1 overflow-y-auto px-5 py-3 min-h-0">
             {aiAnalysisLoading && !aiAnalysisText && (
               <div className="flex items-center justify-center gap-3 py-16 text-muted-foreground">
                 <Loader2 className="h-6 w-6 animate-spin" />
@@ -972,13 +972,28 @@ const AnalisePage = () => {
                 <ReactMarkdown>{aiAnalysisText}</ReactMarkdown>
               </div>
             )}
-          </ScrollArea>
-          <div className="flex justify-end gap-2 pt-3 border-t">
+          </div>
+          <div className="flex items-center justify-between gap-2 px-5 py-3 border-t shrink-0">
             <Button variant="outline" size="sm" onClick={() => setAiAnalysisOpen(false)}>Fechar</Button>
-            <Button size="sm" onClick={runAiDistribution} disabled={aiAnalysisLoading} className="gap-1.5">
-              {aiAnalysisLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-              Reanalisar
-            </Button>
+            <div className="flex gap-2">
+              {autoDecision.scenario && !aiAnalysisLoading && aiAnalysisText && (
+                <Button
+                  size="sm"
+                  className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => {
+                    setAiAnalysisOpen(false);
+                    if (autoDecision.scenario) applyScenario(autoDecision.scenario);
+                  }}
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Aplicar distribuição
+                </Button>
+              )}
+              <Button size="sm" variant="outline" onClick={runAiDistribution} disabled={aiAnalysisLoading} className="gap-1.5">
+                {aiAnalysisLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                Reanalisar
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
