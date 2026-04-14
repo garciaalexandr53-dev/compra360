@@ -3,6 +3,35 @@
  * Generates 2-3 scenarios for the buyer to compare and choose.
  */
 
+export interface ItemAjuste {
+  cpId: string;
+  produto: string;
+  embalagem: string;
+  qtdOriginal: number;
+  qtdSugerida: number;
+  qtdExtra: number;
+  preco: number;
+  valorExtra: number;
+  vantagemPct: number;
+}
+
+export interface GapAnalysis {
+  fornecedorId: string;
+  fornecedorNome: string;
+  valorAtual: number;
+  pedidoMinimo: number;
+  gap: number;
+  percentual: number;
+  estrategia: "ajuste" | "negociar" | "remanejar";
+  ajuste: {
+    itens: ItemAjuste[];
+    valorTotalAjustado: number;
+    custoExtra: number;
+    economiaVsAlternativa: number;
+    viavel: boolean;
+  } | null;
+}
+
 export interface ScenarioItem {
   produto: string;
   embalagem: string;
@@ -463,6 +492,137 @@ function scenarioConsolidado(
     semPreco,
     numFornecedores: suppliers.length,
   };
+}
+
+/**
+ * Analyzes suppliers below minimum and suggests resolution strategies.
+ * - >= 85%: "ajuste" (smart boost)
+ * - 60-84%: "negociar" (negotiate with supplier)
+ * - < 60%: "remanejar" (defer to next quote)
+ */
+export function analyzeGaps(
+  scenario: Scenario,
+  cotacaoProdutos: { id: string; produtos?: { nome?: string; embalagem?: string } | null; quantidade?: number | null; fator_embalagem?: number | null }[],
+  precos: { cotacao_produto_id: string; fornecedor_id: string; preco: number | null }[],
+  fornecedores: { id: string; nome: string; pedido_minimo?: number | null; telefone?: string | null; representante?: string | null }[],
+  maxBoostPct: number = 0.30
+): GapAnalysis[] {
+  const result: GapAnalysis[] = [];
+
+  const cpInfos: CpInfo[] = cotacaoProdutos.map((cp) => ({
+    id: cp.id,
+    produtoNome: (cp as any).produtos?.nome || "?",
+    embalagem: (cp as any).produtos?.embalagem || "",
+    quantidade: cp.quantidade || 1,
+    fator: (cp as any).fator_embalagem || 1,
+  }));
+
+  const priceMap = buildPriceMap(cpInfos, precos);
+  const fornecedorMap: Record<string, (typeof fornecedores)[0]> = {};
+  for (const f of fornecedores) fornecedorMap[f.id] = f;
+
+  for (const sf of scenario.fornecedores) {
+    if (sf.minimoOk) continue;
+
+    const minimo = sf.pedidoMinimo;
+    const gap = minimo - sf.total;
+    const percentual = Math.round((sf.total / minimo) * 100);
+
+    let estrategia: GapAnalysis["estrategia"] =
+      percentual >= 85 ? "ajuste" :
+      percentual >= 60 ? "negociar" : "remanejar";
+
+    let ajuste: GapAnalysis["ajuste"] = null;
+
+    if (estrategia === "ajuste") {
+      const itensDoFornecedor = sf.items.map((item) => {
+        const prices = priceMap[item.cpId] || [];
+        const meuPreco = prices.find(p => p.fornecedorId === sf.fornecedorId)?.preco || item.preco;
+        const segundoPreco = prices.find(p => p.fornecedorId !== sf.fornecedorId)?.preco;
+        const vantagemPct = segundoPreco ? ((segundoPreco - meuPreco) / meuPreco) * 100 : 0;
+
+        return {
+          cpId: item.cpId,
+          produto: item.produto,
+          embalagem: item.embalagem,
+          qtdOriginal: item.quantidade,
+          preco: item.preco,
+          vantagemPct: Math.max(0, vantagemPct),
+          fator: item.fator,
+        };
+      }).sort((a, b) => b.vantagemPct - a.vantagemPct);
+
+      const totalVantagem = itensDoFornecedor.reduce((s, i) => s + Math.max(i.vantagemPct, 0.1), 0);
+
+      let valorColetado = 0;
+      const itensAjustados: ItemAjuste[] = [];
+
+      for (const item of itensDoFornecedor) {
+        const peso = Math.max(item.vantagemPct, 0.1) / totalVantagem;
+        const valorAlvo = gap * peso;
+        const valorPorUnidade = item.preco * item.fator;
+        const unidadesExtra = Math.ceil(valorAlvo / valorPorUnidade);
+        const qtdSugerida = Math.min(
+          item.qtdOriginal + unidadesExtra,
+          Math.round(item.qtdOriginal * (1 + maxBoostPct))
+        );
+        const qtdExtra = qtdSugerida - item.qtdOriginal;
+        const valorExtra = qtdExtra * valorPorUnidade;
+        valorColetado += valorExtra;
+
+        itensAjustados.push({
+          cpId: item.cpId,
+          produto: item.produto,
+          embalagem: item.embalagem,
+          qtdOriginal: item.qtdOriginal,
+          qtdSugerida,
+          qtdExtra,
+          preco: item.preco,
+          valorExtra,
+          vantagemPct: item.vantagemPct,
+        });
+      }
+
+      const valorTotalAjustado = sf.total + valorColetado;
+      const viavel = valorTotalAjustado >= minimo;
+
+      let custoAlternativa = 0;
+      for (const item of sf.items) {
+        const prices = priceMap[item.cpId] || [];
+        const alternativa = prices.find(p => p.fornecedorId !== sf.fornecedorId);
+        if (alternativa) {
+          custoAlternativa += alternativa.preco * item.quantidade * item.fator;
+        } else {
+          custoAlternativa += item.total;
+        }
+      }
+
+      const economiaVsAlternativa = custoAlternativa - (sf.total + valorColetado);
+
+      if (!viavel) estrategia = "negociar";
+
+      ajuste = {
+        itens: itensAjustados,
+        valorTotalAjustado,
+        custoExtra: valorColetado,
+        economiaVsAlternativa,
+        viavel,
+      };
+    }
+
+    result.push({
+      fornecedorId: sf.fornecedorId,
+      fornecedorNome: sf.fornecedorNome,
+      valorAtual: sf.total,
+      pedidoMinimo: minimo,
+      gap,
+      percentual,
+      estrategia,
+      ajuste,
+    });
+  }
+
+  return result.sort((a, b) => b.percentual - a.percentual);
 }
 
 /**
