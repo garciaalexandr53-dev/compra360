@@ -210,18 +210,24 @@ const TabelaCotacao = ({
                   style={isReviewMode ? { animation: `fadeInUp 0.3s ease-out ${rowIndex * 0.04}s both` } : undefined}
                 >
                   <td className="px-2 py-1.5 border-b border-border/50 font-medium text-foreground sticky left-0 bg-card z-10">
-                    <button
-                      className="h-auto min-h-[32px] text-xs font-medium text-left w-full min-w-[175px] sm:min-w-[200px] px-2 rounded hover:bg-muted/50 active:bg-muted/70 transition-colors cursor-default select-none whitespace-normal break-words leading-tight py-1"
-                      onTouchStart={() => handleLongPressStart(cp.id, cp.produto?.nome || "produto")}
-                      onTouchEnd={handleLongPressEnd}
-                      onTouchCancel={handleLongPressEnd}
-                      onMouseDown={() => handleLongPressStart(cp.id, cp.produto?.nome || "produto")}
-                      onMouseUp={handleLongPressEnd}
-                      onMouseLeave={handleLongPressEnd}
-                      onContextMenu={(e) => e.preventDefault()}
-                    >
-                      {cp.produto?.nome || "Produto"}
-                    </button>
+                    <div className="flex items-center gap-1 min-w-[175px] sm:min-w-[200px]">
+                      <button
+                        className="h-auto min-h-[32px] text-xs font-medium text-left flex-1 px-2 rounded hover:bg-muted/50 active:bg-muted/70 transition-colors cursor-default select-none whitespace-normal break-words leading-tight py-1"
+                        onTouchStart={() => handleLongPressStart(cp.id, cp.produto?.nome || "produto")}
+                        onTouchEnd={handleLongPressEnd}
+                        onTouchCancel={handleLongPressEnd}
+                        onContextMenu={(e) => e.preventDefault()}
+                      >
+                        {cp.produto?.nome || "Produto"}
+                      </button>
+                      <button
+                        className="hidden md:flex opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center h-6 w-6 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex-shrink-0"
+                        onClick={() => handleDeleteClick(cp.id, cp.produto?.nome || "produto")}
+                        title="Excluir item"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </td>
                   <td className="px-1 py-1.5 border-b border-border/50 text-center">
                     <Input
