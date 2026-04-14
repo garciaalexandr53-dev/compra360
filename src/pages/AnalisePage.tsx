@@ -51,6 +51,9 @@ const AnalisePage = () => {
   const [receiptNumero, setReceiptNumero] = useState<number | null>(null);
   const [whatsappAiLoading, setWhatsappAiLoading] = useState<string | null>(null);
   const [negociacaoOpen, setNegociacaoOpen] = useState(false);
+  const [aiAnalysisText, setAiAnalysisText] = useState("");
+  const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
+  const [aiAnalysisOpen, setAiAnalysisOpen] = useState(false);
 
   // ---- Data fetching ----
   const { data: cotacaoAtiva } = useQuery({
