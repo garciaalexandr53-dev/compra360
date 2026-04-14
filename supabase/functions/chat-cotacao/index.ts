@@ -89,10 +89,11 @@ serve(async (req) => {
         );
       });
 
-      // Compute totals per supplier
+      // Compute totals per supplier (wins + full totals for minimum order analysis)
       lines.push("");
       lines.push("Resumo por fornecedor (menor preço vence cada item):");
       const supplierWins: Record<string, { wins: number; total: number }> = {};
+      const supplierTotals: Record<string, number> = {};
       (cotacaoProdutos || []).forEach((cp: any) => {
         const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco > 0);
         if (!cpPrecos.length) return;
@@ -103,6 +104,11 @@ serve(async (req) => {
           supplierWins[winner.fornecedor_id].wins++;
           supplierWins[winner.fornecedor_id].total += minPrice * (cp.quantidade || 1);
         }
+        // Track total per supplier for ALL items they quoted
+        cpPrecos.forEach((p: any) => {
+          if (!supplierTotals[p.fornecedor_id]) supplierTotals[p.fornecedor_id] = 0;
+          supplierTotals[p.fornecedor_id] += p.preco * (cp.quantidade || 1);
+        });
       });
       Object.entries(supplierWins).forEach(([fid, s]) => {
         lines.push(`- ${fornecedorMap[fid] || "?"}: ${s.wins} itens ganhos, total R$${s.total.toFixed(2)}`);
@@ -111,6 +117,22 @@ serve(async (req) => {
       const grandTotal = Object.values(supplierWins).reduce((acc, s) => acc + s.total, 0);
       lines.push(`\nTotal geral estimado da compra: R$${grandTotal.toFixed(2)}`);
 
+      // Pedido mínimo analysis
+      lines.push("");
+      lines.push("Análise de pedido mínimo por fornecedor:");
+      (cotacaoFornecedores || []).forEach((cf: any) => {
+        const f = cf.fornecedores;
+        const minimo = Number(f?.pedido_minimo || 0);
+        const winsData = supplierWins[cf.fornecedor_id];
+        const totalVencedor = winsData?.total || 0;
+        const totalCotado = supplierTotals[cf.fornecedor_id] || 0;
+        const atingiu = minimo <= 0 || totalVencedor >= minimo;
+        if (minimo > 0) {
+          lines.push(`- ${f?.nome || "?"}: pedido mínimo R$${minimo.toFixed(2)}, total com itens ganhos R$${totalVencedor.toFixed(2)}, total de todos itens cotados R$${totalCotado.toFixed(2)} → ${atingiu ? "✅ ATINGE mínimo" : "❌ NÃO ATINGE mínimo (faltam R$" + (minimo - totalVencedor).toFixed(2) + ")"}`);
+        } else {
+          lines.push(`- ${f?.nome || "?"}: sem pedido mínimo, total itens ganhos R$${totalVencedor.toFixed(2)}`);
+        }
+      });
       contextText = lines.join("\n");
     }
 
