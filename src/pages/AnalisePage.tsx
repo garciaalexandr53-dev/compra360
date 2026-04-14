@@ -909,6 +909,37 @@ const AnalisePage = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {/* AI Distribution Analysis Dialog */}
+      <Dialog open={aiAnalysisOpen} onOpenChange={setAiAnalysisOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Análise Inteligente
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1 pr-2">
+            {aiAnalysisLoading && !aiAnalysisText && (
+              <div className="flex items-center justify-center gap-3 py-16 text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <span className="text-sm">Analisando distribuição com IA...</span>
+              </div>
+            )}
+            {aiAnalysisText && (
+              <div className="prose prose-sm max-w-none dark:prose-invert [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_table]:text-xs">
+                <ReactMarkdown>{aiAnalysisText}</ReactMarkdown>
+              </div>
+            )}
+          </ScrollArea>
+          <div className="flex justify-end gap-2 pt-3 border-t">
+            <Button variant="outline" size="sm" onClick={() => setAiAnalysisOpen(false)}>Fechar</Button>
+            <Button size="sm" onClick={runAiDistribution} disabled={aiAnalysisLoading} className="gap-1.5">
+              {aiAnalysisLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              Reanalisar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <NegociacaoModal
         open={negociacaoOpen}
         onOpenChange={setNegociacaoOpen}
