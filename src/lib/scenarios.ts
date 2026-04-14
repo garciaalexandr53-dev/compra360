@@ -77,7 +77,8 @@ function buildPriceMap(
 function buildSupplierResult(
   assignments: Record<string, { fornecedorId: string; preco: number }>,
   cotacaoProdutos: CpInfo[],
-  fornecedorMap: Record<string, FornecedorInfo>
+  fornecedorMap: Record<string, FornecedorInfo>,
+  qtyOverrides?: Record<string, number>
 ): { suppliers: ScenarioSupplier[]; total: number; semPreco: number } {
   const buckets: Record<string, ScenarioItem[]> = {};
   let semPreco = 0;
@@ -87,13 +88,16 @@ function buildSupplierResult(
     if (!assignment) { semPreco++; continue; }
     const { fornecedorId, preco } = assignment;
     if (!buckets[fornecedorId]) buckets[fornecedorId] = [];
+    const qty = qtyOverrides?.[cp.id] ?? cp.quantidade;
+    const boosted = qtyOverrides?.[cp.id] != null && qtyOverrides[cp.id] !== cp.quantidade;
     buckets[fornecedorId].push({
       produto: cp.produtoNome,
       embalagem: cp.embalagem,
-      quantidade: cp.quantidade,
+      quantidade: qty,
+      ...(boosted ? { quantidadeOriginal: cp.quantidade } : {}),
       fator: cp.fator,
       preco,
-      total: preco * cp.quantidade * cp.fator,
+      total: preco * qty * cp.fator,
       cpId: cp.id,
       fornecedorId,
     });
