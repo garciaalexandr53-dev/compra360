@@ -92,17 +92,31 @@ serve(async (req) => {
       // Compute totals per supplier (wins + full totals for minimum order analysis)
       lines.push("");
       lines.push("Resumo por fornecedor (menor preço vence cada item):");
-      const supplierWins: Record<string, { wins: number; total: number }> = {};
+      const supplierWins: Record<string, { wins: number; total: number; items: string[] }> = {};
       const supplierTotals: Record<string, number> = {};
+      const tiedItems: { produto: string; fornecedores: string[]; preco: number }[] = [];
+
       (cotacaoProdutos || []).forEach((cp: any) => {
         const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco > 0);
         if (!cpPrecos.length) return;
         const minPrice = Math.min(...cpPrecos.map((p: any) => p.preco));
-        const winner = cpPrecos.find((p: any) => p.preco === minPrice);
+        const winners = cpPrecos.filter((p: any) => p.preco === minPrice);
+
+        // Detect ties
+        if (winners.length > 1) {
+          tiedItems.push({
+            produto: cp.produtos?.nome || "?",
+            fornecedores: winners.map((w: any) => fornecedorMap[w.fornecedor_id] || "?"),
+            preco: minPrice,
+          });
+        }
+
+        const winner = winners[0];
         if (winner) {
-          if (!supplierWins[winner.fornecedor_id]) supplierWins[winner.fornecedor_id] = { wins: 0, total: 0 };
+          if (!supplierWins[winner.fornecedor_id]) supplierWins[winner.fornecedor_id] = { wins: 0, total: 0, items: [] };
           supplierWins[winner.fornecedor_id].wins++;
           supplierWins[winner.fornecedor_id].total += minPrice * (cp.quantidade || 1);
+          supplierWins[winner.fornecedor_id].items.push(cp.produtos?.nome || "?");
         }
         // Track total per supplier for ALL items they quoted
         cpPrecos.forEach((p: any) => {
@@ -117,9 +131,20 @@ serve(async (req) => {
       const grandTotal = Object.values(supplierWins).reduce((acc, s) => acc + s.total, 0);
       lines.push(`\nTotal geral estimado da compra: R$${grandTotal.toFixed(2)}`);
 
+      // Tied items analysis
+      if (tiedItems.length > 0) {
+        lines.push("");
+        lines.push("⚔️ EMPATES (mesmo preço entre fornecedores):");
+        tiedItems.forEach((t) => {
+          lines.push(`- ${t.produto}: R$${t.preco.toFixed(2)} empatado entre ${t.fornecedores.join(", ")}`);
+        });
+        lines.push("DICA: Empates podem ser desempatados redistribuindo para o fornecedor que precisa atingir pedido mínimo.");
+      }
+
       // Pedido mínimo analysis
       lines.push("");
-      lines.push("Análise de pedido mínimo por fornecedor:");
+      lines.push("📦 ANÁLISE DE PEDIDO MÍNIMO POR FORNECEDOR:");
+      const fornecedoresAbaixoMinimo: { nome: string; faltam: number; totalAtual: number; minimo: number; itensCotados: string[] }[] = [];
       (cotacaoFornecedores || []).forEach((cf: any) => {
         const f = cf.fornecedores;
         const minimo = Number(f?.pedido_minimo || 0);
@@ -129,10 +154,49 @@ serve(async (req) => {
         const atingiu = minimo <= 0 || totalVencedor >= minimo;
         if (minimo > 0) {
           lines.push(`- ${f?.nome || "?"}: pedido mínimo R$${minimo.toFixed(2)}, total com itens ganhos R$${totalVencedor.toFixed(2)}, total de todos itens cotados R$${totalCotado.toFixed(2)} → ${atingiu ? "✅ ATINGE mínimo" : "❌ NÃO ATINGE mínimo (faltam R$" + (minimo - totalVencedor).toFixed(2) + ")"}`);
+          if (!atingiu) {
+            // Find items this supplier quoted but didn't win
+            const cotadoItems: string[] = [];
+            (cotacaoProdutos || []).forEach((cp: any) => {
+              const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.fornecedor_id === cf.fornecedor_id && p.preco > 0);
+              if (cpPrecos.length > 0 && (!winsData?.items.includes(cp.produtos?.nome))) {
+                const p = cpPrecos[0];
+                const minP = Math.min(...precos.filter((pr: any) => pr.cotacao_produto_id === cp.id && pr.preco > 0).map((pr: any) => pr.preco));
+                const diff = p.preco - minP;
+                cotadoItems.push(`${cp.produtos?.nome}: R$${p.preco.toFixed(2)} (melhor: R$${minP.toFixed(2)}, diff: +R$${diff.toFixed(2)})`);
+              }
+            });
+            fornecedoresAbaixoMinimo.push({ nome: f?.nome || "?", faltam: minimo - totalVencedor, totalAtual: totalVencedor, minimo, itensCotados: cotadoItems });
+          }
         } else {
           lines.push(`- ${f?.nome || "?"}: sem pedido mínimo, total itens ganhos R$${totalVencedor.toFixed(2)}`);
         }
       });
+
+      // Redistribution suggestions
+      if (fornecedoresAbaixoMinimo.length > 0) {
+        lines.push("");
+        lines.push("🔄 SUGESTÕES DE REDISTRIBUIÇÃO:");
+        fornecedoresAbaixoMinimo.forEach((fab) => {
+          lines.push(`\n${fab.nome} precisa de mais R$${fab.faltam.toFixed(2)} para atingir mínimo de R$${fab.minimo.toFixed(2)}.`);
+          if (fab.itensCotados.length > 0) {
+            lines.push("  Itens que poderiam ser movidos para este fornecedor (com custo extra):");
+            fab.itensCotados.slice(0, 10).forEach((item) => lines.push(`    • ${item}`));
+          }
+        });
+        lines.push("\nIMPORTANTE: Ao sugerir redistribuição, calcule o custo extra de mover cada item e priorize mover itens com menor diferença de preço.");
+      }
+
+      // Items without any price
+      const semPreco = (cotacaoProdutos || []).filter((cp: any) => {
+        return !precos.some((p: any) => p.cotacao_produto_id === cp.id && p.preco > 0);
+      });
+      if (semPreco.length > 0) {
+        lines.push("");
+        lines.push(`⚠️ ${semPreco.length} produto(s) SEM NENHUM PREÇO cotado:`);
+        semPreco.forEach((cp: any) => lines.push(`- ${cp.produtos?.nome || "?"}`));
+      }
+
       contextText = lines.join("\n");
     }
 
@@ -148,7 +212,11 @@ REGRAS:
 - Seja conciso mas completo.
 - Se não tiver dados suficientes, diga isso claramente.
 - Quando perguntar sobre economia, compare os preços entre fornecedores.
-- Ao recomendar, considere pedido mínimo dos fornecedores.`;
+- Ao recomendar, considere pedido mínimo dos fornecedores.
+- IMPORTANTE: Quando um fornecedor NÃO atingir o pedido mínimo, PROATIVAMENTE sugira quais itens podem ser redistribuídos para ele (priorizando empates e itens com menor diferença de preço) para viabilizar o pedido.
+- Em caso de EMPATES, sugira direcionar o item para o fornecedor que mais precisa atingir o pedido mínimo.
+- Sempre que possível, apresente os dados em tabelas markdown para facilitar a visualização.
+- Quando o usuário pedir uma análise geral, inclua: resumo de economia, fornecedores abaixo do mínimo, empates e sugestão de redistribuição.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft, Zap, SlidersHorizontal, Handshake, TrendingUp } from "lucide-react";
+import { Loader2, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft, Zap, SlidersHorizontal, Handshake, TrendingUp, Sparkles, RefreshCw } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import NegociacaoModal from "@/components/analise/NegociacaoModal";
 import SendOrdersModal from "@/components/dashboard/SendOrdersModal";
 import { generateScenarios, type Scenario } from "@/lib/scenarios";
@@ -49,6 +51,9 @@ const AnalisePage = () => {
   const [receiptNumero, setReceiptNumero] = useState<number | null>(null);
   const [whatsappAiLoading, setWhatsappAiLoading] = useState<string | null>(null);
   const [negociacaoOpen, setNegociacaoOpen] = useState(false);
+  const [aiAnalysisText, setAiAnalysisText] = useState("");
+  const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
+  const [aiAnalysisOpen, setAiAnalysisOpen] = useState(false);
 
   // ---- Data fetching ----
   const { data: cotacaoAtiva } = useQuery({
@@ -354,6 +359,73 @@ const AnalisePage = () => {
 
   const fornecedoresComPedido = activeOrders.filter(o => o.items.length > 0);
   const totalGeral = fornecedoresComPedido.reduce((s, o) => s + o.total, 0);
+
+  const runAiDistribution = async () => {
+    if (!cotacaoAtiva?.id) return;
+    if (!checkPlan("business", "Análise inteligente por IA")) return;
+    setAiAnalysisText("");
+    setAiAnalysisLoading(true);
+    setAiAnalysisOpen(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/suggest-distribuicao`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ cotacao_id: cotacaoAtiva.id, loja_id: lojaAtiva?.id }),
+        }
+      );
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
+        toast.error(err.error || "Erro na análise de distribuição");
+        setAiAnalysisLoading(false);
+        return;
+      }
+      const reader = resp.body?.getReader();
+      if (!reader) throw new Error("No reader");
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullText = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let newlineIdx: number;
+        while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, newlineIdx);
+          buffer = buffer.slice(newlineIdx + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) { fullText += content; setAiAnalysisText(fullText); }
+          } catch { /* partial */ }
+        }
+      }
+      if (buffer.trim()) {
+        for (let raw of buffer.split("\n")) {
+          if (!raw || !raw.startsWith("data: ")) continue;
+          const jsonStr = raw.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) { fullText += content; setAiAnalysisText(fullText); }
+          } catch { /* ignore */ }
+        }
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Erro na análise");
+    } finally {
+      setAiAnalysisLoading(false);
+    }
+  };
 
   if (!cotacaoAtiva) {
     return (
@@ -666,19 +738,30 @@ const AnalisePage = () => {
         </div>
       )}
 
-      <div className="bg-muted/50 border rounded-xl px-4 py-3 flex items-center justify-between">
-        <p className="text-xs text-muted-foreground flex-1">
+      <div className="bg-muted/50 border rounded-xl px-4 py-3 space-y-2">
+        <p className="text-xs text-muted-foreground">
           🤖 O sistema analisou {cotacaoProdutos.length} produto(s) e {fornecedores.length} fornecedor(es) para encontrar a combinação ideal de preço e operação.
         </p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="ml-3 text-xs shrink-0 gap-1.5"
-          onClick={() => { if (!checkPlan("business", "Negociação assistida por IA")) return; setNegociacaoOpen(true); }}
-        >
-          <Handshake className="h-3.5 w-3.5" />
-          Negociar
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            className="text-xs gap-1.5 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
+            onClick={runAiDistribution}
+            disabled={aiAnalysisLoading}
+          >
+            {aiAnalysisLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            Análise IA
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs shrink-0 gap-1.5"
+            onClick={() => { if (!checkPlan("business", "Negociação assistida por IA")) return; setNegociacaoOpen(true); }}
+          >
+            <Handshake className="h-3.5 w-3.5" />
+            Negociar
+          </Button>
+        </div>
       </div>
 
       {/* PEDIDOS — accordion */}
@@ -823,6 +906,37 @@ const AnalisePage = () => {
           <div className="flex justify-end gap-2 print:hidden mt-2">
             <Button variant="outline" onClick={() => setReceiptOpen(false)}>Fechar</Button>
             <Button onClick={() => window.print()} className="bg-primary"><Printer className="h-4 w-4 mr-1" /> Imprimir</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* AI Distribution Analysis Dialog */}
+      <Dialog open={aiAnalysisOpen} onOpenChange={setAiAnalysisOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Análise Inteligente
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1 pr-2">
+            {aiAnalysisLoading && !aiAnalysisText && (
+              <div className="flex items-center justify-center gap-3 py-16 text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <span className="text-sm">Analisando distribuição com IA...</span>
+              </div>
+            )}
+            {aiAnalysisText && (
+              <div className="prose prose-sm max-w-none dark:prose-invert [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_table]:text-xs">
+                <ReactMarkdown>{aiAnalysisText}</ReactMarkdown>
+              </div>
+            )}
+          </ScrollArea>
+          <div className="flex justify-end gap-2 pt-3 border-t">
+            <Button variant="outline" size="sm" onClick={() => setAiAnalysisOpen(false)}>Fechar</Button>
+            <Button size="sm" onClick={runAiDistribution} disabled={aiAnalysisLoading} className="gap-1.5">
+              {aiAnalysisLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              Reanalisar
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

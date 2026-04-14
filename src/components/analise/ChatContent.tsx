@@ -14,10 +14,10 @@ type Msg = { role: "user" | "assistant"; content: string };
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-cotacao`;
 
 const SUGGESTIONS = [
-  "Qual fornecedor tem o melhor preço em bebidas?",
+  "Quais fornecedores não atingiram o pedido mínimo e como resolver?",
+  "Existem empates de preço? Como desempatar?",
+  "Faça uma análise completa com sugestão de redistribuição",
   "Quanto vou economizar nesta cotação?",
-  "Qual fornecedor está ganhando mais itens?",
-  "Resuma a cotação atual",
 ];
 
 const ChatContent = () => {
