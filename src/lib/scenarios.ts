@@ -202,16 +202,22 @@ function scenarioSemMinimoAbaixo(
     }
   }
 
+  if (droppedSuppliers.size === 0) return null;
+
   const { suppliers, total, semPreco } = buildSupplierResult(assignments, cotacaoProdutos, fornecedorMap);
   const diff = total - baselineTotal;
 
-  if (droppedSuppliers.size === 0) return null;
+  const aindaAbaixo = suppliers.filter(s => !s.minimoOk);
+
+  const descricao = aindaAbaixo.length > 0
+    ? `Redistribuiu itens de ${droppedSuppliers.size} fornecedor(es). ${aindaAbaixo.length} ainda abaixo do mínimo (sem alternativa de preço).`
+    : `Remove ${droppedSuppliers.size} fornecedor(es) que não atingem o mínimo. Todos os mínimos atendidos.`;
 
   return {
     id: "sem-minimo-abaixo",
-    nome: "Pedidos mínimos OK",
-    descricao: `Remove ${droppedSuppliers.size} fornecedor(es) que não atingem o mínimo. Itens redistribuídos para o próximo menor preço.`,
-    icon: "✅",
+    nome: aindaAbaixo.length > 0 ? "Pedidos mínimos (parcial)" : "Pedidos mínimos OK",
+    descricao,
+    icon: aindaAbaixo.length > 0 ? "⚠️" : "✅",
     totalGeral: total,
     diffVsBaseline: diff,
     fornecedores: suppliers,
