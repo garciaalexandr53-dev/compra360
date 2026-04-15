@@ -740,7 +740,21 @@ const AnalisePage = () => {
         <p className="text-center text-xs font-medium text-primary mt-3">
           {mode === "auto" ? "O Compra360 já escolheu a melhor opção para você" : "Compare e escolha como deseja comprar"}
         </p>
-      </div>
+        {/* Barra de progresso animada */}
+        <div className="mt-3 space-y-1">
+          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-[1200ms] ease-out"
+              style={{
+                width: `${progressValue}%`,
+                backgroundColor: progressValue >= 100 ? "#16a34a" : "hsl(var(--primary))",
+              }}
+            />
+          </div>
+          {progressValue >= 100 && (
+            <p className="text-[10px] text-muted-foreground text-center">✅ Análise concluída</p>
+          )}
+        </div>
 
       {/* ── PAINEL DE OPORTUNIDADES ── */}
       {gapAnalyses.length > 0 && (
@@ -925,7 +939,9 @@ const AnalisePage = () => {
             <div className="text-center mb-4">
               <span className="text-2xl">🏆</span>
               <h3 className="text-base font-bold text-foreground mt-1">Melhor escolha para você</h3>
-            </div>
+              <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
+                ⚡ Seleção automática
+              </span>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
