@@ -554,6 +554,11 @@ const AnalisePage = () => {
             </span>
           </div>
           <div className="text-base font-bold text-foreground">Economia Inteligente</div>
+          {selectedScenario?.id === scenarioEconomia.id ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-950/40 px-2 py-0.5 rounded-full">✓ Estratégia ativa</span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-950/40 px-2 py-0.5 rounded-full">⚡ Seleção automática</span>
+          )}
           <div className="text-2xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioEconomia.totalGeral)}</div>
           {scenarioEconomia.diffVsBaseline !== 0 && (
             <div className="text-xs text-muted-foreground mt-0.5">
