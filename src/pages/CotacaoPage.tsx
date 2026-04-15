@@ -661,21 +661,46 @@ const CotacaoPage = () => {
           <Button variant="ghost" size="sm" className="gap-1 text-xs h-8" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="h-4 w-4" /> Voltar ao Dashboard
           </Button>
-          <span className="text-xs text-muted-foreground flex-1 text-center">Visualização da cotação</span>
+          <div className="flex-1" />
+          {isReviewMode && (
+            <Button size="sm" variant="outline" onClick={runAiAnalysis} disabled={aiAnalysisLoading} className="gap-1 text-green-700 dark:text-green-400 border-green-500/30 hover:bg-green-500/5">
+              <Sparkles className="h-4 w-4" /> Análise IA
+            </Button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="gap-1"><MoreHorizontal className="h-4 w-4" /><span className="text-xs">Mais</span></Button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem onClick={() => setSupplierModalOpen(true)}><Users className="h-4 w-4 mr-2" /> Fornecedores ({fornecedores.length})</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFilterAnomalies(!filterAnomalies)}><Filter className="h-4 w-4 mr-2" /> {filterAnomalies ? "✓ Filtro anomalias" : "Filtrar anomalias"}</DropdownMenuItem>
+              <DropdownMenuItem onClick={exportSuspiciousReport}><FileWarning className="h-4 w-4 mr-2" /> Relatório suspeitos</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setErpImportOpen(true)}><FileSpreadsheet className="h-4 w-4 mr-2" /> Importar ERP</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={runAiAnalysis} disabled={aiAnalysisLoading}><Sparkles className="h-4 w-4 mr-2" /> Análise IA</DropdownMenuItem>
+              <DropdownMenuItem onClick={runQtySuggestion} disabled={qtySuggestLoading}><Wand2 className="h-4 w-4 mr-2" /> Sugerir quantidades</DropdownMenuItem>
+              <DropdownMenuItem onClick={runFornSuggestion} disabled={fornSuggestLoading}><Target className="h-4 w-4 mr-2" /> Fornecedores recomendados</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => queryClient.invalidateQueries()}><RefreshCw className="h-4 w-4 mr-2" /> Atualizar dados</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setNovaCotacaoOpen(true)}><RotateCcw className="h-4 w-4 mr-2" /> Nova cotação</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setCancelCotacaoOpen(true)} className="text-destructive focus:text-destructive"><Trash2 className="h-4 w-4 mr-2" /> Excluir cotação</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       )}
-      {/* Toolbar — simplified */}
-      <div className="p-3 border-b bg-card flex items-center gap-2 flex-wrap">
-        <div className="relative flex-1 min-w-[140px] max-w-xs">
+      {/* Toolbar — search + save only */}
+      <div className="p-3 border-b bg-card flex items-center gap-2">
+        <div className="relative flex-1 min-w-[140px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
         <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"><Save className="h-4 w-4 mr-1" /> Salvar</Button>
-        {isReviewMode && (
-          <Button size="sm" variant="outline" onClick={runAiAnalysis} disabled={aiAnalysisLoading} className="gap-1 text-primary border-primary/30 hover:bg-primary/5">
+        {!isFromDashboard && isReviewMode && (
+          <Button size="sm" variant="outline" onClick={runAiAnalysis} disabled={aiAnalysisLoading} className="gap-1 text-green-700 dark:text-green-400 border-green-500/30 hover:bg-green-500/5">
             <Sparkles className="h-4 w-4" /> Análise IA
           </Button>
         )}
+        {!isFromDashboard && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="gap-1"><MoreHorizontal className="h-4 w-4" /><span className="text-xs">Mais</span></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
