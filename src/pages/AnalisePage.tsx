@@ -755,6 +755,7 @@ const AnalisePage = () => {
             <p className="text-[10px] text-muted-foreground text-center">✅ Análise concluída</p>
           )}
         </div>
+      </div>
 
       {/* ── PAINEL DE OPORTUNIDADES ── */}
       {gapAnalyses.length > 0 && (
