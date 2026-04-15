@@ -632,7 +632,10 @@ Exemplo de tom:
   );
 
   // ---- Build scenario list for cards ----
+  const scenarioEconInteligente = scenarios?.find(s => s.id === "sem-minimo-abaixo");
   const allScenarioCards: { scenario: Scenario; badge: string; badgeColor: string; badgeBg: string; displayName: string }[] = [];
+  
+  // "Melhor escolha" = best overall (economia inteligente if exists, else melhor-preco)
   if (scenarioEconomia) {
     allScenarioCards.push({
       scenario: scenarioEconomia,
@@ -642,7 +645,20 @@ Exemplo de tom:
       displayName: "Melhor escolha para você",
     });
   }
-  if (scenarioMelhorPreco && scenarioMelhorPreco.id !== scenarioEconomia?.id) {
+  // "Economia Inteligente" as separate card when it exists AND is already used as "Melhor escolha"
+  // OR show "Melhor Preço" when it's different from the best choice
+  if (scenarioEconInteligente && scenarioMelhorPreco && scenarioEconInteligente.id !== scenarioMelhorPreco.id) {
+    allScenarioCards.push({
+      scenario: scenarioMelhorPreco,
+      badge: "💰 MENOR CUSTO",
+      badgeColor: "text-amber-700 dark:text-amber-400",
+      badgeBg: "bg-amber-100 dark:bg-amber-950/40",
+      displayName: "Melhor Preço",
+    });
+  } else if (!scenarioEconInteligente && scenarioMelhorPreco) {
+    // scenarioEconomia IS melhor-preco, so show economia inteligente info if we can build it
+    // melhor-preco is already shown as "Melhor escolha", no duplicate needed
+  } else if (scenarioMelhorPreco && scenarioMelhorPreco.id !== scenarioEconomia?.id) {
     allScenarioCards.push({
       scenario: scenarioMelhorPreco,
       badge: "💰 MENOR CUSTO",
