@@ -31,6 +31,7 @@ interface OrderItem {
 }
 
 const AnalisePage = () => {
+  const [progressValue, setProgressValue] = useState(0);
   const navigate = useNavigate();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
@@ -186,6 +187,14 @@ const AnalisePage = () => {
       }
     }
   }, [hasPrecos, cotacaoProdutos, precos, fornecedores, scenarios]);
+
+  // Animate progress bar on load
+  useEffect(() => {
+    if (hasPrecos && scenarios) {
+      const t = setTimeout(() => setProgressValue(100), 100);
+      return () => clearTimeout(t);
+    }
+  }, [hasPrecos, scenarios]);
 
   // ---- AUTO MODE: pick best scenario ----
   const scenarioEconomia = scenarios?.find(s => s.id === "sem-minimo-abaixo") || scenarios?.find(s => s.id === "melhor-preco");
@@ -545,6 +554,11 @@ const AnalisePage = () => {
             </span>
           </div>
           <div className="text-base font-bold text-foreground">Economia Inteligente</div>
+          {selectedScenario?.id === scenarioEconomia.id ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-950/40 px-2 py-0.5 rounded-full">✓ Estratégia ativa</span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-950/40 px-2 py-0.5 rounded-full">⚡ Seleção automática</span>
+          )}
           <div className="text-2xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioEconomia.totalGeral)}</div>
           {scenarioEconomia.diffVsBaseline !== 0 && (
             <div className="text-xs text-muted-foreground mt-0.5">
@@ -573,6 +587,9 @@ const AnalisePage = () => {
             </span>
           </div>
           <div className="text-base font-bold text-foreground">Melhor Preço</div>
+          {selectedScenario?.id === scenarioMelhorPreco.id ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-950/40 px-2 py-0.5 rounded-full">✓ Estratégia ativa</span>
+          ) : null}
           <div className="text-xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioMelhorPreco.totalGeral)}</div>
           <p className="text-xs text-muted-foreground mt-2">Preço mais baixo possível — pode haver fornecedores abaixo do mínimo</p>
           {melhorPrecoMinIssues > 0 && (
@@ -603,6 +620,9 @@ const AnalisePage = () => {
             </span>
           </div>
           <div className="text-base font-bold text-foreground">Menos Fornecedores</div>
+          {selectedScenario?.id === scenarioConsolidado.id ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-950/40 px-2 py-0.5 rounded-full">✓ Estratégia ativa</span>
+          ) : null}
           <div className="text-xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioConsolidado.totalGeral)}</div>
           <div className="text-xs mt-1">
             <span className="font-bold text-green-600 dark:text-green-400">{scenarioConsolidado.numFornecedores}</span>
@@ -739,6 +759,21 @@ const AnalisePage = () => {
         <p className="text-center text-xs font-medium text-primary mt-3">
           {mode === "auto" ? "O Compra360 já escolheu a melhor opção para você" : "Compare e escolha como deseja comprar"}
         </p>
+        {/* Barra de progresso animada */}
+        <div className="mt-3 space-y-1">
+          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-[1200ms] ease-out"
+              style={{
+                width: `${progressValue}%`,
+                backgroundColor: progressValue >= 100 ? "#16a34a" : "hsl(var(--primary))",
+              }}
+            />
+          </div>
+          {progressValue >= 100 && (
+            <p className="text-[10px] text-muted-foreground text-center">✅ Análise concluída</p>
+          )}
+        </div>
       </div>
 
       {/* ── PAINEL DE OPORTUNIDADES ── */}
@@ -924,6 +959,9 @@ const AnalisePage = () => {
             <div className="text-center mb-4">
               <span className="text-2xl">🏆</span>
               <h3 className="text-base font-bold text-foreground mt-1">Melhor escolha para você</h3>
+              <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
+                ⚡ Seleção automática
+              </span>
             </div>
 
             <div className="space-y-2">
