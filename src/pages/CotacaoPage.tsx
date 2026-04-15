@@ -655,12 +655,8 @@ const CotacaoPage = () => {
   return (
     <TooltipProvider>
     <div className="flex flex-col h-[calc(100vh-3.5rem)]">
-      {/* Review mode header */}
-      {isReviewMode && (
-        <ReviewHeader itemCount={cotacaoProdutos.length} supplierCount={fornecedores.length} />
-      )}
-      {/* Back to dashboard banner (when from dashboard but not review mode) */}
-      {isFromDashboard && !isReviewMode && (
+      {/* Back to dashboard banner */}
+      {isFromDashboard && (
         <div className="px-3 py-2 bg-primary/5 border-b flex items-center gap-2">
           <Button variant="ghost" size="sm" className="gap-1 text-xs h-8" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="h-4 w-4" /> Voltar ao Dashboard
@@ -675,6 +671,11 @@ const CotacaoPage = () => {
           <Input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
         <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"><Save className="h-4 w-4 mr-1" /> Salvar</Button>
+        {isReviewMode && (
+          <Button size="sm" variant="outline" onClick={runAiAnalysis} disabled={aiAnalysisLoading} className="gap-1 text-primary border-primary/30 hover:bg-primary/5">
+            <Sparkles className="h-4 w-4" /> Análise IA
+          </Button>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="gap-1"><MoreHorizontal className="h-4 w-4" /><span className="text-xs">Mais</span></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
@@ -705,8 +706,8 @@ const CotacaoPage = () => {
         <span className="text-xs font-bold text-muted-foreground">{supplierProgress.percent}%</span>
       </div>
 
-      {/* Supplier chips */}
-      {fornecedores.length > 0 && (
+      {/* Supplier chips — hidden in review mode */}
+      {!isReviewMode && fornecedores.length > 0 && (
         <div className="px-4 py-2 border-b bg-card/50 flex items-center gap-2 overflow-x-auto scrollbar-thin">
           {fornecedores.map((f) => {
             const responded = supplierHasResponded(f.id);
