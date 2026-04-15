@@ -540,7 +540,24 @@ const AnalisePage = () => {
           body: JSON.stringify({
             messages: [{
               role: "user",
-              content: `Explique em português, de forma curta (3-4 linhas), por que a estratégia "${scenario.nome}" faz sentido neste contexto específico de compra. Dados: Total: ${formatBRL(scenario.totalGeral)}, ${scenario.numFornecedores} fornecedores, ${cotacaoProdutos.length} produtos. Comparação: ${comparisons || "Única opção disponível"}. Status mínimos: ${minAlert}. Termine com exatamente 3 bullet points usando ✅ ou ⚠️. Não use markdown headers.`
+              content: `Explique em português por que a estratégia "${scenario.nome}" faz sentido nesta compra.
+
+Dados: Total: ${formatBRL(scenario.totalGeral)}, ${scenario.numFornecedores} fornecedores, ${cotacaoProdutos.length} produtos. Comparação: ${comparisons || "Única opção disponível"}. Status mínimos: ${minAlert}.
+
+REGRAS DE LINGUAGEM:
+- Responda em linguagem simples e direta, como se estivesse explicando para um comprador de supermercado que não tem conhecimento técnico.
+- Evite palavras como "burocrático", "ínfima", "conformidade", "operacional", "otimização".
+- Use frases curtas. Fale sobre economia em reais, número de entregas, facilidade no dia a dia.
+- Máximo 3 linhas no parágrafo explicativo.
+- Depois do parágrafo, pule uma linha e escreva exatamente 3 bullet points, cada um em sua própria linha, começando com ✅ ou ⚠️.
+- Não use markdown headers (#). Não misture bullet points dentro do texto.
+
+Exemplo de tom:
+"Com essa opção você gasta quase o mesmo valor, mas recebe de 2 fornecedores a menos. Isso significa menos entregas para conferir e menos notas para lançar no sistema."
+
+✅ Primeiro destaque
+✅ Segundo destaque
+⚠️ Terceiro destaque`
             }],
           }),
         }
@@ -615,13 +632,14 @@ const AnalisePage = () => {
   );
 
   // ---- Build scenario list for cards ----
-  const allScenarioCards: { scenario: Scenario; badge: string; badgeColor: string; badgeBg: string }[] = [];
+  const allScenarioCards: { scenario: Scenario; badge: string; badgeColor: string; badgeBg: string; displayName: string }[] = [];
   if (scenarioEconomia) {
     allScenarioCards.push({
       scenario: scenarioEconomia,
       badge: "🏆 MELHOR ESCOLHA",
       badgeColor: "text-green-700 dark:text-green-400",
       badgeBg: "bg-green-100 dark:bg-green-950/40",
+      displayName: "Melhor escolha para você",
     });
   }
   if (scenarioMelhorPreco && scenarioMelhorPreco.id !== scenarioEconomia?.id) {
@@ -630,6 +648,7 @@ const AnalisePage = () => {
       badge: "💰 MENOR CUSTO",
       badgeColor: "text-amber-700 dark:text-amber-400",
       badgeBg: "bg-amber-100 dark:bg-amber-950/40",
+      displayName: "Melhor Preço",
     });
   }
   if (scenarioConsolidado) {
@@ -638,6 +657,7 @@ const AnalisePage = () => {
       badge: "📦 MAIS SIMPLES",
       badgeColor: "text-violet-700 dark:text-violet-400",
       badgeBg: "bg-violet-100 dark:bg-violet-950/40",
+      displayName: "Menos Fornecedores",
     });
   }
   // Auto-select first if none selected
@@ -735,7 +755,7 @@ const AnalisePage = () => {
 
         {/* 7. CARDS DE ESTRATÉGIA */}
         <div className="space-y-3">
-          {allScenarioCards.map(({ scenario, badge, badgeColor, badgeBg }) => {
+          {allScenarioCards.map(({ scenario, badge, badgeColor, badgeBg, displayName }) => {
             const isSelected = effectiveSelectedId === scenario.id;
             const isApplied = appliedScenarioId === scenario.id;
             const isExpanded = expandedExplanation === scenario.id;
@@ -774,7 +794,7 @@ const AnalisePage = () => {
                       </span>
                     )}
                   </div>
-                  <div className="text-base font-bold text-foreground">{scenario.nome}</div>
+                  <div className="text-base font-bold text-foreground">{displayName}</div>
                   <div className="text-2xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenario.totalGeral)}</div>
                   <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground flex-wrap">
                     <span>{scenario.numFornecedores} fornecedor(es)</span>
@@ -814,7 +834,7 @@ const AnalisePage = () => {
                             <Skeleton className="h-3 w-3/5" />
                           </div>
                         ) : (
-                          <div className="prose prose-sm max-w-none dark:prose-invert text-xs text-green-900 dark:text-green-200 [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0.5">
+                          <div className="prose prose-sm max-w-none dark:prose-invert text-xs text-green-900 dark:text-green-200 [&_p]:mb-3 [&_ul]:mt-2 [&_ul]:mb-1 [&_ul]:space-y-1.5 [&_li]:my-0 [&_li]:leading-relaxed whitespace-pre-line">
                             <ReactMarkdown>{aiExplanations[scenario.id] || ""}</ReactMarkdown>
                           </div>
                         )}
