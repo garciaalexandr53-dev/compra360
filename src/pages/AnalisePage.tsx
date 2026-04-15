@@ -943,6 +943,7 @@ const AnalisePage = () => {
               <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
                 ⚡ Seleção automática
               </span>
+            </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
