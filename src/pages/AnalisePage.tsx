@@ -633,49 +633,47 @@ Exemplo de tom:
 
   // ---- Build scenario list for cards ----
   const scenarioEconInteligente = scenarios?.find(s => s.id === "sem-minimo-abaixo");
+  const recommendedId = scenarioEconomia?.id;
+  
   const allScenarioCards: { scenario: Scenario; badge: string; badgeColor: string; badgeBg: string; displayName: string }[] = [];
   
-  // "Melhor escolha" = best overall (economia inteligente if exists, else melhor-preco)
-  if (scenarioEconomia) {
-    allScenarioCards.push({
-      scenario: scenarioEconomia,
-      badge: "🏆 MELHOR ESCOLHA",
-      badgeColor: "text-green-700 dark:text-green-400",
-      badgeBg: "bg-green-100 dark:bg-green-950/40",
-      displayName: "Melhor escolha para você",
-    });
-  }
-  // "Economia Inteligente" as separate card when it exists AND is already used as "Melhor escolha"
-  // OR show "Melhor Preço" when it's different from the best choice
-  if (scenarioEconInteligente && scenarioMelhorPreco && scenarioEconInteligente.id !== scenarioMelhorPreco.id) {
+  // Always show Melhor Preço
+  if (scenarioMelhorPreco) {
     allScenarioCards.push({
       scenario: scenarioMelhorPreco,
-      badge: "💰 MENOR CUSTO",
-      badgeColor: "text-amber-700 dark:text-amber-400",
-      badgeBg: "bg-amber-100 dark:bg-amber-950/40",
-      displayName: "Melhor Preço",
-    });
-  } else if (!scenarioEconInteligente && scenarioMelhorPreco) {
-    // scenarioEconomia IS melhor-preco, so show economia inteligente info if we can build it
-    // melhor-preco is already shown as "Melhor escolha", no duplicate needed
-  } else if (scenarioMelhorPreco && scenarioMelhorPreco.id !== scenarioEconomia?.id) {
-    allScenarioCards.push({
-      scenario: scenarioMelhorPreco,
-      badge: "💰 MENOR CUSTO",
-      badgeColor: "text-amber-700 dark:text-amber-400",
-      badgeBg: "bg-amber-100 dark:bg-amber-950/40",
+      badge: recommendedId === scenarioMelhorPreco.id ? "🏆 MELHOR ESCOLHA" : "💰 MENOR CUSTO",
+      badgeColor: recommendedId === scenarioMelhorPreco.id ? "text-green-700 dark:text-green-400" : "text-amber-700 dark:text-amber-400",
+      badgeBg: recommendedId === scenarioMelhorPreco.id ? "bg-green-100 dark:bg-green-950/40" : "bg-amber-100 dark:bg-amber-950/40",
       displayName: "Melhor Preço",
     });
   }
+  // Show Economia Inteligente when it exists
+  if (scenarioEconInteligente) {
+    allScenarioCards.push({
+      scenario: scenarioEconInteligente,
+      badge: recommendedId === scenarioEconInteligente.id ? "🏆 MELHOR ESCOLHA" : "⚡ RECOMENDADO",
+      badgeColor: recommendedId === scenarioEconInteligente.id ? "text-green-700 dark:text-green-400" : "text-blue-700 dark:text-blue-400",
+      badgeBg: recommendedId === scenarioEconInteligente.id ? "bg-green-100 dark:bg-green-950/40" : "bg-blue-100 dark:bg-blue-950/40",
+      displayName: "Economia Inteligente",
+    });
+  }
+  // Show Consolidado / Menos Fornecedores
   if (scenarioConsolidado) {
     allScenarioCards.push({
       scenario: scenarioConsolidado,
-      badge: "📦 MAIS SIMPLES",
-      badgeColor: "text-violet-700 dark:text-violet-400",
-      badgeBg: "bg-violet-100 dark:bg-violet-950/40",
+      badge: recommendedId === scenarioConsolidado.id ? "🏆 MELHOR ESCOLHA" : "📦 MAIS SIMPLES",
+      badgeColor: recommendedId === scenarioConsolidado.id ? "text-green-700 dark:text-green-400" : "text-violet-700 dark:text-violet-400",
+      badgeBg: recommendedId === scenarioConsolidado.id ? "bg-green-100 dark:bg-green-950/40" : "bg-violet-100 dark:bg-violet-950/40",
       displayName: "Menos Fornecedores",
     });
   }
+  
+  // Sort: recommended first
+  allScenarioCards.sort((a, b) => {
+    if (a.scenario.id === recommendedId) return -1;
+    if (b.scenario.id === recommendedId) return 1;
+    return 0;
+  });
   // Auto-select first if none selected
   const effectiveSelectedId = activeScenarioId || allScenarioCards[0]?.scenario.id;
 
