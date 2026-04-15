@@ -188,6 +188,14 @@ const AnalisePage = () => {
     }
   }, [hasPrecos, cotacaoProdutos, precos, fornecedores, scenarios]);
 
+  // Animate progress bar on load
+  useEffect(() => {
+    if (hasPrecos && scenarios) {
+      const t = setTimeout(() => setProgressValue(100), 100);
+      return () => clearTimeout(t);
+    }
+  }, [hasPrecos, scenarios]);
+
   // ---- AUTO MODE: pick best scenario ----
   const scenarioEconomia = scenarios?.find(s => s.id === "sem-minimo-abaixo") || scenarios?.find(s => s.id === "melhor-preco");
   const scenarioMelhorPreco = scenarios?.find(s => s.id === "melhor-preco");
