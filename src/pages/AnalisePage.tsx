@@ -632,7 +632,7 @@ Exemplo de tom:
   );
 
   // ---- Build scenario list for cards ----
-  const allScenarioCards: { scenario: Scenario; badge: string; badgeColor: string; badgeBg: string }[] = [];
+  const allScenarioCards: { scenario: Scenario; badge: string; badgeColor: string; badgeBg: string; displayName: string }[] = [];
   if (scenarioEconomia) {
     allScenarioCards.push({
       scenario: scenarioEconomia,
