@@ -10,14 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft, Zap, SlidersHorizontal, Handshake, TrendingUp, Sparkles, RefreshCw } from "lucide-react";
+import { Loader2, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft, Zap, SlidersHorizontal, TrendingUp, Sparkles, RefreshCw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import NegociacaoModal from "@/components/analise/NegociacaoModal";
 import SendOrdersModal from "@/components/dashboard/SendOrdersModal";
 import { generateScenarios, analyzeGaps, type Scenario, type GapAnalysis } from "@/lib/scenarios";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -39,11 +39,11 @@ const AnalisePage = () => {
   const { checkPlan, showPlanos, setShowPlanos } = useFeatureCheck();
   const [scenarios, setScenarios] = useState<Scenario[] | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
+  const [appliedScenarioId, setAppliedScenarioId] = useState<string | null>(null);
   const [applyingScenario, setApplyingScenario] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
   const [sendQueueOpen, setSendQueueOpen] = useState(false);
   const [mode, setMode] = useState<"auto" | "manual">("auto");
-  const [showOtherOptions, setShowOtherOptions] = useState(false);
 
   // Receipt dialog
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -57,6 +57,11 @@ const AnalisePage = () => {
   const [aiAnalysisOpen, setAiAnalysisOpen] = useState(false);
   const [gapResolutions, setGapResolutions] = useState<Record<string, string>>({});
   const [applyingGap, setApplyingGap] = useState<string | null>(null);
+
+  // AI explanation per scenario
+  const [expandedExplanation, setExpandedExplanation] = useState<string | null>(null);
+  const [aiExplanations, setAiExplanations] = useState<Record<string, string>>({});
+  const [aiExplanationLoading, setAiExplanationLoading] = useState<string | null>(null);
 
   // ---- Data fetching ----
   const { data: cotacaoAtiva } = useQuery({
@@ -129,7 +134,7 @@ const AnalisePage = () => {
       const qty = cp.quantidade || 1;
       const fator = cp.fator_embalagem || 1;
       best += Math.min(...prices) * qty * fator;
-      const mean = prices.reduce((s, v) => s + v, 0) / prices.length;
+      const mean = prices.reduce((s: number, v: number) => s + v, 0) / prices.length;
       avg += mean * qty * fator;
     });
     return { grandTotal: best, avgTotal: avg, economiaDisponivel: Math.max(0, avg - best) };
@@ -208,7 +213,6 @@ const AnalisePage = () => {
     let chosen = scenarioEconomia || scenarioMelhorPreco!;
     let warning: string | null = null;
 
-    // Só trocar para consolidado se ele resolve melhor os mínimos
     if (scenarioConsolidado && scenarioEconomia) {
       const aumento = (scenarioConsolidado.totalGeral - scenarioEconomia.totalGeral) / scenarioEconomia.totalGeral;
       const consolidadoAbaixo = scenarioConsolidado.fornecedores.filter(f => !f.minimoOk).length;
@@ -222,7 +226,6 @@ const AnalisePage = () => {
       }
     }
 
-    // Aviso se ainda há fornecedores abaixo do mínimo
     const aindaAbaixo = chosen.fornecedores.filter(f => !f.minimoOk);
     if (aindaAbaixo.length > 0) {
       warning = `⚠️ ${aindaAbaixo.length} fornecedor(es) ainda abaixo do pedido mínimo — esses itens não têm alternativa de preço.`;
@@ -247,7 +250,6 @@ const AnalisePage = () => {
   const applyScenario = async (scenario: Scenario) => {
     if (!cotacaoAtiva?.id || !user?.id) return;
 
-    // Aviso se há fornecedores abaixo do mínimo
     const abaixo = scenario.fornecedores.filter(s => !s.minimoOk);
     if (abaixo.length > 0) {
       const nomes = abaixo.map(s => `${s.fornecedorNome} (${formatBRL(s.total)} de ${formatBRL(s.pedidoMinimo)})`).join(", ");
@@ -270,6 +272,7 @@ const AnalisePage = () => {
       }
       queryClient.invalidateQueries({ queryKey: ["pedidos"] });
       setSelectedScenario(scenario);
+      setAppliedScenarioId(scenario.id);
       setOrdersOpen(true);
       toast.success("✅ Estratégia aplicada com sucesso");
     } catch (e: any) {
@@ -292,7 +295,6 @@ const AnalisePage = () => {
   const createPedidoMutation = useMutation({
     mutationFn: async ({ fornecedorId, total }: { fornecedorId: string; total: number }) => {
       if (!cotacaoAtiva) throw new Error("Sem cotação ativa");
-      // Check if pedido already exists for this cotacao+fornecedor
       const { data: existing } = await supabase.from("pedidos").select("id")
         .eq("cotacao_id", cotacaoAtiva.id).eq("fornecedor_id", fornecedorId)
         .limit(1).maybeSingle();
@@ -409,7 +411,7 @@ const AnalisePage = () => {
       }
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
       queryClient.invalidateQueries({ queryKey: ["precos"] });
-      setScenarios(null); // Force re-generation
+      setScenarios(null);
       setGapResolutions(prev => ({ ...prev, [gap.fornecedorId]: "done" }));
       toast.success(`✅ Quantidades ajustadas! ${gap.fornecedorNome} agora atinge o pedido mínimo.`);
     } catch (e: any) {
@@ -428,7 +430,6 @@ const AnalisePage = () => {
 
   const openRemanejar = (gap: GapAnalysis) => {
     const backlog = JSON.parse(localStorage.getItem("compra360_backlog") || "[]");
-    // Usar itens do scenario diretamente quando ajuste é null
     const scenarioForn = scenarioAtivo?.fornecedores.find(
       sf => sf.fornecedorId === gap.fornecedorId
     );
@@ -518,6 +519,81 @@ const AnalisePage = () => {
     }
   };
 
+  // ---- AI Explanation for a scenario ----
+  const fetchAiExplanation = async (scenario: Scenario) => {
+    if (aiExplanations[scenario.id]) return; // already loaded
+    if (!checkPlan("business", "Explicação IA")) return;
+    setAiExplanationLoading(scenario.id);
+    try {
+      const otherScenarios = (scenarios || []).filter(s => s.id !== scenario.id);
+      const comparisons = otherScenarios.map(s => `${s.nome}: ${formatBRL(s.totalGeral)} com ${s.numFornecedores} fornecedores`).join("; ");
+      const minIssues = scenario.fornecedores.filter(f => !f.minimoOk);
+      const minAlert = minIssues.length > 0 ? `${minIssues.length} fornecedor(es) abaixo do pedido mínimo` : "Todos os fornecedores atingem o pedido mínimo";
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-cotacao`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            messages: [{
+              role: "user",
+              content: `Explique em português, de forma curta (3-4 linhas), por que a estratégia "${scenario.nome}" faz sentido neste contexto específico de compra. Dados: Total: ${formatBRL(scenario.totalGeral)}, ${scenario.numFornecedores} fornecedores, ${cotacaoProdutos.length} produtos. Comparação: ${comparisons || "Única opção disponível"}. Status mínimos: ${minAlert}. Termine com exatamente 3 bullet points usando ✅ ou ⚠️. Não use markdown headers.`
+            }],
+          }),
+        }
+      );
+      if (!resp.ok) throw new Error("Erro ao buscar explicação");
+      const reader = resp.body?.getReader();
+      if (!reader) throw new Error("No reader");
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullText = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let newlineIdx: number;
+        while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, newlineIdx);
+          buffer = buffer.slice(newlineIdx + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              fullText += content;
+              setAiExplanations(prev => ({ ...prev, [scenario.id]: fullText }));
+            }
+          } catch { /* partial */ }
+        }
+      }
+    } catch (e: any) {
+      setAiExplanations(prev => ({ ...prev, [scenario.id]: "Não foi possível gerar a explicação. Tente novamente." }));
+    } finally {
+      setAiExplanationLoading(null);
+    }
+  };
+
+  const toggleExplanation = (scenarioId: string, scenario: Scenario) => {
+    if (expandedExplanation === scenarioId) {
+      setExpandedExplanation(null);
+    } else {
+      setExpandedExplanation(scenarioId);
+      fetchAiExplanation(scenario);
+    }
+  };
+
+  // ---- Determine which scenario is "selected" for display ----
+  const activeScenarioId = selectedScenario?.id ?? (mode === "auto" ? autoDecision.scenario?.id : null);
+
+  // ---- Empty states ----
   if (!cotacaoAtiva) {
     return (
       <div className="p-5 py-16 text-center space-y-4">
@@ -538,229 +614,98 @@ const AnalisePage = () => {
     </div>
   );
 
-  // ---- Render: Scenario Cards (used in manual mode and "ver outras opções") ----
-  const renderScenarioCards = () => (
-    <div className="space-y-4 animate-fade-in">
-      <h3 className="text-sm font-bold text-foreground">
-        {mode === "manual" ? "Compare e escolha como deseja comprar" : "Outras formas de comprar:"}
-      </h3>
+  // ---- Build scenario list for cards ----
+  const allScenarioCards: { scenario: Scenario; badge: string; badgeColor: string; badgeBg: string }[] = [];
+  if (scenarioEconomia) {
+    allScenarioCards.push({
+      scenario: scenarioEconomia,
+      badge: "🏆 MELHOR ESCOLHA",
+      badgeColor: "text-green-700 dark:text-green-400",
+      badgeBg: "bg-green-100 dark:bg-green-950/40",
+    });
+  }
+  if (scenarioMelhorPreco && scenarioMelhorPreco.id !== scenarioEconomia?.id) {
+    allScenarioCards.push({
+      scenario: scenarioMelhorPreco,
+      badge: "💰 MENOR CUSTO",
+      badgeColor: "text-amber-700 dark:text-amber-400",
+      badgeBg: "bg-amber-100 dark:bg-amber-950/40",
+    });
+  }
+  if (scenarioConsolidado) {
+    allScenarioCards.push({
+      scenario: scenarioConsolidado,
+      badge: "📦 MAIS SIMPLES",
+      badgeColor: "text-violet-700 dark:text-violet-400",
+      badgeBg: "bg-violet-100 dark:bg-violet-950/40",
+    });
+  }
+  // Auto-select first if none selected
+  const effectiveSelectedId = activeScenarioId || allScenarioCards[0]?.scenario.id;
 
-      {/* Card 1 — Economia Inteligente */}
-      {scenarioEconomia && (
-        <div className="bg-card border border-green-500/50 rounded-xl p-4 shadow-sm shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all hover:shadow-[0_0_16px_rgba(16,185,129,0.4)]">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider bg-green-500/15 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.4)]">
-              ✨ RECOMENDADO
-            </span>
-          </div>
-          <div className="text-base font-bold text-foreground">Economia Inteligente</div>
-          {selectedScenario?.id === scenarioEconomia.id ? (
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-950/40 px-2 py-0.5 rounded-full">✓ Estratégia ativa</span>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-950/40 px-2 py-0.5 rounded-full">⚡ Seleção automática</span>
-          )}
-          <div className="text-2xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioEconomia.totalGeral)}</div>
-          {scenarioEconomia.diffVsBaseline !== 0 && (
-            <div className="text-xs text-muted-foreground mt-0.5">
-              {scenarioEconomia.diffVsBaseline > 0 ? "+" : ""}{formatBRL(scenarioEconomia.diffVsBaseline)} vs melhor preço puro
-            </div>
-          )}
-          <div className="text-xs text-muted-foreground mt-1">{scenarioEconomia.numFornecedores} fornecedor(es)</div>
-          <p className="text-xs text-muted-foreground mt-2">Menor custo respeitando o pedido mínimo de cada fornecedor</p>
-          <Button
-            onClick={() => applyScenario(scenarioEconomia)}
-            disabled={applyingScenario}
-            className="w-full mt-3 h-12 text-sm font-bold bg-green-600 hover:bg-green-700 text-white"
-          >
-            {applyingScenario ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-            ✅ Usar esta estratégia
-          </Button>
-        </div>
-      )}
-
-      {/* Card 2 — Melhor Preço */}
-      {scenarioMelhorPreco && scenarioMelhorPreco.id !== scenarioEconomia?.id && (
-        <div className="bg-card border rounded-xl p-4 shadow-sm transition-all hover:shadow-md">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full">
-              💰 MENOR CUSTO
-            </span>
-          </div>
-          <div className="text-base font-bold text-foreground">Melhor Preço</div>
-          {selectedScenario?.id === scenarioMelhorPreco.id ? (
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-950/40 px-2 py-0.5 rounded-full">✓ Estratégia ativa</span>
-          ) : null}
-          <div className="text-xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioMelhorPreco.totalGeral)}</div>
-          <p className="text-xs text-muted-foreground mt-2">Preço mais baixo possível — pode haver fornecedores abaixo do mínimo</p>
-          {melhorPrecoMinIssues > 0 && (
-            <div className="flex items-center gap-1.5 mt-2 bg-amber-500/10 rounded-lg px-3 py-2">
-              <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                ⚠️ {melhorPrecoMinIssues} fornecedor(es) abaixo do pedido mínimo
-              </span>
-            </div>
-          )}
-          <Button
-            variant="outline"
-            onClick={() => applyScenario(scenarioMelhorPreco)}
-            disabled={applyingScenario}
-            className="w-full mt-3 h-12 text-sm font-bold"
-          >
-            {applyingScenario ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Usar esta estratégia
-          </Button>
-        </div>
-      )}
-
-      {/* Card 3 — Menos Fornecedores */}
-      {scenarioConsolidado ? (
-        <div className="bg-card border rounded-xl p-4 shadow-sm transition-all hover:shadow-md">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
-              📦 MAIS SIMPLES
-            </span>
-          </div>
-          <div className="text-base font-bold text-foreground">Menos Fornecedores</div>
-          {selectedScenario?.id === scenarioConsolidado.id ? (
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-950/40 px-2 py-0.5 rounded-full">✓ Estratégia ativa</span>
-          ) : null}
-          <div className="text-xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioConsolidado.totalGeral)}</div>
-          <div className="text-xs mt-1">
-            <span className="font-bold text-green-600 dark:text-green-400">{scenarioConsolidado.numFornecedores}</span>
-            <span className="text-muted-foreground"> fornecedor(es)</span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">Menos pedidos para gerenciar, entrega mais simples</p>
-          <Button
-            variant="outline"
-            onClick={() => applyScenario(scenarioConsolidado)}
-            disabled={applyingScenario}
-            className="w-full mt-3 h-12 text-sm font-bold"
-          >
-            {applyingScenario ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Usar esta estratégia
-          </Button>
-        </div>
-      ) : (
-        <div className="bg-card border rounded-xl p-4 shadow-sm opacity-60">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
-              📦 MAIS SIMPLES
-            </span>
-          </div>
-          <div className="text-base font-bold text-foreground">Menos Fornecedores</div>
-          <p className="text-xs text-muted-foreground mt-3">
-            Já atingimos o menor número possível de fornecedores nesta compra
-          </p>
-        </div>
-      )}
-
-      {/* Tabela Comparativa */}
-      {scenarios && scenarios.length > 1 && (
-        <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-muted/50">
-                <th className="px-3 py-2 text-left text-[10px] font-bold uppercase text-muted-foreground">Estratégia</th>
-                <th className="px-3 py-2 text-right text-[10px] font-bold uppercase text-muted-foreground">Total</th>
-                <th className="px-3 py-2 text-center text-[10px] font-bold uppercase text-muted-foreground">Forn.</th>
-              </tr>
-            </thead>
-            <tbody>
-              {scenarioEconomia && (
-                <tr className="bg-green-500/5 border-l-2 border-l-green-500">
-                  <td className="px-3 py-2 text-xs font-bold text-foreground">
-                    Economia inteligente
-                    <span className="ml-1 text-[9px] text-green-600 dark:text-green-400 font-bold">← recomendado</span>
-                  </td>
-                  <td className="px-3 py-2 text-right text-xs font-mono font-bold text-foreground">{formatBRL(scenarioEconomia.totalGeral)}</td>
-                  <td className="px-3 py-2 text-center text-xs font-bold">{scenarioEconomia.numFornecedores}</td>
-                </tr>
-              )}
-              {scenarioMelhorPreco && scenarioMelhorPreco.id !== scenarioEconomia?.id && (
-                <tr>
-                  <td className="px-3 py-2 text-xs font-medium text-foreground">
-                    Melhor preço
-                    <span className="ml-1 text-[9px] text-muted-foreground">(mais barato)</span>
-                  </td>
-                  <td className="px-3 py-2 text-right text-xs font-mono font-bold text-foreground">{formatBRL(scenarioMelhorPreco.totalGeral)}</td>
-                  <td className="px-3 py-2 text-center text-xs font-bold">{scenarioMelhorPreco.numFornecedores}</td>
-                </tr>
-              )}
-              {scenarioConsolidado && (
-                <tr>
-                  <td className="px-3 py-2 text-xs font-medium text-foreground">
-                    Menos fornecedores
-                    <span className="ml-1 text-[9px] text-muted-foreground">(mais simples)</span>
-                  </td>
-                  <td className="px-3 py-2 text-right text-xs font-mono font-bold text-foreground">{formatBRL(scenarioConsolidado.totalGeral)}</td>
-                  <td className="px-3 py-2 text-center text-xs font-bold">{scenarioConsolidado.numFornecedores}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-
+  // ---- RENDER ----
   return (
-    <div className="p-5 space-y-5 pb-[calc(env(safe-area-inset-bottom,0px)+140px)]">
-      {/* NAV */}
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" className="gap-1 text-xs h-8" onClick={() => navigate("/dashboard")}><ArrowLeft className="h-4 w-4" /> Dashboard</Button>
-        <span className="text-xs text-muted-foreground">Análise de pedidos</span>
+    <div className="pb-[calc(env(safe-area-inset-bottom,0px)+140px)]">
+      {/* 1. HEADER (sticky) */}
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b px-4 py-3">
+        <div className="flex items-center">
+          <Button variant="ghost" size="sm" className="gap-1 text-xs h-8 -ml-2" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft className="h-4 w-4" /> Dashboard
+          </Button>
+          <span className="flex-1 text-center text-sm font-bold text-foreground">Análise de pedidos</span>
+          <div className="w-20" /> {/* spacer */}
+        </div>
       </div>
 
-      {/* 1. TOGGLE DE MODO */}
-      {!selectedScenario && scenarios && scenarios.length > 0 && (
-        <div className="flex items-center justify-center">
-          <div className="inline-flex rounded-full bg-muted p-1 gap-1">
-            <button
-              onClick={() => { setMode("auto"); setShowOtherOptions(false); }}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-all ${
-                mode === "auto"
-                  ? "bg-green-600 text-white shadow-md"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Zap className="h-4 w-4" />
-              Automático
-            </button>
-            <button
-              onClick={() => setMode("manual")}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-all ${
-                mode === "manual"
-                  ? "bg-muted-foreground/20 text-foreground shadow-md"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              Manual
-            </button>
+      <div className="p-4 space-y-4">
+        {/* 2. TOGGLE */}
+        {!selectedScenario && scenarios && scenarios.length > 0 && (
+          <div className="flex items-center justify-center">
+            <div className="inline-flex rounded-full bg-muted p-1 gap-1">
+              <button
+                onClick={() => setMode("auto")}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                  mode === "auto"
+                    ? "bg-green-600 text-white shadow-md"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Zap className="h-4 w-4" /> Automático
+              </button>
+              <button
+                onClick={() => setMode("manual")}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                  mode === "manual"
+                    ? "bg-muted-foreground/20 text-foreground shadow-md"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <SlidersHorizontal className="h-4 w-4" /> Manual
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* HEADER */}
-      <div className="bg-card border rounded-xl p-4 shadow-sm">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">💰 Total da compra</div>
-            <div className="text-2xl font-extrabold font-mono text-foreground mt-1">
-              {formatBRL(selectedScenario ? selectedScenario.totalGeral : (autoDecision.scenario ? autoDecision.scenario.totalGeral : grandTotal))}
+        {/* 3. CARD DE TOTAIS */}
+        <div className="bg-card border rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">💰 Total da compra</div>
+              <div className="text-2xl font-extrabold font-mono text-foreground mt-0.5">
+                {formatBRL(selectedScenario ? selectedScenario.totalGeral : (autoDecision.scenario ? autoDecision.scenario.totalGeral : grandTotal))}
+              </div>
             </div>
-          </div>
-          <div className="text-right">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">🏆 Economia vs média</div>
-            <div className="text-xl font-extrabold font-mono text-green-600 dark:text-green-400 mt-1">
-              {formatBRL(economiaDisponivel)}
+            <div className="text-right">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">🏆 Economia vs média</div>
+              <div className="text-xl font-extrabold font-mono text-green-600 dark:text-green-400 mt-0.5">
+                {formatBRL(economiaDisponivel)}
+              </div>
             </div>
           </div>
         </div>
-        <p className="text-center text-xs font-medium text-primary mt-3">
-          {mode === "auto" ? "O Compra360 já escolheu a melhor opção para você" : "Compare e escolha como deseja comprar"}
-        </p>
-        {/* Barra de progresso animada */}
-        <div className="mt-3 space-y-1">
+
+        {/* 4. BARRA DE PROGRESSO */}
+        <div className="space-y-1">
           <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-[1200ms] ease-out"
@@ -771,390 +716,379 @@ const AnalisePage = () => {
             />
           </div>
           {progressValue >= 100 && (
-            <p className="text-[10px] text-muted-foreground text-center">✅ Análise concluída</p>
+            <p className="text-[10px] text-muted-foreground text-right">Análise concluída ✓</p>
           )}
         </div>
-      </div>
 
-      {/* ── PAINEL DE OPORTUNIDADES ── */}
-      {gapAnalyses.length > 0 && (
-        <div className="space-y-3 animate-fade-in bg-orange-50/80 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-xl p-4 shadow-sm shadow-orange-200/50 dark:shadow-orange-900/30">
-          {/* Concierge message */}
-          <div className="bg-white/60 dark:bg-white/5 rounded-lg p-3 border border-orange-100 dark:border-orange-900/40">
-            <p className="text-xs text-orange-800 dark:text-orange-300 leading-relaxed">
-              ⚡ <span className="font-bold">Dica do Concierge:</span> {user?.email?.split("@")[0] || "Alexandre"}, identifiquei fornecedores excelentes que não atingiram o mínimo. Recomendo o <span className="font-bold">Ajuste Inteligente</span> nos itens com maior desconto para liberarmos esses pedidos agora.
-            </p>
-          </div>
+        {/* 5. BANNER DO SISTEMA */}
+        <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-xl px-4 py-3">
+          <p className="text-xs text-green-800 dark:text-green-300 leading-relaxed">
+            🤖 O sistema analisou <strong>{cotacaoProdutos.length} produto(s)</strong> e <strong>{fornecedores.length} fornecedor(es)</strong> para encontrar a combinação ideal de preço e operação.
+          </p>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-orange-500" />
-            <div>
-              <h3 className="text-sm font-bold text-foreground">⚡ Oportunidades</h3>
-              <p className="text-[10px] text-muted-foreground">Fornecedores próximos do mínimo — cenário: {scenarioAtivo?.nome || "ativo"}</p>
-            </div>
-          </div>
+        {/* 6. TÍTULO DA SEÇÃO */}
+        <div>
+          <h2 className="text-base font-bold text-foreground">Escolha sua estratégia de compra:</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Toque em cada opção para entender antes de decidir</p>
+        </div>
 
-          {gapAnalyses.map((gap) => {
-            const fornecedor = fornecedores.find(f => f.id === gap.fornecedorId);
-            const resolution = gapResolutions[gap.fornecedorId];
-            const isDone = resolution === "done";
-
-            const barColor =
-              gap.percentual >= 85 ? "bg-orange-400" :
-              gap.percentual >= 60 ? "bg-amber-400" : "bg-gray-400";
-            const barBg =
-              gap.percentual >= 85 ? "bg-orange-100 dark:bg-orange-950/30" :
-              gap.percentual >= 60 ? "bg-amber-100 dark:bg-amber-950/30" : "bg-gray-100 dark:bg-gray-800";
-            const borderColor =
-              gap.percentual >= 85 ? "border-orange-300 dark:border-orange-800" :
-              gap.percentual >= 60 ? "border-amber-300 dark:border-amber-800" : "border-gray-200 dark:border-gray-700";
+        {/* 7. CARDS DE ESTRATÉGIA */}
+        <div className="space-y-3">
+          {allScenarioCards.map(({ scenario, badge, badgeColor, badgeBg }) => {
+            const isSelected = effectiveSelectedId === scenario.id;
+            const isApplied = appliedScenarioId === scenario.id;
+            const isExpanded = expandedExplanation === scenario.id;
+            const minIssues = scenario.fornecedores.filter(f => !f.minimoOk);
+            const economiaVsMedia = Math.max(0, avgTotal - scenario.totalGeral);
 
             return (
-              <div key={gap.fornecedorId} className={`bg-card border rounded-xl p-4 shadow-sm transition-all duration-500 ${
-                  isDone
-                    ? "border-green-400 dark:border-green-600 bg-green-50/50 dark:bg-green-950/20 shadow-green-100 dark:shadow-green-950/30"
-                    : borderColor
-                }`}>
-                {/* Header */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-foreground truncate">{gap.fornecedorNome}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {(() => {
-                        const count = gap.ajuste?.itens.length ||
-                          scenarioAtivo?.fornecedores.find(sf => sf.fornecedorId === gap.fornecedorId)?.items.length || 0;
-                        return `Melhor preço em ${count} ite${count === 1 ? "m" : "ns"}`;
-                      })()}
-                    </p>
-                  </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                    gap.percentual >= 85 ? "bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400" :
-                    gap.percentual >= 60 ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400" :
-                    "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                  }`}>
-                    {gap.percentual >= 85 ? "⚡ Quase lá!" : gap.percentual >= 60 ? "🤝 Negociar" : "📁 Remanejar"}
-                  </span>
-                </div>
-
-                {/* Progress bar */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="font-bold text-foreground">{formatBRL(gap.valorAtual)}</span>
-                    <span className="text-muted-foreground">{formatBRL(gap.pedidoMinimo)} mínimo</span>
-                  </div>
-                  <div className={`h-2.5 rounded-full ${barBg} overflow-hidden`}>
-                    <div
-                      className={`h-full rounded-full transition-all duration-700 ${
-                        isDone
-                          ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"
-                          : `${barColor} ${gap.percentual >= 85 ? "animate-pulse" : ""}`
-                      }`}
-                      style={{ width: isDone ? "100%" : `${Math.min(gap.percentual, 100)}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-muted-foreground">{gap.percentual}% atingido</span>
-                    <span className={isDone ? "text-green-600 dark:text-green-400 font-bold" : "font-medium text-foreground"}>
-                      {isDone ? "✅ Mínimo atingido!" : `Faltam ${formatBRL(gap.gap)}`}
+              <div
+                key={scenario.id}
+                className={`bg-card border rounded-xl shadow-sm overflow-hidden transition-all duration-200 ${
+                  isSelected
+                    ? "border-green-500 shadow-[0_0_12px_rgba(22,163,74,0.15)]"
+                    : "hover:shadow-md"
+                }`}
+              >
+                {/* CAMADA A — Cabeçalho clicável */}
+                <button
+                  className="w-full text-left p-4 transition-colors hover:bg-muted/30"
+                  onClick={() => {
+                    setSelectedScenario(null);
+                    setAppliedScenarioId(null);
+                    // In auto mode, just highlight. In manual, select.
+                    // For simplicity: clicking selects visually
+                    if (mode === "auto") {
+                      setMode("manual");
+                    }
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${badgeBg} ${badgeColor}`}>
+                      {badge}
                     </span>
-                  </div>
-                </div>
-
-                {/* Ajuste preview */}
-                {gap.estrategia === "ajuste" && gap.ajuste?.viavel && !isDone && (
-                  <div className="mt-3 space-y-1.5 bg-muted/40 rounded-lg p-2.5">
-                    <p className="text-[10px] font-bold text-foreground">📦 Sugestão de ajuste:</p>
-                    {gap.ajuste.itens.filter(i => i.qtdExtra > 0).slice(0, 3).map(item => (
-                      <div key={item.cpId} className="flex items-center justify-between text-[10px]">
-                        <span className="text-muted-foreground truncate mr-2">{item.produto}</span>
-                        <span className="text-green-600 dark:text-green-400 font-bold shrink-0">
-                          +{item.qtdExtra}un
-                        </span>
-                      </div>
-                    ))}
-                    {gap.ajuste.economiaVsAlternativa > 0 && (
-                      <div className="text-[10px] text-green-600 dark:text-green-400 font-medium pt-1 border-t border-border/50">
-                        💰 Economia vs alternativa: {formatBRL(gap.ajuste.economiaVsAlternativa)}
-                      </div>
+                    {isSelected && (
+                      <span className="text-[10px] font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-950/40 px-2 py-0.5 rounded-full">
+                        ✓ SELECIONADO
+                      </span>
                     )}
                   </div>
-                )}
-
-                {/* 3 Action buttons */}
-                {!isDone && (
-                  <div className="grid grid-cols-3 gap-2 mt-3">
-                    <button
-                      onClick={() => applyGapAjuste(gap)}
-                      disabled={gap.estrategia !== "ajuste" || !gap.ajuste?.viavel || !!applyingGap}
-                      title={
-                        gap.percentual < 85 ? `Disponível quando atingir 85% (atual: ${gap.percentual}%)` :
-                        gap.ajuste?.viavel ? "Ajustar quantidades para atingir o mínimo" :
-                        "Boost máximo insuficiente — tente negociar"
-                      }
-                      className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-lg text-[11px] font-semibold transition-all ${
-                        gap.estrategia === "ajuste" && gap.ajuste?.viavel
-                          ? "bg-primary text-primary-foreground hover:opacity-90 shadow-sm"
-                          : "bg-muted text-muted-foreground cursor-not-allowed opacity-40"
-                      }`}
-                    >
-                      {applyingGap === gap.fornecedorId ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : <span>🚀</span>}
-                      Ajuste
-                    </button>
-
-                    <button
-                      onClick={() => fornecedor && openGapNegociacao(gap, fornecedor)}
-                      disabled={gap.estrategia === "remanejar" || !!applyingGap}
-                      className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-lg text-[11px] font-semibold transition-all ${
-                        gap.estrategia !== "remanejar" && !applyingGap
-                          ? "bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-950/60"
-                          : "bg-muted text-muted-foreground cursor-not-allowed opacity-40"
-                      }`}
-                    >
-                      <span>🤝</span>
-                      Negociar
-                    </button>
-
-                    <button
-                      onClick={() => openRemanejar(gap)}
-                      disabled={!!applyingGap}
-                      className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-lg text-[11px] font-semibold bg-muted text-muted-foreground transition-all ${!!applyingGap ? "opacity-40 cursor-not-allowed" : "hover:bg-muted/80"}`}
-                    >
-                      <span>📁</span>
-                      Remanejar
-                    </button>
+                  <div className="text-base font-bold text-foreground">{scenario.nome}</div>
+                  <div className="text-2xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenario.totalGeral)}</div>
+                  <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground flex-wrap">
+                    <span>{scenario.numFornecedores} fornecedor(es)</span>
+                    <span className="text-muted-foreground/40">|</span>
+                    {economiaVsMedia > 0 && (
+                      <span className="text-green-600 dark:text-green-400 font-medium">
+                        economia {formatBRL(economiaVsMedia)}
+                      </span>
+                    )}
+                    {minIssues.length > 0 && (
+                      <>
+                        <span className="text-muted-foreground/40">|</span>
+                        <span className="text-amber-600 dark:text-amber-400 font-medium">
+                          ⚠️ {minIssues.length} abaixo do mín.
+                        </span>
+                      </>
+                    )}
                   </div>
-                )}
+                </button>
 
-                {/* Resolution feedback */}
-                {isDone && (
-                  <div className="mt-3 flex items-center justify-center gap-2 py-2 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
-                    <span className="text-base">✅</span>
-                    <span className="text-xs font-bold text-green-700 dark:text-green-400">
-                      Pedido mínimo atingido! Pronto para enviar.
-                    </span>
-                  </div>
-                )}
-                {resolution === "negociar" && (
-                  <div className="mt-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg px-3 py-2">
-                    <p className="text-[10px] text-amber-700 dark:text-amber-400 font-medium">🤝 WhatsApp aberto — aguardando resposta do fornecedor</p>
-                  </div>
-                )}
-                {resolution === "remanejar" && (
-                  <div className="mt-2 bg-muted/60 rounded-lg px-3 py-2">
-                    <p className="text-[10px] text-muted-foreground font-medium">📁 Itens salvos para a próxima cotação</p>
+                {/* CAMADA B — "Por que essa estratégia?" */}
+                <div className="border-t bg-muted/20">
+                  <button
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => toggleExplanation(scenario.id, scenario)}
+                  >
+                    <span>🤖 Por que essa estratégia?</span>
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                  </button>
+                  {isExpanded && (
+                    <div className="px-4 pb-3 animate-in slide-in-from-top-1 duration-200">
+                      <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                        {aiExplanationLoading === scenario.id && !aiExplanations[scenario.id] ? (
+                          <div className="space-y-2">
+                            <Skeleton className="h-3 w-full" />
+                            <Skeleton className="h-3 w-4/5" />
+                            <Skeleton className="h-3 w-3/5" />
+                          </div>
+                        ) : (
+                          <div className="prose prose-sm max-w-none dark:prose-invert text-xs text-green-900 dark:text-green-200 [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0.5">
+                            <ReactMarkdown>{aiExplanations[scenario.id] || ""}</ReactMarkdown>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* CAMADA C — Botão de ação (apenas no selecionado) */}
+                {isSelected && (
+                  <div className="px-4 pb-4 pt-1">
+                    {isApplied ? (
+                      <div className="w-full h-12 rounded-lg bg-green-100 dark:bg-green-950/30 border border-green-300 dark:border-green-700 flex items-center justify-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        <span className="text-sm font-bold text-green-700 dark:text-green-400">✅ Estratégia aplicada!</span>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => applyScenario(scenario)}
+                        disabled={applyingScenario}
+                        className="w-full h-12 text-sm font-bold bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        {applyingScenario ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                        {mode === "auto" ? "✅ Aplicar automaticamente" : "✅ Usar esta estratégia"}
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
             );
           })}
-        </div>
-      )}
 
-      {/* 2. MODO AUTOMÁTICO — Card de decisão */}
-      {mode === "auto" && !selectedScenario && autoDecision.scenario && (
-        <div className="space-y-3 animate-fade-in">
-          <div className="bg-card border border-green-500/50 rounded-xl p-5 shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-all">
-            <div className="text-center mb-4">
-              <span className="text-2xl">🏆</span>
-              <h3 className="text-base font-bold text-foreground mt-1">Melhor escolha para você</h3>
-              <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400">
-                ⚡ Seleção automática
+          {/* Disabled consolidated card if not available */}
+          {!scenarioConsolidado && (
+            <div className="bg-card border rounded-xl p-4 shadow-sm opacity-50">
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-400 px-2 py-0.5 rounded-full">
+                📦 MAIS SIMPLES
               </span>
+              <div className="text-base font-bold text-foreground mt-2">Menos Fornecedores</div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Já atingimos o menor número possível de fornecedores nesta compra
+              </p>
             </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">💰 Total</span>
-                <span className="text-xl font-extrabold font-mono text-foreground">{formatBRL(autoDecision.scenario.totalGeral)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">📦 Fornecedores</span>
-                <span className="text-sm font-bold text-foreground">{autoDecision.scenario.numFornecedores}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">💸 Economia vs média</span>
-                <span className="text-sm font-bold text-green-600 dark:text-green-400">{formatBRL(Math.max(0, avgTotal - autoDecision.scenario.totalGeral))}</span>
-              </div>
-            </div>
-
-            <p className="text-xs text-muted-foreground text-center mt-3">
-              Essa opção equilibra menor custo com pedidos válidos.
-            </p>
-
-            {/* Show suppliers below minimum order */}
-            {autoDecision.scenario && autoDecision.scenario.fornecedores.filter(f => !f.minimoOk).length > 0 && (
-              <div className="mt-3 space-y-1.5">
-                {autoDecision.scenario.fornecedores.filter(f => !f.minimoOk).map(f => (
-                  <div key={f.fornecedorId} className="bg-amber-500/10 rounded-lg px-3 py-2">
-                    <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                      ⚠️ {f.fornecedorNome}: {formatBRL(f.total)} de {formatBRL(f.pedidoMinimo)} (falta {formatBRL(f.pedidoMinimo - f.total)})
-                    </p>
-                  </div>
-                ))}
-                <p className="text-[10px] text-muted-foreground text-center">
-                  Use a Análise IA para sugestões de como ajustar esses pedidos
-                </p>
-              </div>
-            )}
-
-            {autoDecision.warning && (
-              <div className="mt-3 bg-amber-500/10 rounded-lg px-3 py-2">
-                <p className="text-xs font-medium text-amber-600 dark:text-amber-400">{autoDecision.warning}</p>
-              </div>
-            )}
-
-            <Button
-              onClick={() => applyScenario(autoDecision.scenario!)}
-              disabled={applyingScenario}
-              className="w-full mt-4 h-12 text-sm font-bold bg-green-600 hover:bg-green-700 text-white hover:scale-[1.02] transition-transform"
-            >
-              {applyingScenario ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-              ✅ Aplicar automaticamente
-            </Button>
-          </div>
-
-          {/* Botão "Ver outras opções" */}
-          {scenarios && scenarios.length > 1 && (
-            <>
-              <Button
-                variant="ghost"
-                className="w-full text-sm text-muted-foreground hover:text-foreground"
-                onClick={() => setShowOtherOptions(!showOtherOptions)}
-              >
-                {showOtherOptions ? "Ocultar outras opções ↑" : "Ver outras formas de comprar ↓"}
-              </Button>
-              {showOtherOptions && renderScenarioCards()}
-            </>
           )}
         </div>
-      )}
 
-      {/* 3. MODO MANUAL — Cards de cenário */}
-      {mode === "manual" && !selectedScenario && scenarios && scenarios.length > 0 && renderScenarioCards()}
+        {/* ── PAINEL DE OPORTUNIDADES ── */}
+        {gapAnalyses.length > 0 && (
+          <div className="space-y-3 animate-fade-in bg-orange-50/80 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-xl p-4 shadow-sm shadow-orange-200/50 dark:shadow-orange-900/30">
+            <div className="bg-white/60 dark:bg-white/5 rounded-lg p-3 border border-orange-100 dark:border-orange-900/40">
+              <p className="text-xs text-orange-800 dark:text-orange-300 leading-relaxed">
+                ⚡ <span className="font-bold">Dica do Concierge:</span> {user?.email?.split("@")[0] || "Alexandre"}, identifiquei fornecedores excelentes que não atingiram o mínimo. Recomendo o <span className="font-bold">Ajuste Inteligente</span> nos itens com maior desconto para liberarmos esses pedidos agora.
+              </p>
+            </div>
 
-      {/* Cenário aplicado */}
-      {selectedScenario && (
-        <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl p-4 shadow-sm animate-fade-in">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
-            <div className="flex-1">
-              <div className="text-sm font-bold text-foreground">Estratégia "{selectedScenario.nome}" aplicada</div>
-              <div className="text-xs text-muted-foreground">
-                {selectedScenario.numFornecedores} fornecedor(es) · Total: {formatBRL(selectedScenario.totalGeral)}
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-orange-500" />
+              <div>
+                <h3 className="text-sm font-bold text-foreground">⚡ Oportunidades</h3>
+                <p className="text-[10px] text-muted-foreground">Fornecedores próximos do mínimo — cenário: {scenarioAtivo?.nome || "ativo"}</p>
               </div>
             </div>
-          </div>
-          <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={() => { setSelectedScenario(null); setOrdersOpen(false); }}>Trocar estratégia</Button>
-        </div>
-      )}
 
-      <div className="bg-muted/50 border rounded-xl px-4 py-3 space-y-2">
-        <p className="text-xs text-muted-foreground">
-          🤖 O sistema analisou {cotacaoProdutos.length} produto(s) e {fornecedores.length} fornecedor(es) para encontrar a combinação ideal de preço e operação.
-        </p>
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            className="text-xs gap-1.5 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
-            onClick={runAiDistribution}
-            disabled={aiAnalysisLoading}
-          >
-            {aiAnalysisLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            Análise IA
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs shrink-0 gap-1.5"
-            onClick={() => { if (!checkPlan("business", "Negociação assistida por IA")) return; setNegociacaoOpen(true); }}
-          >
-            <Handshake className="h-3.5 w-3.5" />
-            Negociar
-          </Button>
-        </div>
-      </div>
+            {gapAnalyses.map((gap) => {
+              const fornecedor = fornecedores.find(f => f.id === gap.fornecedorId);
+              const resolution = gapResolutions[gap.fornecedorId];
+              const isDone = resolution === "done";
 
-      {/* PEDIDOS — accordion */}
-      {fornecedoresComPedido.length > 0 && (
-        <Collapsible open={ordersOpen} onOpenChange={setOrdersOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full bg-card border rounded-xl px-4 py-3 hover:bg-muted/30 transition-colors">
-            <span className="text-sm font-bold text-foreground flex items-center gap-2">
-              📋 Ver pedidos prontos
-              <span className="text-xs font-normal text-muted-foreground">({fornecedoresComPedido.length})</span>
-            </span>
-            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${ordersOpen ? "rotate-180" : ""}`} />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-2 space-y-2">
-            {fornecedoresComPedido.map(({ fornecedor: f, items, total, minimoOk }) => (
-              <div key={f.id} className="bg-card border rounded-xl shadow-sm overflow-hidden">
-                <div className="px-4 py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <span className="text-green-600">✅</span>
-                    <span className="font-bold text-foreground text-sm truncate">{f.nome}</span>
-                    {!minimoOk && <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">⚠️ mín.</span>}
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-sm font-extrabold font-mono text-foreground">{formatBRL(total)}</span>
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => sendWhatsApp(f)}>
-                      <Smartphone className="h-4 w-4 text-green-600" />
-                    </Button>
-                  </div>
-                </div>
-                {!minimoOk && (
-                  <div className="flex items-center gap-1.5 mx-4 mb-2 px-2 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-                    <span className="text-amber-600 text-xs">⚠️</span>
-                    <span className="text-xs text-amber-700 dark:text-amber-400 font-medium">
-                      Abaixo do mínimo: {formatBRL(total)} de {formatBRL(f.pedido_minimo || 0)}
-                      {" "}(falta {formatBRL((f.pedido_minimo || 0) - total)})
+              const barColor =
+                gap.percentual >= 85 ? "bg-orange-400" :
+                gap.percentual >= 60 ? "bg-amber-400" : "bg-gray-400";
+              const barBg =
+                gap.percentual >= 85 ? "bg-orange-100 dark:bg-orange-950/30" :
+                gap.percentual >= 60 ? "bg-amber-100 dark:bg-amber-950/30" : "bg-gray-100 dark:bg-gray-800";
+              const borderColor =
+                gap.percentual >= 85 ? "border-orange-300 dark:border-orange-800" :
+                gap.percentual >= 60 ? "border-amber-300 dark:border-amber-800" : "border-gray-200 dark:border-gray-700";
+
+              return (
+                <div key={gap.fornecedorId} className={`bg-card border rounded-xl p-4 shadow-sm transition-all duration-500 ${
+                    isDone
+                      ? "border-green-400 dark:border-green-600 bg-green-50/50 dark:bg-green-950/20 shadow-green-100 dark:shadow-green-950/30"
+                      : borderColor
+                  }`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-foreground truncate">{gap.fornecedorNome}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {(() => {
+                          const count = gap.ajuste?.itens.length ||
+                            scenarioAtivo?.fornecedores.find(sf => sf.fornecedorId === gap.fornecedorId)?.items.length || 0;
+                          return `Melhor preço em ${count} ite${count === 1 ? "m" : "ns"}`;
+                        })()}
+                      </p>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                      gap.percentual >= 85 ? "bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400" :
+                      gap.percentual >= 60 ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400" :
+                      "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                    }`}>
+                      {gap.percentual >= 85 ? "⚡ Quase lá!" : gap.percentual >= 60 ? "🤝 Negociar" : "📁 Remanejar"}
                     </span>
                   </div>
-                )}
-                <div className="border-t">
-                  <table className="w-full text-sm">
-                    <thead><tr className="bg-muted/50">
-                      <th className="px-3 py-1.5 text-left text-[10px] font-bold uppercase text-muted-foreground">Produto</th>
-                      <th className="px-3 py-1.5 text-center text-[10px] font-bold uppercase text-muted-foreground">Qt</th>
-                      <th className="px-3 py-1.5 text-right text-[10px] font-bold uppercase text-muted-foreground">Preço</th>
-                      <th className="px-3 py-1.5 text-right text-[10px] font-bold uppercase text-muted-foreground">Subtotal</th>
-                    </tr></thead>
-                    <tbody>
-                      {items.map((it, i) => (
-                        <tr key={i} className={i % 2 === 0 ? "bg-muted/20" : ""}>
-                          <td className="px-3 py-1.5 text-xs font-medium">{it.produto}</td>
-                          <td className="px-3 py-1.5 text-center text-xs">
-                            {(it as any).quantidadeOriginal ? (
-                              <span className="text-green-600 dark:text-green-400 font-bold" title={`Original: ${(it as any).quantidadeOriginal} → Ajustado: ${it.quantidade}`}>
-                                {it.quantidade}
-                                <span className="text-[9px] ml-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-1 rounded">
-                                  +{it.quantidade - (it as any).quantidadeOriginal}
-                                </span>
-                              </span>
-                            ) : it.quantidade}
-                          </td>
-                          <td className="px-3 py-1.5 text-right text-xs font-mono">R${formatNumber(it.preco)}</td>
-                          <td className="px-3 py-1.5 text-right text-xs font-mono font-bold">{formatBRL(it.total)}</td>
-                        </tr>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="font-bold text-foreground">{formatBRL(gap.valorAtual)}</span>
+                      <span className="text-muted-foreground">{formatBRL(gap.pedidoMinimo)} mínimo</span>
+                    </div>
+                    <div className={`h-2.5 rounded-full ${barBg} overflow-hidden`}>
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ${
+                          isDone
+                            ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+                            : `${barColor} ${gap.percentual >= 85 ? "animate-pulse" : ""}`
+                        }`}
+                        style={{ width: isDone ? "100%" : `${Math.min(gap.percentual, 100)}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-muted-foreground">{gap.percentual}% atingido</span>
+                      <span className={isDone ? "text-green-600 dark:text-green-400 font-bold" : "font-medium text-foreground"}>
+                        {isDone ? "✅ Mínimo atingido!" : `Faltam ${formatBRL(gap.gap)}`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {gap.estrategia === "ajuste" && gap.ajuste?.viavel && !isDone && (
+                    <div className="mt-3 space-y-1.5 bg-muted/40 rounded-lg p-2.5">
+                      <p className="text-[10px] font-bold text-foreground">📦 Sugestão de ajuste:</p>
+                      {gap.ajuste.itens.filter(i => i.qtdExtra > 0).slice(0, 3).map(item => (
+                        <div key={item.cpId} className="flex items-center justify-between text-[10px]">
+                          <span className="text-muted-foreground truncate mr-2">{item.produto}</span>
+                          <span className="text-green-600 dark:text-green-400 font-bold shrink-0">+{item.qtdExtra}un</span>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
-                  <div className="px-4 py-2 border-t flex items-center gap-2 justify-end">
-                    <Button size="sm" variant="outline" className="text-xs" onClick={() => openReceipt(f)}><FileText className="h-3 w-3 mr-1" /> Conferência</Button>
-                    <Button size="sm" variant="outline" className="text-xs" onClick={() => sendWhatsAppAi(f)} disabled={whatsappAiLoading === f.id}>
-                      {whatsappAiLoading === f.id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <MessageSquare className="h-3 w-3 mr-1" />} 🤖 IA
-                    </Button>
+                      {gap.ajuste.economiaVsAlternativa > 0 && (
+                        <div className="text-[10px] text-green-600 dark:text-green-400 font-medium pt-1 border-t border-border/50">
+                          💰 Economia vs alternativa: {formatBRL(gap.ajuste.economiaVsAlternativa)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {!isDone && (
+                    <div className="grid grid-cols-2 gap-2 mt-3">
+                      <button
+                        onClick={() => applyGapAjuste(gap)}
+                        disabled={gap.estrategia !== "ajuste" || !gap.ajuste?.viavel || !!applyingGap}
+                        className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-lg text-[11px] font-semibold transition-all ${
+                          gap.estrategia === "ajuste" && gap.ajuste?.viavel
+                            ? "bg-primary text-primary-foreground hover:opacity-90 shadow-sm"
+                            : "bg-muted text-muted-foreground cursor-not-allowed opacity-40"
+                        }`}
+                      >
+                        {applyingGap === gap.fornecedorId ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : <span>🚀</span>}
+                        Ajuste
+                      </button>
+
+                      <button
+                        onClick={() => openRemanejar(gap)}
+                        disabled={!!applyingGap}
+                        className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-lg text-[11px] font-semibold bg-muted text-muted-foreground transition-all ${!!applyingGap ? "opacity-40 cursor-not-allowed" : "hover:bg-muted/80"}`}
+                      >
+                        <span>📁</span>
+                        Remanejar
+                      </button>
+                    </div>
+                  )}
+
+                  {isDone && (
+                    <div className="mt-3 flex items-center justify-center gap-2 py-2 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+                      <span className="text-base">✅</span>
+                      <span className="text-xs font-bold text-green-700 dark:text-green-400">Pedido mínimo atingido! Pronto para enviar.</span>
+                    </div>
+                  )}
+                  {resolution === "negociar" && (
+                    <div className="mt-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg px-3 py-2">
+                      <p className="text-[10px] text-amber-700 dark:text-amber-400 font-medium">🤝 WhatsApp aberto — aguardando resposta do fornecedor</p>
+                    </div>
+                  )}
+                  {resolution === "remanejar" && (
+                    <div className="mt-2 bg-muted/60 rounded-lg px-3 py-2">
+                      <p className="text-[10px] text-muted-foreground font-medium">📁 Itens salvos para a próxima cotação</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* 8. PEDIDOS — accordion */}
+        {fornecedoresComPedido.length > 0 && (
+          <Collapsible open={ordersOpen} onOpenChange={setOrdersOpen}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full bg-card border rounded-xl px-4 py-3 hover:bg-muted/30 transition-colors">
+              <span className="text-sm font-bold text-foreground flex items-center gap-2">
+                📋 Ver pedidos prontos
+                <span className="text-xs font-normal text-muted-foreground">({fornecedoresComPedido.length})</span>
+              </span>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${ordersOpen ? "rotate-180" : ""}`} />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2 space-y-2">
+              {fornecedoresComPedido.map(({ fornecedor: f, items, total, minimoOk }) => (
+                <div key={f.id} className="bg-card border rounded-xl shadow-sm overflow-hidden">
+                  <div className="px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="text-green-600">✅</span>
+                      <span className="font-bold text-foreground text-sm truncate">{f.nome}</span>
+                      {!minimoOk && <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">⚠️ mín.</span>}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-sm font-extrabold font-mono text-foreground">{formatBRL(total)}</span>
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => sendWhatsApp(f)}>
+                        <Smartphone className="h-4 w-4 text-green-600" />
+                      </Button>
+                    </div>
+                  </div>
+                  {!minimoOk && (
+                    <div className="flex items-center gap-1.5 mx-4 mb-2 px-2 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                      <span className="text-amber-600 text-xs">⚠️</span>
+                      <span className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                        Abaixo do mínimo: {formatBRL(total)} de {formatBRL(f.pedido_minimo || 0)}
+                        {" "}(falta {formatBRL((f.pedido_minimo || 0) - total)})
+                      </span>
+                    </div>
+                  )}
+                  <div className="border-t">
+                    <table className="w-full text-sm">
+                      <thead><tr className="bg-muted/50">
+                        <th className="px-3 py-1.5 text-left text-[10px] font-bold uppercase text-muted-foreground">Produto</th>
+                        <th className="px-3 py-1.5 text-center text-[10px] font-bold uppercase text-muted-foreground">Qt</th>
+                        <th className="px-3 py-1.5 text-right text-[10px] font-bold uppercase text-muted-foreground">Preço</th>
+                        <th className="px-3 py-1.5 text-right text-[10px] font-bold uppercase text-muted-foreground">Subtotal</th>
+                      </tr></thead>
+                      <tbody>
+                        {items.map((it, i) => (
+                          <tr key={i} className={i % 2 === 0 ? "bg-muted/20" : ""}>
+                            <td className="px-3 py-1.5 text-xs font-medium">{it.produto}</td>
+                            <td className="px-3 py-1.5 text-center text-xs">
+                              {(it as any).quantidadeOriginal ? (
+                                <span className="text-green-600 dark:text-green-400 font-bold" title={`Original: ${(it as any).quantidadeOriginal} → Ajustado: ${it.quantidade}`}>
+                                  {it.quantidade}
+                                  <span className="text-[9px] ml-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-1 rounded">
+                                    +{it.quantidade - (it as any).quantidadeOriginal}
+                                  </span>
+                                </span>
+                              ) : it.quantidade}
+                            </td>
+                            <td className="px-3 py-1.5 text-right text-xs font-mono">R${formatNumber(it.preco)}</td>
+                            <td className="px-3 py-1.5 text-right text-xs font-mono font-bold">{formatBRL(it.total)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="px-4 py-2 border-t flex items-center gap-2 justify-end">
+                      <Button size="sm" variant="outline" className="text-xs" onClick={() => openReceipt(f)}><FileText className="h-3 w-3 mr-1" /> Conferência</Button>
+                      <Button size="sm" variant="outline" className="text-xs" onClick={() => sendWhatsAppAi(f)} disabled={whatsappAiLoading === f.id}>
+                        {whatsappAiLoading === f.id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <MessageSquare className="h-3 w-3 mr-1" />} 🤖 IA
+                      </Button>
+                    </div>
                   </div>
                 </div>
+              ))}
+              <div className="bg-card border rounded-xl px-4 py-3 flex items-center justify-between">
+                <span className="text-sm font-bold text-muted-foreground">Total geral</span>
+                <span className="text-lg font-extrabold font-mono text-foreground">{formatBRL(totalGeral)}</span>
               </div>
-            ))}
-            <div className="bg-card border rounded-xl px-4 py-3 flex items-center justify-between">
-              <span className="text-sm font-bold text-muted-foreground">Total geral</span>
-              <span className="text-lg font-extrabold font-mono text-foreground">{formatBRL(totalGeral)}</span>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-      )}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+      </div>
 
       {/* CTA FIXO */}
       {selectedScenario && fornecedoresComPedido.length > 0 && (
@@ -1239,6 +1173,7 @@ const AnalisePage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
       {/* AI Distribution Analysis Dialog */}
       <Dialog open={aiAnalysisOpen} onOpenChange={setAiAnalysisOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0">
@@ -1285,6 +1220,7 @@ const AnalisePage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
       <NegociacaoModal
         open={negociacaoOpen}
         onOpenChange={setNegociacaoOpen}
