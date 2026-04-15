@@ -31,6 +31,7 @@ interface OrderItem {
 }
 
 const AnalisePage = () => {
+  const [progressValue, setProgressValue] = useState(0);
   const navigate = useNavigate();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
