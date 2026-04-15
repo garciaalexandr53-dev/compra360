@@ -483,7 +483,7 @@ function scenarioConsolidado(
 
   return {
     id: "consolidado",
-    nome: "Consolidado",
+    nome: "Menos Fornecedores",
     descricao: `Menos fornecedores: agrupa itens com preço próximo (até ${Math.round(threshold * 100)}% de diferença). Simplifica a logística.`,
     icon: "📦",
     totalGeral: total,
