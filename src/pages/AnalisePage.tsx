@@ -755,6 +755,7 @@ Exemplo de tom:
 
         {/* 7. CARDS DE ESTRATÉGIA */}
         <div className="space-y-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {allScenarioCards.map(({ scenario, badge, badgeColor, badgeBg, displayName }) => {
             const isSelected = effectiveSelectedId === scenario.id;
             const isApplied = appliedScenarioId === scenario.id;
@@ -775,10 +776,8 @@ Exemplo de tom:
                 <button
                   className="w-full text-left p-4 transition-colors hover:bg-muted/30"
                   onClick={() => {
-                    setSelectedScenario(null);
+                    setSelectedScenario(scenario);
                     setAppliedScenarioId(null);
-                    // In auto mode, just highlight. In manual, select.
-                    // For simplicity: clicking selects visually
                     if (mode === "auto") {
                       setMode("manual");
                     }
@@ -866,6 +865,8 @@ Exemplo de tom:
               </div>
             );
           })}
+
+          </div>
 
           {/* Disabled consolidated card if not available */}
           {!scenarioConsolidado && (
