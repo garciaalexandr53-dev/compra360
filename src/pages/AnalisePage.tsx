@@ -587,6 +587,9 @@ const AnalisePage = () => {
             </span>
           </div>
           <div className="text-base font-bold text-foreground">Melhor Preço</div>
+          {selectedScenario?.id === scenarioMelhorPreco.id ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-950/40 px-2 py-0.5 rounded-full">✓ Estratégia ativa</span>
+          ) : null}
           <div className="text-xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioMelhorPreco.totalGeral)}</div>
           <p className="text-xs text-muted-foreground mt-2">Preço mais baixo possível — pode haver fornecedores abaixo do mínimo</p>
           {melhorPrecoMinIssues > 0 && (
@@ -617,6 +620,9 @@ const AnalisePage = () => {
             </span>
           </div>
           <div className="text-base font-bold text-foreground">Menos Fornecedores</div>
+          {selectedScenario?.id === scenarioConsolidado.id ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-950/40 px-2 py-0.5 rounded-full">✓ Estratégia ativa</span>
+          ) : null}
           <div className="text-xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenarioConsolidado.totalGeral)}</div>
           <div className="text-xs mt-1">
             <span className="font-bold text-green-600 dark:text-green-400">{scenarioConsolidado.numFornecedores}</span>
