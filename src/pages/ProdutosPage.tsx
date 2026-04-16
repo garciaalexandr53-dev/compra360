@@ -708,13 +708,15 @@ const ProdutosPage = () => {
                               open={popoverOpen[p.id] || false}
                               onOpenChange={(open) => {
                                 setPopoverOpen(prev => ({ ...prev, [p.id]: open }));
-                                if (open) {
-                                  const embType = p.embalagem?.split("|")[0]?.trim()?.toUpperCase() || "UNI";
-                                  const tipos = ["UNI", "CX", "DZ", "FD", "KG", "PCT"];
-                                  const matched = tipos.find(t => embType.startsWith(t)) || "UNI";
-                                  setPopoverQtd(prev => ({ ...prev, [p.id]: "" }));
-                                  setPopoverEmb(prev => ({ ...prev, [p.id]: matched }));
-                                }
+                                 if (open) {
+                                   const embType = p.embalagem?.split("|")[0]?.trim()?.toUpperCase() || "UNI";
+                                   const tipos = ["UNI", "CX", "DZ", "FD", "KG", "PCT"];
+                                   const matched = tipos.find(t => embType.startsWith(t)) || "UNI";
+                                   const fatorCadastrado = p.fator_embalagem && p.fator_embalagem > 0 ? p.fator_embalagem : getDefaultFator(matched);
+                                   setPopoverQtd(prev => ({ ...prev, [p.id]: "" }));
+                                   setPopoverEmb(prev => ({ ...prev, [p.id]: matched }));
+                                   setPopoverFator(prev => ({ ...prev, [p.id]: String(fatorCadastrado) }));
+                                 }
                               }}
                             >
                               <PopoverTrigger asChild>
