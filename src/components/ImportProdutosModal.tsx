@@ -24,6 +24,7 @@ interface ParsedProduct {
   categoria: string;
   embalagem: string;
   quantidade: number;
+  fator: number;
 }
 
 const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
@@ -92,6 +93,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
         categoria: parts[1] || "Geral",
         embalagem: parts[2] || "un",
         quantidade: parseInt(parts[3]) || 1,
+        fator: parseInt(parts[4]) || 1,
       };
     });
     setParsedItems(items);
@@ -127,6 +129,9 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
           const colQtd = headers.findIndex((h) =>
             ["quantidade", "qtd", "qtde", "qt"].some((k) => h.includes(k))
           );
+          const colFator = headers.findIndex((h) =>
+            ["fator unid", "fator", "unid/embalagem"].some((k) => h.includes(k))
+          );
 
           const items: ParsedProduct[] = [];
           rows.slice(1).forEach((row) => {
@@ -137,6 +142,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
               categoria: colCat >= 0 ? String(row[colCat] || "Geral").trim() : "Geral",
               embalagem: colEmbal >= 0 ? String(row[colEmbal] || "un").trim() : "un",
               quantidade: colQtd >= 0 ? (parseInt(String(row[colQtd])) || 1) : 1,
+              fator: colFator >= 0 ? (parseInt(String(row[colFator])) || 1) : 1,
             });
           });
 
@@ -174,6 +180,9 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
         const colQtd = headers.findIndex((h) =>
           ["quantidade", "qtd", "qtde", "qt"].some((k) => h.includes(k))
         );
+        const colFator = headers.findIndex((h) =>
+          ["fator unid", "fator", "unid/embalagem"].some((k) => h.includes(k))
+        );
 
         const items: ParsedProduct[] = [];
         lines.slice(1).forEach((line) => {
@@ -185,6 +194,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
             categoria: colCat >= 0 ? (cols[colCat] || "Geral").trim() : "Geral",
             embalagem: colEmbal >= 0 ? (cols[colEmbal] || "un").trim() : "un",
             quantidade: colQtd >= 0 ? (parseInt(cols[colQtd]) || 1) : 1,
+            fator: colFator >= 0 ? (parseInt(cols[colFator]) || 1) : 1,
           });
         });
 
@@ -267,6 +277,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
           nome: p.nome,
           categoria_id: catMap[p.categoria.toLowerCase()] || null,
           embalagem: p.embalagem || "un",
+          fator_embalagem: p.fator > 1 ? p.fator : 1,
           ativo: false,
           user_id: user?.id,
         }));
@@ -414,7 +425,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
                     <th className="px-2 py-1.5 text-left">Produto</th>
                     <th className="px-2 py-1.5 text-left">Categoria</th>
                     <th className="px-2 py-1.5 text-left">Embal</th>
-                    <th className="px-2 py-1.5 text-right">Qtd</th>
+                    <th className="px-2 py-1.5 text-right">Fator</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -423,7 +434,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
                       <td className="px-2 py-1.5">{p.nome}</td>
                       <td className="px-2 py-1.5 text-muted-foreground">{p.categoria}</td>
                       <td className="px-2 py-1.5 text-muted-foreground">{p.embalagem}</td>
-                      <td className="px-2 py-1.5 text-right font-bold">{p.quantidade}</td>
+                      <td className="px-2 py-1.5 text-right font-bold">{p.embalagem} · {p.fator}</td>
                     </tr>
                   ))}
                   {parsedItems.length > 10 && (
