@@ -97,7 +97,8 @@ const AppFuncionariosPublic = () => {
   // Auto-focus search on mount
   useEffect(() => {
     if (activeTab === "lista") {
-      setTimeout(() => searchInputRef.current?.focus(), 300);
+      // Use requestAnimationFrame for faster focus
+      requestAnimationFrame(() => searchInputRef.current?.focus());
     }
   }, [activeTab]);
 
@@ -304,7 +305,7 @@ const AppFuncionariosPublic = () => {
         next.delete(productKey);
         return next;
       });
-    }, 1200);
+    }, 2000);
 
     setDialogProduct(null);
   }, [dialogProduct, dialogQtd, dialogEmbal, dialogFator]);
@@ -416,8 +417,8 @@ const AppFuncionariosPublic = () => {
           </div>
           <div className="flex items-center gap-2">
             {items.length > 0 && (
-              <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                {items.length}
+              <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                📋 {items.length} {items.length === 1 ? "item" : "itens"}
               </span>
             )}
             {installPrompt && (
@@ -557,8 +558,8 @@ const AppFuncionariosPublic = () => {
           )}
 
 
-          {/* Search bar - always visible */}
-          <div className="px-4 pt-3 pb-2 sticky top-[92px] z-10 bg-background">
+          {/* Search bar + "não listado" button - always visible */}
+          <div className="px-4 pt-3 pb-2 sticky top-[92px] z-10 bg-background space-y-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -567,6 +568,7 @@ const AppFuncionariosPublic = () => {
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
                 className="pl-9 pr-9 h-12 text-base rounded-xl border-2 focus-visible:ring-primary"
+                autoFocus
               />
               {productSearch.length > 0 && (
                 <button
@@ -580,6 +582,19 @@ const AppFuncionariosPublic = () => {
                 </button>
               )}
             </div>
+            {!showNewProduct && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full h-10 gap-2 border-green-500/50 text-green-600 hover:bg-green-500/5 font-medium"
+                onClick={() => {
+                  setCurrent(productSearch.trim());
+                  setShowNewProduct(true);
+                }}
+              >
+                <Plus className="h-4 w-4" /> Produto não listado
+              </Button>
+            )}
           </div>
 
           {/* Product list */}
@@ -618,17 +633,21 @@ const AppFuncionariosPublic = () => {
                   return (
                     <div
                       key={`${productKey}-${index}`}
-                      className={`flex items-center gap-2 mx-1 my-1 px-3 py-2.5 rounded-xl border transition-all duration-300 ${
+                      className={`flex items-center gap-2 mx-1 my-1 px-3 py-2.5 rounded-xl border transition-all duration-500 ${
                         isAdded
-                          ? "bg-green-500/10 border-green-500/40 scale-[0.98]"
+                          ? "bg-green-500/10 border-green-500/40"
                           : "bg-card border-border hover:border-primary/30 active:scale-[0.98]"
                       }`}
                     >
                       {/* Product info */}
                       <div className="flex-1 min-w-0" onClick={() => openProductDialog(product)}>
-                        <div className="text-sm font-medium leading-snug">{product.nome}</div>
+                        <div className="flex items-center gap-1.5">
+                          {isAdded && <Check className="h-3.5 w-3.5 text-green-600 shrink-0" />}
+                          <span className="text-sm font-medium leading-snug">{product.nome}</span>
+                        </div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
-                          {product.embalagem || "un"}
+                          {(product.embalagem || "un").toUpperCase()}
+                          {product.fator_embalagem > 1 ? ` · ${product.fator_embalagem} un` : ""}
                           {product.categorias?.nome ? ` · ${product.categorias.nome}` : ""}
                         </div>
                       </div>
