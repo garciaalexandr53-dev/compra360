@@ -97,7 +97,8 @@ const AppFuncionariosPublic = () => {
   // Auto-focus search on mount
   useEffect(() => {
     if (activeTab === "lista") {
-      setTimeout(() => searchInputRef.current?.focus(), 300);
+      // Use requestAnimationFrame for faster focus
+      requestAnimationFrame(() => searchInputRef.current?.focus());
     }
   }, [activeTab]);
 
@@ -304,7 +305,7 @@ const AppFuncionariosPublic = () => {
         next.delete(productKey);
         return next;
       });
-    }, 1200);
+    }, 2000);
 
     setDialogProduct(null);
   }, [dialogProduct, dialogQtd, dialogEmbal, dialogFator]);
@@ -416,8 +417,8 @@ const AppFuncionariosPublic = () => {
           </div>
           <div className="flex items-center gap-2">
             {items.length > 0 && (
-              <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                {items.length}
+              <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                📋 {items.length} {items.length === 1 ? "item" : "itens"}
               </span>
             )}
             {installPrompt && (
@@ -557,8 +558,8 @@ const AppFuncionariosPublic = () => {
           )}
 
 
-          {/* Search bar - always visible */}
-          <div className="px-4 pt-3 pb-2 sticky top-[92px] z-10 bg-background">
+          {/* Search bar + "não listado" button - always visible */}
+          <div className="px-4 pt-3 pb-2 sticky top-[92px] z-10 bg-background space-y-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -567,6 +568,7 @@ const AppFuncionariosPublic = () => {
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
                 className="pl-9 pr-9 h-12 text-base rounded-xl border-2 focus-visible:ring-primary"
+                autoFocus
               />
               {productSearch.length > 0 && (
                 <button
@@ -580,6 +582,19 @@ const AppFuncionariosPublic = () => {
                 </button>
               )}
             </div>
+            {!showNewProduct && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full h-10 gap-2 border-green-500/50 text-green-600 hover:bg-green-500/5 font-medium"
+                onClick={() => {
+                  setCurrent(productSearch.trim());
+                  setShowNewProduct(true);
+                }}
+              >
+                <Plus className="h-4 w-4" /> Produto não listado
+              </Button>
+            )}
           </div>
 
           {/* Product list */}
@@ -618,17 +633,21 @@ const AppFuncionariosPublic = () => {
                   return (
                     <div
                       key={`${productKey}-${index}`}
-                      className={`flex items-center gap-2 mx-1 my-1 px-3 py-2.5 rounded-xl border transition-all duration-300 ${
+                      className={`flex items-center gap-2 mx-1 my-1 px-3 py-2.5 rounded-xl border transition-all duration-500 ${
                         isAdded
-                          ? "bg-green-500/10 border-green-500/40 scale-[0.98]"
+                          ? "bg-green-500/10 border-green-500/40"
                           : "bg-card border-border hover:border-primary/30 active:scale-[0.98]"
                       }`}
                     >
                       {/* Product info */}
                       <div className="flex-1 min-w-0" onClick={() => openProductDialog(product)}>
-                        <div className="text-sm font-medium leading-snug">{product.nome}</div>
+                        <div className="flex items-center gap-1.5">
+                          {isAdded && <Check className="h-3.5 w-3.5 text-green-600 shrink-0" />}
+                          <span className="text-sm font-medium leading-snug">{product.nome}</span>
+                        </div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
-                          {product.embalagem || "un"}
+                          {(product.embalagem || "un").toUpperCase()}
+                          {product.fator_embalagem > 1 ? ` · ${product.fator_embalagem} un` : ""}
                           {product.categorias?.nome ? ` · ${product.categorias.nome}` : ""}
                         </div>
                       </div>
@@ -741,23 +760,11 @@ const AppFuncionariosPublic = () => {
             </div>
           )}
 
-          {/* FAB for new product when no results */}
-          {!showNewProduct && items.length === 0 && filteredProducts.length > 0 && (
-            <div className="sticky bottom-4 flex justify-center pb-4">
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-full h-10 gap-2 shadow-md"
-                onClick={() => setShowNewProduct(true)}
-              >
-                <Plus className="h-4 w-4" /> Produto não listado
-              </Button>
-            </div>
-          )}
+          {/* "Produto não listado" button removed from here — now in search bar area */}
         </div>
       )}
 
-      {/* Dialog for quantity and unit type */}
+      {/* Simplified dialog — embalagem/fator read-only, only qty editable */}
       <Dialog open={!!dialogProduct} onOpenChange={(open) => { if (!open) setDialogProduct(null); }}>
         <DialogContent className="max-w-[340px] rounded-2xl">
           <DialogHeader>
@@ -767,17 +774,26 @@ const AppFuncionariosPublic = () => {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            {/* Quantity */}
+            {/* Embalagem + Fator — read-only info */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2.5">
+              <Package className="h-4 w-4 shrink-0" />
+              <span>
+                {dialogEmbal}
+                {(parseInt(dialogFator) || 1) > 1 && ` · ${dialogFator} unidades`}
+              </span>
+            </div>
+
+            {/* Quantity — editable */}
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Quantidade</label>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-10 w-10 shrink-0"
+                  className="h-12 w-12 shrink-0"
                   onClick={() => setDialogQtd(String(Math.max(1, (parseInt(dialogQtd) || 1) - 1)))}
                 >
-                  <Minus className="h-4 w-4" />
+                  <Minus className="h-5 w-5" />
                 </Button>
                 <Input
                   type="number"
@@ -786,69 +802,24 @@ const AppFuncionariosPublic = () => {
                   value={dialogQtd}
                   onChange={(e) => setDialogQtd(e.target.value)}
                   onFocus={(e) => e.target.select()}
-                  className="h-10 text-center text-lg font-bold flex-1"
+                  className="h-12 text-center text-xl font-bold flex-1"
+                  autoFocus
                 />
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-10 w-10 shrink-0"
+                  className="h-12 w-12 shrink-0"
                   onClick={() => setDialogQtd(String((parseInt(dialogQtd) || 1) + 1))}
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-5 w-5" />
                 </Button>
               </div>
+              {(parseInt(dialogQtd) || 1) > 0 && (parseInt(dialogFator) || 1) > 1 && (
+                <p className="text-xs text-primary mt-1.5 font-medium text-center">
+                  Total: {(parseInt(dialogQtd) || 1) * (parseInt(dialogFator) || 1)} unidades
+                </p>
+              )}
             </div>
-
-            {/* Unit type chips */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tipo de embalagem</label>
-              <div className="flex flex-wrap gap-2">
-                {["UNI", "CX", "DZ", "FD", "KG", "PCT", "LT"].map((emb) => (
-                  <button
-                    key={emb}
-                    onClick={() => {
-                      setDialogEmbal(emb);
-                      // Auto-set default fator when changing embalagem
-                      const defaults: Record<string, number> = { UNI: 1, CX: 12, DZ: 12, FD: 6, KG: 1, PCT: 1, LT: 1 };
-                      setDialogFator(String(defaults[emb] || 1));
-                    }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                      dialogEmbal === emb
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-muted text-muted-foreground border-border hover:border-primary/50"
-                    }`}
-                  >
-                    {emb}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Editable fator */}
-            {dialogEmbal !== "UNI" && dialogEmbal !== "KG" && dialogEmbal !== "LT" && (
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Qtd por embalagem</label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    value={dialogFator}
-                    onChange={(e) => setDialogFator(e.target.value)}
-                    onFocus={(e) => e.target.select()}
-                    className="h-9 w-20 text-center font-bold"
-                  />
-                  <span className="text-xs text-muted-foreground">
-                    unidades por {dialogEmbal}
-                  </span>
-                </div>
-                {(parseInt(dialogQtd) || 1) > 0 && (parseInt(dialogFator) || 1) > 1 && (
-                  <p className="text-xs text-primary mt-1 font-medium">
-                    Total: {(parseInt(dialogQtd) || 1) * (parseInt(dialogFator) || 1)} unidades
-                  </p>
-                )}
-              </div>
-            )}
           </div>
 
           <DialogFooter className="flex-row gap-2">
