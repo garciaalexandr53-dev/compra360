@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Loader2, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft, Zap, SlidersHorizontal, TrendingUp, Sparkles, RefreshCw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import NegociacaoModal from "@/components/analise/NegociacaoModal";
+import CelebracaoScreen from "@/components/analise/CelebracaoScreen";
 import SendOrdersModal from "@/components/dashboard/SendOrdersModal";
 import { generateScenarios, analyzeGaps, type Scenario, type GapAnalysis } from "@/lib/scenarios";
 import { useFeatureCheck } from "@/components/FeatureGate";
