@@ -278,7 +278,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
           categoria_id: catMap[p.categoria.toLowerCase()] || null,
           embalagem: p.embalagem || "un",
           fator_embalagem: p.fator > 1 ? p.fator : 1,
-          ativo: false,
+          ativo: true,
           user_id: user?.id,
         }));
         const { data: inserted, error } = await supabase.from("produtos").insert(batch).select("id, nome, embalagem, fator_embalagem");
@@ -320,7 +320,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
 
   const downloadTemplate = () => {
     const csv =
-      "Produto,Categoria,Embalagem,Quantidade\nDetergente Ype 500ml,Limpeza,cx,12\nSabao em Po Ariel 1kg,Limpeza,cx,6\nAgua Mineral 500ml,Bebidas,fd,24\n";
+      "Produto,Categoria,Embalagem,Fator,Quantidade\nDetergente Ype 500ml,Limpeza,cx,12,5\nSabao em Po Ariel 1kg,Limpeza,cx,6,3\nAgua Mineral 500ml,Bebidas,fd,24,10\n";
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
     a.download = "modelo_produtos_compra360.csv";
