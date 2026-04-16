@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Loader2, CheckCircle2, Printer, FileText, MessageSquare, ChevronDown, Smartphone, ArrowLeft, Zap, SlidersHorizontal, TrendingUp, Sparkles, RefreshCw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import NegociacaoModal from "@/components/analise/NegociacaoModal";
+import CelebracaoScreen from "@/components/analise/CelebracaoScreen";
 import SendOrdersModal from "@/components/dashboard/SendOrdersModal";
 import { generateScenarios, analyzeGaps, type Scenario, type GapAnalysis } from "@/lib/scenarios";
 import { useFeatureCheck } from "@/components/FeatureGate";
@@ -57,6 +58,10 @@ const AnalisePage = () => {
   const [aiAnalysisOpen, setAiAnalysisOpen] = useState(false);
   const [gapResolutions, setGapResolutions] = useState<Record<string, string>>({});
   const [applyingGap, setApplyingGap] = useState<string | null>(null);
+
+  // Celebration screen
+  const [showCelebracao, setShowCelebracao] = useState(false);
+  const [celebracaoData, setCelebracaoData] = useState<{ name: string; total: number; economia: number; numForn: number } | null>(null);
 
   // AI explanation per scenario
   const [expandedExplanation, setExpandedExplanation] = useState<string | null>(null);
@@ -273,7 +278,17 @@ const AnalisePage = () => {
       queryClient.invalidateQueries({ queryKey: ["pedidos"] });
       setSelectedScenario(scenario);
       setAppliedScenarioId(scenario.id);
-      setOrdersOpen(true);
+      
+      // Show celebration screen
+      const econVsMedia = Math.max(0, avgTotal - scenario.totalGeral);
+      setCelebracaoData({
+        name: allScenarioCards.find(c => c.scenario.id === scenario.id)?.displayName || scenario.nome,
+        total: scenario.totalGeral,
+        economia: econVsMedia,
+        numForn: scenario.numFornecedores,
+      });
+      setShowCelebracao(true);
+      
       toast.success("✅ Estratégia aplicada com sucesso");
     } catch (e: any) {
       toast.error(e.message || "Erro ao aplicar cenário");
@@ -1047,6 +1062,7 @@ Exemplo de tom:
         {/* 8. PEDIDOS — accordion */}
         {fornecedoresComPedido.length > 0 && (
           <Collapsible open={ordersOpen} onOpenChange={setOrdersOpen}>
+            <div id="pedidos-section"></div>
             <CollapsibleTrigger className="flex items-center justify-between w-full bg-card border rounded-xl px-4 py-3 hover:bg-muted/30 transition-colors">
               <span className="text-sm font-bold text-foreground flex items-center gap-2">
                 📋 Ver pedidos prontos
@@ -1263,6 +1279,24 @@ Exemplo de tom:
         fornecedores={fornecedores}
       />
       <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
+
+      {/* Celebration Screen */}
+      {showCelebracao && celebracaoData && (
+        <CelebracaoScreen
+          strategiaName={celebracaoData.name}
+          totalCompra={celebracaoData.total}
+          economiaVsMedia={celebracaoData.economia}
+          numFornecedores={celebracaoData.numForn}
+          onDismiss={() => {
+            setShowCelebracao(false);
+            setOrdersOpen(true);
+            // Scroll to orders after a tick
+            setTimeout(() => {
+              document.getElementById("pedidos-section")?.scrollIntoView({ behavior: "smooth" });
+            }, 100);
+          }}
+        />
+      )}
     </div>
   );
 };
