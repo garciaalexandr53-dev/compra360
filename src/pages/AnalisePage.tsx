@@ -59,6 +59,10 @@ const AnalisePage = () => {
   const [gapResolutions, setGapResolutions] = useState<Record<string, string>>({});
   const [applyingGap, setApplyingGap] = useState<string | null>(null);
 
+  // Celebration screen
+  const [showCelebracao, setShowCelebracao] = useState(false);
+  const [celebracaoData, setCelebracaoData] = useState<{ name: string; total: number; economia: number; numForn: number } | null>(null);
+
   // AI explanation per scenario
   const [expandedExplanation, setExpandedExplanation] = useState<string | null>(null);
   const [aiExplanations, setAiExplanations] = useState<Record<string, string>>({});
