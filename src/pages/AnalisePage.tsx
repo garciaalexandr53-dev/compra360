@@ -1278,6 +1278,24 @@ Exemplo de tom:
         fornecedores={fornecedores}
       />
       <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
+
+      {/* Celebration Screen */}
+      {showCelebracao && celebracaoData && (
+        <CelebracaoScreen
+          strategiaName={celebracaoData.name}
+          totalCompra={celebracaoData.total}
+          economiaVsMedia={celebracaoData.economia}
+          numFornecedores={celebracaoData.numForn}
+          onDismiss={() => {
+            setShowCelebracao(false);
+            setOrdersOpen(true);
+            // Scroll to orders after a tick
+            setTimeout(() => {
+              document.getElementById("pedidos-section")?.scrollIntoView({ behavior: "smooth" });
+            }, 100);
+          }}
+        />
+      )}
     </div>
   );
 };
