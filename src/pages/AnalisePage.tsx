@@ -1062,6 +1062,7 @@ Exemplo de tom:
         {/* 8. PEDIDOS — accordion */}
         {fornecedoresComPedido.length > 0 && (
           <Collapsible open={ordersOpen} onOpenChange={setOrdersOpen}>
+            <div id="pedidos-section"></div>
             <CollapsibleTrigger className="flex items-center justify-between w-full bg-card border rounded-xl px-4 py-3 hover:bg-muted/30 transition-colors">
               <span className="text-sm font-bold text-foreground flex items-center gap-2">
                 📋 Ver pedidos prontos
