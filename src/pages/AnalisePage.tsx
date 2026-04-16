@@ -278,7 +278,17 @@ const AnalisePage = () => {
       queryClient.invalidateQueries({ queryKey: ["pedidos"] });
       setSelectedScenario(scenario);
       setAppliedScenarioId(scenario.id);
-      setOrdersOpen(true);
+      
+      // Show celebration screen
+      const econVsMedia = Math.max(0, avgTotal - scenario.totalGeral);
+      setCelebracaoData({
+        name: allScenarioCards.find(c => c.scenario.id === scenario.id)?.displayName || scenario.nome,
+        total: scenario.totalGeral,
+        economia: econVsMedia,
+        numForn: scenario.numFornecedores,
+      });
+      setShowCelebracao(true);
+      
       toast.success("✅ Estratégia aplicada com sucesso");
     } catch (e: any) {
       toast.error(e.message || "Erro ao aplicar cenário");
