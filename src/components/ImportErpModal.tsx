@@ -133,7 +133,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
       const existingProdIds = new Set((existingCps || []).map((cp) => cp.produto_id));
 
       // 3. Insert new cotacao_produtos
-      const toInsert: { cotacao_id: string; produto_id: string; quantidade: number }[] = [];
+      const toInsert: { cotacao_id: string; produto_id: string; quantidade: number; fator_embalagem: number; tipo_embalagem: string }[] = [];
       const toUpdate: { id: string; quantidade: number }[] = [];
 
       for (const item of items) {
@@ -144,7 +144,17 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
           const cp = (existingCps || []).find((c) => c.produto_id === prod.id);
           if (cp) toUpdate.push({ id: cp.id, quantidade: item.quantidade });
         } else {
-          toInsert.push({ cotacao_id: cotacaoId, produto_id: prod.id, quantidade: item.quantidade });
+          const embRaw = (prod.embalagem || item.embalagem || "UNI").split("|")[0]?.trim().toUpperCase() || "UNI";
+          const tipos = ["UNI", "CX", "DZ", "½DZ", "FD", "KG", "PCT"];
+          const tipoEmb = tipos.find((t) => embRaw.startsWith(t)) || "UNI";
+          const fator = prod.fator_embalagem && prod.fator_embalagem > 0 ? prod.fator_embalagem : 1;
+          toInsert.push({
+            cotacao_id: cotacaoId,
+            produto_id: prod.id,
+            quantidade: item.quantidade,
+            fator_embalagem: fator,
+            tipo_embalagem: tipoEmb,
+          });
         }
       }
 
