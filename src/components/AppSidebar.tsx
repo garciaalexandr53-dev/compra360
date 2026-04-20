@@ -34,6 +34,21 @@ export function AppSidebar() {
   const location = useLocation();
   const isMobile = useIsMobile();
   const { lojaAtiva } = useLojaAtiva();
+  const { user } = useAuth();
+
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ["is-admin-sidebar", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+  });
 
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
