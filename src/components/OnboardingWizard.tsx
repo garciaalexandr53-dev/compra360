@@ -204,6 +204,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         const inserts = validProd.map((p) => ({
           nome: p.nome.trim(),
           embalagem: p.embalagem.trim() || null,
+          ativo: true,
           user_id: user?.id,
         }));
 

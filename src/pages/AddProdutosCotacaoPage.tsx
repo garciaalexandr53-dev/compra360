@@ -199,6 +199,7 @@ const AddProdutosCotacaoPage = () => {
             nome: item.nome,
             embalagem: item.embalagem,
             fator_embalagem: item.fator,
+            ativo: true,
             user_id: user?.id,
           } as any).select("id").single();
           if (error) throw error;
