@@ -52,19 +52,42 @@ const AddProdutosCotacaoPage = () => {
     return () => clearTimeout(timer);
   }, [nome]);
 
-  // Fetch recent products to show when search is empty
-  const { data: recentProdutos = [] } = useQuery({
-    queryKey: ["produtos-recentes"],
-    queryFn: async () => {
-      const { data } = await supabase
+  const PAGE_SIZE = 60;
+
+  // Full paginated list of active products (alphabetical) — shown when search is empty
+  const {
+    data: allProdutosData,
+    fetchNextPage: fetchNextAll,
+    hasNextPage: hasMoreAll,
+    isFetchingNextPage: isFetchingAll,
+  } = useInfiniteQuery({
+    queryKey: ["produtos-todos-ativos"],
+    queryFn: async ({ pageParam = 0 }) => {
+      const from = (pageParam as number) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const { data, count } = await supabase
         .from("produtos")
-        .select("id, nome")
+        .select("id, nome", { count: "exact" })
         .eq("ativo", true)
-        .order("updated_at", { ascending: false })
-        .limit(15);
-      return data || [];
+        .order("nome")
+        .range(from, to);
+      const totalCount = count ?? 0;
+      const hasMore = from + PAGE_SIZE < totalCount;
+      return {
+        products: data || [],
+        nextPage: hasMore ? (pageParam as number) + 1 : undefined,
+        totalCount,
+      };
     },
+    getNextPageParam: (lastPage) => lastPage.nextPage,
+    initialPageParam: 0,
   });
+
+  const allProdutos = useMemo(
+    () => allProdutosData?.pages.flatMap((p) => p.products) ?? [],
+    [allProdutosData]
+  );
+  const totalProdutos = allProdutosData?.pages[0]?.totalCount ?? 0;
 
   const { data: existingProdutos = [] } = useQuery({
     queryKey: ["produtos-search", debouncedSearch],
@@ -76,7 +99,7 @@ const AddProdutosCotacaoPage = () => {
         .eq("ativo", true)
         .ilike("nome", `%${debouncedSearch}%`)
         .order("nome")
-        .limit(20);
+        .limit(50);
       return data || [];
     },
     enabled: debouncedSearch.length >= 2,
