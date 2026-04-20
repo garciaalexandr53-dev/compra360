@@ -143,7 +143,7 @@ const CatalogoBaseModal = ({ open, onOpenChange }: Props) => {
           categoria_id: catMap[p.categoria.toLowerCase()] || null,
           embalagem: p.embalagem || "un",
           fator_embalagem: p.fator_embalagem || 1,
-          ativo: false,
+          ativo: true,
           user_id: user.id,
         }));
         const { error } = await supabase.from("produtos").insert(batch);
