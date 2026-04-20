@@ -1,0 +1,1 @@
+UPDATE public.produtos SET ativo = true WHERE ativo = false;
