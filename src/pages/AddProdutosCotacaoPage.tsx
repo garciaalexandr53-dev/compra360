@@ -95,7 +95,7 @@ const AddProdutosCotacaoPage = () => {
       if (debouncedSearch.length < 2) return [];
       const { data } = await supabase
         .from("produtos")
-        .select("id, nome")
+        .select("id, nome, embalagem, fator_embalagem")
         .eq("ativo", true)
         .ilike("nome", `%${debouncedSearch}%`)
         .order("nome")
