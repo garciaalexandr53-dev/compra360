@@ -190,7 +190,7 @@ const FuncionariosPage = () => {
         const allNames = itemsToImport.map((i: any) => i.nome);
         const { data: matchedProds } = await supabase
           .from("produtos")
-          .select("id, nome")
+          .select("id, nome, embalagem, fator_embalagem")
           .in("nome", allNames);
 
         if (matchedProds?.length) {
@@ -202,10 +202,13 @@ const FuncionariosPage = () => {
 
           const cpInserts = matchedProds
             .filter((p) => !existingProdIds.has(p.id))
-            .map((p) => {
+            .map((p: any) => {
               const item = itemsToImport.find((i: any) => i.nome.toLowerCase().trim() === p.nome.toLowerCase().trim());
-              const fator = parseFatorFromObs(item?.observacao);
-              const emb = parseEmbFromObs(item?.observacao);
+              const obsFator = parseFatorFromObs(item?.observacao);
+              const obsEmb = parseEmbFromObs(item?.observacao);
+              // Prefer cadastrado fator/embalagem when available (> 1 / non-default)
+              const fator = p.fator_embalagem && p.fator_embalagem > 1 ? p.fator_embalagem : obsFator;
+              const emb = (p.embalagem && p.embalagem.trim()) ? p.embalagem.split("|")[0].trim() : obsEmb;
               return {
                 cotacao_id: cotacaoId,
                 produto_id: p.id,
