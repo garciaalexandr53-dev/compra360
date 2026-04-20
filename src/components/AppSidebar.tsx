@@ -4,12 +4,13 @@ import logoCompra360 from "/compra360-icon.png";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink, useLocation } from "react-router-dom";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { useAuth } from "@/hooks/useAuth";
 
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, Package, Users, TrendingUp, History, UserCheck, ClipboardCheck, Store, LayoutDashboard } from "lucide-react";
+import { BarChart3, Package, Users, TrendingUp, History, UserCheck, ClipboardCheck, Store, LayoutDashboard, Shield } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const mainMenu = [
