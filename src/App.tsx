@@ -34,6 +34,7 @@ const AppFuncionariosPublic = lazy(() => retryImport(() => import("./pages/AppFu
 const ConferenciasPage = lazy(() => retryImport(() => import("./pages/ConferenciasPage")));
 const LojasPage = lazy(() => retryImport(() => import("./pages/LojasPage")));
 const AddProdutosCotacaoPage = lazy(() => retryImport(() => import("./pages/AddProdutosCotacaoPage")));
+const AdminPage = lazy(() => retryImport(() => import("./pages/AdminPage")));
 const NotFound = lazy(() => retryImport(() => import("./pages/NotFound")));
 const PriceNotificationListener = lazy(() => retryImport(() => import("./components/PriceNotificationListener")));
 
@@ -56,6 +57,7 @@ const App = () => (
                 <Route path="/login" element={<Suspense fallback={null}><LoginPage /></Suspense>} />
                 <Route path="/fornecedor/:token" element={<Suspense fallback={null}><FornecedorCotacaoPage /></Suspense>} />
                 <Route path="/app-funcionarios" element={<Suspense fallback={null}><AppFuncionariosPublic /></Suspense>} />
+                <Route path="/admin" element={<Suspense fallback={null}><AdminPage /></Suspense>} />
                 
                 <Route element={<Suspense fallback={null}><AppLayout /></Suspense>}>
                   <Route path="/dashboard" element={<Suspense fallback={null}><DashboardPage /></Suspense>} />
