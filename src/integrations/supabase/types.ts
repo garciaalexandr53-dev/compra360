@@ -792,11 +792,60 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      admin_activate_all_produtos: {
+        Args: { _user_id: string }
+        Returns: number
+      }
+      admin_global_metrics: { Args: never; Returns: Json }
+      admin_list_clientes: {
+        Args: never
+        Returns: {
+          cnpj: string
+          created_at: string
+          email: string
+          loja_principal: string
+          plan_name: string
+          plan_status: string
+          total_cotacoes: number
+          total_fornecedores: number
+          total_lojas: number
+          total_pedidos: number
+          total_produtos: number
+          total_produtos_inativos: number
+          trial_end: string
+          user_id: string
+        }[]
+      }
+      admin_set_user_plan: {
+        Args: { _plan_name: string; _user_id: string }
+        Returns: Json
+      }
       check_trial_eligibility: {
         Args: { _cnpj?: string; _fingerprint?: string; _phone?: string }
         Returns: Json
@@ -841,6 +890,14 @@ export type Database = {
         }[]
       }
       get_user_plan: { Args: { _user_id?: string }; Returns: Json }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: never; Returns: boolean }
       is_buyer: { Args: never; Returns: boolean }
       loja_exists: { Args: { _loja_id: string }; Returns: boolean }
       move_to_dlq: {
@@ -868,6 +925,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "user"
       cotacao_status: "ativa" | "finalizada" | "cancelada"
       pedido_status: "rascunho" | "enviado" | "confirmado" | "recebido"
       subscription_status: "active" | "past_due" | "canceled" | "trialing"
@@ -998,6 +1056,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "user"],
       cotacao_status: ["ativa", "finalizada", "cancelada"],
       pedido_status: ["rascunho", "enviado", "confirmado", "recebido"],
       subscription_status: ["active", "past_due", "canceled", "trialing"],
