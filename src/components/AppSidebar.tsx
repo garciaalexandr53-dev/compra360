@@ -4,12 +4,13 @@ import logoCompra360 from "/compra360-icon.png";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink, useLocation } from "react-router-dom";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { useAuth } from "@/hooks/useAuth";
 
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, Package, Users, TrendingUp, History, UserCheck, ClipboardCheck, Store, LayoutDashboard } from "lucide-react";
+import { BarChart3, Package, Users, TrendingUp, History, UserCheck, ClipboardCheck, Store, LayoutDashboard, Shield } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const mainMenu = [
@@ -33,6 +34,21 @@ export function AppSidebar() {
   const location = useLocation();
   const isMobile = useIsMobile();
   const { lojaAtiva } = useLojaAtiva();
+  const { user } = useAuth();
+
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ["is-admin-sidebar", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+  });
 
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
@@ -143,6 +159,19 @@ export function AppSidebar() {
               </div>
             </div>
           </div>
+        )}
+        {isAdmin && (
+          <NavLink
+            to="/admin"
+            onClick={handleNavClick}
+            className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors ${
+              collapsed ? "justify-center" : ""
+            } ${location.pathname === "/admin" ? "text-sidebar-foreground bg-sidebar-accent/50" : ""}`}
+            title="Painel Admin"
+          >
+            <Shield className="h-3.5 w-3.5" />
+            {!collapsed && <span>Admin</span>}
+          </NavLink>
         )}
       </SidebarFooter>
     </Sidebar>
