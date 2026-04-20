@@ -134,11 +134,18 @@ const AddProdutosCotacaoPage = () => {
   const hasAnyProduct = totalItems > 0;
 
   // Dialog handlers
-  const handlePickSuggestion = (produto: { id: string; nome: string }) => {
+  const handlePickSuggestion = (produto: { id: string; nome: string; embalagem?: string | null; fator_embalagem?: number | null }) => {
+    const embRaw = (produto.embalagem || "UNI").split("|")[0]?.trim().toUpperCase() || "UNI";
+    const tipos = ["UNI", "CX", "DZ", "½DZ", "FD", "KG", "PCT"];
+    const matched = tipos.find((t) => embRaw.startsWith(t)) || "UNI";
+    const fatorCadastrado =
+      produto.fator_embalagem && produto.fator_embalagem > 0
+        ? produto.fator_embalagem
+        : getDefaultFator(matched);
     setDialogItem({ nome: produto.nome, produtoId: produto.id });
     setDialogQtd("");
-    setDialogEmb("UNI");
-    setDialogFator("1");
+    setDialogEmb(matched);
+    setDialogFator(String(fatorCadastrado));
     setTimeout(() => dialogInputRef.current?.focus(), 100);
   };
 
