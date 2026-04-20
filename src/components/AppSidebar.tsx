@@ -160,6 +160,19 @@ export function AppSidebar() {
             </div>
           </div>
         )}
+        {isAdmin && (
+          <NavLink
+            to="/admin"
+            onClick={handleNavClick}
+            className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors ${
+              collapsed ? "justify-center" : ""
+            } ${location.pathname === "/admin" ? "text-sidebar-foreground bg-sidebar-accent/50" : ""}`}
+            title="Painel Admin"
+          >
+            <Shield className="h-3.5 w-3.5" />
+            {!collapsed && <span>Admin</span>}
+          </NavLink>
+        )}
       </SidebarFooter>
     </Sidebar>
   );
