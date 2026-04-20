@@ -67,7 +67,7 @@ const AddProdutosCotacaoPage = () => {
       const to = from + PAGE_SIZE - 1;
       const { data, count } = await supabase
         .from("produtos")
-        .select("id, nome", { count: "exact" })
+        .select("id, nome, embalagem, fator_embalagem", { count: "exact" })
         .eq("ativo", true)
         .order("nome")
         .range(from, to);
