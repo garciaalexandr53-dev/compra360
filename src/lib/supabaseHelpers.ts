@@ -50,15 +50,15 @@ export async function fetchAllProductNames(
 }
 
 /**
- * Fetches all products with id and nome for matching.
- * Returns a Map of lowercase trimmed name → { id, nome }.
+ * Fetches all products with id, nome, embalagem and fator_embalagem for matching.
+ * Returns a Map of lowercase trimmed name → product info.
  */
 export async function fetchAllProductsMap(
   filters?: (query: any) => any
-): Promise<Map<string, { id: string; nome: string }>> {
-  const products = await fetchAllRows<{ id: string; nome: string }>(
+): Promise<Map<string, { id: string; nome: string; embalagem: string | null; fator_embalagem: number }>> {
+  const products = await fetchAllRows<{ id: string; nome: string; embalagem: string | null; fator_embalagem: number }>(
     "produtos",
-    "id, nome",
+    "id, nome, embalagem, fator_embalagem",
     filters
   );
   return new Map(products.map((p) => [p.nome.toLowerCase().trim(), p]));
