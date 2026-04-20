@@ -262,7 +262,7 @@ const AddProdutosCotacaoPage = () => {
     const localNames = new Set(items.map(i => i.nome.toLowerCase()));
     return existingProdutos
       .filter(p => p.nome.toLowerCase().includes(term) && !localNames.has(p.nome.toLowerCase()))
-      .slice(0, 5);
+      .slice(0, 30);
   }, [nome, existingProdutos, items]);
 
   return (
