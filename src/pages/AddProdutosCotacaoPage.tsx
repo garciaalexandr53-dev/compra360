@@ -332,26 +332,44 @@ const AddProdutosCotacaoPage = () => {
           </button>
         )}
 
-        {/* Recent products — shown when search is empty and no items staged */}
-        {nome.trim().length < 2 && recentProdutos.length > 0 && (
+        {/* Full product list — shown when search is empty */}
+        {nome.trim().length < 2 && allProdutos.length > 0 && (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
               <Search className="h-3.5 w-3.5" />
-              Seus produtos recentes — toque para adicionar
+              Seus produtos ({totalProdutos}) — toque para adicionar
             </p>
-            <div className="flex flex-wrap gap-1.5">
-              {recentProdutos
-                .filter(p => !items.some(i => i.produtoId === p.id) && !alreadyInCotacao.some(a => a.produto_id === p.id))
-                .slice(0, 12)
-                .map(s => (
+            <div
+              className="max-h-[50vh] overflow-y-auto rounded-lg border border-border bg-card/40"
+              onScroll={(e) => {
+                const el = e.currentTarget;
+                if (!hasMoreAll || isFetchingAll) return;
+                if (el.scrollHeight - el.scrollTop - el.clientHeight < 150) {
+                  fetchNextAll();
+                }
+              }}
+            >
+              {allProdutos
+                .filter(
+                  (p) =>
+                    !items.some((i) => i.produtoId === p.id) &&
+                    !alreadyInCotacao.some((a) => a.produto_id === p.id),
+                )
+                .map((s) => (
                   <button
                     key={s.id}
                     onClick={() => handlePickSuggestion(s)}
-                    className="text-xs px-2.5 py-1.5 rounded-full bg-muted hover:bg-primary/20 text-foreground transition-colors border border-border"
+                    className="flex w-full items-center gap-2 border-b border-border/60 px-3 py-2.5 text-left text-sm text-foreground transition-colors last:border-b-0 hover:bg-primary/10"
                   >
-                    + {s.nome}
+                    <PlusCircle className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="truncate">{s.nome}</span>
                   </button>
                 ))}
+              {isFetchingAll && (
+                <div className="py-3 text-center text-xs text-muted-foreground">
+                  Carregando mais...
+                </div>
+              )}
             </div>
           </div>
         )}
