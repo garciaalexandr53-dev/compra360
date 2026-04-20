@@ -1,7 +1,7 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useCallback } from "react";
 import { getDefaultFator } from "@/lib/embalagem";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
@@ -52,19 +52,42 @@ const AddProdutosCotacaoPage = () => {
     return () => clearTimeout(timer);
   }, [nome]);
 
-  // Fetch recent products to show when search is empty
-  const { data: recentProdutos = [] } = useQuery({
-    queryKey: ["produtos-recentes"],
-    queryFn: async () => {
-      const { data } = await supabase
+  const PAGE_SIZE = 60;
+
+  // Full paginated list of active products (alphabetical) — shown when search is empty
+  const {
+    data: allProdutosData,
+    fetchNextPage: fetchNextAll,
+    hasNextPage: hasMoreAll,
+    isFetchingNextPage: isFetchingAll,
+  } = useInfiniteQuery({
+    queryKey: ["produtos-todos-ativos"],
+    queryFn: async ({ pageParam = 0 }) => {
+      const from = (pageParam as number) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const { data, count } = await supabase
         .from("produtos")
-        .select("id, nome")
+        .select("id, nome", { count: "exact" })
         .eq("ativo", true)
-        .order("updated_at", { ascending: false })
-        .limit(15);
-      return data || [];
+        .order("nome")
+        .range(from, to);
+      const totalCount = count ?? 0;
+      const hasMore = from + PAGE_SIZE < totalCount;
+      return {
+        products: data || [],
+        nextPage: hasMore ? (pageParam as number) + 1 : undefined,
+        totalCount,
+      };
     },
+    getNextPageParam: (lastPage) => lastPage.nextPage,
+    initialPageParam: 0,
   });
+
+  const allProdutos = useMemo(
+    () => allProdutosData?.pages.flatMap((p) => p.products) ?? [],
+    [allProdutosData]
+  );
+  const totalProdutos = allProdutosData?.pages[0]?.totalCount ?? 0;
 
   const { data: existingProdutos = [] } = useQuery({
     queryKey: ["produtos-search", debouncedSearch],
@@ -76,7 +99,7 @@ const AddProdutosCotacaoPage = () => {
         .eq("ativo", true)
         .ilike("nome", `%${debouncedSearch}%`)
         .order("nome")
-        .limit(20);
+        .limit(50);
       return data || [];
     },
     enabled: debouncedSearch.length >= 2,
@@ -239,7 +262,7 @@ const AddProdutosCotacaoPage = () => {
     const localNames = new Set(items.map(i => i.nome.toLowerCase()));
     return existingProdutos
       .filter(p => p.nome.toLowerCase().includes(term) && !localNames.has(p.nome.toLowerCase()))
-      .slice(0, 5);
+      .slice(0, 30);
   }, [nome, existingProdutos, items]);
 
   return (
@@ -309,26 +332,44 @@ const AddProdutosCotacaoPage = () => {
           </button>
         )}
 
-        {/* Recent products — shown when search is empty and no items staged */}
-        {nome.trim().length < 2 && recentProdutos.length > 0 && (
+        {/* Full product list — shown when search is empty */}
+        {nome.trim().length < 2 && allProdutos.length > 0 && (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
               <Search className="h-3.5 w-3.5" />
-              Seus produtos recentes — toque para adicionar
+              Seus produtos ({totalProdutos}) — toque para adicionar
             </p>
-            <div className="flex flex-wrap gap-1.5">
-              {recentProdutos
-                .filter(p => !items.some(i => i.produtoId === p.id) && !alreadyInCotacao.some(a => a.produto_id === p.id))
-                .slice(0, 12)
-                .map(s => (
+            <div
+              className="max-h-[50vh] overflow-y-auto rounded-lg border border-border bg-card/40"
+              onScroll={(e) => {
+                const el = e.currentTarget;
+                if (!hasMoreAll || isFetchingAll) return;
+                if (el.scrollHeight - el.scrollTop - el.clientHeight < 150) {
+                  fetchNextAll();
+                }
+              }}
+            >
+              {allProdutos
+                .filter(
+                  (p) =>
+                    !items.some((i) => i.produtoId === p.id) &&
+                    !alreadyInCotacao.some((a) => a.produto_id === p.id),
+                )
+                .map((s) => (
                   <button
                     key={s.id}
                     onClick={() => handlePickSuggestion(s)}
-                    className="text-xs px-2.5 py-1.5 rounded-full bg-muted hover:bg-primary/20 text-foreground transition-colors border border-border"
+                    className="flex w-full items-center gap-2 border-b border-border/60 px-3 py-2.5 text-left text-sm text-foreground transition-colors last:border-b-0 hover:bg-primary/10"
                   >
-                    + {s.nome}
+                    <PlusCircle className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="truncate">{s.nome}</span>
                   </button>
                 ))}
+              {isFetchingAll && (
+                <div className="py-3 text-center text-xs text-muted-foreground">
+                  Carregando mais...
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -275,9 +275,26 @@ const ProdutosPage = () => {
 
   const toggleCotacaoMutation = useMutation({
     mutationFn: async ({ produtoId, adding, quantidade = 1, tipoEmbalagem = "UNI", fatorEmbalagem = 1 }: { produtoId: string; adding: boolean; quantidade?: number; tipoEmbalagem?: string; fatorEmbalagem?: number }) => {
-      if (adding && cotacaoAtiva) {
+      if (adding) {
+        // Auto-create an active cotação if none exists
+        let cotacaoId = cotacaoAtiva?.id;
+        if (!cotacaoId) {
+          const { format } = await import("date-fns");
+          const cotNome = `Cotação ${format(new Date(), "dd/MM/yyyy HH:mm")}`;
+          const { data: newCot, error: cotErr } = await supabase
+            .from("cotacoes")
+            .insert({
+              nome: cotNome,
+              loja_id: lojaAtiva?.id || null,
+              created_by: user?.id,
+            })
+            .select("id")
+            .single();
+          if (cotErr) throw cotErr;
+          cotacaoId = newCot.id;
+        }
         const { error } = await supabase.from("cotacao_produtos").insert({
-          cotacao_id: cotacaoAtiva.id,
+          cotacao_id: cotacaoId,
           produto_id: produtoId,
           quantidade,
           tipo_embalagem: tipoEmbalagem,
@@ -297,9 +314,10 @@ const ProdutosPage = () => {
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-produto-ids"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
+      queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
       toast.success(variables.adding ? "Produto adicionado à cotação!" : "Produto removido da cotação");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message || "Erro ao adicionar à cotação"),
   });
 
   // --- Duplicate removal ---
