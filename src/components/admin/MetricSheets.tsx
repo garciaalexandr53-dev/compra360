@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Cliente, getDiasTrialRestantes, getSaudeCliente, PLAN_COLORS } from "@/lib/adminHelpers";
+import { PLAN_PRICE_NUMERIC, formatPrice } from "@/lib/planPrices";
 import { formatBRL, formatDate } from "@/lib/format";
 import { MessageCircle, Mail } from "lucide-react";
 
@@ -31,8 +32,6 @@ interface Props {
   onClose: () => void;
   onContatar: (c: Cliente) => void;
 }
-
-import { PLAN_PRICE_NUMERIC, formatPrice } from "@/lib/planPrices";
 
 export default function MetricSheets({ type, clientes, metrics, onClose, onContatar }: Props) {
   const open = !!type;
