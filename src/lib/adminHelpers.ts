@@ -1,5 +1,5 @@
 // Helpers compartilhados pelo Painel Administrativo
-import { PLAN_PRICES } from "./planPrices";
+import { PLAN_PRICES } from "@/lib/planPrices";
 
 
 export type Cliente = {
