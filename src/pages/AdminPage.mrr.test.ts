@@ -40,8 +40,39 @@ describe("AdminPage — MRR computation", () => {
       { plan_name: "pro", plan_status: "trialing" },
       { plan_name: "business", plan_status: "canceled" },
       { plan_name: "pro", plan_status: "past_due" },
+      { plan_name: "business", plan_status: "incomplete" },
+      { plan_name: "pro", plan_status: "incomplete_expired" },
+      { plan_name: "business", plan_status: "unpaid" },
     ] as Pick<Cliente, "plan_name" | "plan_status">[];
     expect(computeMrr(clientes)).toBe(0);
+  });
+
+  it("nunca inclui clientes com plan_status diferente de active no MRR", () => {
+    const allNonActiveStatuses = [
+      "trialing",
+      "canceled",
+      "past_due",
+      "incomplete",
+      "incomplete_expired",
+      "unpaid",
+    ] as const;
+
+    // Cria um cliente pro/business para cada status não-ativo
+    const clientes = allNonActiveStatuses.flatMap((status) => [
+      { plan_name: "pro" as const, plan_status: status },
+      { plan_name: "business" as const, plan_status: status },
+    ]);
+
+    // Nenhum deve contribuir para o MRR
+    expect(computeMrr(clientes)).toBe(0);
+
+    // Verifica que o MRR só aumenta quando status é "active"
+    const activeClientes = [
+      { plan_name: "pro", plan_status: "active" },
+      { plan_name: "business", plan_status: "active" },
+    ] as Pick<Cliente, "plan_name" | "plan_status">[];
+
+    expect(computeMrr(activeClientes)).toBeCloseTo(49.9 + 97, 2);
   });
 
   it("sums only active pro and business plans", () => {
