@@ -32,11 +32,7 @@ interface Props {
   onContatar: (c: Cliente) => void;
 }
 
-const PLAN_PRICE: Record<string, number> = {
-  free: 0,
-  pro: 49.9,
-  business: 97,
-};
+import { PLAN_PRICE_NUMERIC, formatPrice } from "@/lib/planPrices";
 
 export default function MetricSheets({ type, clientes, metrics, onClose, onContatar }: Props) {
   const open = !!type;
