@@ -34,8 +34,8 @@ interface Props {
 
 const PLAN_PRICE: Record<string, number> = {
   free: 0,
-  pro: 97,
-  business: 197,
+  pro: 49.9,
+  business: 97,
 };
 
 export default function MetricSheets({ type, clientes, metrics, onClose, onContatar }: Props) {

@@ -33,12 +33,13 @@ const plans = [
     priceNote: "/mês",
     popular: true,
     features: [
-      "Até 3 lojas",
+      "Cotações ilimitadas",
+      "Fornecedores ilimitados",
       "Até 500 produtos",
-      "Até 20 fornecedores",
-      "3 cotações simultâneas",
-      "Sugestão IA de fornecedores",
-      "Análise de preços com IA",
+      "IA completa (análise + sugestões)",
+      "Importação em massa (CSV/Excel)",
+      "Histórico completo",
+      "Suporte por WhatsApp",
     ],
   },
   {

@@ -156,7 +156,7 @@ export function getMensagem(situacao: SituacaoCliente, c: Cliente): MensagemCont
       return {
         assunto: "Seu trial do Compra360 expira em 7 dias",
         whatsapp: `Olá ${nome}! Seu período de teste do Compra360 termina em ${diasTrial} dias 🗓️ Espero que esteja gostando! Quer continuar com acesso completo? Me chama que te passo as opções.`,
-        email: `Olá ${nome},\n\nSeu período de teste gratuito encerra em ${diasTrial} dias. Para continuar sem interrupção:\n\n- Pro: R$97/mês — ilimitado + IA + suporte\n- Business: R$197/mês — múltiplas lojas\n\nResponda este email ou me chame no WhatsApp.\n\nAbraço,\nAlexandre — Compra360`,
+        email: `Olá ${nome},\n\nSeu período de teste gratuito encerra em ${diasTrial} dias. Para continuar sem interrupção:\n\n- Pro: R$49,90/mês — IA completa + importação em massa + suporte WhatsApp\n- Business: R$97/mês (promocional, de R$149) — múltiplas lojas + distribuição inteligente\n\nResponda este email ou me chame no WhatsApp.\n\nAbraço,\nAlexandre — Compra360`,
       };
 
     case "trial_3d":
