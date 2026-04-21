@@ -175,6 +175,8 @@ export function getMensagem(situacao: SituacaoCliente, c: Cliente): MensagemCont
   }
 }
 
+import { PLAN_PRICES } from "./planPrices";
+
 export const PLAN_COLORS: Record<string, string> = {
   free: "bg-muted text-muted-foreground",
   pro: "bg-primary/15 text-primary border-primary/30",

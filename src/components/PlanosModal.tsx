@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { STRIPE_PLANS } from "@/lib/stripePlans";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
+import { PLAN_PRICES, getPlanPriceDisplay } from "@/lib/planPrices";
 
 interface PlanosModalProps {
   open: boolean;
