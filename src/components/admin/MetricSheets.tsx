@@ -32,11 +32,7 @@ interface Props {
   onContatar: (c: Cliente) => void;
 }
 
-const PLAN_PRICE: Record<string, number> = {
-  free: 0,
-  pro: 49.9,
-  business: 97,
-};
+import { PLAN_PRICE_NUMERIC, formatPrice } from "@/lib/planPrices";
 
 export default function MetricSheets({ type, clientes, metrics, onClose, onContatar }: Props) {
   const open = !!type;
@@ -105,7 +101,7 @@ export default function MetricSheets({ type, clientes, metrics, onClose, onConta
 
   const subtitulo = useMemo(() => {
     if (type === "mrr") {
-      const mrr = lista.reduce((s, c) => s + (PLAN_PRICE[c.plan_name] || 0), 0);
+      const mrr = lista.reduce((s, c) => s + (PLAN_PRICE_NUMERIC[c.plan_name] || 0), 0);
       return `MRR estimado: ${formatBRL(mrr)}`;
     }
     return `${lista.length} ${lista.length === 1 ? "cliente" : "clientes"}`;
@@ -149,7 +145,7 @@ function ClienteRow({
 }) {
   const saude = getSaudeCliente(cliente);
   const diasTrial = getDiasTrialRestantes(cliente.trial_end);
-  const valorMensal = PLAN_PRICE[cliente.plan_name] || 0;
+  const valorMensal = PLAN_PRICE_NUMERIC[cliente.plan_name] || 0;
 
   // Conteúdo direito específico por tipo
   const renderRight = () => {

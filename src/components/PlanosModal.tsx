@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { STRIPE_PLANS } from "@/lib/stripePlans";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
+import { PLAN_PRICES, getPlanPriceDisplay } from "@/lib/planPrices";
 
 interface PlanosModalProps {
   open: boolean;
@@ -17,8 +18,8 @@ const plans = [
   {
     key: "free" as const,
     name: "Grátis",
-    price: "R$ 0",
-    priceNote: "para sempre",
+    price: PLAN_PRICES.free.display,
+    priceNote: PLAN_PRICES.free.note,
     features: [
       "1 loja",
       "Até 50 produtos",
@@ -29,8 +30,8 @@ const plans = [
   {
     key: "pro" as const,
     name: "Pro",
-    price: "R$ 49,90",
-    priceNote: "/mês",
+    price: PLAN_PRICES.pro.display,
+    priceNote: PLAN_PRICES.pro.note,
     popular: true,
     features: [
       "Cotações ilimitadas",
@@ -45,9 +46,9 @@ const plans = [
   {
     key: "business" as const,
     name: "Business",
-    price: "R$ 97",
-    priceNote: "/mês",
-    originalPrice: "R$ 149",
+    price: PLAN_PRICES.business.display,
+    priceNote: PLAN_PRICES.business.note,
+    originalPrice: PLAN_PRICES.business.originalDisplay,
     features: [
       "Lojas ilimitadas",
       "Produtos ilimitados",
