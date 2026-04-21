@@ -839,6 +839,7 @@ export type Database = {
           total_produtos: number
           total_produtos_inativos: number
           trial_end: string
+          ultima_cotacao_at: string
           user_id: string
         }[]
       }
