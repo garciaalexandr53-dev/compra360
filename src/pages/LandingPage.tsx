@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { PLAN_PRICES } from "@/lib/planPrices";
 import {
   Accordion,
   AccordionContent,
@@ -132,8 +133,8 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "R$49,90",
-    period: "/mês",
+    price: PLAN_PRICES.pro.display.replace("R$ ", ""),
+    period: PLAN_PRICES.pro.note,
     highlight: true,
     badge: "MAIS POPULAR",
     oldPrice: null,
@@ -151,11 +152,11 @@ const plans = [
   },
   {
     name: "Business",
-    price: "R$97",
-    period: "/mês",
+    price: PLAN_PRICES.business.display.replace("R$ ", ""),
+    period: PLAN_PRICES.business.note,
     highlight: false,
     badge: "PARA REDES",
-    oldPrice: "R$149",
+    oldPrice: PLAN_PRICES.business.originalDisplay?.replace("R$ ", ""),
     features: [
       "Tudo do Pro",
       "Múltiplas lojas em rede",
