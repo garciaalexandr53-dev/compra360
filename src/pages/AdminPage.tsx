@@ -18,27 +18,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import {
-  Users, Store, Package, FileText, Send, ClipboardCheck,
-  TrendingUp, Loader2, Search, ShieldCheck, RefreshCw, ArrowLeft,
+  Users, Store, Package, FileText, Send, ClipboardCheck, TrendingUp, Loader2,
+  Search, ShieldCheck, RefreshCw, ArrowLeft, AlertTriangle, TimerReset, Activity,
+  MessageCircle, Mail,
 } from "lucide-react";
 import { formatBRL, formatDate } from "@/lib/format";
-
-type Cliente = {
-  user_id: string;
-  email: string;
-  created_at: string;
-  loja_principal: string | null;
-  cnpj: string | null;
-  total_lojas: number;
-  total_produtos: number;
-  total_produtos_inativos: number;
-  total_fornecedores: number;
-  total_cotacoes: number;
-  total_pedidos: number;
-  plan_name: string;
-  plan_status: string;
-  trial_end: string | null;
-};
+import {
+  Cliente, getDiasTrialRestantes, getSaudeCliente, PLAN_COLORS, SituacaoCliente,
+} from "@/lib/adminHelpers";
+import ContatoModal from "@/components/admin/ContatoModal";
+import MetricSheets, { SheetType } from "@/components/admin/MetricSheets";
+import AlertasTab from "@/components/admin/AlertasTab";
 
 type GlobalMetrics = {
   total_usuarios: number;
@@ -57,12 +47,9 @@ type GlobalMetrics = {
   plan_distribution: Record<string, number>;
   mrr_estimado: number;
   trials_ativos: number;
-};
-
-const PLAN_COLORS: Record<string, string> = {
-  free: "bg-muted text-muted-foreground",
-  pro: "bg-primary/15 text-primary border-primary/30",
-  business: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
+  trials_expirando_7d: number;
+  em_risco_churn: number;
+  taxa_ativacao: number;
 };
 
 export default function AdminPage() {
@@ -72,18 +59,19 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [confirmActivate, setConfirmActivate] = useState<Cliente | null>(null);
   const [planEdit, setPlanEdit] = useState<{ cliente: Cliente; novoPlano: string } | null>(null);
+  const [sheetType, setSheetType] = useState<SheetType>(null);
+  const [contato, setContato] = useState<{
+    cliente: Cliente | null;
+    canal: "whatsapp" | "email";
+    situacao?: SituacaoCliente;
+  }>({ cliente: null, canal: "whatsapp" });
 
-  // Verifica se é admin
   const { data: isAdmin, isLoading: checkingRole } = useQuery({
     queryKey: ["is-admin", user?.id],
     queryFn: async () => {
       if (!user) return false;
       const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
+        .from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
       if (error) return false;
       return !!data;
     },
@@ -161,9 +149,7 @@ export default function AdminPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Esta área é restrita a administradores.
-            </p>
+            <p className="text-sm text-muted-foreground">Esta área é restrita a administradores.</p>
             <Button variant="outline" className="w-full" onClick={() => navigate("/dashboard")}>
               Voltar ao dashboard
             </Button>
@@ -183,41 +169,45 @@ export default function AdminPage() {
     );
   });
 
+  const abrirContato = (cliente: Cliente, situacao?: SituacaoCliente, canal: "whatsapp" | "email" = "whatsapp") => {
+    setContato({ cliente, canal, situacao });
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b bg-card sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-lg font-bold flex items-center gap-2">
                 <ShieldCheck className="h-5 w-5 text-primary" />
-                Painel Administrativo
+                <span className="truncate">Painel Administrativo</span>
               </h1>
-              <p className="text-xs text-muted-foreground">Compra360 — Visão completa</p>
+              <p className="text-xs text-muted-foreground truncate">Compra360 — Visão completa</p>
             </div>
           </div>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              refetchMetrics();
-              refetchClientes();
-            }}
+            onClick={() => { refetchMetrics(); refetchClientes(); }}
           >
-            <RefreshCw className="h-4 w-4 mr-1" />
-            Atualizar
+            <RefreshCw className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Atualizar</span>
           </Button>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Tabs defaultValue="metricas" className="space-y-6">
-          <TabsList className="grid grid-cols-2 w-full sm:w-auto sm:inline-flex">
+          <TabsList className="grid grid-cols-3 w-full sm:w-auto sm:inline-flex">
             <TabsTrigger value="metricas">Métricas</TabsTrigger>
+            <TabsTrigger value="alertas" className="gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Alertas
+            </TabsTrigger>
             <TabsTrigger value="clientes">Clientes</TabsTrigger>
           </TabsList>
 
@@ -229,88 +219,83 @@ export default function AdminPage() {
               </div>
             ) : metrics ? (
               <>
-                {/* Receita / Assinaturas */}
-                <div>
-                  <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-                    Receita e assinaturas
-                  </h2>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <MetricCard
-                      icon={<TrendingUp className="h-4 w-4" />}
-                      label="MRR estimado"
-                      value={formatBRL(metrics.mrr_estimado)}
-                      highlight
-                    />
-                    <MetricCard
-                      icon={<Users className="h-4 w-4" />}
-                      label="Trials ativos"
-                      value={metrics.trials_ativos.toString()}
-                    />
-                    <MetricCard
-                      icon={<Users className="h-4 w-4" />}
-                      label="Plano Free"
-                      value={(metrics.plan_distribution?.free || 0).toString()}
-                    />
-                    <MetricCard
-                      icon={<Users className="h-4 w-4" />}
-                      label="Plano Pro/Business"
-                      value={(
-                        (metrics.plan_distribution?.pro || 0) +
-                        (metrics.plan_distribution?.business || 0)
-                      ).toString()}
-                    />
-                  </div>
-                </div>
+                <Section titulo="Receita e assinaturas">
+                  <MetricCard icon={<TrendingUp className="h-4 w-4" />} label="MRR estimado"
+                    value={formatBRL(metrics.mrr_estimado)} highlight onClick={() => setSheetType("mrr")} />
+                  <MetricCard icon={<Users className="h-4 w-4" />} label="Trials ativos"
+                    value={metrics.trials_ativos.toString()} onClick={() => setSheetType("trials")} />
+                  <MetricCard icon={<Users className="h-4 w-4" />} label="Plano Free"
+                    value={(metrics.plan_distribution?.free || 0).toString()} onClick={() => setSheetType("free")} />
+                  <MetricCard icon={<Users className="h-4 w-4" />} label="Pro / Business"
+                    value={((metrics.plan_distribution?.pro || 0) + (metrics.plan_distribution?.business || 0)).toString()}
+                    onClick={() => setSheetType("pagantes")} />
+                </Section>
 
-                {/* Usuários */}
-                <div>
-                  <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-                    Crescimento
-                  </h2>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <MetricCard icon={<Users className="h-4 w-4" />} label="Total usuários" value={metrics.total_usuarios.toString()} />
-                    <MetricCard icon={<Users className="h-4 w-4" />} label="Novos (7d)" value={`+${metrics.usuarios_7d}`} />
-                    <MetricCard icon={<Users className="h-4 w-4" />} label="Novos (30d)" value={`+${metrics.usuarios_30d}`} />
-                    <MetricCard icon={<Store className="h-4 w-4" />} label="Lojas" value={metrics.total_lojas.toString()} />
-                  </div>
-                </div>
+                <Section titulo="Crescimento">
+                  <MetricCard icon={<Users className="h-4 w-4" />} label="Total usuários"
+                    value={metrics.total_usuarios.toString()} onClick={() => setSheetType("todos")} />
+                  <MetricCard icon={<Users className="h-4 w-4" />} label="Novos (7d)"
+                    value={`+${metrics.usuarios_7d}`} onClick={() => setSheetType("novos7")} />
+                  <MetricCard icon={<Users className="h-4 w-4" />} label="Novos (30d)"
+                    value={`+${metrics.usuarios_30d}`} onClick={() => setSheetType("novos30")} />
+                  <MetricCard icon={<Store className="h-4 w-4" />} label="Lojas"
+                    value={metrics.total_lojas.toString()} onClick={() => setSheetType("lojas")} />
+                  <MetricCard
+                    icon={<TimerReset className="h-4 w-4" />}
+                    label="Trials expirando (7d)"
+                    value={metrics.trials_expirando_7d.toString()}
+                    danger={metrics.trials_expirando_7d > 0}
+                    onClick={() => setSheetType("trials")}
+                  />
+                  <MetricCard
+                    icon={<AlertTriangle className="h-4 w-4" />}
+                    label="Em risco de churn"
+                    value={metrics.em_risco_churn.toString()}
+                    danger={metrics.em_risco_churn > 0}
+                  />
+                  <MetricCard
+                    icon={<Activity className="h-4 w-4" />}
+                    label="Taxa de ativação"
+                    value={`${metrics.taxa_ativacao}%`}
+                    sub="usuários com cotação"
+                  />
+                </Section>
 
-                {/* Uso */}
+                <Section titulo="Uso da plataforma">
+                  <MetricCard icon={<Package className="h-4 w-4" />} label="Produtos"
+                    value={metrics.total_produtos.toString()} sub={`${metrics.total_produtos_ativos} ativos`}
+                    onClick={() => setSheetType("produtos")} />
+                  <MetricCard icon={<Users className="h-4 w-4" />} label="Fornecedores"
+                    value={metrics.total_fornecedores.toString()} onClick={() => setSheetType("fornecedores")} />
+                  <MetricCard icon={<FileText className="h-4 w-4" />} label="Cotações"
+                    value={metrics.total_cotacoes.toString()}
+                    sub={`${metrics.cotacoes_ativas} ativas · ${metrics.cotacoes_finalizadas} finalizadas`}
+                    onClick={() => setSheetType("cotacoes")} />
+                  <MetricCard icon={<Send className="h-4 w-4" />} label="Pedidos"
+                    value={metrics.total_pedidos.toString()} sub={`${metrics.pedidos_enviados} enviados`}
+                    onClick={() => setSheetType("pedidos")} />
+                </Section>
+
                 <div>
-                  <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-                    Uso da plataforma
-                  </h2>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <MetricCard
-                      icon={<Package className="h-4 w-4" />}
-                      label="Produtos"
-                      value={metrics.total_produtos.toString()}
-                      sub={`${metrics.total_produtos_ativos} ativos`}
-                    />
-                    <MetricCard icon={<Users className="h-4 w-4" />} label="Fornecedores" value={metrics.total_fornecedores.toString()} />
-                    <MetricCard
-                      icon={<FileText className="h-4 w-4" />}
-                      label="Cotações"
-                      value={metrics.total_cotacoes.toString()}
-                      sub={`${metrics.cotacoes_ativas} ativas · ${metrics.cotacoes_finalizadas} finalizadas`}
-                    />
-                    <MetricCard
-                      icon={<Send className="h-4 w-4" />}
-                      label="Pedidos"
-                      value={metrics.total_pedidos.toString()}
-                      sub={`${metrics.pedidos_enviados} enviados`}
-                    />
-                  </div>
-                  <div className="mt-3">
-                    <MetricCard
-                      icon={<ClipboardCheck className="h-4 w-4" />}
-                      label="Conferências realizadas"
-                      value={metrics.total_conferencias.toString()}
-                    />
-                  </div>
+                  <MetricCard icon={<ClipboardCheck className="h-4 w-4" />}
+                    label="Conferências realizadas" value={metrics.total_conferencias.toString()} />
                 </div>
               </>
             ) : null}
+          </TabsContent>
+
+          {/* ALERTAS */}
+          <TabsContent value="alertas">
+            {loadingClientes ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <AlertasTab
+                clientes={clientes || []}
+                onContatar={(c, situacao, canal) => abrirContato(c, situacao, canal)}
+              />
+            )}
           </TabsContent>
 
           {/* CLIENTES */}
@@ -352,56 +337,89 @@ export default function AdminPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredClientes.map((c) => (
-                        <TableRow key={c.user_id}>
-                          <TableCell>
-                            <div className="font-medium">{c.loja_principal || "—"}</div>
-                            <div className="text-xs text-muted-foreground">{c.email}</div>
-                            {c.cnpj && <div className="text-xs text-muted-foreground">{c.cnpj}</div>}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={PLAN_COLORS[c.plan_name] || ""}>
-                              {c.plan_name}
-                              {c.plan_status === "trialing" && " (trial)"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">{c.total_lojas}</TableCell>
-                          <TableCell className="text-right">
-                            {c.total_produtos}
-                            {c.total_produtos_inativos > 0 && (
-                              <Badge variant="destructive" className="ml-1 text-[10px] px-1 py-0">
-                                {c.total_produtos_inativos} inat.
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">{c.total_fornecedores}</TableCell>
-                          <TableCell className="text-right">{c.total_cotacoes}</TableCell>
-                          <TableCell className="text-right">{c.total_pedidos}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{formatDate(c.created_at)}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-1">
-                              {c.total_produtos_inativos > 0 && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 text-xs"
-                                  onClick={() => setConfirmActivate(c)}
-                                >
-                                  Ativar
-                                </Button>
-                              )}
-                              <Button
-                                size="sm"
+                      {filteredClientes.map((c) => {
+                        const saude = getSaudeCliente(c);
+                        const diasTrial = getDiasTrialRestantes(c.trial_end);
+                        const trialUrgente = c.plan_status === "trialing" && diasTrial !== null && diasTrial <= 3;
+                        return (
+                          <TableRow key={c.user_id}>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className="min-w-0">
+                                  <div className="font-medium flex items-center gap-1.5 flex-wrap">
+                                    <span className="truncate max-w-[180px]">{c.loja_principal || "—"}</span>
+                                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${saude.className}`}>
+                                      {saude.emoji} {saude.label}
+                                    </Badge>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground truncate max-w-[200px]">{c.email}</div>
+                                  {c.cnpj && <div className="text-xs text-muted-foreground">{c.cnpj}</div>}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
                                 variant="outline"
-                                className="h-7 text-xs"
-                                onClick={() => setPlanEdit({ cliente: c, novoPlano: c.plan_name })}
+                                className={trialUrgente
+                                  ? "bg-destructive/15 text-destructive border-destructive/30"
+                                  : (PLAN_COLORS[c.plan_name] || "")}
                               >
-                                Plano
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                                {c.plan_name}
+                                {c.plan_status === "trialing" && diasTrial !== null && (
+                                  <span className="ml-1">(trial · {diasTrial}d)</span>
+                                )}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">{c.total_lojas}</TableCell>
+                            <TableCell className="text-right">
+                              {c.total_produtos}
+                              {c.total_produtos_inativos > 0 && (
+                                <Badge variant="destructive" className="ml-1 text-[10px] px-1 py-0">
+                                  {c.total_produtos_inativos} inat.
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">{c.total_fornecedores}</TableCell>
+                            <TableCell className="text-right">{c.total_cotacoes}</TableCell>
+                            <TableCell className="text-right">{c.total_pedidos}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{formatDate(c.created_at)}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1 flex-wrap">
+                                <Button
+                                  size="icon"
+                                  variant="outline"
+                                  className="h-7 w-7"
+                                  title="WhatsApp"
+                                  onClick={() => abrirContato(c, undefined, "whatsapp")}
+                                >
+                                  <MessageCircle className="h-3.5 w-3.5 text-emerald-600" />
+                                </Button>
+                                {c.email && (
+                                  <Button
+                                    size="icon"
+                                    variant="outline"
+                                    className="h-7 w-7"
+                                    title="Email"
+                                    onClick={() => abrirContato(c, undefined, "email")}
+                                  >
+                                    <Mail className="h-3.5 w-3.5 text-blue-600" />
+                                  </Button>
+                                )}
+                                {c.total_produtos_inativos > 0 && (
+                                  <Button size="sm" variant="outline" className="h-7 text-xs"
+                                    onClick={() => setConfirmActivate(c)}>
+                                    Ativar
+                                  </Button>
+                                )}
+                                <Button size="sm" variant="outline" className="h-7 text-xs"
+                                  onClick={() => setPlanEdit({ cliente: c, novoPlano: c.plan_name })}>
+                                  Plano
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                       {filteredClientes.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
@@ -417,6 +435,23 @@ export default function AdminPage() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Sheets de detalhes por métrica */}
+      <MetricSheets
+        type={sheetType}
+        clientes={clientes || []}
+        metrics={metrics}
+        onClose={() => setSheetType(null)}
+        onContatar={(c) => abrirContato(c)}
+      />
+
+      {/* Modal de contato */}
+      <ContatoModal
+        cliente={contato.cliente}
+        initialCanal={contato.canal}
+        forcarSituacao={contato.situacao}
+        onClose={() => setContato({ cliente: null, canal: "whatsapp" })}
+      />
 
       {/* Ativar produtos */}
       <AlertDialog open={!!confirmActivate} onOpenChange={(o) => !o && setConfirmActivate(null)}>
@@ -457,9 +492,7 @@ export default function AdminPage() {
               value={planEdit?.novoPlano}
               onValueChange={(v) => planEdit && setPlanEdit({ ...planEdit, novoPlano: v })}
             >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="free">Free</SelectItem>
                 <SelectItem value="pro">Pro</SelectItem>
@@ -470,10 +503,7 @@ export default function AdminPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() =>
-                planEdit &&
-                setPlanMutation.mutate({ userId: planEdit.cliente.user_id, plan: planEdit.novoPlano })
-              }
+              onClick={() => planEdit && setPlanMutation.mutate({ userId: planEdit.cliente.user_id, plan: planEdit.novoPlano })}
               disabled={setPlanMutation.isPending}
             >
               {setPlanMutation.isPending ? "Salvando..." : "Confirmar"}
@@ -485,24 +515,44 @@ export default function AdminPage() {
   );
 }
 
+function Section({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">{titulo}</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">{children}</div>
+    </div>
+  );
+}
+
 function MetricCard({
-  icon, label, value, sub, highlight,
+  icon, label, value, sub, highlight, danger, onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   sub?: string;
   highlight?: boolean;
+  danger?: boolean;
+  onClick?: () => void;
 }) {
   return (
-    <Card className={highlight ? "border-primary/40 bg-primary/5" : ""}>
+    <Card
+      onClick={onClick}
+      className={[
+        onClick ? "cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all" : "",
+        highlight ? "border-primary/40 bg-primary/5" : "",
+        danger ? "border-destructive/40 bg-destructive/5" : "",
+      ].filter(Boolean).join(" ")}
+    >
       <CardContent className="p-4">
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
           {icon}
-          {label}
+          <span className="truncate">{label}</span>
         </div>
-        <div className={`text-2xl font-bold ${highlight ? "text-primary" : ""}`}>{value}</div>
-        {sub && <div className="text-xs text-muted-foreground mt-0.5">{sub}</div>}
+        <div className={`text-2xl font-bold ${highlight ? "text-primary" : ""} ${danger ? "text-destructive" : ""}`}>
+          {value}
+        </div>
+        {sub && <div className="text-xs text-muted-foreground mt-0.5 truncate">{sub}</div>}
       </CardContent>
     </Card>
   );
