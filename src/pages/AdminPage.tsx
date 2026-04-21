@@ -97,10 +97,25 @@ export default function AdminPage() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_list_clientes");
       if (error) throw error;
-      return (data || []) as Cliente[];
+      const raw = (data || []) as Cliente[];
+      // Deduplicar por user_id mantendo o registro mais completo
+      const map = new Map<string, Cliente>();
+      raw.forEach((c) => {
+        const existing = map.get(c.user_id);
+        if (!existing || (c.total_cotacoes || 0) > (existing.total_cotacoes || 0)) {
+          map.set(c.user_id, c);
+        }
+      });
+      return Array.from(map.values());
     },
     enabled: !!isAdmin,
   });
+
+  // MRR recalculado a partir dos clientes únicos (evita inflação por duplicatas)
+  const PLAN_PRICE: Record<string, number> = { free: 0, pro: 97, business: 197 };
+  const mrrCalculado = (clientes || [])
+    .filter((c) => c.plan_status === "active" && (c.plan_name === "pro" || c.plan_name === "business"))
+    .reduce((s, c) => s + (PLAN_PRICE[c.plan_name] || 0), 0);
 
   const activateMutation = useMutation({
     mutationFn: async (userId: string) => {
@@ -221,7 +236,7 @@ export default function AdminPage() {
               <>
                 <Section titulo="Receita e assinaturas">
                   <MetricCard icon={<TrendingUp className="h-4 w-4" />} label="MRR estimado"
-                    value={formatBRL(metrics.mrr_estimado)} highlight onClick={() => setSheetType("mrr")} />
+                    value={formatBRL(mrrCalculado)} highlight onClick={() => setSheetType("mrr")} />
                   <MetricCard icon={<Users className="h-4 w-4" />} label="Trials ativos"
                     value={metrics.trials_ativos.toString()} onClick={() => setSheetType("trials")} />
                   <MetricCard icon={<Users className="h-4 w-4" />} label="Plano Free"
