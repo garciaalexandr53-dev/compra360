@@ -62,32 +62,43 @@ export default function MetricSheets({ type, clientes, metrics, onClose, onConta
   const lista = useMemo<Cliente[]>(() => {
     if (!type) return [];
     const now = Date.now();
+
+    // Deduplicação defensiva por user_id (mantém o registro com mais cotações)
+    const dedupMap = new Map<string, Cliente>();
+    clientes.forEach((c) => {
+      const existing = dedupMap.get(c.user_id);
+      if (!existing || (c.total_cotacoes || 0) > (existing.total_cotacoes || 0)) {
+        dedupMap.set(c.user_id, c);
+      }
+    });
+    const unicos = Array.from(dedupMap.values());
+
     switch (type) {
       case "mrr":
       case "pagantes":
-        return clientes.filter((c) => c.plan_name === "pro" || c.plan_name === "business");
+        return unicos.filter((c) => c.plan_name === "pro" || c.plan_name === "business");
       case "trials":
-        return clientes
+        return unicos
           .filter((c) => c.plan_status === "trialing")
           .sort((a, b) => (getDiasTrialRestantes(a.trial_end) ?? 99) - (getDiasTrialRestantes(b.trial_end) ?? 99));
       case "free":
-        return clientes.filter((c) => c.plan_name === "free");
+        return unicos.filter((c) => c.plan_name === "free");
       case "todos":
-        return clientes;
+        return unicos;
       case "novos7":
-        return clientes.filter((c) => now - new Date(c.created_at).getTime() <= 7 * 86400000);
+        return unicos.filter((c) => now - new Date(c.created_at).getTime() <= 7 * 86400000);
       case "novos30":
-        return clientes.filter((c) => now - new Date(c.created_at).getTime() <= 30 * 86400000);
+        return unicos.filter((c) => now - new Date(c.created_at).getTime() <= 30 * 86400000);
       case "lojas":
-        return clientes.filter((c) => c.total_lojas > 0);
+        return unicos.filter((c) => c.total_lojas > 0);
       case "produtos":
-        return [...clientes].sort((a, b) => b.total_produtos - a.total_produtos).filter((c) => c.total_produtos > 0);
+        return [...unicos].sort((a, b) => b.total_produtos - a.total_produtos).filter((c) => c.total_produtos > 0);
       case "fornecedores":
-        return [...clientes].sort((a, b) => b.total_fornecedores - a.total_fornecedores).filter((c) => c.total_fornecedores > 0);
+        return [...unicos].sort((a, b) => b.total_fornecedores - a.total_fornecedores).filter((c) => c.total_fornecedores > 0);
       case "cotacoes":
-        return [...clientes].sort((a, b) => b.total_cotacoes - a.total_cotacoes).filter((c) => c.total_cotacoes > 0);
+        return [...unicos].sort((a, b) => b.total_cotacoes - a.total_cotacoes).filter((c) => c.total_cotacoes > 0);
       case "pedidos":
-        return [...clientes].sort((a, b) => b.total_pedidos - a.total_pedidos).filter((c) => c.total_pedidos > 0);
+        return [...unicos].sort((a, b) => b.total_pedidos - a.total_pedidos).filter((c) => c.total_pedidos > 0);
       default: return [];
     }
   }, [type, clientes]);
