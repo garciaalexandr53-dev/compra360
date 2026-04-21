@@ -236,7 +236,7 @@ export default function AdminPage() {
               <>
                 <Section titulo="Receita e assinaturas">
                   <MetricCard icon={<TrendingUp className="h-4 w-4" />} label="MRR estimado"
-                    value={formatBRL(metrics.mrr_estimado)} highlight onClick={() => setSheetType("mrr")} />
+                    value={formatBRL(mrrCalculado)} highlight onClick={() => setSheetType("mrr")} />
                   <MetricCard icon={<Users className="h-4 w-4" />} label="Trials ativos"
                     value={metrics.trials_ativos.toString()} onClick={() => setSheetType("trials")} />
                   <MetricCard icon={<Users className="h-4 w-4" />} label="Plano Free"
