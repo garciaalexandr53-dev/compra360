@@ -1,6 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, BarChart3, TrendingUp, MoreHorizontal, X, Package, Users, Store, UserCheck, ClipboardCheck, History } from "lucide-react";
+import { LayoutDashboard, BarChart3, TrendingUp, MoreHorizontal, Package, Users, Store, UserCheck, ClipboardCheck, History, Shield } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const tabs = [
