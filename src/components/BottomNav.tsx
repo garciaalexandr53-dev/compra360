@@ -25,10 +25,29 @@ const moreItems = [
 export default function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
 
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ["is-admin-bottomnav", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+  });
+
+  const items = isAdmin
+    ? [...moreItems, { label: "Admin", icon: Shield, path: "/admin" }]
+    : moreItems;
+
   const isActive = (path: string) => {
-    if (path === "__more__") return moreItems.some((i) => location.pathname.startsWith(i.path));
+    if (path === "__more__") return items.some((i) => location.pathname.startsWith(i.path));
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
 
