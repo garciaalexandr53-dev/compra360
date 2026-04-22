@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Outlet, Navigate, useLocation } from "react-router-dom";
+import { Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, Sun, Moon } from "lucide-react";
+import { LogOut, Sun, Moon, Shield } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { LojaSelector } from "@/components/LojaSelector";
 import { useTheme } from "@/hooks/useTheme";
@@ -20,6 +22,7 @@ export default function AppLayout() {
   const { user, loading, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const { lojas, loading: lojasLoading } = useLojaAtiva();
+  const navigate = useNavigate();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const location = useLocation();
@@ -27,6 +30,20 @@ export default function AppLayout() {
   const isFuncionarios = location.pathname === "/funcionarios";
   const isLojas = location.pathname === "/lojas";
   const isFornecedores = location.pathname === "/fornecedores";
+
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ["is-admin-header", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+  });
 
   useEffect(() => {
     if (!lojasLoading && lojas.length === 0 && user && !localStorage.getItem("onboarding_completed")) {
@@ -70,6 +87,18 @@ export default function AppLayout() {
               )}
             </div>
             <div className="flex items-center gap-1">
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary"
+                  onClick={() => navigate("/admin")}
+                  title="Painel Administrativo"
+                  aria-label="Painel Administrativo"
+                >
+                  <Shield className="h-4 w-4" />
+                </Button>
+              )}
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={toggle}>
                 {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
               </Button>

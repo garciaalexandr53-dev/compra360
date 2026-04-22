@@ -1,6 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, BarChart3, TrendingUp, MoreHorizontal, X, Package, Users, Store, UserCheck, ClipboardCheck, History } from "lucide-react";
+import { LayoutDashboard, BarChart3, TrendingUp, MoreHorizontal, Package, Users, Store, UserCheck, ClipboardCheck, History, Shield } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const tabs = [
@@ -22,10 +25,29 @@ const moreItems = [
 export default function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
 
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ["is-admin-bottomnav", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+  });
+
+  const items = isAdmin
+    ? [...moreItems, { label: "Admin", icon: Shield, path: "/admin" }]
+    : moreItems;
+
   const isActive = (path: string) => {
-    if (path === "__more__") return moreItems.some((i) => location.pathname.startsWith(i.path));
+    if (path === "__more__") return items.some((i) => location.pathname.startsWith(i.path));
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
 
@@ -67,7 +89,7 @@ export default function BottomNav() {
             <SheetTitle className="text-base">Mais opções</SheetTitle>
           </SheetHeader>
           <div className="grid grid-cols-3 gap-3 py-2">
-            {moreItems.map((item) => {
+            {items.map((item) => {
               const active = location.pathname.startsWith(item.path);
               return (
                 <button
