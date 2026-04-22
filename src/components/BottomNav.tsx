@@ -89,7 +89,7 @@ export default function BottomNav() {
             <SheetTitle className="text-base">Mais opções</SheetTitle>
           </SheetHeader>
           <div className="grid grid-cols-3 gap-3 py-2">
-            {moreItems.map((item) => {
+            {items.map((item) => {
               const active = location.pathname.startsWith(item.path);
               return (
                 <button
