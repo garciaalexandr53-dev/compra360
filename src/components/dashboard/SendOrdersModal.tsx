@@ -84,9 +84,9 @@ const SendOrdersModal = ({ open, onOpenChange, orders, onSendOrder, onConclude }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg w-[calc(100%-2rem)] p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle>📦 Enviando pedidos para fornecedores</DialogTitle>
+          <DialogTitle className="text-base sm:text-lg pr-6">📦 Enviando pedidos para fornecedores</DialogTitle>
         </DialogHeader>
 
         {allDone ? (
@@ -99,37 +99,46 @@ const SendOrdersModal = ({ open, onOpenChange, orders, onSendOrder, onConclude }
             <Button onClick={handleConclude} className="w-full">Concluir</Button>
           </div>
         ) : (
-          <ScrollArea className="max-h-[400px]">
+          <ScrollArea className="max-h-[60vh] sm:max-h-[400px]">
             <div className="space-y-2 pr-2">
               {orders.map(o => {
                 const status = statuses[o.fornecedor.id] || "pending";
                 const isNext = o.fornecedor.id === nextPending?.fornecedor.id;
                 return (
-                  <div key={o.fornecedor.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                  <div key={o.fornecedor.id} className={`flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg border transition-all ${
                     status === "sent" ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
                     : status === "skipped" ? "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 opacity-60"
                     : isNext ? "bg-primary/5 border-primary/30 shadow-sm"
                     : "border-border"
                   }`}>
-                    <div className="shrink-0">
-                      {status === "sent" && <CheckCircle2 className="h-5 w-5 text-green-600" />}
-                      {status === "skipped" && <SkipForward className="h-5 w-5 text-amber-500" />}
-                      {status === "pending" && <Clock className="h-5 w-5 text-muted-foreground" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{o.fornecedor.nome}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {o.items.length} {o.items.length === 1 ? "item" : "itens"} · {formatBRL(o.total)}
-                      </p>
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="shrink-0">
+                        {status === "sent" && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+                        {status === "skipped" && <SkipForward className="h-5 w-5 text-amber-500" />}
+                        {status === "pending" && <Clock className="h-5 w-5 text-muted-foreground" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold text-foreground break-words">{o.fornecedor.nome}</p>
+                          {isNext && status === "pending" && (
+                            <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-primary/15 text-primary shrink-0">
+                              Próximo
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {o.items.length} {o.items.length === 1 ? "item" : "itens"} · {formatBRL(o.total)}
+                        </p>
+                      </div>
                     </div>
                     {status === "pending" && (
-                      <div className="flex gap-1.5 shrink-0">
+                      <div className="flex gap-2 shrink-0 w-full sm:w-auto">
                         {isNext && (
-                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs" onClick={() => handleSend(o)}>
-                            <Smartphone className="h-3 w-3 mr-1" /> Enviar
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none" onClick={() => handleSend(o)}>
+                            <Smartphone className="h-3.5 w-3.5 mr-1" /> Enviar
                           </Button>
                         )}
-                        <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" onClick={() => skip(o.fornecedor.id)}>
+                        <Button size="sm" variant="ghost" className="text-muted-foreground flex-1 sm:flex-none" onClick={() => skip(o.fornecedor.id)}>
                           Pular
                         </Button>
                       </div>
