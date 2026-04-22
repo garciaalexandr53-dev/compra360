@@ -276,6 +276,17 @@ const DashboardPage = () => {
     try {
       // Reopen: set status back to ativa and clear finalizada_at
       await supabase.from("cotacoes").update({ status: "ativa", finalizada_at: null }).eq("id", lastCotacao.id);
+      // Revert any sent orders back to draft so the auto-finalize effect
+      // does not immediately re-close the quote and re-show the conclusion screen.
+      await supabase
+        .from("pedidos")
+        .update({ status: "rascunho", enviado_at: null })
+        .eq("cotacao_id", lastCotacao.id)
+        .in("status", ["enviado", "confirmado", "recebido"]);
+      // Clear the "conclusion already seen" flag so the user doesn't see the
+      // celebration overlay again on this reopened quote.
+      try { localStorage.removeItem(`conclusao-vista-${lastCotacao.id}`); } catch {}
+      setShowConclusao(false);
       queryClient.invalidateQueries();
       toast.success("Cotação reaberta com sucesso!");
     } catch (e: any) {
