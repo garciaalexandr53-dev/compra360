@@ -22,6 +22,7 @@ export default function AppLayout() {
   const { user, loading, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const { lojas, loading: lojasLoading } = useLojaAtiva();
+  const navigate = useNavigate();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const location = useLocation();
@@ -29,6 +30,20 @@ export default function AppLayout() {
   const isFuncionarios = location.pathname === "/funcionarios";
   const isLojas = location.pathname === "/lojas";
   const isFornecedores = location.pathname === "/fornecedores";
+
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ["is-admin-header", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+  });
 
   useEffect(() => {
     if (!lojasLoading && lojas.length === 0 && user && !localStorage.getItem("onboarding_completed")) {
