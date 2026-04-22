@@ -87,6 +87,18 @@ export default function AppLayout() {
               )}
             </div>
             <div className="flex items-center gap-1">
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary"
+                  onClick={() => navigate("/admin")}
+                  title="Painel Administrativo"
+                  aria-label="Painel Administrativo"
+                >
+                  <Shield className="h-4 w-4" />
+                </Button>
+              )}
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={toggle}>
                 {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
               </Button>
