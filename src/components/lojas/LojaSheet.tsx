@@ -101,9 +101,9 @@ export default function LojaSheet({
         className="h-[92vh] sm:h-auto sm:max-h-[92vh] sm:max-w-2xl sm:mx-auto sm:rounded-t-2xl overflow-y-auto p-0"
       >
         {/* Header */}
-        <SheetHeader className="px-5 pt-5 pb-3 text-left border-b">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
+        <SheetHeader className="px-5 pt-5 pb-3 pr-14 text-left border-b">
+          <div className="flex flex-col gap-3">
+            <div className="min-w-0">
               <SheetTitle className="text-xl font-bold leading-tight break-words">
                 {display}
               </SheetTitle>
@@ -111,20 +111,22 @@ export default function LojaSheet({
                 <p className="text-sm text-muted-foreground mt-0.5">{loja.razao_social}</p>
               )}
             </div>
-            {ativa ? (
-              <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 bg-success text-success-foreground rounded-full shrink-0">
-                <Check className="h-3 w-3" /> ATIVA
-              </span>
-            ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-success text-success hover:bg-success/10 shrink-0"
-                onClick={() => onActivate(loja.id)}
-              >
-                Ativar loja
-              </Button>
-            )}
+            <div>
+              {ativa ? (
+                <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 bg-success text-success-foreground rounded-full">
+                  <Check className="h-3 w-3" /> ATIVA
+                </span>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-success text-success hover:bg-success/10"
+                  onClick={() => onActivate(loja.id)}
+                >
+                  Ativar loja
+                </Button>
+              )}
+            </div>
           </div>
         </SheetHeader>
 
