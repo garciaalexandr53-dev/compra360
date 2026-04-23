@@ -43,13 +43,14 @@ let isReloadingForUpdate: boolean = false;
 const reloadForUpdate = () => {
   if (isReloadingForUpdate) return;
   isReloadingForUpdate = true;
+  const doReload = () => location.reload();
   // Clear any caches before reloading to guarantee fresh assets
-  if ("caches" in window) {
+  if (typeof caches !== "undefined") {
     caches.keys().then((keys) => {
-      Promise.all(keys.map((k) => caches.delete(k))).finally(() => window.location.reload());
-    });
+      Promise.all(keys.map((k) => caches.delete(k))).finally(doReload);
+    }).catch(doReload);
   } else {
-    window.location.reload();
+    doReload();
   }
 };
 
