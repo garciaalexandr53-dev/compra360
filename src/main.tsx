@@ -38,7 +38,7 @@ if (
 
 /* ── Service Worker update logic (production only) ───── */
 const UPDATE_CHECK_INTERVAL_MS = 60 * 1000; // poll every minute while tab is open
-let isReloadingForUpdate = false;
+let isReloadingForUpdate: boolean = false;
 
 const reloadForUpdate = () => {
   if (isReloadingForUpdate) return;
