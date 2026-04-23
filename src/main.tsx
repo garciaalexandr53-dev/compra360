@@ -37,38 +37,75 @@ if (
 }
 
 /* ── Service Worker update logic (production only) ───── */
+const UPDATE_CHECK_INTERVAL_MS = 60 * 1000; // poll every minute while tab is open
+let isReloadingForUpdate: boolean = false;
+
+const reloadForUpdate = () => {
+  if (isReloadingForUpdate) return;
+  isReloadingForUpdate = true;
+  const doReload = () => location.reload();
+  // Clear any caches before reloading to guarantee fresh assets
+  if (typeof caches !== "undefined") {
+    caches.keys().then((keys) => {
+      Promise.all(keys.map((k) => caches.delete(k))).finally(doReload);
+    }).catch(doReload);
+  } else {
+    doReload();
+  }
+};
+
+const activateWaiting = (reg: ServiceWorkerRegistration) => {
+  if (reg.waiting) {
+    reg.waiting.postMessage({ type: "SKIP_WAITING" });
+  }
+};
+
+const trackInstalling = (reg: ServiceWorkerRegistration, sw: ServiceWorker | null) => {
+  if (!sw) return;
+  sw.addEventListener("statechange", () => {
+    if (sw.state === "installed" && navigator.serviceWorker.controller) {
+      // A new version is ready — activate immediately
+      sw.postMessage({ type: "SKIP_WAITING" });
+    }
+  });
+};
+
 if ("serviceWorker" in navigator && !isInIframe && !isPreviewHost) {
-  // Force update check on every load
   navigator.serviceWorker.getRegistrations().then((registrations) => {
     registrations.forEach((reg) => {
+      // Check for update right now
       reg.update().catch(() => {});
 
-      // If a waiting SW exists, tell it to activate now
-      if (reg.waiting) {
-        reg.waiting.postMessage({ type: "SKIP_WAITING" });
-        window.location.reload();
+      // If something is already waiting from a previous load, activate it
+      if (reg.waiting && navigator.serviceWorker.controller) {
+        activateWaiting(reg);
       }
 
-      // Listen for new SW becoming installed during this session
-      reg.addEventListener("updatefound", () => {
-        const newSw = reg.installing;
-        if (!newSw) return;
-        newSw.addEventListener("statechange", () => {
-          if (newSw.state === "installed" && navigator.serviceWorker.controller) {
-            // New version ready — activate immediately
-            newSw.postMessage({ type: "SKIP_WAITING" });
-          }
-        });
-      });
+      // Track future installations (during this tab's lifetime)
+      reg.addEventListener("updatefound", () => trackInstalling(reg, reg.installing));
+
+      // Periodic background check while the tab stays open
+      setInterval(() => {
+        reg.update().catch(() => {});
+      }, UPDATE_CHECK_INTERVAL_MS);
     });
   });
 
-  // When a new SW takes control, reload once to use fresh assets
+  // Re-check when the tab regains focus or comes back online
+  const recheck = () => {
+    navigator.serviceWorker.getRegistrations().then((regs) => {
+      regs.forEach((reg) => reg.update().catch(() => {}));
+    });
+  };
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") recheck();
+  });
+  window.addEventListener("online", recheck);
+  window.addEventListener("focus", recheck);
+
+  // When a new SW takes control, reload to load fresh assets
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!sessionStorage.getItem("sw-reloaded")) {
-      sessionStorage.setItem("sw-reloaded", "1");
-      window.location.reload();
-    }
+    reloadForUpdate();
   });
 } else if ("serviceWorker" in navigator && (isInIframe || isPreviewHost)) {
   // In preview/iframe: unregister any stale SWs
