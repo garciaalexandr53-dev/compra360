@@ -183,10 +183,10 @@ const LojasPage = () => {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome, razão social ou CNPJ..."
+            placeholder="Buscar loja, CNPJ..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-8"
+            className="pl-9 pr-8 text-sm placeholder:text-sm placeholder:truncate"
           />
           {search && (
             <button
