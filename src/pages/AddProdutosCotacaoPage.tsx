@@ -136,7 +136,7 @@ const AddProdutosCotacaoPage = () => {
   // Dialog handlers
   const handlePickSuggestion = (produto: { id: string; nome: string; embalagem?: string | null; fator_embalagem?: number | null }) => {
     const embRaw = (produto.embalagem || "UNI").split("|")[0]?.trim().toUpperCase() || "UNI";
-    const tipos = ["UNI", "CX", "DZ", "½DZ", "FD", "KG", "PCT"];
+    const tipos = ["UNI", "CX", "DZ", "½DZ", "DP", "FD", "KG", "PCT"];
     const matched = tipos.find((t) => embRaw.startsWith(t)) || "UNI";
     const fatorCadastrado =
       produto.fator_embalagem && produto.fator_embalagem > 0
