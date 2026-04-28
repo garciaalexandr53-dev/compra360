@@ -136,7 +136,7 @@ const AddProdutosCotacaoPage = () => {
   // Dialog handlers
   const handlePickSuggestion = (produto: { id: string; nome: string; embalagem?: string | null; fator_embalagem?: number | null }) => {
     const embRaw = (produto.embalagem || "UNI").split("|")[0]?.trim().toUpperCase() || "UNI";
-    const tipos = ["UNI", "CX", "DZ", "½DZ", "FD", "KG", "PCT"];
+    const tipos = ["UNI", "CX", "DZ", "½DZ", "DP", "FD", "KG", "PCT"];
     const matched = tipos.find((t) => embRaw.startsWith(t)) || "UNI";
     const fatorCadastrado =
       produto.fator_embalagem && produto.fator_embalagem > 0
@@ -415,7 +415,7 @@ const AddProdutosCotacaoPage = () => {
           <div className="space-y-2">
             <label className="text-sm font-medium">Embalagem</label>
             <div className="flex flex-wrap gap-2">
-              {["UNI", "CX", "DZ", "½DZ", "FD", "KG", "PCT"].map(emb => (
+              {["UNI", "CX", "DZ", "½DZ", "DP", "FD", "KG", "PCT"].map(emb => (
                 <button
                   key={emb}
                   onClick={() => {
