@@ -87,11 +87,8 @@ const ProdutosPage = () => {
   const [classifyError, setClassifyError] = useState("");
   const [classifyMode, setClassifyMode] = useState<"classify" | "fator">("classify");
 
-  // Popover states for adding to cotação
-  const [popoverOpen, setPopoverOpen] = useState<Record<string, boolean>>({});
-  const [popoverQtd, setPopoverQtd] = useState<Record<string, string>>({});
-  const [popoverEmb, setPopoverEmb] = useState<Record<string, string>>({});
-  const [popoverFator, setPopoverFator] = useState<Record<string, string>>({});
+  // Diálogo unificado de adicionar à cotação
+  const [dialogProduto, setDialogProduto] = useState<Produto | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -722,119 +719,13 @@ const ProdutosPage = () => {
                               ✓
                             </Button>
                           ) : (
-                            <Popover
-                              open={popoverOpen[p.id] || false}
-                              onOpenChange={(open) => {
-                                setPopoverOpen(prev => ({ ...prev, [p.id]: open }));
-                                 if (open) {
-                                   const embType = p.embalagem?.split("|")[0]?.trim()?.toUpperCase() || "UNI";
-                                   const tipos = ["UNI", "CX", "DZ", "FD", "KG", "PCT"];
-                                   const matched = tipos.find(t => embType.startsWith(t)) || "UNI";
-                                   const fatorCadastrado = p.fator_embalagem && p.fator_embalagem > 0 ? p.fator_embalagem : getDefaultFator(matched);
-                                   setPopoverQtd(prev => ({ ...prev, [p.id]: "" }));
-                                   setPopoverEmb(prev => ({ ...prev, [p.id]: matched }));
-                                   setPopoverFator(prev => ({ ...prev, [p.id]: String(fatorCadastrado) }));
-                                 }
-                              }}
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs px-2 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"
+                              onClick={() => setDialogProduto(p)}
                             >
-                              <PopoverTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  className="h-7 text-xs px-2 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"
-                                >
-                                  +
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-64 p-3" align="end">
-                                <div className="space-y-3">
-                                  <div>
-                                    <p className="text-sm font-semibold truncate">{p.nome}</p>
-                                    <p className="text-xs text-muted-foreground">{p.categorias?.nome || "Sem Categoria"} · {p.embalagem || "un"}</p>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Quantidade</Label>
-                                    <Input
-                                      type="number"
-                                      min={1}
-                                      placeholder="Ex: 10"
-                                      value={popoverQtd[p.id] || ""}
-                                      autoFocus
-                                      onFocus={(e) => e.target.select()}
-                                      onChange={(e) => {
-                                        const val = e.target.value.replace(/\D/g, "");
-                                        setPopoverQtd(prev => ({ ...prev, [p.id]: val }));
-                                      }}
-                                      className="h-10 text-center font-bold text-base"
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Embalagem</Label>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {["UNI", "CX", "DZ", "½DZ", "FD", "KG", "PCT"].map(emb => (
-                                        <button
-                                          key={emb}
-                                          type="button"
-                                          onClick={() => {
-                                            setPopoverEmb(prev => ({ ...prev, [p.id]: emb }));
-                                            setPopoverFator(prev => ({ ...prev, [p.id]: String(getDefaultFator(emb)) }));
-                                          }}
-                                          className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                                            (popoverEmb[p.id] || "UNI") === emb
-                                              ? "bg-primary text-primary-foreground border-primary"
-                                              : "border-border text-muted-foreground hover:border-primary/50"
-                                          }`}
-                                        >
-                                          {emb}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Fator (un/embalagem)</Label>
-                                    <Input
-                                      type="number"
-                                      min={1}
-                                      value={popoverFator[p.id] ?? "1"}
-                                      onFocus={(e) => e.target.select()}
-                                      onChange={(e) => setPopoverFator(prev => ({ ...prev, [p.id]: e.target.value.replace(/\D/g, "") }))}
-                                      onBlur={() => setPopoverFator(prev => ({ ...prev, [p.id]: !prev[p.id] || prev[p.id] === "0" ? "1" : prev[p.id] }))}
-                                      className="h-8 text-center text-sm"
-                                    />
-                                  </div>
-                                  <div className="flex gap-2 pt-1">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="flex-1"
-                                      onClick={() => setPopoverOpen(prev => ({ ...prev, [p.id]: false }))}
-                                    >
-                                      Cancelar
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      className="flex-1"
-                                      onClick={() => {
-                                        const qtd = parseInt(popoverQtd[p.id] || "0");
-                                        if (!qtd || qtd < 1) {
-                                          toast.error("Informe a quantidade (mínimo 1)");
-                                          return;
-                                        }
-                                        toggleCotacaoMutation.mutate({
-                                          produtoId: p.id,
-                                          adding: true,
-                                          quantidade: qtd,
-                                          tipoEmbalagem: popoverEmb[p.id] || "UNI",
-                                          fatorEmbalagem: parseInt(popoverFator[p.id] || "1") || 1,
-                                        });
-                                        setPopoverOpen(prev => ({ ...prev, [p.id]: false }));
-                                      }}
-                                    >
-                                      ✅ Adicionar
-                                    </Button>
-                                  </div>
-                                </div>
-                              </PopoverContent>
-                            </Popover>
+                              +
+                            </Button>
                           )}
                         </div>
                       </div>
