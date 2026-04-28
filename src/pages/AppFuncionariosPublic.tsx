@@ -269,10 +269,17 @@ const AppFuncionariosPublic = () => {
   };
 
   const openProductDialog = useCallback((product: ProdutoPublico) => {
+    const embRaw = (product.embalagem || "UNI").split("|")[0]?.trim().toUpperCase() || "UNI";
+    const tipos = ["UNI", "CX", "DZ", "½DZ", "DP", "FD", "KG", "PCT"];
+    const matched = tipos.find((t) => embRaw.startsWith(t)) || "UNI";
+    const fatorCadastrado =
+      product.fator_embalagem && product.fator_embalagem > 0
+        ? product.fator_embalagem
+        : getDefaultFator(matched);
     setDialogProduct(product);
     setDialogQtd("1");
-    setDialogEmbal((product.embalagem || "UNI").toUpperCase());
-    setDialogFator(String(product.fator_embalagem || 1));
+    setDialogEmbal(matched);
+    setDialogFator(String(fatorCadastrado));
   }, []);
 
   const confirmProductDialog = useCallback(() => {
