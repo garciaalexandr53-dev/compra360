@@ -37,9 +37,14 @@ export const EMBALAGENS_DIALOG = [
 
 export type EmbalagemSigla = (typeof EMBALAGENS_DIALOG)[number];
 
-/** Fator padrão sugerido ao trocar para uma embalagem. */
-export const getFatorPadrao = (sigla: string): number =>
-  FATOR_PADRAO[sigla] ?? 1;
+/** Fator padrão sugerido ao trocar para uma embalagem.
+ * Normaliza case e espaços para tolerar entradas como "cx" ou " CX ". */
+export const getFatorPadrao = (sigla: string | null | undefined): number => {
+  if (sigla == null) return 1;
+  const key = String(sigla).trim().toUpperCase();
+  if (!key) return 1;
+  return FATOR_PADRAO[key] ?? 1;
+};
 
 /** Normaliza uma string de embalagem cadastrada para uma sigla suportada no diálogo. */
 export const matchEmbalagem = (raw: string | null | undefined): EmbalagemSigla => {
