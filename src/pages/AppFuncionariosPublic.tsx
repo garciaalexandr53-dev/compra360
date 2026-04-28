@@ -772,62 +772,76 @@ const AppFuncionariosPublic = () => {
         </div>
       )}
 
-      {/* Simplified dialog — embalagem/fator read-only, only qty editable */}
+      {/* Dialog igual ao da aba Produtos: escolha de embalagem + fator */}
       <Dialog open={!!dialogProduct} onOpenChange={(open) => { if (!open) setDialogProduct(null); }}>
-        <DialogContent className="max-w-[340px] rounded-2xl">
+        <DialogContent className="max-w-sm rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-base leading-snug">
+            <DialogTitle className="text-base font-semibold leading-snug truncate">
               {dialogProduct?.nome}
             </DialogTitle>
+            {dialogProduct && (
+              <p className="text-xs text-muted-foreground">
+                {(dialogProduct.embalagem || "un").toUpperCase()}
+                {dialogProduct.fator_embalagem > 1 ? ` · ${dialogProduct.fator_embalagem} un` : ""}
+                {dialogProduct.categorias?.nome ? ` · ${dialogProduct.categorias.nome}` : ""}
+              </p>
+            )}
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            {/* Embalagem + Fator — read-only info */}
-            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2.5">
-              <Package className="h-4 w-4 shrink-0" />
-              <span>
-                {dialogEmbal}
-                {(parseInt(dialogFator) || 1) > 1 && ` · ${dialogFator} unidades`}
-              </span>
-            </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Quantidade</label>
+            <Input
+              type="number"
+              inputMode="numeric"
+              placeholder="Ex: 10"
+              value={dialogQtd}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => setDialogQtd(e.target.value.replace(/\D/g, ""))}
+              onKeyDown={(e) => { if (e.key === "Enter") confirmProductDialog(); }}
+              className="h-12 text-center text-lg font-bold"
+              autoFocus
+            />
+          </div>
 
-            {/* Quantity — editable */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Quantidade</label>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-12 w-12 shrink-0"
-                  onClick={() => setDialogQtd(String(Math.max(1, (parseInt(dialogQtd) || 1) - 1)))}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Embalagem</label>
+            <div className="flex flex-wrap gap-2">
+              {["UNI", "CX", "DZ", "½DZ", "DP", "FD", "KG", "PCT"].map(emb => (
+                <button
+                  key={emb}
+                  onClick={() => {
+                    setDialogEmbal(emb);
+                    setDialogFator(String(getDefaultFator(emb)));
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                    dialogEmbal === emb
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border text-muted-foreground hover:border-primary/50"
+                  }`}
                 >
-                  <Minus className="h-5 w-5" />
-                </Button>
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  value={dialogQtd}
-                  onChange={(e) => setDialogQtd(e.target.value)}
-                  onFocus={(e) => e.target.select()}
-                  className="h-12 text-center text-xl font-bold flex-1"
-                  autoFocus
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-12 w-12 shrink-0"
-                  onClick={() => setDialogQtd(String((parseInt(dialogQtd) || 1) + 1))}
-                >
-                  <Plus className="h-5 w-5" />
-                </Button>
-              </div>
-              {(parseInt(dialogQtd) || 1) > 0 && (parseInt(dialogFator) || 1) > 1 && (
-                <p className="text-xs text-primary mt-1.5 font-medium text-center">
-                  Total: {(parseInt(dialogQtd) || 1) * (parseInt(dialogFator) || 1)} unidades
-                </p>
-              )}
+                  {emb}
+                </button>
+              ))}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Fator (un/embalagem)</label>
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={dialogFator}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => setDialogFator(e.target.value.replace(/\D/g, ""))}
+              onBlur={() => setDialogFator(prev => prev === "" || prev === "0" ? "1" : prev)}
+              className="h-10 text-center text-base"
+            />
+            <p className="text-[10px] text-muted-foreground text-center">
+              {parseInt(dialogFator) > 1
+                ? `1 ${dialogEmbal} = ${dialogFator} unidades`
+                : "Preço por unidade"}
+            </p>
           </div>
 
           <DialogFooter className="flex-row gap-2">
@@ -838,7 +852,7 @@ const AppFuncionariosPublic = () => {
               className="flex-1 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
               onClick={confirmProductDialog}
             >
-              <Plus className="h-4 w-4 mr-1" /> Adicionar
+              ✅ Adicionar
             </Button>
           </DialogFooter>
         </DialogContent>
