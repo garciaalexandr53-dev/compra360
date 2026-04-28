@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Search, ClipboardList, Package, Store, MapPin, Plus, Minus, Send } from "lucide-react";
 import ConferenciaPedidos from "@/components/ConferenciaPedidos";
+import { getDefaultFator } from "@/lib/embalagem";
 
 interface ItemEntry {
   nome: string;
