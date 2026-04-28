@@ -415,7 +415,7 @@ const AddProdutosCotacaoPage = () => {
           <div className="space-y-2">
             <label className="text-sm font-medium">Embalagem</label>
             <div className="flex flex-wrap gap-2">
-              {["UNI", "CX", "DZ", "½DZ", "FD", "KG", "PCT"].map(emb => (
+              {["UNI", "CX", "DZ", "½DZ", "DP", "FD", "KG", "PCT"].map(emb => (
                 <button
                   key={emb}
                   onClick={() => {
