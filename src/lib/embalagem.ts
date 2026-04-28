@@ -8,6 +8,7 @@ export const EMBALAGEM_OPTIONS = [
   { sigla: "CX",  nome: "Caixa",   fatorPadrao: 12 },
   { sigla: "DZ",  nome: "Dúzia",   fatorPadrao: 12 },
   { sigla: "½DZ", nome: "Meia Dúzia", fatorPadrao: 6 },
+  { sigla: "DP",  nome: "Display", fatorPadrao: 12 },
   { sigla: "FD",  nome: "Fardo",   fatorPadrao: 6 },
   { sigla: "PCT", nome: "Pacote",  fatorPadrao: 1 },
   { sigla: "KG",  nome: "Quilo",   fatorPadrao: 1 },
