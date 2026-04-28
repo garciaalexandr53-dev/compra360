@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback } from "react";
-import { getDefaultFator } from "@/lib/embalagem";
+import { FATOR_PADRAO } from "@/lib/embalagemFatores";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -141,7 +141,7 @@ const AddProdutosCotacaoPage = () => {
     const fatorCadastrado =
       produto.fator_embalagem && produto.fator_embalagem > 0
         ? produto.fator_embalagem
-        : getDefaultFator(matched);
+        : (FATOR_PADRAO[matched] ?? 1);
     setDialogItem({ nome: produto.nome, produtoId: produto.id });
     setDialogQtd("");
     setDialogEmb(matched);
@@ -420,7 +420,7 @@ const AddProdutosCotacaoPage = () => {
                   key={emb}
                   onClick={() => {
                     setDialogEmb(emb);
-                    setDialogFator(String(getDefaultFator(emb)));
+                    setDialogFator(String(FATOR_PADRAO[emb] ?? 1));
                   }}
                   className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
                     dialogEmb === emb

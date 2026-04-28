@@ -4,10 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   EMBALAGENS_DIALOG,
-  getFatorPadrao,
+  FATOR_PADRAO,
   matchEmbalagem,
   resolveFatorInicial,
 } from "@/lib/embalagemFatores";
+
+const fatorPadraoDe = (sigla: string) => FATOR_PADRAO[sigla] ?? 1;
 
 export interface AdicionarItemProduto {
   nome: string;
@@ -52,14 +54,14 @@ export const AdicionarItemDialog = ({
 
   const handleEmbalagemChange = (sigla: string) => {
     setEmbalagem(sigla);
-    setFator(String(getFatorPadrao(sigla)));
+    setFator(String(fatorPadraoDe(sigla)));
   };
 
   const confirmar = () => {
     const qtdNum = parseInt(qtd) || 0;
     if (qtdNum < 1) return;
     let fatorNum = parseInt(fator);
-    if (!fatorNum || fatorNum <= 0) fatorNum = getFatorPadrao(embalagem);
+    if (!fatorNum || fatorNum <= 0) fatorNum = fatorPadraoDe(embalagem);
     onConfirmar(qtdNum, embalagem, fatorNum);
   };
 
@@ -115,7 +117,7 @@ export const AdicionarItemDialog = ({
             onBlur={() => {
               const val = fator.trim();
               if (!val || val === "0") {
-                setFator(String(getFatorPadrao(embalagem)));
+                setFator(String(fatorPadraoDe(embalagem)));
               }
             }}
             className="h-10 text-center text-base"
