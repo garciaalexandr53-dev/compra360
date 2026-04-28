@@ -286,7 +286,11 @@ const AppFuncionariosPublic = () => {
     if (!dialogProduct) return;
     const productKey = getProductKey(dialogProduct);
     const qty = parseInt(dialogQtd) || 1;
-    const fator = parseInt(dialogFator) || 1;
+    // Garantir fator válido: se vazio/zero, usar padrão da embalagem
+    let fator = parseInt(dialogFator);
+    if (!fator || fator <= 0) {
+      fator = getDefaultFator(dialogEmbal);
+    }
 
     const embLabel = dialogEmbal.toLowerCase();
     const obsParts: string[] = [];
