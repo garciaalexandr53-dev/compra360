@@ -778,97 +778,44 @@ const AppFuncionariosPublic = () => {
         </div>
       )}
 
-      {/* Dialog igual ao da aba Produtos: escolha de embalagem + fator */}
-      <Dialog open={!!dialogProduct} onOpenChange={(open) => { if (!open) setDialogProduct(null); }}>
-        <DialogContent className="max-w-sm rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-base font-semibold leading-snug truncate">
-              {dialogProduct?.nome}
-            </DialogTitle>
-            {dialogProduct && (
-              <p className="text-xs text-muted-foreground">
-                {(dialogProduct.embalagem || "un").toUpperCase()}
-                {dialogProduct.fator_embalagem > 1 ? ` · ${dialogProduct.fator_embalagem} un` : ""}
-                {dialogProduct.categorias?.nome ? ` · ${dialogProduct.categorias.nome}` : ""}
-              </p>
-            )}
-          </DialogHeader>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Quantidade</label>
-            <Input
-              type="number"
-              inputMode="numeric"
-              placeholder="Ex: 10"
-              value={dialogQtd}
-              onFocus={(e) => e.target.select()}
-              onChange={(e) => setDialogQtd(e.target.value.replace(/\D/g, ""))}
-              onKeyDown={(e) => { if (e.key === "Enter") confirmProductDialog(); }}
-              className="h-12 text-center text-lg font-bold"
-              autoFocus
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Embalagem</label>
-            <div className="flex flex-wrap gap-2">
-              {["UNI", "CX", "DZ", "½DZ", "DP", "FD", "KG", "PCT"].map(emb => (
-                <button
-                  key={emb}
-                  onClick={() => {
-                    setDialogEmbal(emb);
-                    setDialogFator(String(getDefaultFator(emb)));
-                  }}
-                  className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                    dialogEmbal === emb
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border text-muted-foreground hover:border-primary/50"
-                  }`}
-                >
-                  {emb}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Fator (un/embalagem)</label>
-            <Input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              value={dialogFator}
-              onFocus={(e) => e.target.select()}
-              onChange={(e) => setDialogFator(e.target.value.replace(/\D/g, ""))}
-              onBlur={() => {
-                const val = dialogFator.trim();
-                if (!val || val === "0") {
-                  const defaultFator = getDefaultFator(dialogEmbal);
-                  setDialogFator(String(defaultFator));
-                }
-              }}
-              className="h-10 text-center text-base"
-            />
-            <p className="text-[10px] text-muted-foreground text-center">
-              {parseInt(dialogFator) > 1
-                ? `1 ${dialogEmbal} = ${dialogFator} unidades`
-                : "Preço por unidade"}
-            </p>
-          </div>
-
-          <DialogFooter className="flex-row gap-2">
-            <Button variant="outline" className="flex-1" onClick={() => setDialogProduct(null)}>
-              Cancelar
-            </Button>
-            <Button
-              className="flex-1 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
-              onClick={confirmProductDialog}
-            >
-              ✅ Adicionar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Diálogo unificado de adicionar item */}
+      <AdicionarItemDialog
+        produto={
+          dialogProduct
+            ? {
+                nome: dialogProduct.nome,
+                embalagem: dialogProduct.embalagem,
+                fator: dialogProduct.fator_embalagem,
+                subtitulo: dialogProduct.categorias?.nome ?? null,
+              }
+            : null
+        }
+        onCancelar={() => setDialogProduct(null)}
+        onConfirmar={(qty, emb, fator) => {
+          if (!dialogProduct) return;
+          const productKey = getProductKey(dialogProduct);
+          setItems((prev) => [
+            ...prev,
+            { nome: dialogProduct.nome, quantidade: qty, embalagem: emb.toLowerCase(), fator },
+          ]);
+          setProductSearch("");
+          setTimeout(() => searchInputRef.current?.focus(), 100);
+          const totalUn = fator > 1 ? ` (${qty * fator}un)` : "";
+          toast.success(`✅ ${dialogProduct.nome} — ${qty} ${emb}${totalUn}`, {
+            duration: 1500,
+            position: "top-center",
+          });
+          setJustAdded((prev) => new Set(prev).add(productKey));
+          setTimeout(() => {
+            setJustAdded((prev) => {
+              const next = new Set(prev);
+              next.delete(productKey);
+              return next;
+            });
+          }, 2000);
+          setDialogProduct(null);
+        }}
+      />
     </div>
   );
 };
