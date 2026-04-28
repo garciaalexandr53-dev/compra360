@@ -279,14 +279,20 @@ const AppFuncionariosPublic = () => {
     setDialogProduct(product);
     setDialogQtd("1");
     setDialogEmbal(matched);
-    setDialogFator(String(fatorCadastrado));
+    // Garantir fator sempre válido, nunca vazio
+    const finalFator = fatorCadastrado && fatorCadastrado > 0 ? fatorCadastrado : getDefaultFator(matched);
+    setDialogFator(String(finalFator));
   }, []);
 
   const confirmProductDialog = useCallback(() => {
     if (!dialogProduct) return;
     const productKey = getProductKey(dialogProduct);
     const qty = parseInt(dialogQtd) || 1;
-    const fator = parseInt(dialogFator) || 1;
+    // Garantir fator válido: se vazio/zero, usar padrão da embalagem
+    let fator = parseInt(dialogFator);
+    if (!fator || fator <= 0) {
+      fator = getDefaultFator(dialogEmbal);
+    }
 
     const embLabel = dialogEmbal.toLowerCase();
     const obsParts: string[] = [];
@@ -834,7 +840,13 @@ const AppFuncionariosPublic = () => {
               value={dialogFator}
               onFocus={(e) => e.target.select()}
               onChange={(e) => setDialogFator(e.target.value.replace(/\D/g, ""))}
-              onBlur={() => setDialogFator(prev => prev === "" || prev === "0" ? "1" : prev)}
+              onBlur={() => {
+                const val = dialogFator.trim();
+                if (!val || val === "0") {
+                  const defaultFator = getDefaultFator(dialogEmbal);
+                  setDialogFator(String(defaultFator));
+                }
+              }}
               className="h-10 text-center text-base"
             />
             <p className="text-[10px] text-muted-foreground text-center">
