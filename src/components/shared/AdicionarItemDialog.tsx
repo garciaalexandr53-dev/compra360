@@ -1,0 +1,180 @@
+import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  EMBALAGENS_DIALOG,
+  getFatorPadrao,
+  matchEmbalagem,
+  resolveFatorInicial,
+} from "@/lib/embalagemFatores";
+
+export interface AdicionarItemProduto {
+  nome: string;
+  embalagem?: string | null;
+  fator?: number | null;
+  /** Texto opcional exibido como subtítulo (ex: categoria) */
+  subtitulo?: string | null;
+}
+
+interface AdicionarItemDialogProps {
+  produto: AdicionarItemProduto | null;
+  onConfirmar: (qtd: number, embalagem: string, fator: number) => void;
+  onCancelar: () => void;
+  /** Quantidade inicial — padrão 1 */
+  quantidadeInicial?: number;
+}
+
+/**
+ * Diálogo unificado de adicionar item.
+ * Ordem: Nome → Embalagem → Fator → Quantidade → Total → Botões.
+ * Usado por ProdutosPage e AppFuncionariosPublic.
+ */
+export const AdicionarItemDialog = ({
+  produto,
+  onConfirmar,
+  onCancelar,
+  quantidadeInicial = 1,
+}: AdicionarItemDialogProps) => {
+  const open = !!produto;
+  const [embalagem, setEmbalagem] = useState<string>("UNI");
+  const [fator, setFator] = useState<string>("1");
+  const [qtd, setQtd] = useState<string>(String(quantidadeInicial));
+
+  useEffect(() => {
+    if (!produto) return;
+    const emb = matchEmbalagem(produto.embalagem);
+    const fatorInicial = resolveFatorInicial(emb, produto.fator ?? null);
+    setEmbalagem(emb);
+    setFator(String(fatorInicial));
+    setQtd(String(quantidadeInicial));
+  }, [produto, quantidadeInicial]);
+
+  const handleEmbalagemChange = (sigla: string) => {
+    setEmbalagem(sigla);
+    setFator(String(getFatorPadrao(sigla)));
+  };
+
+  const confirmar = () => {
+    const qtdNum = parseInt(qtd) || 0;
+    if (qtdNum < 1) return;
+    let fatorNum = parseInt(fator);
+    if (!fatorNum || fatorNum <= 0) fatorNum = getFatorPadrao(embalagem);
+    onConfirmar(qtdNum, embalagem, fatorNum);
+  };
+
+  const fatorNum = parseInt(fator) || 1;
+  const qtdNum = parseInt(qtd) || 0;
+  const totalUn = qtdNum * fatorNum;
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onCancelar(); }}>
+      <DialogContent
+        className="w-[calc(100vw-32px)] max-w-md rounded-2xl p-4 sm:p-6 gap-4"
+      >
+        <DialogHeader>
+          <DialogTitle className="text-base font-semibold leading-snug pr-6">
+            {produto?.nome}
+          </DialogTitle>
+          {produto?.subtitulo && (
+            <p className="text-xs text-muted-foreground">{produto.subtitulo}</p>
+          )}
+        </DialogHeader>
+
+        {/* 2. Embalagem */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Embalagem</label>
+          <div className="flex flex-wrap gap-2">
+            {EMBALAGENS_DIALOG.map((emb) => (
+              <button
+                key={emb}
+                type="button"
+                onClick={() => handleEmbalagemChange(emb)}
+                className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                  embalagem === emb
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border text-muted-foreground hover:border-primary/50"
+                }`}
+              >
+                {emb}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 3. Fator */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Fator (un/embalagem)</label>
+          <Input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            value={fator}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => setFator(e.target.value.replace(/\D/g, ""))}
+            onBlur={() => {
+              const val = fator.trim();
+              if (!val || val === "0") {
+                setFator(String(getFatorPadrao(embalagem)));
+              }
+            }}
+            className="h-10 text-center text-base"
+          />
+        </div>
+
+        {/* 4. Quantidade */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Quantidade do pedido</label>
+          <Input
+            type="number"
+            inputMode="numeric"
+            placeholder="Ex: 10"
+            value={qtd}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => setQtd(e.target.value.replace(/\D/g, ""))}
+            onKeyDown={(e) => { if (e.key === "Enter") confirmar(); }}
+            className="h-14 text-center text-2xl font-bold"
+            autoFocus
+          />
+        </div>
+
+        {/* 5. Total calculado */}
+        <p className="text-sm text-center text-muted-foreground">
+          {qtdNum > 0 ? (
+            fatorNum > 1 ? (
+              <>
+                <span className="font-semibold text-foreground">{qtdNum} {embalagem}</span>
+                {" = "}
+                <span className="font-semibold text-foreground">{totalUn} unidades</span>
+              </>
+            ) : (
+              <span className="font-semibold text-foreground">{qtdNum} {embalagem}</span>
+            )
+          ) : (
+            "Informe a quantidade"
+          )}
+        </p>
+
+        {/* 6. Botões */}
+        <DialogFooter className="flex-row gap-2 sm:gap-2">
+          <Button
+            variant="outline"
+            className="flex-1 h-11"
+            onClick={onCancelar}
+          >
+            Cancelar
+          </Button>
+          <Button
+            className="flex-1 h-11 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
+            onClick={confirmar}
+            disabled={qtdNum < 1}
+          >
+            Adicionar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default AdicionarItemDialog;
