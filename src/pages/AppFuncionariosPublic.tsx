@@ -834,7 +834,13 @@ const AppFuncionariosPublic = () => {
               value={dialogFator}
               onFocus={(e) => e.target.select()}
               onChange={(e) => setDialogFator(e.target.value.replace(/\D/g, ""))}
-              onBlur={() => setDialogFator(prev => prev === "" || prev === "0" ? "1" : prev)}
+              onBlur={() => {
+                const val = dialogFator.trim();
+                if (!val || val === "0") {
+                  const defaultFator = getDefaultFator(dialogEmbal);
+                  setDialogFator(String(defaultFator));
+                }
+              }}
               className="h-10 text-center text-base"
             />
             <p className="text-[10px] text-muted-foreground text-center">
