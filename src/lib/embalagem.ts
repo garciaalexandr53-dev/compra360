@@ -1,28 +1,36 @@
 /**
- * Embalagem (packaging) types and conversion factors.
- * The factor represents how many base units are in one package.
+ * Embalagem (packaging) types.
+ *
+ * IMPORTANTE: Os fatores padrão vêm de src/lib/embalagemFatores.ts (fonte única).
+ * Não duplicar números aqui.
  */
+import { FATOR_PADRAO, getFatorPadrao } from "./embalagemFatores";
 
-export const EMBALAGEM_OPTIONS = [
-  { sigla: "UNI", nome: "Unidade", fatorPadrao: 1 },
-  { sigla: "CX",  nome: "Caixa",   fatorPadrao: 12 },
-  { sigla: "DZ",  nome: "Dúzia",   fatorPadrao: 12 },
-  { sigla: "½DZ", nome: "Meia Dúzia", fatorPadrao: 6 },
-  { sigla: "DP",  nome: "Display", fatorPadrao: 12 },
-  { sigla: "FD",  nome: "Fardo",   fatorPadrao: 6 },
-  { sigla: "PCT", nome: "Pacote",  fatorPadrao: 1 },
-  { sigla: "KG",  nome: "Quilo",   fatorPadrao: 1 },
-  { sigla: "LT",  nome: "Litro",   fatorPadrao: 1 },
-  { sigla: "SC",  nome: "Saco",    fatorPadrao: 1 },
-  { sigla: "GL",  nome: "Galão",   fatorPadrao: 1 },
-] as const;
+const EMBALAGEM_NOMES: Record<string, string> = {
+  UNI: "Unidade",
+  CX: "Caixa",
+  DZ: "Dúzia",
+  "½DZ": "Meia Dúzia",
+  DP: "Display",
+  FD: "Fardo",
+  PCT: "Pacote",
+  KG: "Quilo",
+  LT: "Litro",
+  SC: "Saco",
+  GL: "Galão",
+};
 
-export const EMBALAGEM_SIGLAS = EMBALAGEM_OPTIONS.map(e => e.sigla);
+export const EMBALAGEM_OPTIONS = Object.keys(FATOR_PADRAO).map((sigla) => ({
+  sigla,
+  nome: EMBALAGEM_NOMES[sigla] ?? sigla,
+  fatorPadrao: FATOR_PADRAO[sigla],
+}));
 
-/** Get default factor for a given embalagem sigla */
+export const EMBALAGEM_SIGLAS = EMBALAGEM_OPTIONS.map((e) => e.sigla);
+
+/** @deprecated Use getFatorPadrao de "@/lib/embalagemFatores". */
 export function getDefaultFator(sigla: string): number {
-  const found = EMBALAGEM_OPTIONS.find(e => e.sigla === sigla);
-  return found?.fatorPadrao ?? 1;
+  return getFatorPadrao(sigla);
 }
 
 /** Format embalagem + fator for display, e.g. "2 CX (24un)" */
