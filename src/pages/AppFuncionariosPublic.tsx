@@ -279,7 +279,9 @@ const AppFuncionariosPublic = () => {
     setDialogProduct(product);
     setDialogQtd("1");
     setDialogEmbal(matched);
-    setDialogFator(String(fatorCadastrado));
+    // Garantir fator sempre válido, nunca vazio
+    const finalFator = fatorCadastrado && fatorCadastrado > 0 ? fatorCadastrado : getDefaultFator(matched);
+    setDialogFator(String(finalFator));
   }, []);
 
   const confirmProductDialog = useCallback(() => {
