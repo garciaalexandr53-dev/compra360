@@ -29,6 +29,7 @@ type Categoria = Tables<"categorias">;
 
 import { EMBALAGEM_SIGLAS, getDefaultFator } from "@/lib/embalagem";
 import { autoSuggestFator } from "@/lib/autoFator";
+import AdicionarItemDialog from "@/components/shared/AdicionarItemDialog";
 const EMBALAGEM_OPTIONS = EMBALAGEM_SIGLAS;
 const emptyForm = { nome: "", categoria_id: "", embalagem: "UNI", quantidade: 1, fator_embalagem: 1 };
 const PAGE_SIZE = 80;
@@ -1139,6 +1140,31 @@ const ProdutosPage = () => {
           </div>
         </SheetContent>
       </Sheet>
+
+      <AdicionarItemDialog
+        produto={
+          dialogProduto
+            ? {
+                nome: dialogProduto.nome,
+                embalagem: dialogProduto.embalagem,
+                fator: (dialogProduto as any).fator_embalagem,
+                subtitulo: dialogProduto.categorias?.nome ?? null,
+              }
+            : null
+        }
+        onCancelar={() => setDialogProduto(null)}
+        onConfirmar={(qtd, emb, fator) => {
+          if (!dialogProduto) return;
+          toggleCotacaoMutation.mutate({
+            produtoId: dialogProduto.id,
+            adding: true,
+            quantidade: qtd,
+            tipoEmbalagem: emb,
+            fatorEmbalagem: fator,
+          });
+          setDialogProduto(null);
+        }}
+      />
     </div>
   );
 };
