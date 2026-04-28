@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Search, ClipboardList, Package, Store, MapPin, Plus, Minus, Send } from "lucide-react";
 import ConferenciaPedidos from "@/components/ConferenciaPedidos";
-import { getDefaultFator } from "@/lib/embalagem";
+import { FATOR_PADRAO } from "@/lib/embalagemFatores";
 import AdicionarItemDialog from "@/components/shared/AdicionarItemDialog";
 
 interface ItemEntry {
@@ -273,15 +273,16 @@ const AppFuncionariosPublic = () => {
     const embRaw = (product.embalagem || "UNI").split("|")[0]?.trim().toUpperCase() || "UNI";
     const tipos = ["UNI", "CX", "DZ", "½DZ", "DP", "FD", "KG", "PCT"];
     const matched = tipos.find((t) => embRaw.startsWith(t)) || "UNI";
+    const fatorPadrao = FATOR_PADRAO[matched] ?? 1;
     const fatorCadastrado =
       product.fator_embalagem && product.fator_embalagem > 0
         ? product.fator_embalagem
-        : getDefaultFator(matched);
+        : fatorPadrao;
     setDialogProduct(product);
     setDialogQtd("1");
     setDialogEmbal(matched);
     // Garantir fator sempre válido, nunca vazio
-    const finalFator = fatorCadastrado && fatorCadastrado > 0 ? fatorCadastrado : getDefaultFator(matched);
+    const finalFator = fatorCadastrado && fatorCadastrado > 0 ? fatorCadastrado : fatorPadrao;
     setDialogFator(String(finalFator));
   }, []);
 
@@ -292,7 +293,7 @@ const AppFuncionariosPublic = () => {
     // Garantir fator válido: se vazio/zero, usar padrão da embalagem
     let fator = parseInt(dialogFator);
     if (!fator || fator <= 0) {
-      fator = getDefaultFator(dialogEmbal);
+      fator = FATOR_PADRAO[dialogEmbal] ?? 1;
     }
 
     const embLabel = dialogEmbal.toLowerCase();

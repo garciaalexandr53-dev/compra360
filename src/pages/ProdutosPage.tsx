@@ -27,7 +27,8 @@ import type { Tables } from "@/integrations/supabase/types";
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 type Categoria = Tables<"categorias">;
 
-import { EMBALAGEM_SIGLAS, getDefaultFator } from "@/lib/embalagem";
+import { EMBALAGEM_SIGLAS } from "@/lib/embalagem";
+import { FATOR_PADRAO } from "@/lib/embalagemFatores";
 import { autoSuggestFator } from "@/lib/autoFator";
 import AdicionarItemDialog from "@/components/shared/AdicionarItemDialog";
 const EMBALAGEM_OPTIONS = EMBALAGEM_SIGLAS;
@@ -882,7 +883,7 @@ const ProdutosPage = () => {
                   value={form.embalagem}
                   onChange={(e) => {
                     const emb = e.target.value;
-                    setForm({ ...form, embalagem: emb, fator_embalagem: getDefaultFator(emb) });
+                    setForm({ ...form, embalagem: emb, fator_embalagem: FATOR_PADRAO[emb] ?? 1 });
                   }}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >

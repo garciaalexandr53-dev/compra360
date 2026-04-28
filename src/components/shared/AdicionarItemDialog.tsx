@@ -4,10 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   EMBALAGENS_DIALOG,
-  getFatorPadrao,
+  FATOR_PADRAO,
   matchEmbalagem,
   resolveFatorInicial,
 } from "@/lib/embalagemFatores";
+
+const fatorPadraoDe = (sigla: string) => FATOR_PADRAO[sigla] ?? 1;
 
 export interface AdicionarItemProduto {
   nome: string;
