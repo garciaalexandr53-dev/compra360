@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   EMBALAGENS_DIALOG,
+  FATOR_PADRAO,
   getFatorPadrao,
   matchEmbalagem,
   resolveFatorInicial,
@@ -10,6 +11,17 @@ describe("embalagemFatores", () => {
   it("inclui todas as embalagens obrigatórias do diálogo", () => {
     ["UNI", "CX", "DZ", "½DZ", "DP", "FD", "KG", "PCT", "LT"].forEach((s) => {
       expect(EMBALAGENS_DIALOG).toContain(s as any);
+    });
+  });
+
+  it("FATOR_PADRAO é a fonte única e bate com getFatorPadrao", () => {
+    expect(FATOR_PADRAO.CX).toBe(12);
+    expect(FATOR_PADRAO.DP).toBe(12);
+    expect(FATOR_PADRAO["½DZ"]).toBe(6);
+    expect(FATOR_PADRAO.UNI).toBe(1);
+    expect(FATOR_PADRAO.XYZ ?? 1).toBe(1);
+    EMBALAGENS_DIALOG.forEach((s) => {
+      expect(getFatorPadrao(s)).toBe(FATOR_PADRAO[s]);
     });
   });
 
