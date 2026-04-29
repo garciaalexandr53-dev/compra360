@@ -178,7 +178,7 @@ export const AdicionarItemDialog = ({
           <Button
             className="flex-1 h-11 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
             onClick={confirmar}
-            disabled={qtdNum < 1}
+            disabled={qtdNum < 1 || fatorInvalido}
           >
             Adicionar
           </Button>
