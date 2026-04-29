@@ -60,9 +60,12 @@ export const AdicionarItemDialog = ({
   const confirmar = () => {
     const qtdNum = parseInt(qtd) || 0;
     if (qtdNum < 1) return;
-    let fatorNum = parseInt(fator);
-    if (!fatorNum || fatorNum <= 0) fatorNum = fatorPadraoDe(embalagem);
-    onConfirmar(qtdNum, embalagem, fatorNum);
+    const fatorTrimmed = fator.trim();
+    const fatorParsed = parseInt(fatorTrimmed);
+    // Bloqueia confirmação quando o usuário deixou o fator inválido sem corrigir.
+    // O fallback para o padrão acontece via onBlur do campo de fator.
+    if (fatorTrimmed === "" || isNaN(fatorParsed) || fatorParsed <= 0) return;
+    onConfirmar(qtdNum, embalagem, fatorParsed);
   };
 
   const fatorTrim = fator.trim();
