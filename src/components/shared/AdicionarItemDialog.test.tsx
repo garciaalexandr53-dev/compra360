@@ -73,7 +73,7 @@ describe("AdicionarItemDialog — fator UI", () => {
       <AdicionarItemDialog produto={produto} onConfirmar={vi.fn()} onCancelar={vi.fn()} />,
     );
     fireEvent.click(screen.getByRole("button", { name: "DP" }));
-    const fatorInput = screen.getByText(/Fator/i) as HTMLInputElement;
+    const [fatorInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
     fireEvent.change(fatorInput, { target: { value: "" } });
     fireEvent.blur(fatorInput);
     expect(fatorInput.value).toBe(String(FATOR_PADRAO.DP)); // 12
