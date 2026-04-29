@@ -304,6 +304,7 @@ describe("AdicionarItemDialog — validação de fator", () => {
 
     expect(onConfirmar).not.toHaveBeenCalled();
   });
+});
 
 describe("AdicionarItemDialog — troca rápida de embalagem", () => {
   it("alterna UNI ↔ CX rapidamente sem deixar valores obsoletos no fator/total", () => {
