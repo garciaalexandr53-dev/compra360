@@ -701,7 +701,17 @@ const ProdutosPage = () => {
                     return (
                       <div
                         key={p.id}
-                        className={`flex items-center gap-2 px-3 py-2.5 border-b hover:bg-muted/30 transition-all ${
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Abrir opções de ${p.nome}`}
+                        onClick={() => setSheetProduto(p)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setSheetProduto(p);
+                          }
+                        }}
+                        className={`flex items-center gap-2 px-3 py-2.5 border-b hover:bg-muted/30 transition-all cursor-pointer focus:outline-none focus:bg-muted/40 ${
                           inCotacao ? "border-l-2 border-l-primary bg-primary/5" : ""
                         }`}
                       >
@@ -711,10 +721,10 @@ const ProdutosPage = () => {
                             {p.categorias?.nome || "Sem Categoria"} · {p.embalagem || "un"}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)} title="Editar">
-                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                          </Button>
+                        <div
+                          className="flex items-center gap-1 flex-shrink-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {inCotacao ? (
                             <Button
                               size="sm"
@@ -729,6 +739,7 @@ const ProdutosPage = () => {
                               size="sm"
                               className="h-7 text-xs px-2 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"
                               onClick={() => setDialogProduto(p)}
+                              aria-label={`Adicionar ${p.nome} à cotação`}
                             >
                               +
                             </Button>
