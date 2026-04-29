@@ -11,7 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, Sparkles, Loader2, MoreHorizontal, ArrowRight, Package, X, Filter } from "lucide-react";
+import { Plus, Search, Trash2, Check, Upload, ChevronLeft, Sparkles, Loader2, MoreHorizontal, ArrowRight, Package, X, Filter } from "lucide-react";
+import ProdutoSheet, { type ProdutoSheetItem } from "@/components/produtos/ProdutoSheet";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
@@ -91,6 +92,9 @@ const ProdutosPage = () => {
 
   // Diálogo unificado de adicionar à cotação
   const [dialogProduto, setDialogProduto] = useState<Produto | null>(null);
+
+  // Sheet de opções do produto (editar / excluir)
+  const [sheetProduto, setSheetProduto] = useState<Produto | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -697,7 +701,17 @@ const ProdutosPage = () => {
                     return (
                       <div
                         key={p.id}
-                        className={`flex items-center gap-2 px-3 py-2.5 border-b hover:bg-muted/30 transition-all ${
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Abrir opções de ${p.nome}`}
+                        onClick={() => setSheetProduto(p)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setSheetProduto(p);
+                          }
+                        }}
+                        className={`flex items-center gap-2 px-3 py-2.5 border-b hover:bg-muted/30 transition-all cursor-pointer focus:outline-none focus:bg-muted/40 ${
                           inCotacao ? "border-l-2 border-l-primary bg-primary/5" : ""
                         }`}
                       >
@@ -707,10 +721,10 @@ const ProdutosPage = () => {
                             {p.categorias?.nome || "Sem Categoria"} · {p.embalagem || "un"}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)} title="Editar">
-                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                          </Button>
+                        <div
+                          className="flex items-center gap-1 flex-shrink-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {inCotacao ? (
                             <Button
                               size="sm"
@@ -725,6 +739,7 @@ const ProdutosPage = () => {
                               size="sm"
                               className="h-7 text-xs px-2 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"
                               onClick={() => setDialogProduto(p)}
+                              aria-label={`Adicionar ${p.nome} à cotação`}
                             >
                               +
                             </Button>
@@ -767,6 +782,18 @@ const ProdutosPage = () => {
           </div>
         )}
       </div>
+
+      {/* Sheet de opções do produto */}
+      <ProdutoSheet
+        produto={sheetProduto as ProdutoSheetItem | null}
+        open={!!sheetProduto}
+        onOpenChange={(o) => { if (!o) setSheetProduto(null); }}
+        onEdit={(prod) => openEdit(prod as Produto)}
+        onDelete={(prod) => {
+          setDeleteConfirmId(prod.id);
+          setDeleteConfirmName(prod.nome);
+        }}
+      />
 
       {/* Delete confirmation */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
