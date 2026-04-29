@@ -60,12 +60,18 @@ export const AdicionarItemDialog = ({
   const confirmar = () => {
     const qtdNum = parseInt(qtd) || 0;
     if (qtdNum < 1) return;
-    let fatorNum = parseInt(fator);
-    if (!fatorNum || fatorNum <= 0) fatorNum = fatorPadraoDe(embalagem);
-    onConfirmar(qtdNum, embalagem, fatorNum);
+    const fatorTrimmed = fator.trim();
+    const fatorParsed = parseInt(fatorTrimmed);
+    // Bloqueia confirmação quando o usuário deixou o fator inválido sem corrigir.
+    // O fallback para o padrão acontece via onBlur do campo de fator.
+    if (fatorTrimmed === "" || isNaN(fatorParsed) || fatorParsed <= 0) return;
+    onConfirmar(qtdNum, embalagem, fatorParsed);
   };
 
-  const fatorNum = parseInt(fator) || 1;
+  const fatorTrim = fator.trim();
+  const fatorParsed = parseInt(fatorTrim);
+  const fatorInvalido = fatorTrim === "" || isNaN(fatorParsed) || fatorParsed <= 0;
+  const fatorNum = fatorInvalido ? 1 : fatorParsed;
   const qtdNum = parseInt(qtd) || 0;
   const totalUn = qtdNum * fatorNum;
 
@@ -121,7 +127,13 @@ export const AdicionarItemDialog = ({
               }
             }}
             className="h-10 text-center text-base"
+            aria-invalid={fatorInvalido}
           />
+          {fatorInvalido && (
+            <p role="alert" className="text-xs text-destructive">
+              Informe um fator válido (maior que zero)
+            </p>
+          )}
         </div>
 
         {/* 4. Quantidade */}
@@ -169,7 +181,7 @@ export const AdicionarItemDialog = ({
           <Button
             className="flex-1 h-11 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
             onClick={confirmar}
-            disabled={qtdNum < 1}
+            disabled={qtdNum < 1 || fatorInvalido}
           >
             Adicionar
           </Button>
