@@ -178,3 +178,127 @@ describe("AdicionarItemDialog — responsivo", () => {
     expect(dialog.className).toMatch(/sm:p-6/);
   });
 });
+
+describe("AdicionarItemDialog — validação", () => {
+  it("desabilita o botão Adicionar quando a quantidade está vazia ou zero", () => {
+    const onConfirmar = vi.fn();
+    render(
+      <AdicionarItemDialog produto={produto} onConfirmar={onConfirmar} onCancelar={vi.fn()} />,
+    );
+
+    const [, qtdInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    const btnAdicionar = screen.getByRole("button", { name: /Adicionar/i }) as HTMLButtonElement;
+
+    // Quantidade = 0 → desabilitado e mensagem orientativa
+    fireEvent.change(qtdInput, { target: { value: "0" } });
+    expect(btnAdicionar).toBeDisabled();
+    expect(screen.getByText(/Informe a quantidade/i)).toBeInTheDocument();
+
+    // Quantidade vazia → desabilitado
+    fireEvent.change(qtdInput, { target: { value: "" } });
+    expect(btnAdicionar).toBeDisabled();
+    expect(screen.getByText(/Informe a quantidade/i)).toBeInTheDocument();
+
+    // Click no botão desabilitado não chama onConfirmar
+    fireEvent.click(btnAdicionar);
+    expect(onConfirmar).not.toHaveBeenCalled();
+  });
+
+  it("habilita o botão Adicionar somente quando a quantidade é válida (>=1)", () => {
+    render(
+      <AdicionarItemDialog produto={produto} onConfirmar={vi.fn()} onCancelar={vi.fn()} />,
+    );
+    const [, qtdInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    const btnAdicionar = screen.getByRole("button", { name: /Adicionar/i }) as HTMLButtonElement;
+
+    fireEvent.change(qtdInput, { target: { value: "1" } });
+    expect(btnAdicionar).not.toBeDisabled();
+  });
+
+  it("ao confirmar com fator inválido (vazio), usa o fator padrão da embalagem", () => {
+    const onConfirmar = vi.fn();
+    render(
+      <AdicionarItemDialog produto={produto} onConfirmar={onConfirmar} onCancelar={vi.fn()} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "CX" }));
+    const [fatorInput, qtdInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+
+    // Esvazia o fator e confirma — deve cair para FATOR_PADRAO.CX = 12
+    fireEvent.change(fatorInput, { target: { value: "" } });
+    fireEvent.change(qtdInput, { target: { value: "2" } });
+    fireEvent.click(screen.getByRole("button", { name: /Adicionar/i }));
+
+    expect(onConfirmar).toHaveBeenCalledTimes(1);
+    expect(onConfirmar).toHaveBeenCalledWith(2, "CX", FATOR_PADRAO.CX);
+  });
+});
+
+describe("AdicionarItemDialog — troca rápida de embalagem", () => {
+  it("alterna UNI ↔ CX rapidamente sem deixar valores obsoletos no fator/total", () => {
+    render(
+      <AdicionarItemDialog
+        produto={produto}
+        onConfirmar={vi.fn()}
+        onCancelar={vi.fn()}
+        quantidadeInicial={3}
+      />,
+    );
+
+    const [fatorInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+
+    // Sequência rápida UNI → CX → UNI → CX → UNI
+    fireEvent.click(screen.getByRole("button", { name: "CX" }));
+    expect(fatorInput.value).toBe(String(FATOR_PADRAO.CX));
+    expect(screen.getByText(/3 CX/i)).toBeInTheDocument();
+    expect(screen.getByText(/36 unidades/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "UNI" }));
+    expect(fatorInput.value).toBe(String(FATOR_PADRAO.UNI));
+    expect(screen.getByText(/3 UNI/i)).toBeInTheDocument();
+    // fator 1 não exibe "= N unidades"
+    expect(screen.queryByText(/unidades/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "CX" }));
+    expect(fatorInput.value).toBe(String(FATOR_PADRAO.CX));
+    expect(screen.getByText(/36 unidades/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "UNI" }));
+    expect(fatorInput.value).toBe("1");
+    expect(screen.queryByText(/unidades/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("AdicionarItemDialog — comportamento de Enter", () => {
+  it("Enter na quantidade confirma quando estado é válido", () => {
+    const onConfirmar = vi.fn();
+    render(
+      <AdicionarItemDialog produto={produto} onConfirmar={onConfirmar} onCancelar={vi.fn()} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "CX" }));
+    const [, qtdInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    fireEvent.change(qtdInput, { target: { value: "4" } });
+    fireEvent.keyDown(qtdInput, { key: "Enter" });
+
+    expect(onConfirmar).toHaveBeenCalledTimes(1);
+    expect(onConfirmar).toHaveBeenCalledWith(4, "CX", FATOR_PADRAO.CX);
+  });
+
+  it("Enter na quantidade NÃO confirma quando quantidade é 0/vazia", () => {
+    const onConfirmar = vi.fn();
+    render(
+      <AdicionarItemDialog produto={produto} onConfirmar={onConfirmar} onCancelar={vi.fn()} />,
+    );
+
+    const [, qtdInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+
+    fireEvent.change(qtdInput, { target: { value: "0" } });
+    fireEvent.keyDown(qtdInput, { key: "Enter" });
+    expect(onConfirmar).not.toHaveBeenCalled();
+
+    fireEvent.change(qtdInput, { target: { value: "" } });
+    fireEvent.keyDown(qtdInput, { key: "Enter" });
+    expect(onConfirmar).not.toHaveBeenCalled();
+  });
+});
