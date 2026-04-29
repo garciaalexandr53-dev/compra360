@@ -215,7 +215,7 @@ describe("AdicionarItemDialog — validação", () => {
     expect(btnAdicionar).not.toBeDisabled();
   });
 
-  it("ao confirmar com fator inválido (vazio), usa o fator padrão da embalagem", () => {
+  it("ao confirmar com fator vazio (após blur), usa o fator padrão da embalagem", () => {
     const onConfirmar = vi.fn();
     render(
       <AdicionarItemDialog produto={produto} onConfirmar={onConfirmar} onCancelar={vi.fn()} />,
@@ -224,8 +224,11 @@ describe("AdicionarItemDialog — validação", () => {
     fireEvent.click(screen.getByRole("button", { name: "CX" }));
     const [fatorInput, qtdInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
 
-    // Esvazia o fator e confirma — deve cair para FATOR_PADRAO.CX = 12
+    // Esvazia o fator e dispara blur — fallback restaura FATOR_PADRAO.CX
     fireEvent.change(fatorInput, { target: { value: "" } });
+    fireEvent.blur(fatorInput);
+    expect(fatorInput.value).toBe(String(FATOR_PADRAO.CX));
+
     fireEvent.change(qtdInput, { target: { value: "2" } });
     fireEvent.click(screen.getByRole("button", { name: /Adicionar/i }));
 
@@ -233,6 +236,74 @@ describe("AdicionarItemDialog — validação", () => {
     expect(onConfirmar).toHaveBeenCalledWith(2, "CX", FATOR_PADRAO.CX);
   });
 });
+
+describe("AdicionarItemDialog — validação de fator", () => {
+  it("exibe mensagem de erro e desabilita Adicionar quando fator está vazio", () => {
+    const onConfirmar = vi.fn();
+    render(
+      <AdicionarItemDialog produto={produto} onConfirmar={onConfirmar} onCancelar={vi.fn()} />,
+    );
+
+    const [fatorInput, qtdInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    const btnAdicionar = screen.getByRole("button", { name: /Adicionar/i }) as HTMLButtonElement;
+
+    // Quantidade válida para isolar a regra do fator
+    fireEvent.change(qtdInput, { target: { value: "3" } });
+    expect(btnAdicionar).not.toBeDisabled();
+
+    // Esvazia o fator (sem blur) → erro aparece e botão desabilita
+    fireEvent.change(fatorInput, { target: { value: "" } });
+    expect(fatorInput).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent(/fator válido/i);
+    expect(btnAdicionar).toBeDisabled();
+
+    // Click no botão desabilitado não confirma
+    fireEvent.click(btnAdicionar);
+    expect(onConfirmar).not.toHaveBeenCalled();
+  });
+
+  it("desabilita Adicionar quando fator é zero (inválido) e reabilita ao corrigir", () => {
+    const onConfirmar = vi.fn();
+    render(
+      <AdicionarItemDialog produto={produto} onConfirmar={onConfirmar} onCancelar={vi.fn()} />,
+    );
+
+    const [fatorInput, qtdInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    const btnAdicionar = screen.getByRole("button", { name: /Adicionar/i }) as HTMLButtonElement;
+
+    fireEvent.change(qtdInput, { target: { value: "2" } });
+
+    // fator = 0 → inválido
+    fireEvent.change(fatorInput, { target: { value: "0" } });
+    expect(btnAdicionar).toBeDisabled();
+    expect(screen.getByRole("alert")).toHaveTextContent(/fator válido/i);
+
+    // Corrige para um valor válido → erro some e botão reabilita
+    fireEvent.change(fatorInput, { target: { value: "4" } });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(fatorInput).toHaveAttribute("aria-invalid", "false");
+    expect(btnAdicionar).not.toBeDisabled();
+
+    // Confirma — usa o fator informado pelo usuário
+    fireEvent.click(btnAdicionar);
+    expect(onConfirmar).toHaveBeenCalledTimes(1);
+    expect(onConfirmar).toHaveBeenCalledWith(2, "UNI", 4);
+  });
+
+  it("Enter na quantidade NÃO confirma quando o fator está inválido", () => {
+    const onConfirmar = vi.fn();
+    render(
+      <AdicionarItemDialog produto={produto} onConfirmar={onConfirmar} onCancelar={vi.fn()} />,
+    );
+
+    const [fatorInput, qtdInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+
+    fireEvent.change(qtdInput, { target: { value: "2" } });
+    fireEvent.change(fatorInput, { target: { value: "" } });
+    fireEvent.keyDown(qtdInput, { key: "Enter" });
+
+    expect(onConfirmar).not.toHaveBeenCalled();
+  });
 
 describe("AdicionarItemDialog — troca rápida de embalagem", () => {
   it("alterna UNI ↔ CX rapidamente sem deixar valores obsoletos no fator/total", () => {
