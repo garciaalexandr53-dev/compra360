@@ -124,7 +124,13 @@ export const AdicionarItemDialog = ({
               }
             }}
             className="h-10 text-center text-base"
+            aria-invalid={fatorInvalido}
           />
+          {fatorInvalido && (
+            <p role="alert" className="text-xs text-destructive">
+              Informe um fator válido (maior que zero)
+            </p>
+          )}
         </div>
 
         {/* 4. Quantidade */}
