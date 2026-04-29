@@ -80,6 +80,67 @@ describe("AdicionarItemDialog — fator UI", () => {
   });
 });
 
+describe("AdicionarItemDialog — seletores robustos e recálculo", () => {
+  it("localiza fator e quantidade por role=spinbutton (sem depender de label)", () => {
+    render(
+      <AdicionarItemDialog produto={produto} onConfirmar={vi.fn()} onCancelar={vi.fn()} />,
+    );
+    const inputs = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    expect(inputs).toHaveLength(2);
+    const [fatorInput, qtdInput] = inputs;
+    expect(fatorInput.value).toBe("1");
+    expect(qtdInput.value).toBe("1");
+  });
+
+  it("recalcula o total ao alterar a quantidade usando o fator padrão da embalagem", () => {
+    render(
+      <AdicionarItemDialog produto={produto} onConfirmar={vi.fn()} onCancelar={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "CX" }));
+    const [, qtdInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+
+    fireEvent.change(qtdInput, { target: { value: "5" } });
+    // 5 CX × 12 = 60 unidades
+    expect(screen.getByText(/5 CX/i)).toBeInTheDocument();
+    expect(screen.getByText(/60 unidades/i)).toBeInTheDocument();
+
+    fireEvent.change(qtdInput, { target: { value: "3" } });
+    // 3 CX × 12 = 36 unidades
+    expect(screen.getByText(/3 CX/i)).toBeInTheDocument();
+    expect(screen.getByText(/36 unidades/i)).toBeInTheDocument();
+  });
+});
+
+describe("AdicionarItemDialog — fechamento descarta estado", () => {
+  it("ao cancelar e reabrir, fator/quantidade voltam aos valores iniciais do produto", () => {
+    const onCancelar = vi.fn();
+    const { rerender } = render(
+      <AdicionarItemDialog produto={produto} onConfirmar={vi.fn()} onCancelar={onCancelar} />,
+    );
+
+    // Altera embalagem (fator vira 12) e quantidade
+    fireEvent.click(screen.getByRole("button", { name: "CX" }));
+    const [fatorInput, qtdInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    fireEvent.change(qtdInput, { target: { value: "9" } });
+    expect(fatorInput.value).toBe("12");
+    expect(qtdInput.value).toBe("9");
+
+    // Fecha o diálogo
+    rerender(
+      <AdicionarItemDialog produto={null} onConfirmar={vi.fn()} onCancelar={onCancelar} />,
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    // Reabre com o mesmo produto — estado deve ter sido descartado
+    rerender(
+      <AdicionarItemDialog produto={produto} onConfirmar={vi.fn()} onCancelar={onCancelar} />,
+    );
+    const [fatorReaberto, qtdReaberto] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    expect(fatorReaberto.value).toBe(String(FATOR_PADRAO.UNI)); // 1
+    expect(qtdReaberto.value).toBe("1");
+  });
+});
+
 describe("AdicionarItemDialog — responsivo", () => {
   it("renderiza corretamente em 360px (mobile)", () => {
     setViewport(360);
