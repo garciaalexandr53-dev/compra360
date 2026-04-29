@@ -11,7 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Search, Pencil, Trash2, Check, Upload, ChevronLeft, Sparkles, Loader2, MoreHorizontal, ArrowRight, Package, X, Filter } from "lucide-react";
+import { Plus, Search, Trash2, Check, Upload, ChevronLeft, Sparkles, Loader2, MoreHorizontal, ArrowRight, Package, X, Filter } from "lucide-react";
+import ProdutoSheet, { type ProdutoSheetItem } from "@/components/produtos/ProdutoSheet";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
@@ -91,6 +92,9 @@ const ProdutosPage = () => {
 
   // Diálogo unificado de adicionar à cotação
   const [dialogProduto, setDialogProduto] = useState<Produto | null>(null);
+
+  // Sheet de opções do produto (editar / excluir)
+  const [sheetProduto, setSheetProduto] = useState<Produto | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
