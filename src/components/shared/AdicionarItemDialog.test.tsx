@@ -36,7 +36,7 @@ describe("AdicionarItemDialog — fator UI", () => {
       <AdicionarItemDialog produto={produto} onConfirmar={vi.fn()} onCancelar={vi.fn()} />,
     );
 
-    const fatorInput = screen.getByLabelText(/Fator/i) as HTMLInputElement;
+    const fatorInput = screen.getByText(/Fator/i) as HTMLInputElement;
     expect(fatorInput.value).toBe(String(FATOR_PADRAO.UNI)); // 1
 
     fireEvent.click(screen.getByRole("button", { name: "CX" }));
@@ -73,7 +73,7 @@ describe("AdicionarItemDialog — fator UI", () => {
       <AdicionarItemDialog produto={produto} onConfirmar={vi.fn()} onCancelar={vi.fn()} />,
     );
     fireEvent.click(screen.getByRole("button", { name: "DP" }));
-    const fatorInput = screen.getByLabelText(/Fator/i) as HTMLInputElement;
+    const fatorInput = screen.getByText(/Fator/i) as HTMLInputElement;
     fireEvent.change(fatorInput, { target: { value: "" } });
     fireEvent.blur(fatorInput);
     expect(fatorInput.value).toBe(String(FATOR_PADRAO.DP)); // 12
@@ -88,9 +88,9 @@ describe("AdicionarItemDialog — responsivo", () => {
     );
 
     expect(screen.getByText("Produto Teste")).toBeInTheDocument();
-    expect(screen.getByLabelText(/Embalagem/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Fator/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Quantidade do pedido/i)).toBeInTheDocument();
+    expect(screen.getByText("Embalagem")).toBeInTheDocument();
+    expect(screen.getByText(/Fator/i)).toBeInTheDocument();
+    expect(screen.getByText("Quantidade do pedido")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Adicionar/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Cancelar/i })).toBeInTheDocument();
 
