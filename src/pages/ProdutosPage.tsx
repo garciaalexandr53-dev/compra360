@@ -783,6 +783,18 @@ const ProdutosPage = () => {
         )}
       </div>
 
+      {/* Sheet de opções do produto */}
+      <ProdutoSheet
+        produto={sheetProduto as ProdutoSheetItem | null}
+        open={!!sheetProduto}
+        onOpenChange={(o) => { if (!o) setSheetProduto(null); }}
+        onEdit={(prod) => openEdit(prod as Produto)}
+        onDelete={(prod) => {
+          setDeleteConfirmId(prod.id);
+          setDeleteConfirmName(prod.nome);
+        }}
+      />
+
       {/* Delete confirmation */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
         <AlertDialogContent>
