@@ -65,7 +65,10 @@ export const AdicionarItemDialog = ({
     onConfirmar(qtdNum, embalagem, fatorNum);
   };
 
-  const fatorNum = parseInt(fator) || 1;
+  const fatorTrim = fator.trim();
+  const fatorParsed = parseInt(fatorTrim);
+  const fatorInvalido = fatorTrim === "" || isNaN(fatorParsed) || fatorParsed <= 0;
+  const fatorNum = fatorInvalido ? 1 : fatorParsed;
   const qtdNum = parseInt(qtd) || 0;
   const totalUn = qtdNum * fatorNum;
 
