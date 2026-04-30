@@ -56,11 +56,13 @@ Deno.serve(async (req) => {
 
     // Validate that all cotacao_produto_ids belong to an active cotação
     const cpIds = prices.map((p: any) => p.cotacao_produto_id);
+    // Accept submissions while cotação is ativa OR finalizada (not cancelada),
+    // so suppliers can still send prices if the requester finalized early.
     const { data: validCps } = await supabase
       .from("cotacao_produtos")
       .select("id, cotacao_id, cotacoes!inner(status)")
       .in("id", cpIds)
-      .eq("cotacoes.status", "ativa");
+      .in("cotacoes.status", ["ativa", "finalizada"]);
 
     const validCpIds = new Set((validCps || []).map((cp: any) => cp.id));
 
