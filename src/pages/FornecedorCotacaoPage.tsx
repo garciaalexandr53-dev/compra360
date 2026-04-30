@@ -62,7 +62,7 @@ const FornecedorCotacaoPage = () => {
         const { data } = await supabase
           .from("cotacoes")
           .select("id, loja_id")
-          .eq("status", "ativa")
+          .in("status", ["ativa", "finalizada"])
           .eq("loja_id", lojaParam)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -85,7 +85,7 @@ const FornecedorCotacaoPage = () => {
           .from("cotacao_fornecedores")
           .select("cotacao_id, cotacoes!inner(id, loja_id, status, created_at)")
           .eq("fornecedor_id", supplier.id)
-          .eq("cotacoes.status", "ativa")
+          .in("cotacoes.status", ["ativa", "finalizada"])
           .order("created_at", { foreignTable: "cotacoes", ascending: false });
 
         const candidates = (assignments || [])
