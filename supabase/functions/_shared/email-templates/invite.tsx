@@ -9,8 +9,10 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Link,
   Preview,
+  Section,
   Text,
 } from 'npm:@react-email/components@0.0.22'
 
@@ -20,31 +22,38 @@ interface InviteEmailProps {
   confirmationUrl: string
 }
 
+const LOGO_URL =
+  'https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/email-assets/compra360-logo.png'
+
 export const InviteEmail = ({
   siteName,
   siteUrl,
   confirmationUrl,
 }: InviteEmailProps) => (
-  <Html lang="en" dir="ltr">
+  <Html lang="pt-BR" dir="ltr">
     <Head />
-    <Preview>You've been invited to join {siteName}</Preview>
+    <Preview>Você foi convidado para o {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>You've been invited</Heading>
+        <Section style={logoSection}>
+          <Img src={LOGO_URL} alt={siteName} width="140" style={logo} />
+        </Section>
+        <Heading style={h1}>Você recebeu um convite</Heading>
         <Text style={text}>
-          You've been invited to join{' '}
+          Você foi convidado para participar do{' '}
           <Link href={siteUrl} style={link}>
             <strong>{siteName}</strong>
           </Link>
-          . Click the button below to accept the invitation and create your
-          account.
+          . Clique no botão abaixo para aceitar o convite e criar sua conta.
         </Text>
-        <Button style={button} href={confirmationUrl}>
-          Accept Invitation
-        </Button>
+        <Section style={{ textAlign: 'center' as const }}>
+          <Button style={button} href={confirmationUrl}>
+            Aceitar convite
+          </Button>
+        </Section>
         <Text style={footer}>
-          If you weren't expecting this invitation, you can safely ignore this
-          email.
+          Se você não estava esperando este convite, pode ignorar este email com
+          segurança.
         </Text>
       </Container>
     </Body>
@@ -53,27 +62,41 @@ export const InviteEmail = ({
 
 export default InviteEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
+const main = {
+  backgroundColor: '#ffffff',
+  fontFamily:
+    '"Sora", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+}
+const container = { padding: '32px 28px', maxWidth: '560px' }
+const logoSection = { textAlign: 'center' as const, margin: '0 0 24px' }
+const logo = { display: 'inline-block' }
 const h1 = {
-  fontSize: '22px',
+  fontSize: '24px',
   fontWeight: 'bold' as const,
-  color: '#000000',
+  color: 'hsl(174, 78%, 26%)',
   margin: '0 0 20px',
+  textAlign: 'center' as const,
 }
 const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
+  fontSize: '15px',
+  color: 'hsl(221, 16%, 47%)',
+  lineHeight: '1.6',
+  margin: '0 0 24px',
 }
-const link = { color: 'inherit', textDecoration: 'underline' }
+const link = { color: 'hsl(174, 78%, 26%)', textDecoration: 'underline' }
 const button = {
-  backgroundColor: '#000000',
+  backgroundColor: 'hsl(174, 78%, 26%)',
   color: '#ffffff',
-  fontSize: '14px',
+  fontSize: '15px',
+  fontWeight: 600,
   borderRadius: '8px',
-  padding: '12px 20px',
+  padding: '14px 28px',
   textDecoration: 'none',
+  display: 'inline-block',
 }
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const footer = {
+  fontSize: '12px',
+  color: 'hsl(221, 16%, 60%)',
+  margin: '32px 0 0',
+  textAlign: 'center' as const,
+}

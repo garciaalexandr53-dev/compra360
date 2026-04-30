@@ -9,8 +9,10 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Link,
   Preview,
+  Section,
   Text,
 } from 'npm:@react-email/components@0.0.22'
 
@@ -21,37 +23,43 @@ interface SignupEmailProps {
   confirmationUrl: string
 }
 
+const LOGO_URL =
+  'https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/email-assets/compra360-logo.png'
+
 export const SignupEmail = ({
   siteName,
   siteUrl,
   recipient,
   confirmationUrl,
 }: SignupEmailProps) => (
-  <Html lang="en" dir="ltr">
+  <Html lang="pt-BR" dir="ltr">
     <Head />
-    <Preview>Confirm your email for {siteName}</Preview>
+    <Preview>Confirme seu email para começar a usar o {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm your email</Heading>
+        <Section style={logoSection}>
+          <Img src={LOGO_URL} alt={siteName} width="140" style={logo} />
+        </Section>
+        <Heading style={h1}>Bem-vindo ao {siteName}!</Heading>
         <Text style={text}>
-          Thanks for signing up for{' '}
+          Obrigado por criar sua conta no{' '}
           <Link href={siteUrl} style={link}>
             <strong>{siteName}</strong>
           </Link>
-          !
-        </Text>
-        <Text style={text}>
-          Please confirm your email address (
+          . Para começar a economizar nas cotações do seu supermercado, confirme
+          seu email{' '}
           <Link href={`mailto:${recipient}`} style={link}>
-            {recipient}
-          </Link>
-          ) by clicking the button below:
+            ({recipient})
+          </Link>{' '}
+          clicando no botão abaixo:
         </Text>
-        <Button style={button} href={confirmationUrl}>
-          Verify Email
-        </Button>
+        <Section style={{ textAlign: 'center' as const }}>
+          <Button style={button} href={confirmationUrl}>
+            Confirmar email
+          </Button>
+        </Section>
         <Text style={footer}>
-          If you didn't create an account, you can safely ignore this email.
+          Se você não criou esta conta, pode ignorar este email com segurança.
         </Text>
       </Container>
     </Body>
@@ -60,27 +68,41 @@ export const SignupEmail = ({
 
 export default SignupEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
+const main = {
+  backgroundColor: '#ffffff',
+  fontFamily:
+    '"Sora", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+}
+const container = { padding: '32px 28px', maxWidth: '560px' }
+const logoSection = { textAlign: 'center' as const, margin: '0 0 24px' }
+const logo = { display: 'inline-block' }
 const h1 = {
-  fontSize: '22px',
+  fontSize: '24px',
   fontWeight: 'bold' as const,
-  color: '#000000',
+  color: 'hsl(174, 78%, 26%)',
   margin: '0 0 20px',
+  textAlign: 'center' as const,
 }
 const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
+  fontSize: '15px',
+  color: 'hsl(221, 16%, 47%)',
+  lineHeight: '1.6',
+  margin: '0 0 24px',
 }
-const link = { color: 'inherit', textDecoration: 'underline' }
+const link = { color: 'hsl(174, 78%, 26%)', textDecoration: 'underline' }
 const button = {
-  backgroundColor: '#000000',
+  backgroundColor: 'hsl(174, 78%, 26%)',
   color: '#ffffff',
-  fontSize: '14px',
+  fontSize: '15px',
+  fontWeight: 600,
   borderRadius: '8px',
-  padding: '12px 20px',
+  padding: '14px 28px',
   textDecoration: 'none',
+  display: 'inline-block',
 }
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const footer = {
+  fontSize: '12px',
+  color: 'hsl(221, 16%, 60%)',
+  margin: '32px 0 0',
+  textAlign: 'center' as const,
+}
