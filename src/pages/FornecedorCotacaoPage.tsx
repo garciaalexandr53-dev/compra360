@@ -25,6 +25,7 @@ const FornecedorCotacaoPage = () => {
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string>("");
 
   const hasAnyPrice = Object.values(prices).some(v => v.trim().length > 0);
 
