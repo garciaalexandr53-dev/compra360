@@ -235,6 +235,18 @@ const FornecedorCotacaoPage = () => {
     );
   }
 
+  if (errorMsg) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="text-center max-w-md">
+          <div className="text-4xl mb-4">📭</div>
+          <h1 className="text-xl font-bold mb-2">Olá, {fornecedorNome}!</h1>
+          <p className="text-muted-foreground">{errorMsg}</p>
+        </div>
+      </div>
+    );
+  }
+
   if (sent) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
