@@ -25,6 +25,7 @@ const FornecedorCotacaoPage = () => {
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string>("");
 
   const hasAnyPrice = Object.values(prices).some(v => v.trim().length > 0);
 
@@ -49,22 +50,63 @@ const FornecedorCotacaoPage = () => {
         .eq("fornecedor_id", supplier.id);
       const lojaIds = (fornecedorLojas || []).map((fl: any) => fl.loja_id);
 
-      // Get active cotação - prefer loja from URL param, then supplier's lojas
-      let cotacao: any = null;
+      // Find the active cotação this supplier was assigned to.
+      // Priority:
+      //   1. If ?loja=ID is in URL → use cotação ativa dessa loja AND verify supplier was assigned to it.
+      //   2. Otherwise, find any cotação ativa where this supplier appears in cotacao_fornecedores
+      //      (preferring lojas the supplier serves).
+      // Never silently fall back to "any active cotação" — that shows wrong/empty lists to suppliers.
+      let cotacao: { id: string; loja_id: string | null } | null = null;
+
       if (lojaParam) {
-        const { data } = await supabase.from("cotacoes").select("id, loja_id").eq("status", "ativa").eq("loja_id", lojaParam).limit(1).maybeSingle();
-        cotacao = data;
+        const { data } = await supabase
+          .from("cotacoes")
+          .select("id, loja_id")
+          .eq("status", "ativa")
+          .eq("loja_id", lojaParam)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (data) {
+          // Verify supplier was actually assigned to this cotação
+          const { data: assigned } = await supabase
+            .from("cotacao_fornecedores")
+            .select("id")
+            .eq("cotacao_id", data.id)
+            .eq("fornecedor_id", supplier.id)
+            .maybeSingle();
+          if (assigned) cotacao = data;
+        }
       }
-      if (!cotacao && lojaIds.length > 0) {
-        const { data } = await supabase.from("cotacoes").select("id, loja_id").eq("status", "ativa").in("loja_id", lojaIds).limit(1).maybeSingle();
-        cotacao = data;
-      }
-      // Fallback: any active cotação
+
       if (!cotacao) {
-        const { data } = await supabase.from("cotacoes").select("id, loja_id").eq("status", "ativa").limit(1).maybeSingle();
-        cotacao = data;
+        // Find cotações this supplier was assigned to (preferring supplier's lojas)
+        const { data: assignments } = await supabase
+          .from("cotacao_fornecedores")
+          .select("cotacao_id, cotacoes!inner(id, loja_id, status, created_at)")
+          .eq("fornecedor_id", supplier.id)
+          .eq("cotacoes.status", "ativa")
+          .order("created_at", { foreignTable: "cotacoes", ascending: false });
+
+        const candidates = (assignments || [])
+          .map((a: any) => a.cotacoes)
+          .filter(Boolean) as Array<{ id: string; loja_id: string | null }>;
+
+        if (candidates.length > 0) {
+          // Prefer one matching a loja this supplier serves
+          cotacao =
+            candidates.find((c) => c.loja_id && lojaIds.includes(c.loja_id)) ||
+            candidates[0];
+        }
       }
-      if (!cotacao) { setLoading(false); return; }
+
+      if (!cotacao) {
+        setErrorMsg(
+          "Nenhuma cotação ativa foi encontrada para você no momento. Se você acredita que isso é um erro, entre em contato com o solicitante."
+        );
+        setLoading(false);
+        return;
+      }
 
       // Get loja name if linked
       if (cotacao.loja_id) {
@@ -188,6 +230,18 @@ const FornecedorCotacaoPage = () => {
           <div className="text-4xl mb-4">❌</div>
           <h1 className="text-xl font-bold mb-2">Link inválido</h1>
           <p className="text-muted-foreground">Este link de cotação não é válido ou expirou.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (errorMsg) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="text-center max-w-md">
+          <div className="text-4xl mb-4">📭</div>
+          <h1 className="text-xl font-bold mb-2">Olá, {fornecedorNome}!</h1>
+          <p className="text-muted-foreground">{errorMsg}</p>
         </div>
       </div>
     );
