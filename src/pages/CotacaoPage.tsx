@@ -800,10 +800,12 @@ const CotacaoPage = () => {
                   <button className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
                     responded
                       ? "bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400"
+                      : status === "visualizou"
+                      ? "bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-300"
                       : "bg-muted/50 border-border text-muted-foreground"
                   }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${responded ? "bg-green-500" : "bg-muted-foreground/40"}`} />
-                    {f.nome}
+                    <StatusFornecedorBadge status={status} compact />
+                    <span className="truncate max-w-[140px]">{f.nome}</span>
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-48 p-1.5" align="start">
