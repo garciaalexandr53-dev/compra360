@@ -13,6 +13,7 @@ import { Plus, Minus, Trash2, ShoppingCart, ArrowLeft, Check, PlusCircle, Search
 import DashboardProgress from "@/components/dashboard/DashboardProgress";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { defaultPrazoHoje } from "@/lib/format";
 
 interface LocalItem {
   id: string;
