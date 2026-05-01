@@ -2,20 +2,28 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { timeInputToTodayIso } from "@/lib/format";
 
 interface ModalNovaCotacaoProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   novaCotacaoOpt: "manter" | "manter_precos" | "zerar" | null;
   setNovaCotacaoOpt: (opt: "manter" | "manter_precos" | "zerar" | null) => void;
-  onConfirm: () => void;
+  onConfirm: (prazoIso: string | null) => void;
   loading?: boolean;
   lojaId?: string | null;
 }
 
 const ModalNovaCotacao = ({ open, onOpenChange, novaCotacaoOpt, setNovaCotacaoOpt, onConfirm, loading, lojaId }: ModalNovaCotacaoProps) => {
+  const [prazoTime, setPrazoTime] = useState("18:00");
+  const [semPrazo, setSemPrazo] = useState(false);
+
+  const computePrazoIso = (): string | null => {
+    if (semPrazo || !prazoTime) return null;
+    return timeInputToTodayIso(prazoTime);
+  };
   const [importedCount, setImportedCount] = useState(0);
   const [recentCount, setRecentCount] = useState(0);
   const [showWarning, setShowWarning] = useState(false);
