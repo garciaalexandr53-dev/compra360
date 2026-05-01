@@ -1,113 +1,87 @@
+## Sistema de Prazo de Cotação
 
+Lembretes automáticos via WhatsApp **ficam fora deste plano** (decidido adicionar depois).
 
-# CotaFacil — Sistema de Cotação para Supermercado
+### 1. Migração de Banco
 
-Transformar o sistema atual (HTML local) em um app web completo com **Supabase (Lovable Cloud)** como backend, resolvendo sincronização entre dispositivos e recebimento automático de preços.
+Adicionar campos via `supabase--migration`:
 
----
+- `cotacoes.prazo_resposta` — `timestamptz NULL` (opcional, padrão sugerido 18:00 do dia)
+- `cotacao_fornecedores.visualizado_em` — `timestamptz NULL` (primeira abertura do link)
+- Habilitar Realtime: `ALTER PUBLICATION supabase_realtime ADD TABLE public.cotacoes, public.cotacao_fornecedores;` e `REPLICA IDENTITY FULL` em ambas
+- Nova RPC `marcar_cotacao_visualizada(_token, _cotacao_id)` — `SECURITY DEFINER`, registra `visualizado_em` apenas se for `NULL` (idempotente, callable por `anon`)
+- Atualizar RPC `get_cotacao_status_for_supplier` para também retornar `prazo_resposta`
 
-## 1. Backend — Banco de Dados (Supabase)
+### 2. Criação de Cotação — campo "Receber preços até"
 
-**Tabelas principais:**
-- **produtos** — nome, categoria, embalagem, ativo (na cotação atual ou não)
-- **categorias** — 37 categorias (Limpeza, Bebidas, Frios, etc.)
-- **fornecedores** — nome, representante, telefone, email, pedido mínimo, observações
-- **cotacoes** — cotação ativa e histórico (data de criação, status)
-- **cotacao_produtos** — produtos incluídos em cada cotação
-- **precos** — preço de cada fornecedor por produto por cotação (preenchido pelo fornecedor via link)
-- **pedidos** — pedido gerado por fornecedor, com status de envio
+Os 3 pontos de criação de cotação serão atualizados para passar `prazo_resposta`:
 
-**Autenticação:**
-- Login com email/senha para os 2-3 compradores
-- Fornecedores acessam por **link único com token** (sem login)
+- `CotacaoPage.tsx` (linha 487) — botão "Nova Cotação" no header
+- `DashboardPage.tsx` (linha 379) — auto-criação via Dashboard
+- `AddProdutosCotacaoPage.tsx` (linha 213) — fluxo manual
 
----
+Como o `ModalNovaCotacao` é o único lugar onde o comprador faz uma escolha visível antes de criar, vou adicionar nele um seletor "⏰ Receber preços até:" com:
+- Input `time` (default 18:00, editável)
+- Checkbox "Sem prazo definido" para limpar
+- Helper text com o horário formatado
 
-## 2. Páginas do Comprador (com login)
+Na auto-criação do Dashboard (sem modal), aplicar o padrão **18:00 do dia atual** silenciosamente.
 
-### Cotação de Preços
-- Tabela interativa produtos × fornecedores com preços editáveis
-- Destaque automático: menor preço (verde), segundo menor (amarelo)
-- Filtro por fornecedor e busca por produto
-- Preços dos fornecedores aparecem **em tempo real** (Supabase realtime)
-- Botão "Nova Cotação" salva a atual no histórico e cria uma nova
+### 3. Tela de Acompanhamento — alterar prazo + status dos fornecedores
 
-### Pedidos por Fornecedor
-- Lista agrupada por fornecedor com totais
-- Alerta de pedido mínimo não atingido com botão "Redistribuir"
-- Envio do pedido: formatação para **WhatsApp** (abre link direto) e **geração de PDF**
+Em `CotacaoPage.tsx` (header da cotação ativa):
 
-### Banco de Produtos
-- Sidebar com categorias e contagem
-- Busca global, adicionar/editar/remover produtos
-- Botão para incluir/remover produto da cotação ativa
+- Novo componente `PrazoCotacaoBadge`: mostra "⏰ Prazo: 18:00 (em 2h 30min)" — clicável → abre `Popover` com input time
+- Ao salvar: se novo prazo < `now()`, `AlertDialog` "Esse prazo já passou. Confirmar?"
+- Update direto em `cotacoes.prazo_resposta`
 
-### Gestão de Fornecedores
-- CRUD completo com todos os campos
-- Gerar/copiar link único para cada fornecedor
+Em `FornecedoresPage.tsx` (ou onde os fornecedores designados são listados na cotação ativa — verificar):
+- Para cada fornecedor: badge de status
+  - 🔴 "Não visualizou" (sem `visualizado_em`)
+  - 🟡 "Visualizou" (tem `visualizado_em`, sem preços)
+  - 🟢 "Respondeu" (tem ≥1 preço > 0)
+- Quando todos preencheram, banner verde no topo: "✅ Todos os fornecedores responderam — você pode fechar a cotação antecipadamente"
 
-### Histórico
-- Lista de cotações anteriores, visualizar detalhes, restaurar
+### 4. Página do Fornecedor — banner + contador + auto-fechamento
 
----
+Em `FornecedorCotacaoPage.tsx`:
 
-## 3. Página do Fornecedor (sem login, via link único)
+- Após carregar com `screen='ready'`, chamar RPC `marcar_cotacao_visualizada` (uma vez, silencioso, ignora erro)
+- Se `prazo_resposta` retornado:
+  - Banner sticky abaixo do header: "⏰ Envie seus preços até as **HH:mm** de hoje · faltam **Xh Ymin**"
+  - `useEffect` com `setInterval(60s)` recalculando o tempo restante
+  - Quando `now() >= prazo_resposta`, mudar `screen` para novo estado `expired` → tela amigável idêntica à `closed` mas com texto "Esta cotação já encerrou o prazo de recebimento de preços. Obrigado pela sua participação!"
+- Subscription Supabase Realtime em `cotacoes` filtrada pelo `cotacao_id` → atualiza prazo no banner se comprador alterar
+- Backend guard: `submit-precos` rejeita envios após `prazo_resposta` (mensagem amigável "Prazo encerrado")
 
-- Página mobile-friendly acessada pelo link compartilhado via WhatsApp
-- Lista dos produtos da cotação ativa com campo de preço para cada um
-- Botão "Enviar Preços" → salva direto no banco
-- Os preços aparecem automaticamente na tela do comprador (tempo real)
-- Interface simples e clara para pessoas não técnicas
+### 5. Realtime no painel do comprador
 
----
+Em `CotacaoPage.tsx`, novo subscription:
+- `cotacao_fornecedores` filtrado por `cotacao_id` → invalida query dos status
+- `precos` (já existe via `PriceNotificationListener`?) → mantém
 
-## 4. Design e UX
+### 6. Detalhes técnicos
 
-- Interface em **Português Brasileiro**
-- Design limpo com sidebar de navegação (abas)
-- **Mobile-first** — funciona perfeitamente no Android Chrome
-- Fonte moderna, valores numéricos com formatação brasileira (R$ 1.234,56)
-- Tema claro com destaques de cor para preços (verde/amarelo/vermelho)
+- **Status por fornecedor**: query agregada em `precos` agrupada por `fornecedor_id` contando `preco > 0`, combinada com `visualizado_em` de `cotacao_fornecedores`
+- **Cálculo de tempo restante**: helper puro `formatTimeRemaining(prazoIso)` em `src/lib/format.ts` retornando `{ expired, label }`
+- **Padrão 18:00**: helper `defaultPrazoHoje()` retornando hoje às 18:00 (timezone local) como ISO
+- **Prazo expirado**: cotação **continua `ativa`** no painel (decisão do usuário). Apenas o link público bloqueia.
 
----
+### 7. Responsividade
 
-## 5. Importação dos Dados
+- Banner do contador no fornecedor: stack vertical em <360px, horizontal em sm+
+- Badge de status na lista de fornecedores: ícone + texto curto em mobile, completo em desktop
+- Popover de alterar prazo: largura fixa 280px, abre acima em mobile (evita teclado)
 
-Após receber o arquivo HTML original, os 2.210 produtos, 37 categorias e 14 fornecedores serão importados para o banco de dados.
+### 8. Testes
 
----
+- `format.test.ts`: `formatTimeRemaining` com casos (futuro, expirado, <1min)
+- Sem teste de UI para Realtime (custoso); validação manual via dois browsers
 
-## 6. Roadmap SaaS — Escalabilidade e Monetização
+### Arquivos tocados
 
-### Fase 1: Infraestrutura de Planos e Assinaturas
-- Tabela `plans` com limites (lojas, produtos, fornecedores) para 3 planos: Grátis, Pro, Business
-- Tabela `subscriptions` vinculando usuário ao plano ativo
-- Função `get_user_plan()` (SECURITY DEFINER) para consulta segura
+- **Novo**: migration SQL, `src/components/cotacao/PrazoCotacaoBadge.tsx`, `src/components/cotacao/StatusFornecedorBadge.tsx`
+- **Editado**: `src/lib/format.ts`, `src/components/cotacao/ModalNovaCotacao.tsx`, `src/pages/CotacaoPage.tsx`, `src/pages/DashboardPage.tsx`, `src/pages/AddProdutosCotacaoPage.tsx`, `src/pages/FornecedorCotacaoPage.tsx`, `supabase/functions/submit-precos/index.ts`
+- **Não editado agora**: Edge Function de lembretes (postergada)
 
-### Fase 2: Integração Stripe
-- Edge Function `create-checkout-session` para checkout de assinatura
-- Edge Function `stripe-webhook` para processar eventos (pagamento, cancelamento, inadimplência)
-- **IMPORTANTE — Estratégia de inadimplência: NÃO bloquear o acesso.** Em vez disso, fazer **downgrade automático para o plano Grátis** e notificar o cliente. Isso mantém o usuário engajado e aumenta a chance de reconversão. O cliente continua usando o app, mas com funcionalidades limitadas do plano gratuito.
-
-### Fase 3: Feature Gating
-- Hook `useSubscription()` para verificar plano e limites do usuário
-- Componente `<FeatureGate>` para condicionar acesso a funcionalidades
-- Limites aplicados: nº de lojas, produtos, fornecedores, cotações simultâneas
-- Telas de upgrade quando o limite é atingido
-
-### Fase 4: Painel Administrativo (Admin Dashboard)
-- Tabela `user_roles` com enum `app_role` (admin, user)
-- Rota `/admin` protegida por role
-- Visão de todos os clientes, planos, status de pagamento
-- Ações: alterar plano, suspender conta, enviar notificações
-- Métricas: MRR, churn, total de clientes ativos
-
-### Fase 5: Métricas e Analytics
-- Tabela `activity_logs` para rastrear uso (cotações criadas, pedidos enviados)
-- Dashboard de crescimento, retenção e engajamento
-- Alertas de clientes inativos
-
-### Fase 6: Landing Page Profissional
-- Redesign da landing com planos, preços, depoimentos e CTA de cadastro
-- SEO otimizado para "sistema de cotação para supermercado"
-
+Ao final: `bunx vitest run` deve passar e build limpo. Memória do projeto será atualizada com a nova feature de prazo.
