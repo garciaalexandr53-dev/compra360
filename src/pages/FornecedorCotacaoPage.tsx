@@ -27,8 +27,36 @@ const FornecedorCotacaoPage = () => {
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
+  const [prazoIso, setPrazoIso] = useState<string | null>(null);
+  const [cotacaoId, setCotacaoId] = useState<string | null>(null);
+  const [, forceTick] = useState(0);
+  const visualizadoMarcado = useRef(false);
 
   const hasAnyPrice = Object.values(prices).some((v) => v.trim().length > 0);
+
+  // Tick every 60s to refresh countdown / detect expiration
+  useEffect(() => {
+    if (screen !== "ready" || !prazoIso) return;
+    const i = setInterval(() => {
+      forceTick((t) => t + 1);
+      if (new Date(prazoIso).getTime() <= Date.now()) setScreen("expired");
+    }, 60_000);
+    return () => clearInterval(i);
+  }, [screen, prazoIso]);
+
+  // Realtime: comprador alterou prazo → atualiza
+  useEffect(() => {
+    if (!cotacaoId) return;
+    const ch = supabase
+      .channel(`cot-prazo-${cotacaoId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "cotacoes", filter: `id=eq.${cotacaoId}` }, (payload: any) => {
+        const novo = payload.new?.prazo_resposta ?? null;
+        setPrazoIso(novo);
+        if (novo && new Date(novo).getTime() <= Date.now()) setScreen("expired");
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [cotacaoId]);
 
   useEffect(() => {
     if (!token) return;
