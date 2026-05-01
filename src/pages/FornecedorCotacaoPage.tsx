@@ -106,14 +106,28 @@ const FornecedorCotacaoPage = () => {
       }
 
       if (row.loja_nome) setLojaNome(row.loja_nome);
+      setCotacaoId(row.cotacao_id);
+      setPrazoIso(row.prazo_resposta || null);
 
       if (row.status !== "ativa") {
-        // Cotação encerrada/cancelada → tela amigável
         setScreen("closed");
         return;
       }
 
+      // Auto-expire when prazo passed
+      if (row.prazo_resposta && new Date(row.prazo_resposta).getTime() <= Date.now()) {
+        setScreen("expired");
+        return;
+      }
+
       const cotacaoId = row.cotacao_id;
+
+      // Mark visualization (idempotent, fire-and-forget)
+      if (!visualizadoMarcado.current) {
+        visualizadoMarcado.current = true;
+        supabase.rpc("marcar_cotacao_visualizada", { _token: token!, _cotacao_id: cotacaoId })
+          .then(({ error }) => { if (error) log("marcar_visualizada err", error); });
+      }
 
       // 3. Load products (anon RLS allows because status='ativa')
       // Retry once on transient mobile network errors.
