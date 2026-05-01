@@ -79,6 +79,7 @@ const TabelaCotacao = ({
 }: TabelaCotacaoProps) => {
   const toastedRef = useRef<Set<string>>(new Set());
   const [qtyDrafts, setQtyDrafts] = useState<Record<string, string>>({});
+  const [fatorDrafts, setFatorDrafts] = useState<Record<string, string>>({});
   const [deleteConfirm, setDeleteConfirm] = useState<{ cpId: string; nome: string } | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -237,9 +238,30 @@ const TabelaCotacao = ({
                     />
                   </td>
                   <td className="px-1 py-1.5 border-b border-border/50 text-center">
-                    <span className="text-[11px] text-muted-foreground font-mono">
-                      {fator > 1 ? `×${fator}` : "—"}
-                    </span>
+                    <Input
+                      className="h-8 text-[11px] text-center border-transparent hover:border-input focus:border-input bg-transparent w-12 mx-auto rounded-none shadow-none ring-0 focus-visible:ring-1 text-muted-foreground font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      type="number"
+                      min={1}
+                      inputMode="numeric"
+                      value={fatorDrafts[cp.id] ?? String(fator)}
+                      aria-label="Fator de embalagem"
+                      onFocus={(e) => {
+                        setFatorDrafts((s) => ({ ...s, [cp.id]: String(fator) }));
+                        e.target.select();
+                      }}
+                      onChange={(e) =>
+                        setFatorDrafts((s) => ({ ...s, [cp.id]: e.target.value.replace(/\D/g, "") }))
+                      }
+                      onBlur={(e) => {
+                        const val = Math.max(1, parseInt(e.target.value) || fator || 1);
+                        onFieldBlur(cp.id, "fator", String(val), String(fator));
+                        setFatorDrafts((s) => {
+                          const n = { ...s };
+                          delete n[cp.id];
+                          return n;
+                        });
+                      }}
+                    />
                   </td>
                   <td className="px-1 py-1.5 border-b border-border/50 text-center">
                     <Input

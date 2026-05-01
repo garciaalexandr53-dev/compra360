@@ -303,6 +303,7 @@ const CotacaoPage = () => {
   const updateCpMutation = useMutation({
     mutationFn: async ({ cpId, field, value }: { cpId: string; field: string; value: any }) => {
       if (field === "quantidade") { const { error } = await supabase.from("cotacao_produtos").update({ quantidade: value }).eq("id", cpId); if (error) throw error; }
+      else if (field === "fator") { const { error } = await supabase.from("cotacao_produtos").update({ fator_embalagem: value }).eq("id", cpId); if (error) throw error; }
       else if (field === "nome" || field === "embalagem") { const cp = cotacaoProdutos.find(c => c.id === cpId); if (cp?.produto_id) { const { error } = await supabase.from("produtos").update({ [field]: value }).eq("id", cp.produto_id); if (error) throw error; } }
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] }); queryClient.invalidateQueries({ queryKey: ["produtos"] }); },
@@ -468,7 +469,11 @@ const CotacaoPage = () => {
   };
 
   const handleFieldBlur = (cpId: string, field: string, value: string, original: string) => {
-    if (value.trim() !== original.trim()) { if (field === "quantidade") updateCpMutation.mutate({ cpId, field, value: parseFloat(value) || 1 }); else updateCpMutation.mutate({ cpId, field, value: value.trim() }); }
+    if (value.trim() !== original.trim()) {
+      if (field === "quantidade") updateCpMutation.mutate({ cpId, field, value: parseFloat(value) || 1 });
+      else if (field === "fator") updateCpMutation.mutate({ cpId, field, value: Math.max(1, parseInt(value) || 1) });
+      else updateCpMutation.mutate({ cpId, field, value: value.trim() });
+    }
   };
 
   const toggleSupplier = (id: string) => { setSelectedSuppliers((prev) => ({ ...prev, [id]: !prev[id] })); };
