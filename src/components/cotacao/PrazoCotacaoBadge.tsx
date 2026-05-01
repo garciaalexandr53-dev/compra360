@@ -72,7 +72,7 @@ const PrazoCotacaoBadge = ({ cotacaoId, prazoIso, onChange }: Props) => {
     ? remaining.expired
       ? `⏰ ${formatHoraLocal(prazoIso)} · expirado`
       : `⏰ ${formatHoraLocal(prazoIso)} · ${remaining.label}`
-    : "⏰ Definir prazo";
+    : "♾️ Sem prazo definido";
 
   return (
     <>
