@@ -418,7 +418,7 @@ const FornecedorCotacaoPage = () => {
             <div className="flex items-center justify-between mb-2 gap-2">
               <span className="text-xs text-muted-foreground shrink-0">{i + 1}.</span>
               <span className="text-xs text-muted-foreground truncate text-right">
-                {p.embalagem} · {p.quantidade} un
+                {p.embalagem} · {p.quantidade * p.fator} un
               </span>
             </div>
             <div className="font-semibold text-sm mb-3 break-words">{p.nome}</div>
