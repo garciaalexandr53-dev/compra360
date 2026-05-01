@@ -54,16 +54,32 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Validate that all cotacao_produto_ids belong to an active cotação
+    // Validate that all cotacao_produto_ids belong to an active cotação within prazo
     const cpIds = prices.map((p: any) => p.cotacao_produto_id);
-    // Only accept submissions while cotação is 'ativa'.
     const { data: validCps } = await supabase
       .from("cotacao_produtos")
-      .select("id, cotacao_id, cotacoes!inner(status)")
+      .select("id, cotacao_id, cotacoes!inner(status, prazo_resposta)")
       .in("id", cpIds)
       .eq("cotacoes.status", "ativa");
 
-    const validCpIds = new Set((validCps || []).map((cp: any) => cp.id));
+    // Filter out items whose cotação prazo has expired
+    const nowMs = Date.now();
+    const validCpIds = new Set(
+      (validCps || [])
+        .filter((cp: any) => {
+          const prazo = cp.cotacoes?.prazo_resposta;
+          if (!prazo) return true;
+          return new Date(prazo).getTime() > nowMs;
+        })
+        .map((cp: any) => cp.id)
+    );
+
+    if (validCpIds.size === 0) {
+      return new Response(
+        JSON.stringify({ error: "Prazo encerrado ou cotação não está mais ativa." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Upsert prices only for valid cotacao_produtos
     let upsertedCount = 0;
