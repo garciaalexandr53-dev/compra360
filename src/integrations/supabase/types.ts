@@ -862,6 +862,15 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_cotacao_status_for_supplier: {
+        Args: { _loja_id?: string; _token: string }
+        Returns: {
+          cotacao_id: string
+          loja_id: string
+          loja_nome: string
+          status: string
+        }[]
+      }
       get_loja_owner: { Args: { _loja_id: string }; Returns: string }
       get_lojas_public: {
         Args: { _loja_id?: string }

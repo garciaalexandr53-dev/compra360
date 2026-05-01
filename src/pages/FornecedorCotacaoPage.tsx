@@ -13,145 +13,141 @@ interface ProdutoItem {
   quantidade: number;
 }
 
+type ScreenState = "loading" | "invalid" | "closed" | "empty" | "ready" | "sent";
+
 const FornecedorCotacaoPage = () => {
   const { token } = useParams<{ token: string }>();
   const [searchParams] = useSearchParams();
   const lojaParam = searchParams.get("loja");
-  const [loading, setLoading] = useState(true);
+  const [screen, setScreen] = useState<ScreenState>("loading");
   const [fornecedorNome, setFornecedorNome] = useState("");
   const [fornecedorId, setFornecedorId] = useState("");
   const [lojaNome, setLojaNome] = useState("");
   const [produtos, setProdutos] = useState<ProdutoItem[]>([]);
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
 
-  const hasAnyPrice = Object.values(prices).some(v => v.trim().length > 0);
+  const hasAnyPrice = Object.values(prices).some((v) => v.trim().length > 0);
 
   useEffect(() => {
     if (!token) return;
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  const log = (...args: any[]) => {
+    // Keeps a trail in mobile remote devtools to debug "0 produtos" issues
+    // eslint-disable-next-line no-console
+    console.log("[FornecedorCotacao]", ...args);
+  };
+
   const loadData = async () => {
+    setScreen("loading");
+    setErrorMsg("");
     try {
-      // Get fornecedor info from token using secure RPC (no token exposure)
-      const { data: supplierInfo, error: fErr } = await supabase.rpc("get_supplier_info", { _token: token! });
+      // 1. Validate token → supplier
+      const { data: supplierInfo, error: fErr } = await supabase.rpc("get_supplier_info", {
+        _token: token!,
+      });
       const supplier = supplierInfo?.[0];
-      if (fErr || !supplier) { setLoading(false); return; }
+      log("supplier", { supplier, fErr });
+      if (fErr || !supplier) {
+        setScreen("invalid");
+        return;
+      }
       setFornecedorId(supplier.id);
       setFornecedorNome(supplier.nome);
 
-      // Get lojas this supplier serves
-      const { data: fornecedorLojas } = await supabase
-        .from("fornecedor_lojas")
-        .select("loja_id")
-        .eq("fornecedor_id", supplier.id);
-      const lojaIds = (fornecedorLojas || []).map((fl: any) => fl.loja_id);
+      // 2. Use SECURITY DEFINER RPC to find the right cotação for this supplier,
+      //    bypassing RLS so we can correctly detect 'finalizada'/'cancelada' status.
+      const { data: statusRows, error: statusErr } = await supabase.rpc(
+        "get_cotacao_status_for_supplier",
+        { _token: token!, _loja_id: lojaParam || null }
+      );
+      log("status rows", { statusRows, statusErr });
 
-      // Find the active cotação this supplier was assigned to.
-      // Priority:
-      //   1. If ?loja=ID is in URL → use cotação ativa dessa loja AND verify supplier was assigned to it.
-      //   2. Otherwise, find any cotação ativa where this supplier appears in cotacao_fornecedores
-      //      (preferring lojas the supplier serves).
-      // Never silently fall back to "any active cotação" — that shows wrong/empty lists to suppliers.
-      let cotacao: { id: string; loja_id: string | null } | null = null;
+      const row = statusRows?.[0];
 
-      if (lojaParam) {
-        const { data } = await supabase
-          .from("cotacoes")
-          .select("id, loja_id")
-          .in("status", ["ativa", "finalizada"])
-          .eq("loja_id", lojaParam)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (data) {
-          // Verify supplier was actually assigned to this cotação
-          const { data: assigned } = await supabase
-            .from("cotacao_fornecedores")
-            .select("id")
-            .eq("cotacao_id", data.id)
-            .eq("fornecedor_id", supplier.id)
-            .maybeSingle();
-          if (assigned) cotacao = data;
-        }
-      }
-
-      if (!cotacao) {
-        // Find cotações this supplier was assigned to (preferring supplier's lojas)
-        const { data: assignments } = await supabase
-          .from("cotacao_fornecedores")
-          .select("cotacao_id, cotacoes!inner(id, loja_id, status, created_at)")
-          .eq("fornecedor_id", supplier.id)
-          .in("cotacoes.status", ["ativa", "finalizada"])
-          .order("created_at", { foreignTable: "cotacoes", ascending: false });
-
-        const candidates = (assignments || [])
-          .map((a: any) => a.cotacoes)
-          .filter(Boolean) as Array<{ id: string; loja_id: string | null }>;
-
-        if (candidates.length > 0) {
-          // Prefer one matching a loja this supplier serves
-          cotacao =
-            candidates.find((c) => c.loja_id && lojaIds.includes(c.loja_id)) ||
-            candidates[0];
-        }
-      }
-
-      if (!cotacao) {
+      if (!row) {
         setErrorMsg(
-          "Nenhuma cotação ativa foi encontrada para você no momento. Se você acredita que isso é um erro, entre em contato com o solicitante."
+          "Nenhuma cotação foi encontrada para você no momento. Se acredita que isso é um erro, entre em contato com o solicitante."
         );
-        setLoading(false);
+        setScreen("empty");
         return;
       }
 
-      // Get loja name if linked
-      if (cotacao.loja_id) {
-        const { data: lojaData } = await supabase.rpc("get_lojas_public", { _loja_id: cotacao.loja_id });
-        if (lojaData?.[0]) setLojaNome(lojaData[0].nome);
+      if (row.loja_nome) setLojaNome(row.loja_nome);
+
+      if (row.status !== "ativa") {
+        // Cotação encerrada/cancelada → tela amigável
+        setScreen("closed");
+        return;
       }
 
-      const { data: cpData } = await supabase
-        .from("cotacao_produtos")
-        .select("id, quantidade, produtos(nome, embalagem)")
-        .eq("cotacao_id", cotacao.id);
+      const cotacaoId = row.cotacao_id;
 
-      if (cpData) {
-        const items = cpData.map((cp: any) => ({
+      // 3. Load products (anon RLS allows because status='ativa')
+      // Retry once on transient mobile network errors.
+      const fetchProdutos = async () =>
+        await supabase
+          .from("cotacao_produtos")
+          .select("id, quantidade, produtos(nome, embalagem)")
+          .eq("cotacao_id", cotacaoId);
+
+      let { data: cpData, error: cpErr } = await fetchProdutos();
+      if (cpErr || !cpData) {
+        log("retry cotacao_produtos", cpErr);
+        await new Promise((r) => setTimeout(r, 600));
+        const retry = await fetchProdutos();
+        cpData = retry.data;
+        cpErr = retry.error;
+      }
+      log("produtos loaded", { count: cpData?.length, cpErr });
+
+      if (!cpData || cpData.length === 0) {
+        setErrorMsg(
+          "A cotação está ativa, mas nenhum produto foi adicionado a ela ainda. Tente novamente em alguns minutos."
+        );
+        setScreen("empty");
+        return;
+      }
+
+      const items = cpData
+        .map((cp: any) => ({
           cotacao_produto_id: cp.id,
           nome: cp.produtos?.nome || "?",
           embalagem: cp.produtos?.embalagem || "un",
           quantidade: cp.quantidade || 1,
-        })).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-        setProdutos(items);
+        }))
+        .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+      setProdutos(items);
 
-        // Load existing prices for this fornecedor
-        const cpIds = items.map((it) => it.cotacao_produto_id);
-        const { data: existingPrices } = await supabase
-          .from("precos")
-          .select("cotacao_produto_id, preco")
-          .eq("fornecedor_id", supplier.id)
-          .in("cotacao_produto_id", cpIds);
+      // 4. Load existing prices
+      const cpIds = items.map((it) => it.cotacao_produto_id);
+      const { data: existingPrices } = await supabase
+        .from("precos")
+        .select("cotacao_produto_id, preco")
+        .eq("fornecedor_id", supplier.id)
+        .in("cotacao_produto_id", cpIds);
 
-        if (existingPrices) {
-          const p: Record<string, string> = {};
-          existingPrices.forEach((ep: any) => {
-            if (ep.preco !== null) p[ep.cotacao_produto_id] = formatNumber(ep.preco);
-          });
-          setPrices(p);
-        }
+      if (existingPrices) {
+        const p: Record<string, string> = {};
+        existingPrices.forEach((ep: any) => {
+          if (ep.preco !== null && ep.preco > 0) p[ep.cotacao_produto_id] = formatNumber(ep.preco);
+        });
+        setPrices(p);
       }
-    } catch (e) {
-      console.error(e);
+
+      setScreen("ready");
+    } catch (e: any) {
+      log("fatal", e);
+      setErrorMsg("Erro ao carregar a cotação. Verifique sua conexão e tente novamente.");
+      setScreen("empty");
     }
-    setLoading(false);
   };
 
   const formatCurrency = (raw: string): string => {
-    // Remove tudo exceto dígitos
     const digits = raw.replace(/\D/g, "");
     if (!digits) return "";
     const cents = parseInt(digits, 10);
@@ -183,7 +179,7 @@ const FornecedorCotacaoPage = () => {
         throw new Error(data?.error || error?.message || "Erro ao enviar");
       }
 
-      setSent(true);
+      setScreen("sent");
       toast.success("Preços enviados com sucesso!");
     } catch (e: any) {
       toast.error("Erro ao enviar: " + e.message);
@@ -194,7 +190,7 @@ const FornecedorCotacaoPage = () => {
   const handleNoItems = async () => {
     setSending(true);
     try {
-      const priceEntries = produtos.map(p => ({
+      const priceEntries = produtos.map((p) => ({
         cotacao_produto_id: p.cotacao_produto_id,
         preco: 0,
       }));
@@ -207,7 +203,7 @@ const FornecedorCotacaoPage = () => {
         throw new Error(data?.error || error?.message || "Erro ao enviar");
       }
 
-      setSent(true);
+      setScreen("sent");
       toast.success("Resposta enviada! Obrigado.");
     } catch (e: any) {
       toast.error("Erro ao enviar: " + e.message);
@@ -215,83 +211,137 @@ const FornecedorCotacaoPage = () => {
     setSending(false);
   };
 
-  if (loading) {
+  // ============ Shared shells ============
+  const Shell = ({ children }: { children: React.ReactNode }) => (
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md text-center">{children}</div>
+    </div>
+  );
+
+  const BrandLogo = () => (
+    <div className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-dark))] to-[hsl(var(--brand-light))] shadow-lg">
+      <span className="text-white text-2xl font-bold">C360</span>
+    </div>
+  );
+
+  // ============ Screens ============
+  if (screen === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <Shell>
         <div className="animate-pulse text-muted-foreground">Carregando...</div>
-      </div>
+      </Shell>
     );
   }
 
-  if (!fornecedorId) {
+  if (screen === "invalid") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="text-center">
-          <div className="text-4xl mb-4">❌</div>
-          <h1 className="text-xl font-bold mb-2">Link inválido</h1>
-          <p className="text-muted-foreground">Este link de cotação não é válido ou expirou.</p>
-        </div>
-      </div>
+      <Shell>
+        <BrandLogo />
+        <div className="text-4xl mb-4">❌</div>
+        <h1 className="text-xl font-bold mb-2">Link inválido</h1>
+        <p className="text-muted-foreground">Este link de cotação não é válido ou expirou.</p>
+        <p className="text-xs text-muted-foreground mt-6">Compra360</p>
+      </Shell>
     );
   }
 
-  if (errorMsg) {
+  if (screen === "closed") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="text-center max-w-md">
-          <div className="text-4xl mb-4">📭</div>
-          <h1 className="text-xl font-bold mb-2">Olá, {fornecedorNome}!</h1>
-          <p className="text-muted-foreground">{errorMsg}</p>
-        </div>
-      </div>
+      <Shell>
+        <BrandLogo />
+        <div className="text-5xl mb-4">🔒</div>
+        <h1 className="text-xl font-bold mb-3">Cotação encerrada</h1>
+        <p className="text-muted-foreground leading-relaxed">
+          Olá{fornecedorNome ? `, ${fornecedorNome}` : ""}! Esta cotação já foi encerrada e não está
+          mais aceitando preços.
+        </p>
+        <p className="text-muted-foreground mt-3">Obrigado pela sua participação! 🙌</p>
+        {lojaNome && (
+          <p className="text-xs text-muted-foreground mt-4">🏪 {lojaNome}</p>
+        )}
+        <p className="text-xs text-muted-foreground mt-8 opacity-70">Compra360 · compra360app.com.br</p>
+      </Shell>
     );
   }
 
-  if (sent) {
+  if (screen === "empty") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="text-center">
-          <div className="text-5xl mb-4">✅</div>
-          <h1 className="text-xl font-bold mb-2">Preços Enviados!</h1>
-          <p className="text-muted-foreground">Obrigado, {fornecedorNome}! Seus preços foram recebidos.</p>
-        </div>
-      </div>
+      <Shell>
+        <BrandLogo />
+        <div className="text-4xl mb-4">📭</div>
+        <h1 className="text-xl font-bold mb-2">Olá{fornecedorNome ? `, ${fornecedorNome}` : ""}!</h1>
+        <p className="text-muted-foreground">{errorMsg}</p>
+        <Button
+          variant="outline"
+          className="mt-6"
+          onClick={() => loadData()}
+        >
+          🔄 Tentar novamente
+        </Button>
+        <p className="text-xs text-muted-foreground mt-8 opacity-70">Compra360</p>
+      </Shell>
     );
   }
+
+  if (screen === "sent") {
+    return (
+      <Shell>
+        <BrandLogo />
+        <div className="text-5xl mb-4">✅</div>
+        <h1 className="text-xl font-bold mb-2">Preços Enviados!</h1>
+        <p className="text-muted-foreground">
+          Obrigado, {fornecedorNome}! Seus preços foram recebidos.
+        </p>
+        <p className="text-xs text-muted-foreground mt-8 opacity-70">Compra360</p>
+      </Shell>
+    );
+  }
+
+  // ============ Ready (cotação ativa) ============
+  const filledCount = Object.values(prices).filter((v) => v.trim()).length;
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-28">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[hsl(var(--brand-dark))] via-[hsl(var(--brand))] to-[hsl(var(--brand-light))] text-white p-5 sticky top-0 z-10 shadow-lg">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-lg font-bold">📋 Cotação de Preços</h1>
-            <p className="text-sm opacity-80">{fornecedorNome} · {produtos.length} produtos</p>
-            {lojaNome && <p className="text-xs opacity-70 mt-0.5">🏪 Loja: {lojaNome}</p>}
+      <div className="bg-gradient-to-r from-[hsl(var(--brand-dark))] via-[hsl(var(--brand))] to-[hsl(var(--brand-light))] text-white p-4 sm:p-5 sticky top-0 z-10 shadow-lg">
+        <div className="max-w-3xl mx-auto flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-lg font-bold truncate">📋 Cotação de Preços</h1>
+            <p className="text-xs sm:text-sm opacity-80 truncate">
+              {fornecedorNome} · {produtos.length} produtos
+            </p>
+            {lojaNome && (
+              <p className="text-[11px] sm:text-xs opacity-70 mt-0.5 truncate">🏪 {lojaNome}</p>
+            )}
           </div>
           <button
             onClick={handleNoItems}
             disabled={sending || hasAnyPrice}
-            className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors shrink-0 mt-0.5 ${
+            className={`text-[11px] sm:text-xs px-2.5 sm:px-3 py-1.5 rounded-lg font-semibold transition-colors shrink-0 mt-0.5 whitespace-nowrap ${
               hasAnyPrice || sending
                 ? "bg-white/10 text-white/30 cursor-not-allowed"
                 : "bg-white text-red-600 hover:bg-red-50 shadow-sm"
             }`}
           >
-            ❌ Não tenho itens
+            ❌ Sem itens
           </button>
         </div>
       </div>
 
       {/* Products */}
-      <div className="p-4 space-y-3">
+      <div className="p-3 sm:p-4 space-y-3 max-w-3xl mx-auto">
         {produtos.map((p, i) => (
-          <div key={p.cotacao_produto_id} className="bg-card border rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">{i + 1}.</span>
-              <span className="text-xs text-muted-foreground">{p.embalagem} · {p.quantidade} un</span>
+          <div
+            key={p.cotacao_produto_id}
+            className="bg-card border rounded-xl p-3 sm:p-4 shadow-sm"
+          >
+            <div className="flex items-center justify-between mb-2 gap-2">
+              <span className="text-xs text-muted-foreground shrink-0">{i + 1}.</span>
+              <span className="text-xs text-muted-foreground truncate text-right">
+                {p.embalagem} · {p.quantidade} un
+              </span>
             </div>
-            <div className="font-semibold text-sm mb-3">{p.nome}</div>
+            <div className="font-semibold text-sm mb-3 break-words">{p.nome}</div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">R$</span>
               <Input
@@ -308,14 +358,16 @@ const FornecedorCotacaoPage = () => {
       </div>
 
       {/* Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-4 shadow-lg">
-        <Button
-          onClick={handleSend}
-          disabled={sending || Object.values(prices).filter((v) => v.trim()).length === 0}
-          className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-base py-6 font-bold"
-        >
-          {sending ? "Enviando..." : `✅ Enviar ${Object.values(prices).filter((v) => v.trim()).length} Preços`}
-        </Button>
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-3 sm:p-4 shadow-lg pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="max-w-3xl mx-auto">
+          <Button
+            onClick={handleSend}
+            disabled={sending || filledCount === 0}
+            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-sm sm:text-base py-5 sm:py-6 font-bold"
+          >
+            {sending ? "Enviando..." : `✅ Enviar ${filledCount} Preços`}
+          </Button>
+        </div>
       </div>
     </div>
   );
