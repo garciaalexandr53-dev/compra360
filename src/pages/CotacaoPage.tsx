@@ -130,8 +130,14 @@ const CotacaoPage = () => {
   const { data: cotacaoFornecedores = [] } = useQuery({
     queryKey: ["cotacao-fornecedores", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
-    queryFn: async () => { const { data, error } = await supabase.from("cotacao_fornecedores").select("fornecedor_id").eq("cotacao_id", cotacaoAtiva!.id); if (error) throw error; return data || []; },
+    queryFn: async () => { const { data, error } = await supabase.from("cotacao_fornecedores").select("fornecedor_id, visualizado_em").eq("cotacao_id", cotacaoAtiva!.id); if (error) throw error; return data || []; },
   });
+
+  const visualizadoMap = useMemo(() => {
+    const m = new Map<string, string | null>();
+    cotacaoFornecedores.forEach((cf: any) => m.set(cf.fornecedor_id, cf.visualizado_em || null));
+    return m;
+  }, [cotacaoFornecedores]);
 
   useEffect(() => {
     if (!allFornecedores.length || !cotacaoAtiva?.id) return;
