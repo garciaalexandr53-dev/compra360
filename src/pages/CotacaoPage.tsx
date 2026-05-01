@@ -469,7 +469,11 @@ const CotacaoPage = () => {
   };
 
   const handleFieldBlur = (cpId: string, field: string, value: string, original: string) => {
-    if (value.trim() !== original.trim()) { if (field === "quantidade") updateCpMutation.mutate({ cpId, field, value: parseFloat(value) || 1 }); else updateCpMutation.mutate({ cpId, field, value: value.trim() }); }
+    if (value.trim() !== original.trim()) {
+      if (field === "quantidade") updateCpMutation.mutate({ cpId, field, value: parseFloat(value) || 1 });
+      else if (field === "fator") updateCpMutation.mutate({ cpId, field, value: Math.max(1, parseInt(value) || 1) });
+      else updateCpMutation.mutate({ cpId, field, value: value.trim() });
+    }
   };
 
   const toggleSupplier = (id: string) => { setSelectedSuppliers((prev) => ({ ...prev, [id]: !prev[id] })); };
