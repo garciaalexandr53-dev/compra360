@@ -279,7 +279,7 @@ const CotacaoPage = () => {
         queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores", cotacaoAtiva.id] });
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'cotacoes', filter: `id=eq.${cotacaoAtiva.id}` }, () => {
-        queryClient.invalidateQueries({ queryKey: ["cotacoes"] });
+        queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -734,7 +734,7 @@ const CotacaoPage = () => {
           <PrazoCotacaoBadge
             cotacaoId={cotacaoAtiva.id}
             prazoIso={(cotacaoAtiva as any).prazo_resposta}
-            onChange={() => queryClient.invalidateQueries({ queryKey: ["cotacoes"] })}
+            onChange={() => queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] })}
           />
         )}
         <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"><Save className="h-4 w-4 mr-1" /> Salvar</Button>

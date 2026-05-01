@@ -11,6 +11,7 @@ interface ProdutoItem {
   nome: string;
   embalagem: string;
   quantidade: number;
+  fator: number;
 }
 
 type ScreenState = "loading" | "invalid" | "closed" | "expired" | "empty" | "ready" | "sent";
@@ -134,7 +135,7 @@ const FornecedorCotacaoPage = () => {
       const fetchProdutos = async () =>
         await supabase
           .from("cotacao_produtos")
-          .select("id, quantidade, produtos(nome, embalagem)")
+          .select("id, quantidade, fator_embalagem, produtos(nome, embalagem)")
           .eq("cotacao_id", cotacaoId);
 
       let { data: cpData, error: cpErr } = await fetchProdutos();
@@ -161,6 +162,7 @@ const FornecedorCotacaoPage = () => {
           nome: cp.produtos?.nome || "?",
           embalagem: cp.produtos?.embalagem || "un",
           quantidade: cp.quantidade || 1,
+          fator: cp.fator_embalagem ?? 1,
         }))
         .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
       setProdutos(items);
@@ -416,7 +418,7 @@ const FornecedorCotacaoPage = () => {
             <div className="flex items-center justify-between mb-2 gap-2">
               <span className="text-xs text-muted-foreground shrink-0">{i + 1}.</span>
               <span className="text-xs text-muted-foreground truncate text-right">
-                {p.embalagem} · {p.quantidade} un
+                {p.embalagem} · {p.quantidade * p.fator} un
               </span>
             </div>
             <div className="font-semibold text-sm mb-3 break-words">{p.nome}</div>
