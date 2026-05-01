@@ -11,6 +11,7 @@ interface ProdutoItem {
   nome: string;
   embalagem: string;
   quantidade: number;
+  fator: number;
 }
 
 type ScreenState = "loading" | "invalid" | "closed" | "expired" | "empty" | "ready" | "sent";
