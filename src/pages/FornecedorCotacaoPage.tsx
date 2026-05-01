@@ -387,6 +387,25 @@ const FornecedorCotacaoPage = () => {
         </div>
       </div>
 
+      {/* Banner de prazo */}
+      {prazoIso && (() => {
+        const r = formatTimeRemaining(prazoIso);
+        const urgent = r.totalMinutes <= 60 && !r.expired;
+        return (
+          <div className={`px-4 py-2.5 border-b text-xs sm:text-sm font-medium flex items-center gap-2 ${
+            urgent
+              ? "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900 text-red-800 dark:text-red-200"
+              : "bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900 text-amber-900 dark:text-amber-100"
+          }`}>
+            <span className="text-base shrink-0">⏰</span>
+            <span className="flex-1 leading-tight">
+              Envie seus preços até as <strong>{formatHoraLocal(prazoIso)}</strong> de hoje
+              <span className="opacity-80"> · faltam <strong>{r.label}</strong></span>
+            </span>
+          </div>
+        );
+      })()}
+
       {/* Products */}
       <div className="p-3 sm:p-4 space-y-3 max-w-3xl mx-auto">
         {produtos.map((p, i) => (
