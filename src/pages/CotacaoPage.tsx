@@ -269,8 +269,19 @@ const CotacaoPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [cotacaoAtiva?.id, queryClient]);
 
+  // Realtime — cotacao_fornecedores (visualizado_em) + cotacoes (prazo_resposta)
   useEffect(() => {
-    const lp: Record<string, Record<string, string>> = {};
+    if (!cotacaoAtiva?.id) return;
+    const channel = supabase.channel('cotacao-meta-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cotacao_fornecedores', filter: `cotacao_id=eq.${cotacaoAtiva.id}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores", cotacaoAtiva.id] });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'cotacoes', filter: `id=eq.${cotacaoAtiva.id}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ["cotacoes"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [cotacaoAtiva?.id, queryClient]);
     cotacaoProdutos.forEach((cp) => { lp[cp.id] = {}; fornecedores.forEach((f) => { const val = priceMap[cp.id]?.[f.id]; lp[cp.id][f.id] = val !== null && val !== undefined ? formatNumber(val) : ""; }); });
     setLocalPrices(lp);
   }, [cotacaoProdutos, fornecedores, priceMap]);
