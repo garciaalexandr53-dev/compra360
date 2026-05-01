@@ -279,7 +279,7 @@ const CotacaoPage = () => {
         queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores", cotacaoAtiva.id] });
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'cotacoes', filter: `id=eq.${cotacaoAtiva.id}` }, () => {
-        queryClient.invalidateQueries({ queryKey: ["cotacoes"] });
+        queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
