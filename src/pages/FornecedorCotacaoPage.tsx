@@ -306,6 +306,23 @@ const FornecedorCotacaoPage = () => {
     );
   }
 
+  if (screen === "expired") {
+    return (
+      <Shell>
+        <BrandLogo />
+        <div className="text-5xl mb-4">⏰</div>
+        <h1 className="text-xl font-bold mb-3">Prazo encerrado</h1>
+        <p className="text-muted-foreground leading-relaxed">
+          Olá{fornecedorNome ? `, ${fornecedorNome}` : ""}! Esta cotação já encerrou o prazo de
+          recebimento de preços.
+        </p>
+        <p className="text-muted-foreground mt-3">Obrigado pela sua participação! 🙌</p>
+        {lojaNome && <p className="text-xs text-muted-foreground mt-4">🏪 {lojaNome}</p>}
+        <p className="text-xs text-muted-foreground mt-8 opacity-70">Compra360 · compra360app.com.br</p>
+      </Shell>
+    );
+  }
+
   if (screen === "empty") {
     return (
       <Shell>
