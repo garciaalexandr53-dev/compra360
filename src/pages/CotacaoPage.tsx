@@ -22,6 +22,8 @@ import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugesta
 import TabelaCotacao from "@/components/cotacao/TabelaCotacao";
 import ReviewHeader from "@/components/cotacao/ReviewHeader";
 import ReviewFooter from "@/components/cotacao/ReviewFooter";
+import PrazoCotacaoBadge from "@/components/cotacao/PrazoCotacaoBadge";
+import StatusFornecedorBadge, { type FornecedorVisualStatus } from "@/components/cotacao/StatusFornecedorBadge";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
@@ -443,6 +445,15 @@ const CotacaoPage = () => {
 
   const supplierHasResponded = (fId: string) =>
     precos.some((p) => p.fornecedor_id === fId && p.preco !== null && p.preco > 0);
+
+  const supplierStatus = (fId: string): FornecedorVisualStatus => {
+    if (supplierHasResponded(fId)) return "respondeu";
+    if (visualizadoMap.get(fId)) return "visualizou";
+    return "nao_visualizou";
+  };
+
+  const allRespondedAndCanClose =
+    !!cotacaoAtiva && supplierProgress.total > 0 && supplierProgress.responded === supplierProgress.total;
 
   // ── Handlers ──
   const handlePriceChange = (cpId: string, fornecedorId: string, value: string) => { setLocalPrices((prev) => ({ ...prev, [cpId]: { ...prev[cpId], [fornecedorId]: value } })); };
