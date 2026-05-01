@@ -135,7 +135,7 @@ const FornecedorCotacaoPage = () => {
       const fetchProdutos = async () =>
         await supabase
           .from("cotacao_produtos")
-          .select("id, quantidade, produtos(nome, embalagem)")
+          .select("id, quantidade, fator_embalagem, produtos(nome, embalagem)")
           .eq("cotacao_id", cotacaoId);
 
       let { data: cpData, error: cpErr } = await fetchProdutos();
@@ -162,6 +162,7 @@ const FornecedorCotacaoPage = () => {
           nome: cp.produtos?.nome || "?",
           embalagem: cp.produtos?.embalagem || "un",
           quantidade: cp.quantidade || 1,
+          fator: cp.fator_embalagem ?? 1,
         }))
         .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
       setProdutos(items);
