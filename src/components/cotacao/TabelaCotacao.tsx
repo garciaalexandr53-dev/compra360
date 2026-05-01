@@ -79,6 +79,7 @@ const TabelaCotacao = ({
 }: TabelaCotacaoProps) => {
   const toastedRef = useRef<Set<string>>(new Set());
   const [qtyDrafts, setQtyDrafts] = useState<Record<string, string>>({});
+  const [fatorDrafts, setFatorDrafts] = useState<Record<string, string>>({});
   const [deleteConfirm, setDeleteConfirm] = useState<{ cpId: string; nome: string } | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
