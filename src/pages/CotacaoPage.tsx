@@ -282,6 +282,9 @@ const CotacaoPage = () => {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [cotacaoAtiva?.id, queryClient]);
+
+  useEffect(() => {
+    const lp: Record<string, Record<string, string>> = {};
     cotacaoProdutos.forEach((cp) => { lp[cp.id] = {}; fornecedores.forEach((f) => { const val = priceMap[cp.id]?.[f.id]; lp[cp.id][f.id] = val !== null && val !== undefined ? formatNumber(val) : ""; }); });
     setLocalPrices(lp);
   }, [cotacaoProdutos, fornecedores, priceMap]);
