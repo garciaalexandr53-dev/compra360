@@ -303,6 +303,7 @@ const CotacaoPage = () => {
   const updateCpMutation = useMutation({
     mutationFn: async ({ cpId, field, value }: { cpId: string; field: string; value: any }) => {
       if (field === "quantidade") { const { error } = await supabase.from("cotacao_produtos").update({ quantidade: value }).eq("id", cpId); if (error) throw error; }
+      else if (field === "fator") { const { error } = await supabase.from("cotacao_produtos").update({ fator_embalagem: value }).eq("id", cpId); if (error) throw error; }
       else if (field === "nome" || field === "embalagem") { const cp = cotacaoProdutos.find(c => c.id === cpId); if (cp?.produto_id) { const { error } = await supabase.from("produtos").update({ [field]: value }).eq("id", cp.produto_id); if (error) throw error; } }
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] }); queryClient.invalidateQueries({ queryKey: ["produtos"] }); },
