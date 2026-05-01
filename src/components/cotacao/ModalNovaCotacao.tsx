@@ -70,7 +70,7 @@ const ModalNovaCotacao = ({ open, onOpenChange, novaCotacaoOpt, setNovaCotacaoOp
       setShowWarning(true);
       return;
     }
-    onConfirm();
+    onConfirm(computePrazoIso());
   };
 
   const isZerar = novaCotacaoOpt === "zerar";
@@ -119,6 +119,37 @@ const ModalNovaCotacao = ({ open, onOpenChange, novaCotacaoOpt, setNovaCotacaoOp
                 </div>
               </label>
             </div>
+
+            {/* Prazo de resposta */}
+            <div className="mt-4 p-3 border rounded-xl bg-muted/30">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="h-4 w-4 text-[hsl(var(--brand))]" />
+                <span className="text-sm font-semibold">Receber preços até</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="time"
+                  value={prazoTime}
+                  disabled={semPrazo}
+                  onChange={(e) => setPrazoTime(e.target.value)}
+                  className="flex-1 h-10 px-3 rounded-md border bg-background text-sm disabled:opacity-50"
+                />
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
+                  <input
+                    type="checkbox"
+                    checked={semPrazo}
+                    onChange={(e) => setSemPrazo(e.target.checked)}
+                    className="accent-[hsl(var(--brand))]"
+                  />
+                  Sem prazo
+                </label>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1.5">
+                {semPrazo
+                  ? "Fornecedores poderão responder a qualquer momento."
+                  : `Fornecedores verão um contador regressivo até as ${prazoTime} de hoje.`}
+              </p>
+            </div>
           </>
         ) : (
           <div className="space-y-4">
@@ -145,7 +176,7 @@ const ModalNovaCotacao = ({ open, onOpenChange, novaCotacaoOpt, setNovaCotacaoOp
           {showWarning ? (
             <>
               <Button variant="outline" onClick={() => setShowWarning(false)}>Cancelar</Button>
-              <Button onClick={onConfirm} disabled={loading} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
+              <Button onClick={() => onConfirm(computePrazoIso())} disabled={loading} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
                 Entendi, continuar
               </Button>
             </>
