@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, formatHoraLocal, formatTimeRemaining } from "@/lib/format";
 
 interface ProdutoItem {
   cotacao_produto_id: string;
@@ -13,7 +13,7 @@ interface ProdutoItem {
   quantidade: number;
 }
 
-type ScreenState = "loading" | "invalid" | "closed" | "empty" | "ready" | "sent";
+type ScreenState = "loading" | "invalid" | "closed" | "expired" | "empty" | "ready" | "sent";
 
 const FornecedorCotacaoPage = () => {
   const { token } = useParams<{ token: string }>();
