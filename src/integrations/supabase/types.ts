@@ -150,18 +150,21 @@ export type Database = {
           created_at: string
           fornecedor_id: string
           id: string
+          visualizado_em: string | null
         }
         Insert: {
           cotacao_id: string
           created_at?: string
           fornecedor_id: string
           id?: string
+          visualizado_em?: string | null
         }
         Update: {
           cotacao_id?: string
           created_at?: string
           fornecedor_id?: string
           id?: string
+          visualizado_em?: string | null
         }
         Relationships: [
           {
@@ -230,6 +233,7 @@ export type Database = {
           id: string
           loja_id: string | null
           nome: string
+          prazo_resposta: string | null
           status: Database["public"]["Enums"]["cotacao_status"]
         }
         Insert: {
@@ -239,6 +243,7 @@ export type Database = {
           id?: string
           loja_id?: string | null
           nome: string
+          prazo_resposta?: string | null
           status?: Database["public"]["Enums"]["cotacao_status"]
         }
         Update: {
@@ -248,6 +253,7 @@ export type Database = {
           id?: string
           loja_id?: string | null
           nome?: string
+          prazo_resposta?: string | null
           status?: Database["public"]["Enums"]["cotacao_status"]
         }
         Relationships: [
@@ -868,6 +874,7 @@ export type Database = {
           cotacao_id: string
           loja_id: string
           loja_nome: string
+          prazo_resposta: string
           status: string
         }[]
       }
@@ -913,6 +920,10 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_buyer: { Args: never; Returns: boolean }
       loja_exists: { Args: { _loja_id: string }; Returns: boolean }
+      marcar_cotacao_visualizada: {
+        Args: { _cotacao_id: string; _token: string }
+        Returns: boolean
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
