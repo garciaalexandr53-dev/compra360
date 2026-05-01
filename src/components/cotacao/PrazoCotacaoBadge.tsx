@@ -72,7 +72,7 @@ const PrazoCotacaoBadge = ({ cotacaoId, prazoIso, onChange }: Props) => {
     ? remaining.expired
       ? `⏰ ${formatHoraLocal(prazoIso)} · expirado`
       : `⏰ ${formatHoraLocal(prazoIso)} · ${remaining.label}`
-    : "⏰ Definir prazo";
+    : "♾️ Sem prazo definido";
 
   return (
     <>
@@ -128,10 +128,31 @@ const PrazoCotacaoBadge = ({ cotacaoId, prazoIso, onChange }: Props) => {
       <AlertDialog open={!!confirmPast} onOpenChange={(o) => !o && setConfirmPast(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Prazo já passou</AlertDialogTitle>
-            <AlertDialogDescription>
-              O horário escolhido ({confirmPast ? formatHoraLocal(confirmPast) : ""}) já passou. Os
-              fornecedores verão a cotação como expirada imediatamente. Confirmar mesmo assim?
+            <AlertDialogTitle>⚠️ Horário já passou</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                <div>
+                  Você está definindo o prazo para{" "}
+                  <strong className="text-foreground">
+                    {confirmPast ? formatHoraLocal(confirmPast) : ""}
+                  </strong>
+                  , mas agora já são{" "}
+                  <strong className="text-foreground">
+                    {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                  </strong>
+                  .
+                </div>
+                <div className="rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-3 space-y-1.5">
+                  <div className="font-semibold text-amber-900 dark:text-amber-200">
+                    O que vai acontecer:
+                  </div>
+                  <ul className="list-disc list-inside text-amber-800 dark:text-amber-300 space-y-0.5">
+                    <li>A cotação aparecerá como <strong>expirada</strong> imediatamente</li>
+                    <li>Fornecedores <strong>não poderão enviar preços</strong></li>
+                    <li>Você ainda pode reabrir alterando o prazo novamente</li>
+                  </ul>
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -142,8 +163,9 @@ const PrazoCotacaoBadge = ({ cotacaoId, prazoIso, onChange }: Props) => {
                 setConfirmPast(null);
                 if (iso) performSave(iso);
               }}
+              className="bg-amber-600 hover:bg-amber-700"
             >
-              Confirmar
+              Confirmar mesmo assim
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
