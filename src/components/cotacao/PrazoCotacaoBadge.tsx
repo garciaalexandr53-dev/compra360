@@ -91,7 +91,13 @@ const PrazoCotacaoBadge = ({ cotacaoId, prazoIso, onChange }: Props) => {
             <Pencil className="h-3 w-3 opacity-60 shrink-0" />
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-[280px]" align="end" side="bottom">
+        <PopoverContent
+          className="w-[calc(100vw-1.5rem)] max-w-[280px] sm:w-[280px]"
+          align="end"
+          side="bottom"
+          sideOffset={6}
+          collisionPadding={12}
+        >
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-[hsl(var(--brand))]" />
