@@ -214,7 +214,8 @@ const AddProdutosCotacaoPage = () => {
           nome: cotNome,
           loja_id: lojaAtiva?.id || null,
           created_by: user?.id,
-        }).select().single();
+          prazo_resposta: defaultPrazoHoje(18, 0),
+        } as any).select().single();
         if (error) throw error;
         cotacaoId = newCot.id;
       }
