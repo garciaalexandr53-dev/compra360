@@ -25,8 +25,20 @@ export default defineConfig(({ mode }) => ({
         skipWaiting: true,
         clientsClaim: true,
         navigateFallbackDenylist: [/^\/~oauth/],
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        globPatterns: ["**/*.{js,css,html,ico,svg,woff2}"],
+        globIgnores: [
+          "**/email-logo.*",
+          "**/email-assets/**",
+          "**/storage/v1/**",
+        ],
+        // Skip any single asset larger than 2 MiB (e.g. high-res logos hosted in Supabase Storage)
+        maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
         runtimeCaching: [
+          {
+            // Never cache Supabase Storage objects in the SW precache
+            urlPattern: /\/storage\/v1\/object\/.*/i,
+            handler: "NetworkOnly",
+          },
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: "CacheFirst",
