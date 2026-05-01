@@ -2,20 +2,28 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { timeInputToTodayIso } from "@/lib/format";
 
 interface ModalNovaCotacaoProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   novaCotacaoOpt: "manter" | "manter_precos" | "zerar" | null;
   setNovaCotacaoOpt: (opt: "manter" | "manter_precos" | "zerar" | null) => void;
-  onConfirm: () => void;
+  onConfirm: (prazoIso: string | null) => void;
   loading?: boolean;
   lojaId?: string | null;
 }
 
 const ModalNovaCotacao = ({ open, onOpenChange, novaCotacaoOpt, setNovaCotacaoOpt, onConfirm, loading, lojaId }: ModalNovaCotacaoProps) => {
+  const [prazoTime, setPrazoTime] = useState("18:00");
+  const [semPrazo, setSemPrazo] = useState(false);
+
+  const computePrazoIso = (): string | null => {
+    if (semPrazo || !prazoTime) return null;
+    return timeInputToTodayIso(prazoTime);
+  };
   const [importedCount, setImportedCount] = useState(0);
   const [recentCount, setRecentCount] = useState(0);
   const [showWarning, setShowWarning] = useState(false);
@@ -62,7 +70,7 @@ const ModalNovaCotacao = ({ open, onOpenChange, novaCotacaoOpt, setNovaCotacaoOp
       setShowWarning(true);
       return;
     }
-    onConfirm();
+    onConfirm(computePrazoIso());
   };
 
   const isZerar = novaCotacaoOpt === "zerar";
@@ -111,6 +119,37 @@ const ModalNovaCotacao = ({ open, onOpenChange, novaCotacaoOpt, setNovaCotacaoOp
                 </div>
               </label>
             </div>
+
+            {/* Prazo de resposta */}
+            <div className="mt-4 p-3 border rounded-xl bg-muted/30">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="h-4 w-4 text-[hsl(var(--brand))]" />
+                <span className="text-sm font-semibold">Receber preços até</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="time"
+                  value={prazoTime}
+                  disabled={semPrazo}
+                  onChange={(e) => setPrazoTime(e.target.value)}
+                  className="flex-1 h-10 px-3 rounded-md border bg-background text-sm disabled:opacity-50"
+                />
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
+                  <input
+                    type="checkbox"
+                    checked={semPrazo}
+                    onChange={(e) => setSemPrazo(e.target.checked)}
+                    className="accent-[hsl(var(--brand))]"
+                  />
+                  Sem prazo
+                </label>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1.5">
+                {semPrazo
+                  ? "Fornecedores poderão responder a qualquer momento."
+                  : `Fornecedores verão um contador regressivo até as ${prazoTime} de hoje.`}
+              </p>
+            </div>
           </>
         ) : (
           <div className="space-y-4">
@@ -137,7 +176,7 @@ const ModalNovaCotacao = ({ open, onOpenChange, novaCotacaoOpt, setNovaCotacaoOp
           {showWarning ? (
             <>
               <Button variant="outline" onClick={() => setShowWarning(false)}>Cancelar</Button>
-              <Button onClick={onConfirm} disabled={loading} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
+              <Button onClick={() => onConfirm(computePrazoIso())} disabled={loading} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
                 Entendi, continuar
               </Button>
             </>

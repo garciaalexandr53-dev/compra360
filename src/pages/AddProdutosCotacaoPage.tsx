@@ -13,6 +13,7 @@ import { Plus, Minus, Trash2, ShoppingCart, ArrowLeft, Check, PlusCircle, Search
 import DashboardProgress from "@/components/dashboard/DashboardProgress";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { defaultPrazoHoje } from "@/lib/format";
 
 interface LocalItem {
   id: string;
@@ -214,7 +215,8 @@ const AddProdutosCotacaoPage = () => {
           nome: cotNome,
           loja_id: lojaAtiva?.id || null,
           created_by: user?.id,
-        }).select().single();
+          prazo_resposta: defaultPrazoHoje(18, 0),
+        } as any).select().single();
         if (error) throw error;
         cotacaoId = newCot.id;
       }

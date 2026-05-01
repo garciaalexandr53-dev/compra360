@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, formatHoraLocal, formatTimeRemaining } from "@/lib/format";
 
 interface ProdutoItem {
   cotacao_produto_id: string;
@@ -13,7 +13,7 @@ interface ProdutoItem {
   quantidade: number;
 }
 
-type ScreenState = "loading" | "invalid" | "closed" | "empty" | "ready" | "sent";
+type ScreenState = "loading" | "invalid" | "closed" | "expired" | "empty" | "ready" | "sent";
 
 const FornecedorCotacaoPage = () => {
   const { token } = useParams<{ token: string }>();
@@ -27,8 +27,36 @@ const FornecedorCotacaoPage = () => {
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
+  const [prazoIso, setPrazoIso] = useState<string | null>(null);
+  const [cotacaoId, setCotacaoId] = useState<string | null>(null);
+  const [, forceTick] = useState(0);
+  const visualizadoMarcado = useRef(false);
 
   const hasAnyPrice = Object.values(prices).some((v) => v.trim().length > 0);
+
+  // Tick every 60s to refresh countdown / detect expiration
+  useEffect(() => {
+    if (screen !== "ready" || !prazoIso) return;
+    const i = setInterval(() => {
+      forceTick((t) => t + 1);
+      if (new Date(prazoIso).getTime() <= Date.now()) setScreen("expired");
+    }, 60_000);
+    return () => clearInterval(i);
+  }, [screen, prazoIso]);
+
+  // Realtime: comprador alterou prazo → atualiza
+  useEffect(() => {
+    if (!cotacaoId) return;
+    const ch = supabase
+      .channel(`cot-prazo-${cotacaoId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "cotacoes", filter: `id=eq.${cotacaoId}` }, (payload: any) => {
+        const novo = payload.new?.prazo_resposta ?? null;
+        setPrazoIso(novo);
+        if (novo && new Date(novo).getTime() <= Date.now()) setScreen("expired");
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [cotacaoId]);
 
   useEffect(() => {
     if (!token) return;
@@ -78,14 +106,28 @@ const FornecedorCotacaoPage = () => {
       }
 
       if (row.loja_nome) setLojaNome(row.loja_nome);
+      setCotacaoId(row.cotacao_id);
+      setPrazoIso(row.prazo_resposta || null);
 
       if (row.status !== "ativa") {
-        // Cotação encerrada/cancelada → tela amigável
         setScreen("closed");
         return;
       }
 
+      // Auto-expire when prazo passed
+      if (row.prazo_resposta && new Date(row.prazo_resposta).getTime() <= Date.now()) {
+        setScreen("expired");
+        return;
+      }
+
       const cotacaoId = row.cotacao_id;
+
+      // Mark visualization (idempotent, fire-and-forget)
+      if (!visualizadoMarcado.current) {
+        visualizadoMarcado.current = true;
+        supabase.rpc("marcar_cotacao_visualizada", { _token: token!, _cotacao_id: cotacaoId })
+          .then(({ error }) => { if (error) log("marcar_visualizada err", error); });
+      }
 
       // 3. Load products (anon RLS allows because status='ativa')
       // Retry once on transient mobile network errors.
@@ -264,6 +306,23 @@ const FornecedorCotacaoPage = () => {
     );
   }
 
+  if (screen === "expired") {
+    return (
+      <Shell>
+        <BrandLogo />
+        <div className="text-5xl mb-4">⏰</div>
+        <h1 className="text-xl font-bold mb-3">Prazo encerrado</h1>
+        <p className="text-muted-foreground leading-relaxed">
+          Olá{fornecedorNome ? `, ${fornecedorNome}` : ""}! Esta cotação já encerrou o prazo de
+          recebimento de preços.
+        </p>
+        <p className="text-muted-foreground mt-3">Obrigado pela sua participação! 🙌</p>
+        {lojaNome && <p className="text-xs text-muted-foreground mt-4">🏪 {lojaNome}</p>}
+        <p className="text-xs text-muted-foreground mt-8 opacity-70">Compra360 · compra360app.com.br</p>
+      </Shell>
+    );
+  }
+
   if (screen === "empty") {
     return (
       <Shell>
@@ -327,6 +386,25 @@ const FornecedorCotacaoPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Banner de prazo */}
+      {prazoIso && (() => {
+        const r = formatTimeRemaining(prazoIso);
+        const urgent = r.totalMinutes <= 60 && !r.expired;
+        return (
+          <div className={`px-4 py-2.5 border-b text-xs sm:text-sm font-medium flex items-center gap-2 ${
+            urgent
+              ? "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900 text-red-800 dark:text-red-200"
+              : "bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900 text-amber-900 dark:text-amber-100"
+          }`}>
+            <span className="text-base shrink-0">⏰</span>
+            <span className="flex-1 leading-tight">
+              Envie seus preços até as <strong>{formatHoraLocal(prazoIso)}</strong> de hoje
+              <span className="opacity-80"> · faltam <strong>{r.label}</strong></span>
+            </span>
+          </div>
+        );
+      })()}
 
       {/* Products */}
       <div className="p-3 sm:p-4 space-y-3 max-w-3xl mx-auto">

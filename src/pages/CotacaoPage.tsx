@@ -22,6 +22,8 @@ import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugesta
 import TabelaCotacao from "@/components/cotacao/TabelaCotacao";
 import ReviewHeader from "@/components/cotacao/ReviewHeader";
 import ReviewFooter from "@/components/cotacao/ReviewFooter";
+import PrazoCotacaoBadge from "@/components/cotacao/PrazoCotacaoBadge";
+import StatusFornecedorBadge, { type FornecedorVisualStatus } from "@/components/cotacao/StatusFornecedorBadge";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
@@ -130,8 +132,14 @@ const CotacaoPage = () => {
   const { data: cotacaoFornecedores = [] } = useQuery({
     queryKey: ["cotacao-fornecedores", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
-    queryFn: async () => { const { data, error } = await supabase.from("cotacao_fornecedores").select("fornecedor_id").eq("cotacao_id", cotacaoAtiva!.id); if (error) throw error; return data || []; },
+    queryFn: async () => { const { data, error } = await supabase.from("cotacao_fornecedores").select("fornecedor_id, visualizado_em").eq("cotacao_id", cotacaoAtiva!.id); if (error) throw error; return data || []; },
   });
+
+  const visualizadoMap = useMemo(() => {
+    const m = new Map<string, string | null>();
+    cotacaoFornecedores.forEach((cf: any) => m.set(cf.fornecedor_id, cf.visualizado_em || null));
+    return m;
+  }, [cotacaoFornecedores]);
 
   useEffect(() => {
     if (!allFornecedores.length || !cotacaoAtiva?.id) return;
@@ -258,6 +266,20 @@ const CotacaoPage = () => {
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'cotacao_produtos' }, () => {
         queryClient.invalidateQueries({ queryKey: ["cotacao-produtos", cotacaoAtiva.id] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [cotacaoAtiva?.id, queryClient]);
+
+  // Realtime — cotacao_fornecedores (visualizado_em) + cotacoes (prazo_resposta)
+  useEffect(() => {
+    if (!cotacaoAtiva?.id) return;
+    const channel = supabase.channel('cotacao-meta-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cotacao_fornecedores', filter: `cotacao_id=eq.${cotacaoAtiva.id}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores", cotacaoAtiva.id] });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'cotacoes', filter: `id=eq.${cotacaoAtiva.id}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ["cotacoes"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -424,6 +446,15 @@ const CotacaoPage = () => {
   const supplierHasResponded = (fId: string) =>
     precos.some((p) => p.fornecedor_id === fId && p.preco !== null && p.preco > 0);
 
+  const supplierStatus = (fId: string): FornecedorVisualStatus => {
+    if (supplierHasResponded(fId)) return "respondeu";
+    if (visualizadoMap.get(fId)) return "visualizou";
+    return "nao_visualizou";
+  };
+
+  const allRespondedAndCanClose =
+    !!cotacaoAtiva && supplierProgress.total > 0 && supplierProgress.responded === supplierProgress.total;
+
   // ── Handlers ──
   const handlePriceChange = (cpId: string, fornecedorId: string, value: string) => { setLocalPrices((prev) => ({ ...prev, [cpId]: { ...prev[cpId], [fornecedorId]: value } })); };
   const handlePriceBlur = (cpId: string, fornecedorId: string) => { const rawVal = localPrices[cpId]?.[fornecedorId]?.replace(",", ".").replace(/[^0-9.]/g, ""); savePriceMutation.mutate({ cpId, fornecedorId, preco: rawVal ? parseFloat(rawVal) : null }); };
@@ -478,13 +509,13 @@ const CotacaoPage = () => {
     toast.success(`Relatório exportado com ${rows.length} preço(s) suspeito(s).`);
   };
 
-  const handleNovaCotacao = async () => {
+  const handleNovaCotacao = async (prazoIso: string | null) => {
     if (!novaCotacaoOpt || !cotacaoAtiva) return;
     try {
       const suspiciousRows = buildSuspiciousReport();
       if (suspiciousRows.length > 0) { const ws = XLSX.utils.json_to_sheet(suspiciousRows); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Preços Suspeitos"); XLSX.writeFile(wb, `precos-suspeitos-${cotacaoAtiva.nome.replace(/\s+/g, "-")}.xlsx`); toast.info(`${suspiciousRows.length} preço(s) suspeito(s) exportado(s) automaticamente.`); }
       await supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: new Date().toISOString() }).eq("id", cotacaoAtiva.id);
-      const { data: newCot, error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa", loja_id: lojaAtiva?.id || null, created_by: user?.id } as any).select().single();
+      const { data: newCot, error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa", loja_id: lojaAtiva?.id || null, created_by: user?.id, prazo_resposta: prazoIso } as any).select().single();
       if (error) throw error;
       if ((novaCotacaoOpt === "manter" || novaCotacaoOpt === "manter_precos") && newCot) {
         const { data: newCps } = await supabase.from("cotacao_produtos").insert(cotacaoProdutos.map((cp) => ({ cotacao_id: newCot.id, produto_id: cp.produto_id, quantidade: cp.quantidade }))).select();
@@ -689,11 +720,18 @@ const CotacaoPage = () => {
         </div>
       )}
       {/* Toolbar — search + save only */}
-      <div className="p-3 border-b bg-card flex items-center gap-2">
+      <div className="p-3 border-b bg-card flex items-center gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[140px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
+        {cotacaoAtiva && (
+          <PrazoCotacaoBadge
+            cotacaoId={cotacaoAtiva.id}
+            prazoIso={(cotacaoAtiva as any).prazo_resposta}
+            onChange={() => queryClient.invalidateQueries({ queryKey: ["cotacoes"] })}
+          />
+        )}
         <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"><Save className="h-4 w-4 mr-1" /> Salvar</Button>
         {!isFromDashboard && isReviewMode && (
           <Button size="sm" variant="outline" onClick={runAiAnalysis} disabled={aiAnalysisLoading} className="gap-1 text-green-700 dark:text-green-400 border-green-500/30 hover:bg-green-500/5">
@@ -732,21 +770,42 @@ const CotacaoPage = () => {
         <span className="text-xs font-bold text-muted-foreground">{supplierProgress.percent}%</span>
       </div>
 
+      {/* Banner: todos os fornecedores responderam */}
+      {allRespondedAndCanClose && !isReviewMode && (
+        <div className="px-4 py-2 border-b bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900 flex items-center gap-2 text-xs sm:text-sm text-green-800 dark:text-green-200">
+          <span className="text-base">✅</span>
+          <span className="flex-1">
+            Todos os fornecedores responderam — você pode fechar a cotação antecipadamente.
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs h-7 border-green-500/40 text-green-700 dark:text-green-300 hover:bg-green-500/10"
+            onClick={() => setNovaCotacaoOpen(true)}
+          >
+            Fechar agora
+          </Button>
+        </div>
+      )}
+
       {/* Supplier chips — hidden in review mode */}
       {!isReviewMode && fornecedores.length > 0 && (
         <div className="px-4 py-2 border-b bg-card/50 flex items-center gap-2 overflow-x-auto scrollbar-thin">
           {fornecedores.map((f) => {
-            const responded = supplierHasResponded(f.id);
+            const status = supplierStatus(f.id);
+            const responded = status === "respondeu";
             return (
               <Popover key={f.id}>
                 <PopoverTrigger asChild>
                   <button className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
                     responded
                       ? "bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400"
+                      : status === "visualizou"
+                      ? "bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-300"
                       : "bg-muted/50 border-border text-muted-foreground"
                   }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${responded ? "bg-green-500" : "bg-muted-foreground/40"}`} />
-                    {f.nome}
+                    <StatusFornecedorBadge status={status} compact />
+                    <span className="truncate max-w-[140px]">{f.nome}</span>
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-48 p-1.5" align="start">

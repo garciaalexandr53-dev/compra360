@@ -367,7 +367,7 @@ const DashboardPage = () => {
   );
 
   // Nova cotação handler
-  const handleNovaCotacao = async () => {
+  const handleNovaCotacao = async (prazoIso: string | null) => {
     if (!cotacaoAtiva?.id || !novaCotacaoOpt) return;
     setNovaCotacaoLoading(true);
     try {
@@ -376,7 +376,7 @@ const DashboardPage = () => {
       
       // Create new
       const nome = `Cotação ${format(new Date(), "dd/MM/yyyy HH:mm")}`;
-      const { data: newCot } = await supabase.from("cotacoes").insert({ nome, loja_id: lojaAtiva?.id || null, created_by: (await supabase.auth.getUser()).data.user?.id }).select().single();
+      const { data: newCot } = await supabase.from("cotacoes").insert({ nome, loja_id: lojaAtiva?.id || null, created_by: (await supabase.auth.getUser()).data.user?.id, prazo_resposta: prazoIso } as any).select().single();
       
       if (newCot && novaCotacaoOpt !== "zerar") {
         const { data: oldCps } = await supabase.from("cotacao_produtos").select("*").eq("cotacao_id", cotacaoAtiva.id);
