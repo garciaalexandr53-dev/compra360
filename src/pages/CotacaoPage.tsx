@@ -720,11 +720,18 @@ const CotacaoPage = () => {
         </div>
       )}
       {/* Toolbar — search + save only */}
-      <div className="p-3 border-b bg-card flex items-center gap-2">
+      <div className="p-3 border-b bg-card flex items-center gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[140px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
+        {cotacaoAtiva && (
+          <PrazoCotacaoBadge
+            cotacaoId={cotacaoAtiva.id}
+            prazoIso={(cotacaoAtiva as any).prazo_resposta}
+            onChange={() => queryClient.invalidateQueries({ queryKey: ["cotacoes"] })}
+          />
+        )}
         <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"><Save className="h-4 w-4 mr-1" /> Salvar</Button>
         {!isFromDashboard && isReviewMode && (
           <Button size="sm" variant="outline" onClick={runAiAnalysis} disabled={aiAnalysisLoading} className="gap-1 text-green-700 dark:text-green-400 border-green-500/30 hover:bg-green-500/5">
@@ -763,11 +770,30 @@ const CotacaoPage = () => {
         <span className="text-xs font-bold text-muted-foreground">{supplierProgress.percent}%</span>
       </div>
 
+      {/* Banner: todos os fornecedores responderam */}
+      {allRespondedAndCanClose && !isReviewMode && (
+        <div className="px-4 py-2 border-b bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900 flex items-center gap-2 text-xs sm:text-sm text-green-800 dark:text-green-200">
+          <span className="text-base">✅</span>
+          <span className="flex-1">
+            Todos os fornecedores responderam — você pode fechar a cotação antecipadamente.
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs h-7 border-green-500/40 text-green-700 dark:text-green-300 hover:bg-green-500/10"
+            onClick={() => setNovaCotacaoOpen(true)}
+          >
+            Fechar agora
+          </Button>
+        </div>
+      )}
+
       {/* Supplier chips — hidden in review mode */}
       {!isReviewMode && fornecedores.length > 0 && (
         <div className="px-4 py-2 border-b bg-card/50 flex items-center gap-2 overflow-x-auto scrollbar-thin">
           {fornecedores.map((f) => {
-            const responded = supplierHasResponded(f.id);
+            const status = supplierStatus(f.id);
+            const responded = status === "respondeu";
             return (
               <Popover key={f.id}>
                 <PopoverTrigger asChild>
