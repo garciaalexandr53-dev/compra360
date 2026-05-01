@@ -15,10 +15,10 @@ vi.mock("sonner", () => ({
 }));
 
 beforeEach(() => {
-  // Mock current time at 14:00 local
+  // Mock current time at 14:00 local while letting timers advance (Radix needs them)
   const now = new Date();
   now.setHours(14, 0, 0, 0);
-  vi.useFakeTimers();
+  vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.setSystemTime(now);
 });
 
