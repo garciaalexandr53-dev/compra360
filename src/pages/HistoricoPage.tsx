@@ -47,6 +47,7 @@ const DEFAULT_LOJA: LojaFilter = "active";
 const HistoricoPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
+  const [activeTab, setActiveTab] = useState<"cotacoes" | "insights" | "itens">("cotacoes");
   const [searchItem, setSearchItem] = useState("");
   const [searchCotacao, setSearchCotacao] = useState("");
   const [expandedCotacao, setExpandedCotacao] = useState<string | null>(null);
@@ -55,6 +56,9 @@ const HistoricoPage = () => {
   const [lojaFilter, setLojaFilter] = useState<LojaFilter>(DEFAULT_LOJA);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  // Selection mode for consolidated export
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   // Pagination per product group on "Buscar Item" tab — reset when search changes
   const ITEM_PAGE_SIZE = 25;
   const [itemVisibleByGroup, setItemVisibleByGroup] = useState<Record<string, number>>({});
