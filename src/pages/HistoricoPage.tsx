@@ -40,10 +40,6 @@ import {
 } from "@/lib/historicoInsights";
 import type { Tables } from "@/integrations/supabase/types";
 
-type PeriodFilter = "7d" | "30d" | "90d" | "all";
-type StatusFilter = "all" | "finalizada" | "cancelada";
-type LojaFilter = "active" | "all";
-
 type PeriodFilter = "7d" | "30d" | "90d" | "all" | "custom";
 type StatusFilter = "all" | "finalizada" | "cancelada";
 type LojaFilter = "active" | "all";
