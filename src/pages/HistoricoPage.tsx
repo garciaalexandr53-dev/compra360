@@ -944,20 +944,51 @@ const HistoricoPage = () => {
                     });
                   }
                 }
-                rows.sort((a, b) => b.date.localeCompare(a.date));
+                // Sort: by date desc, then by price asc within the same cotação
+                // (so suppliers within a cotação go cheapest → priciest).
+                rows.sort((a, b) => {
+                  const d = b.date.localeCompare(a.date);
+                  if (d !== 0) return d;
+                  if (a.cotacaoNome !== b.cotacaoNome) return a.cotacaoNome.localeCompare(b.cotacaoNome);
+                  return a.preco - b.preco;
+                });
+
+                // In "best" mode, keep only the winner per cotação
+                const displayRows =
+                  itemViewMode === "best" ? rows.filter((r) => r.isMin) : rows;
 
                 const visibleN = itemVisibleByGroup[group.nome] ?? ITEM_PAGE_SIZE;
-                const visibleRows = rows.slice(0, visibleN);
-                const remaining = rows.length - visibleRows.length;
+                const visibleRows = displayRows.slice(0, visibleN);
+                const remaining = displayRows.length - visibleRows.length;
+                const isExpanded = !!expandedGroups[group.nome];
 
                 return (
                   <div key={group.nome} className="bg-card border rounded-xl shadow-sm overflow-hidden mb-3">
-                    <div className="px-4 py-3 bg-muted/30 border-b flex items-center justify-between gap-2">
-                      <div className="min-w-0">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedGroups((prev) => ({ ...prev, [group.nome]: !prev[group.nome] }))
+                      }
+                      className="w-full px-4 py-3 bg-muted/30 border-b flex items-center justify-between gap-2 hover:bg-muted/50 transition-colors text-left"
+                      aria-expanded={isExpanded}
+                    >
+                      <div className="min-w-0 flex-1">
                         <div className="font-bold text-sm text-foreground truncate">{group.nome}</div>
-                        <div className="text-[11px] text-muted-foreground">{group.embalagem} · {rows.length} registro(s)</div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {group.embalagem} · {displayRows.length} registro(s)
+                          {itemViewMode === "best" && rows.length !== displayRows.length && (
+                            <span className="text-muted-foreground/70"> (de {rows.length})</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                      <ChevronDown
+                        className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${
+                          isExpanded ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+
+                    {isExpanded && (
 
                     {rows.length === 0 ? (
                       <div className="p-4 text-center text-xs text-muted-foreground">Sem preços registrados.</div>
