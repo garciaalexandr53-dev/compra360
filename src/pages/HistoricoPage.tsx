@@ -64,6 +64,131 @@ type InsightsFiltersProps = {
   periodLabel: (p: PeriodFilter, cs?: Date, ce?: Date) => string;
 };
 
+function CustomRangePicker({
+  open, setOpen, start, end, setStart, setEnd,
+}: {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  start?: Date;
+  end?: Date;
+  setStart: (d?: Date) => void;
+  setEnd: (d?: Date) => void;
+}) {
+  const fmt = (d?: Date) => (d ? formatDate(d, "dd/MM/yy") : "");
+  const [startText, setStartText] = useState(fmt(start));
+  const [endText, setEndText] = useState(fmt(end));
+
+  useEffect(() => { setStartText(fmt(start)); }, [start]);
+  useEffect(() => { setEndText(fmt(end)); }, [end]);
+
+  const parseInput = (txt: string): Date | undefined => {
+    const m = txt.trim().match(/^(\d{2})\/(\d{2})\/(\d{2})$/);
+    if (!m) return undefined;
+    const [, dd, mm, yy] = m;
+    const year = 2000 + parseInt(yy, 10);
+    const d = new Date(year, parseInt(mm, 10) - 1, parseInt(dd, 10));
+    return isValidDate(d) ? d : undefined;
+  };
+
+  const commitStart = () => {
+    const d = parseInput(startText);
+    if (d) setStart(d);
+    else if (startText === "") setStart(undefined);
+    else setStartText(fmt(start));
+  };
+  const commitEnd = () => {
+    const d = parseInput(endText);
+    if (d) setEnd(d);
+    else if (endText === "") setEnd(undefined);
+    else setEndText(fmt(end));
+  };
+
+  // Sequential single calendar: 1st tap = start, 2nd tap = end (auto-close).
+  const handleSelect = (range: { from?: Date; to?: Date } | undefined) => {
+    if (!range) return;
+    if (range.from && !range.to) {
+      setStart(range.from);
+      setEnd(undefined);
+      return;
+    }
+    if (range.from && range.to) {
+      const a = range.from <= range.to ? range.from : range.to;
+      const b = range.from <= range.to ? range.to : range.from;
+      setStart(a);
+      setEnd(b);
+      setOpen(false);
+    }
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className="inline-flex items-center gap-1 rounded-full bg-muted text-foreground hover:bg-muted/80 px-2.5 py-0.5 text-xs font-medium border"
+          aria-label="Editar intervalo personalizado"
+        >
+          {start ? formatDate(start, "dd/MM/yy") : "Início"}
+          <span className="opacity-50">→</span>
+          {end ? formatDate(end, "dd/MM/yy") : "Fim"}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        sideOffset={8}
+        className="p-3 space-y-3 w-[calc(100vw-1rem)] max-w-[360px] sm:max-w-[380px]"
+      >
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <label className="text-[11px] font-medium text-muted-foreground">Data inicial</label>
+            <Input
+              inputMode="numeric"
+              placeholder="DD/MM/AA"
+              value={startText}
+              onChange={(e) => setStartText(e.target.value)}
+              onBlur={commitStart}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitStart(); } }}
+              className="h-9 text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[11px] font-medium text-muted-foreground">Data final</label>
+            <Input
+              inputMode="numeric"
+              placeholder="DD/MM/AA"
+              value={endText}
+              onChange={(e) => setEndText(e.target.value)}
+              onBlur={commitEnd}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitEnd(); } }}
+              className="h-9 text-sm"
+            />
+          </div>
+        </div>
+        <div className="flex justify-center">
+          <CalendarPicker
+            mode="range"
+            selected={{ from: start, to: end }}
+            onSelect={handleSelect as any}
+            numberOfMonths={1}
+            defaultMonth={start ?? end ?? new Date()}
+            className="p-2 pointer-events-auto rounded-md border"
+          />
+        </div>
+        <p className="text-[10px] text-muted-foreground text-center">
+          Toque na data inicial e depois na final, ou digite acima.
+        </p>
+        <div className="flex justify-end gap-2">
+          <Button size="sm" variant="ghost" onClick={() => { setStart(undefined); setEnd(undefined); }}>
+            Limpar
+          </Button>
+          <Button size="sm" onClick={() => setOpen(false)} disabled={!start || !end}>
+            Aplicar
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function InsightsFilters({
   period, setPeriod, customStart, customEnd, setCustomStart, setCustomEnd,
   lojaId, setLojaId, lojas, lojaAtivaNome, cotacoesCount, periodLabel,
