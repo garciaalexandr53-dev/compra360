@@ -19,10 +19,20 @@ import {
 import {
   Search, ChevronDown, ChevronUp, Trash2, MoreHorizontal,
   Package, Users, DollarSign, Trophy, Store, Calendar, Filter,
-  FileSpreadsheet, FileText, Printer,
+  FileSpreadsheet, FileText, Printer, BarChart3, TrendingUp,
+  CheckSquare, X, Sparkles,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { exportCotacaoToExcel, exportCotacaoToPdf, printCotacao } from "@/lib/historicoExports";
+import {
+  exportCotacaoToExcel, exportCotacaoToPdf, printCotacao,
+  exportConsolidadoToExcel, exportConsolidadoToPdf,
+  type ConsolidatedCotacao, type ConsolidatedSummary,
+} from "@/lib/historicoExports";
+import {
+  computeKPIs, buildFornecedorRanking, buildProdutoVariacao,
+  type InsightRow,
+} from "@/lib/historicoInsights";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PeriodFilter = "7d" | "30d" | "90d" | "all";
@@ -37,6 +47,7 @@ const DEFAULT_LOJA: LojaFilter = "active";
 const HistoricoPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
+  const [activeTab, setActiveTab] = useState<"cotacoes" | "insights" | "itens">("cotacoes");
   const [searchItem, setSearchItem] = useState("");
   const [searchCotacao, setSearchCotacao] = useState("");
   const [expandedCotacao, setExpandedCotacao] = useState<string | null>(null);
@@ -45,6 +56,9 @@ const HistoricoPage = () => {
   const [lojaFilter, setLojaFilter] = useState<LojaFilter>(DEFAULT_LOJA);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  // Selection mode for consolidated export
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   // Pagination per product group on "Buscar Item" tab — reset when search changes
   const ITEM_PAGE_SIZE = 25;
   const [itemVisibleByGroup, setItemVisibleByGroup] = useState<Record<string, number>>({});
@@ -315,10 +329,233 @@ const HistoricoPage = () => {
   const pedidosByFornecedor = expandedCotacao ? buildPedidosByFornecedor() : [];
   const totalGeral = tableRows.reduce((acc, r) => acc + (r.total || 0), 0);
 
+  // ---------- BATCH detalhes para Insights / Consolidado ----------
+  // Loaded only when the user opens the Insights tab or enables Selection mode,
+  // and limited to the currently filtered cotações to avoid heavy queries.
+  const filteredIds = useMemo(() => filteredCotacoes.map((c) => c.id), [filteredCotacoes]);
+  const filteredIdsKey = filteredIds.join(",");
+  const needsBatchDetails = activeTab === "insights" || selectionMode;
+
+  const { data: batchDetails, isLoading: batchLoading } = useQuery({
+    queryKey: ["historico-batch-details", filteredIdsKey],
+    enabled: needsBatchDetails && filteredIds.length > 0,
+    queryFn: async () => {
+      const { data: cps } = await supabase
+        .from("cotacao_produtos")
+        .select("id, cotacao_id, produto_id, tipo_embalagem, fator_embalagem, quantidade, produtos(nome, embalagem)")
+        .in("cotacao_id", filteredIds);
+      const cpList = cps || [];
+      const cpIds = cpList.map((cp: any) => cp.id);
+      const { data: precos } = cpIds.length
+        ? await supabase
+            .from("precos")
+            .select("id, cotacao_produto_id, fornecedor_id, preco, fornecedores(nome)")
+            .in("cotacao_produto_id", cpIds)
+            .gt("preco", 0)
+        : { data: [] as any[] };
+      return { cps: cpList, precos: precos || [] };
+    },
+  });
+
+  // Build per-cotação rows + winner-only insight rows, in one pass.
+  const consolidated = useMemo(() => {
+    if (!batchDetails) {
+      return {
+        perCotacao: new Map<string, { rows: any[]; pedidos: any[] }>(),
+        insightRows: [] as InsightRow[],
+        allPricesByRow: new Map<string, number[]>(),
+      };
+    }
+    const cpsByCot = new Map<string, any[]>();
+    for (const cp of batchDetails.cps) {
+      if (!cpsByCot.has(cp.cotacao_id)) cpsByCot.set(cp.cotacao_id, []);
+      cpsByCot.get(cp.cotacao_id)!.push(cp);
+    }
+    const precosByCp = new Map<string, any[]>();
+    for (const p of batchDetails.precos) {
+      if (!precosByCp.has(p.cotacao_produto_id)) precosByCp.set(p.cotacao_produto_id, []);
+      precosByCp.get(p.cotacao_produto_id)!.push(p);
+    }
+
+    const perCotacao = new Map<string, { rows: any[]; pedidos: any[] }>();
+    const insightRows: InsightRow[] = [];
+    const allPricesByRow = new Map<string, number[]>();
+
+    for (const cot of filteredCotacoes) {
+      const cps = cpsByCot.get(cot.id) || [];
+      const rows = cps.map((cp: any) => {
+        const ps = (precosByCp.get(cp.id) || []).sort(
+          (a: any, b: any) => Number(a.preco) - Number(b.preco)
+        );
+        const winner = ps[0] || null;
+        const qtd = Number(cp.quantidade || 1);
+        const fator = Number(cp.fator_embalagem || 1);
+        const precoUnit = winner ? Number(winner.preco) : null;
+        const total = precoUnit != null ? precoUnit * qtd * fator : null;
+        const fornecedor = winner?.fornecedores?.nome || "—";
+        const nome = cp.produtos?.nome || "—";
+        const embalagem = cp.tipo_embalagem || cp.produtos?.embalagem || "un";
+        if (winner) {
+          insightRows.push({
+            cotacaoId: cot.id,
+            cotacaoNome: cot.nome,
+            date: cot.created_at,
+            produtoNome: nome,
+            embalagem,
+            fator,
+            qtd,
+            fornecedor,
+            precoUnit: precoUnit!,
+            total: total!,
+          });
+          allPricesByRow.set(
+            `${cot.id}:${cp.id}`,
+            ps.map((p: any) => Number(p.preco))
+          );
+        }
+        return {
+          id: cp.id,
+          cpKey: `${cot.id}:${cp.id}`,
+          nome,
+          embalagem,
+          fator,
+          qtd,
+          fornecedor,
+          precoUnit,
+          total,
+          allPrecos: ps,
+        };
+      });
+      // Pedidos por fornecedor for this cotação (consolidated export needs them).
+      const byForn = new Map<string, { fornecedor: string; itens: any[]; total: number }>();
+      for (const r of rows) {
+        if (!r.fornecedor || r.fornecedor === "—") continue;
+        if (!byForn.has(r.fornecedor)) byForn.set(r.fornecedor, { fornecedor: r.fornecedor, itens: [], total: 0 });
+        const g = byForn.get(r.fornecedor)!;
+        g.itens.push(r);
+        g.total += r.total || 0;
+      }
+      perCotacao.set(cot.id, {
+        rows,
+        pedidos: Array.from(byForn.values()).sort((a, b) => b.total - a.total),
+      });
+    }
+
+    return { perCotacao, insightRows, allPricesByRow };
+  }, [batchDetails, filteredCotacoes]);
+
+  // Insights computed values
+  const kpis = useMemo(() => {
+    // Build a quick lookup: cotacaoId|produtoNome → all prices for that cp
+    const priceLookup = new Map<string, number[]>();
+    for (const [, det] of consolidated.perCotacao) {
+      for (const r of det.rows) {
+        if (r.precoUnit == null) continue;
+        const key = `${r.cpKey}`;
+        priceLookup.set(key, r.allPrecos.map((p: any) => Number(p.preco)));
+      }
+    }
+    // Insight rows don't carry cpKey directly; map them by walking perCotacao again.
+    const insightWithKey: { row: InsightRow; key: string }[] = [];
+    for (const [cotId, det] of consolidated.perCotacao) {
+      for (const r of det.rows) {
+        if (r.precoUnit == null) continue;
+        insightWithKey.push({
+          row: {
+            cotacaoId: cotId,
+            cotacaoNome: filteredCotacoes.find((c) => c.id === cotId)?.nome || "",
+            date: filteredCotacoes.find((c) => c.id === cotId)?.created_at || "",
+            produtoNome: r.nome,
+            embalagem: r.embalagem,
+            fator: r.fator,
+            qtd: r.qtd,
+            fornecedor: r.fornecedor,
+            precoUnit: r.precoUnit,
+            total: r.total,
+          },
+          key: r.cpKey,
+        });
+      }
+    }
+    let economia = 0;
+    for (const { row, key } of insightWithKey) {
+      const all = priceLookup.get(key) || [row.precoUnit];
+      if (all.length < 2) continue;
+      const worst = Math.max(...all);
+      const diff = worst - row.precoUnit;
+      if (diff > 0) economia += diff * row.qtd * row.fator;
+    }
+    return computeKPIs(filteredCotacoes, consolidated.insightRows, economia);
+  }, [filteredCotacoes, consolidated]);
+
+  const fornecedorRanking = useMemo(
+    () => buildFornecedorRanking(consolidated.insightRows),
+    [consolidated.insightRows]
+  );
+  const produtoVariacao = useMemo(
+    () => buildProdutoVariacao(consolidated.insightRows),
+    [consolidated.insightRows]
+  );
+
+  // Selection helpers
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const selectAllVisible = () => {
+    setSelectedIds(new Set(filteredCotacoes.map((c) => c.id)));
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const buildConsolidated = (): { summary: ConsolidatedSummary; cotacoes: ConsolidatedCotacao[] } | null => {
+    if (selectedIds.size === 0) return null;
+    const list: ConsolidatedCotacao[] = [];
+    let totalGeralC = 0;
+    let totalProdutos = 0;
+    const fornecedoresUnique = new Set<string>();
+    for (const c of filteredCotacoes) {
+      if (!selectedIds.has(c.id)) continue;
+      const det = consolidated.perCotacao.get(c.id);
+      if (!det) continue;
+      const meta = {
+        nome: c.nome,
+        created_at: c.created_at,
+        status: c.status,
+        loja_nome: c.loja_nome,
+        total_pedido: c.total_pedido,
+        produtos_count: c.produtos_count,
+        fornecedores_count: c.fornecedores_count,
+      };
+      list.push({ meta, rows: det.rows as any, pedidos: det.pedidos as any });
+      totalGeralC += det.rows.reduce((a: number, r: any) => a + (r.total || 0), 0);
+      totalProdutos += det.rows.length;
+      for (const g of det.pedidos) fornecedoresUnique.add(g.fornecedor);
+    }
+    if (list.length === 0) return null;
+    const summary: ConsolidatedSummary = {
+      periodoLabel: periodLabel(periodFilter),
+      lojaLabel: lojaFilter === "active" ? lojaAtiva?.nome ?? null : "Todas as lojas",
+      totalGeral: totalGeralC,
+      totalCotacoes: list.length,
+      totalProdutos,
+      totalFornecedores: fornecedoresUnique.size,
+    };
+    return { summary, cotacoes: list };
+  };
+
   const statusBadgeClass = (status: string) =>
     status === "finalizada"
       ? "bg-green-500/15 text-green-700 dark:text-green-400 border border-green-500/30"
       : "bg-muted text-muted-foreground border";
+
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto">
@@ -336,6 +573,15 @@ const HistoricoPage = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onSelect={() => {
+                  setActiveTab("cotacoes");
+                  setSelectionMode(true);
+                  setExpandedCotacao(null);
+                }}
+              >
+                <CheckSquare className="h-4 w-4 mr-2" /> Selecionar para consolidar
+              </DropdownMenuItem>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
@@ -365,13 +611,89 @@ const HistoricoPage = () => {
         )}
       </div>
 
-      <Tabs defaultValue="cotacoes">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
         <TabsList className="w-full">
           <TabsTrigger value="cotacoes" className="flex-1 text-xs">Por Cotação</TabsTrigger>
+          <TabsTrigger value="insights" className="flex-1 text-xs">
+            <BarChart3 className="h-3.5 w-3.5 mr-1" /> Insights
+          </TabsTrigger>
           <TabsTrigger value="itens" className="flex-1 text-xs">Buscar Item</TabsTrigger>
         </TabsList>
 
         <TabsContent value="cotacoes" className="space-y-4">
+          {/* Selection mode bar */}
+          {selectionMode && (
+            <div className="sticky top-0 z-20 -mx-4 md:mx-0 px-4 md:px-3 py-2.5 md:rounded-xl bg-primary/95 backdrop-blur text-primary-foreground shadow-md flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-primary-foreground hover:bg-primary-foreground/20"
+                onClick={exitSelectionMode}
+                aria-label="Sair do modo seleção"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-bold">
+                  {selectedIds.size} selecionada{selectedIds.size === 1 ? "" : "s"}
+                </div>
+                <div className="text-[10px] opacity-80 truncate">
+                  Toque nas cotações para selecionar
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-xs text-primary-foreground hover:bg-primary-foreground/20"
+                onClick={selectedIds.size === filteredCotacoes.length ? clearSelection : selectAllVisible}
+              >
+                {selectedIds.size === filteredCotacoes.length ? "Limpar" : "Todas"}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="h-8 gap-1 text-xs"
+                    disabled={selectedIds.size === 0 || batchLoading}
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    Exportar
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      const data = buildConsolidated();
+                      if (!data) return;
+                      try {
+                        exportConsolidadoToExcel(data.summary, data.cotacoes);
+                      } catch (e: any) {
+                        toast.error("Erro ao exportar Excel: " + e.message);
+                      }
+                    }}
+                  >
+                    <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel consolidado
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={async () => {
+                      const data = buildConsolidated();
+                      if (!data) return;
+                      try {
+                        await exportConsolidadoToPdf(data.summary, data.cotacoes);
+                      } catch (e: any) {
+                        toast.error("Erro ao gerar PDF: " + e.message);
+                      }
+                    }}
+                  >
+                    <FileText className="h-4 w-4 mr-2" /> PDF consolidado
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+
           {/* Search + filters trigger */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1 min-w-0">
@@ -543,15 +865,26 @@ const HistoricoPage = () => {
           ) : (
             <>
               {visibleCotacoes.map((c) => {
-                const isOpen = expandedCotacao === c.id;
+                const isOpen = !selectionMode && expandedCotacao === c.id;
+                const isSelected = selectedIds.has(c.id);
                 return (
-                  <div key={c.id} className="bg-card border rounded-xl shadow-sm overflow-hidden">
+                  <div
+                    key={c.id}
+                    className={`bg-card border rounded-xl shadow-sm overflow-hidden transition-colors ${
+                      selectionMode && isSelected ? "border-primary ring-2 ring-primary/30" : ""
+                    }`}
+                  >
                     {/* Card compacto */}
                     <div
                       className="px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors"
-                      onClick={() => toggleExpand(c.id)}
+                      onClick={() => (selectionMode ? toggleSelected(c.id) : toggleExpand(c.id))}
                     >
                       <div className="flex items-start justify-between gap-3">
+                        {selectionMode && (
+                          <div className="pt-0.5">
+                            <Checkbox checked={isSelected} aria-label="Selecionar cotação" />
+                          </div>
+                        )}
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm md:text-base font-bold text-foreground truncate">{c.nome}</span>
@@ -845,6 +1178,276 @@ const HistoricoPage = () => {
                   </Button>
                 </div>
               )}
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="insights" className="space-y-4">
+          {filteredCotacoes.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground text-sm">
+              Sem cotações para analisar. Ajuste os filtros na aba "Por Cotação".
+            </div>
+          ) : batchLoading || !batchDetails ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-20 rounded-xl" />
+                ))}
+              </div>
+              <Skeleton className="h-40 rounded-xl" />
+              <Skeleton className="h-40 rounded-xl" />
+            </div>
+          ) : (
+            <>
+              {/* Period summary chip */}
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+                <span>Análise de:</span>
+                <Badge variant="secondary" className="font-normal">{periodLabel(periodFilter)}</Badge>
+                <Badge variant="secondary" className="font-normal">
+                  {lojaFilter === "active" ? lojaAtiva?.nome ?? "Loja ativa" : "Todas as lojas"}
+                </Badge>
+                <Badge variant="secondary" className="font-normal">{kpis.cotacoes} cotação(ões)</Badge>
+              </div>
+
+              {/* KPI cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
+                <div className="bg-card border rounded-xl p-3 shadow-sm">
+                  <div className="flex items-center gap-1 text-[10px] uppercase text-muted-foreground tracking-wide">
+                    <DollarSign className="h-3 w-3" /> Total no período
+                  </div>
+                  <div className="text-base md:text-lg font-bold text-primary mt-1 break-words">
+                    {formatBRL(kpis.totalGeral)}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">
+                    Ticket médio: {formatBRL(kpis.ticketMedio)}
+                  </div>
+                </div>
+                <div className="bg-card border rounded-xl p-3 shadow-sm">
+                  <div className="flex items-center gap-1 text-[10px] uppercase text-muted-foreground tracking-wide">
+                    <Sparkles className="h-3 w-3" /> Economia estimada
+                  </div>
+                  <div className="text-base md:text-lg font-bold text-green-600 dark:text-green-400 mt-1 break-words">
+                    {formatBRL(kpis.economiaEstimada)}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">vs. piores preços recebidos</div>
+                </div>
+                <div className="bg-card border rounded-xl p-3 shadow-sm">
+                  <div className="flex items-center gap-1 text-[10px] uppercase text-muted-foreground tracking-wide">
+                    <Package className="h-3 w-3" /> Produtos únicos
+                  </div>
+                  <div className="text-base md:text-lg font-bold text-foreground mt-1">
+                    {kpis.produtosUnicos}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">cotados no período</div>
+                </div>
+                <div className="bg-card border rounded-xl p-3 shadow-sm">
+                  <div className="flex items-center gap-1 text-[10px] uppercase text-muted-foreground tracking-wide">
+                    <Users className="h-3 w-3" /> Fornecedores
+                  </div>
+                  <div className="text-base md:text-lg font-bold text-foreground mt-1">
+                    {kpis.fornecedoresUnicos}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">venceram pelo menos 1 item</div>
+                </div>
+              </div>
+
+              {/* Ranking de fornecedores */}
+              <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
+                <div className="px-4 py-2.5 border-b bg-muted/30 flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-primary" />
+                  <h2 className="text-sm font-bold">Ranking de fornecedores</h2>
+                  <span className="text-[11px] text-muted-foreground ml-auto">
+                    Por valor total ganho
+                  </span>
+                </div>
+                {fornecedorRanking.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-muted-foreground">
+                    Sem dados de vencedores no período.
+                  </div>
+                ) : (
+                  <>
+                    {/* Desktop */}
+                    <div className="hidden md:block">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/40 text-xs text-muted-foreground">
+                          <tr>
+                            <th className="px-3 py-2 text-left font-semibold w-12">#</th>
+                            <th className="px-3 py-2 text-left font-semibold">Fornecedor</th>
+                            <th className="px-3 py-2 text-center font-semibold">Vitórias</th>
+                            <th className="px-3 py-2 text-center font-semibold">Cotações</th>
+                            <th className="px-3 py-2 text-right font-semibold">Taxa</th>
+                            <th className="px-3 py-2 text-right font-semibold">Total ganho</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {fornecedorRanking.slice(0, 20).map((f, idx) => (
+                            <tr key={f.nome} className="border-t hover:bg-muted/20">
+                              <td className="px-3 py-2 text-muted-foreground font-mono text-xs">
+                                {idx + 1}
+                              </td>
+                              <td className="px-3 py-2 font-medium">
+                                <span className="inline-flex items-center gap-1.5">
+                                  {idx === 0 && <Trophy className="h-3.5 w-3.5 text-yellow-500" />}
+                                  {f.nome}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-center">{f.vitorias}</td>
+                              <td className="px-3 py-2 text-center text-muted-foreground">{f.totalCotacoes}</td>
+                              <td className="px-3 py-2 text-right text-muted-foreground">
+                                {f.taxa.toFixed(0)}%
+                              </td>
+                              <td className="px-3 py-2 text-right font-mono font-semibold text-primary">
+                                {formatBRL(f.totalGanho)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {/* Mobile */}
+                    <div className="md:hidden divide-y">
+                      {fornecedorRanking.slice(0, 20).map((f, idx) => (
+                        <div key={f.nome} className="px-3 py-2.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] text-muted-foreground font-mono w-5">
+                                  {idx + 1}
+                                </span>
+                                {idx === 0 && <Trophy className="h-3.5 w-3.5 text-yellow-500 shrink-0" />}
+                                <span className="text-sm font-semibold truncate">{f.nome}</span>
+                              </div>
+                              <div className="text-[10px] text-muted-foreground ml-6">
+                                {f.vitorias} vitória(s) · {f.totalCotacoes} cotação(ões) · {f.taxa.toFixed(0)}%
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="font-mono font-bold text-sm text-primary">
+                                {formatBRL(f.totalGanho)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Variação de preço por produto */}
+              <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
+                <div className="px-4 py-2.5 border-b bg-muted/30 flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  <h2 className="text-sm font-bold">Variação de preço por produto</h2>
+                  <span className="text-[11px] text-muted-foreground ml-auto">
+                    Maior variação primeiro
+                  </span>
+                </div>
+                {produtoVariacao.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-muted-foreground">
+                    Sem dados suficientes.
+                  </div>
+                ) : (
+                  <>
+                    {/* Desktop */}
+                    <div className="hidden md:block">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/40 text-xs text-muted-foreground">
+                          <tr>
+                            <th className="px-3 py-2 text-left font-semibold">Produto</th>
+                            <th className="px-3 py-2 text-center font-semibold">Amostras</th>
+                            <th className="px-3 py-2 text-right font-semibold">Mín</th>
+                            <th className="px-3 py-2 text-right font-semibold">Médio</th>
+                            <th className="px-3 py-2 text-right font-semibold">Máx</th>
+                            <th className="px-3 py-2 text-right font-semibold">Variação</th>
+                            <th className="px-3 py-2 text-right font-semibold">Último</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {produtoVariacao.slice(0, 30).map((p) => {
+                            const high = (p.variacaoPct ?? 0) >= 30;
+                            return (
+                              <tr key={p.produto} className="border-t hover:bg-muted/20">
+                                <td className="px-3 py-2">
+                                  <div className="font-medium">{p.produto}</div>
+                                  <div className="text-[10px] text-muted-foreground">{p.embalagem}</div>
+                                </td>
+                                <td className="px-3 py-2 text-center text-muted-foreground">{p.amostras}</td>
+                                <td className="px-3 py-2 text-right font-mono text-green-700 dark:text-green-400">
+                                  {formatBRL(p.precoMin)}
+                                </td>
+                                <td className="px-3 py-2 text-right font-mono text-muted-foreground">
+                                  {formatBRL(p.precoMedio)}
+                                </td>
+                                <td className="px-3 py-2 text-right font-mono text-red-600 dark:text-red-400">
+                                  {formatBRL(p.precoMax)}
+                                </td>
+                                <td className={`px-3 py-2 text-right font-mono font-semibold ${
+                                  high ? "text-red-600 dark:text-red-400" : "text-foreground"
+                                }`}>
+                                  {p.variacaoPct != null ? `${p.variacaoPct.toFixed(1)}%` : "—"}
+                                </td>
+                                <td className="px-3 py-2 text-right">
+                                  <div className="font-mono text-xs">{formatBRL(p.ultimoPreco)}</div>
+                                  <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">
+                                    {p.ultimoFornecedor}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    {/* Mobile */}
+                    <div className="md:hidden divide-y">
+                      {produtoVariacao.slice(0, 30).map((p) => {
+                        const high = (p.variacaoPct ?? 0) >= 30;
+                        return (
+                          <div key={p.produto} className="px-3 py-2.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <div className="font-semibold text-sm truncate">{p.produto}</div>
+                                <div className="text-[10px] text-muted-foreground">
+                                  {p.embalagem} · {p.amostras} amostra(s)
+                                </div>
+                              </div>
+                              <div className={`text-xs font-mono font-bold shrink-0 ${
+                                high ? "text-red-600 dark:text-red-400" : "text-foreground"
+                              }`}>
+                                {p.variacaoPct != null ? `${p.variacaoPct.toFixed(0)}%` : "—"}
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1 mt-2 text-[10px]">
+                              <div className="bg-green-500/10 rounded px-1.5 py-1">
+                                <div className="text-green-700 dark:text-green-400 font-mono font-semibold">
+                                  {formatBRL(p.precoMin)}
+                                </div>
+                                <div className="text-muted-foreground">Mín</div>
+                              </div>
+                              <div className="bg-muted/30 rounded px-1.5 py-1">
+                                <div className="text-foreground font-mono font-semibold">
+                                  {formatBRL(p.precoMedio)}
+                                </div>
+                                <div className="text-muted-foreground">Médio</div>
+                              </div>
+                              <div className="bg-red-500/10 rounded px-1.5 py-1">
+                                <div className="text-red-600 dark:text-red-400 font-mono font-semibold">
+                                  {formatBRL(p.precoMax)}
+                                </div>
+                                <div className="text-muted-foreground">Máx</div>
+                              </div>
+                            </div>
+                            <div className="text-[10px] text-muted-foreground mt-1.5 truncate">
+                              Último: {formatBRL(p.ultimoPreco)} · {p.ultimoFornecedor}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
             </>
           )}
         </TabsContent>

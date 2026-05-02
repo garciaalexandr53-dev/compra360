@@ -341,3 +341,254 @@ function escapeHtml(s: string) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!)
   );
 }
+
+/* ============== CONSOLIDATED EXPORT (multi-cotação) ============== */
+
+export interface ConsolidatedCotacao {
+  meta: ExportCotacaoMeta;
+  rows: ExportRow[];
+  pedidos: ExportPedidoForn[];
+}
+
+export interface ConsolidatedSummary {
+  /** Display label, e.g. "Últimos 30 dias" or "12/04/2025 → 02/05/2025". */
+  periodoLabel: string;
+  /** Optional store filter label. */
+  lojaLabel?: string | null;
+  totalGeral: number;
+  totalCotacoes: number;
+  totalProdutos: number;
+  totalFornecedores: number;
+}
+
+export function exportConsolidadoToExcel(
+  summary: ConsolidatedSummary,
+  cotacoes: ConsolidatedCotacao[]
+) {
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: Resumo geral
+  const resumo: any[][] = [
+    ["Compra360 — Relatório Consolidado de Cotações"],
+    [],
+    ["Período", summary.periodoLabel],
+    ["Loja", summary.lojaLabel || "Todas"],
+    ["Total de cotações", summary.totalCotacoes],
+    ["Total de produtos (linhas)", summary.totalProdutos],
+    ["Total de fornecedores únicos", summary.totalFornecedores],
+    ["Valor total consolidado", summary.totalGeral],
+    [],
+    ["Cotação", "Data", "Status", "Loja", "Produtos", "Fornecedores", "Total"],
+    ...cotacoes.map((c) => [
+      c.meta.nome,
+      formatDateTime(c.meta.created_at),
+      c.meta.status,
+      c.meta.loja_nome || "—",
+      c.meta.produtos_count,
+      c.meta.fornecedores_count,
+      c.meta.total_pedido,
+    ]),
+    [],
+    ["", "", "", "", "", "TOTAL CONSOLIDADO", summary.totalGeral],
+  ];
+  const wsResumo = XLSX.utils.aoa_to_sheet(resumo);
+  wsResumo["!cols"] = [
+    { wch: 30 },
+    { wch: 18 },
+    { wch: 12 },
+    { wch: 22 },
+    { wch: 10 },
+    { wch: 12 },
+    { wch: 14 },
+  ];
+  XLSX.utils.book_append_sheet(wb, wsResumo, "Resumo Consolidado");
+
+  // Sheet 2: Itens detalhados (todas cotações)
+  const itens: any[][] = [
+    ["Cotação", "Data", "Produto", "Embalagem", "Fator", "Qtd", "Fornecedor", "Preço un.", "Total"],
+  ];
+  for (const c of cotacoes) {
+    for (const r of c.rows) {
+      itens.push([
+        c.meta.nome,
+        formatDateTime(c.meta.created_at),
+        r.nome,
+        r.embalagem,
+        r.fator,
+        r.qtd,
+        r.fornecedor,
+        r.precoUnit ?? "—",
+        r.total ?? "—",
+      ]);
+    }
+  }
+  const wsItens = XLSX.utils.aoa_to_sheet(itens);
+  wsItens["!cols"] = [
+    { wch: 28 }, { wch: 18 }, { wch: 36 }, { wch: 12 }, { wch: 6 },
+    { wch: 8 }, { wch: 24 }, { wch: 12 }, { wch: 14 },
+  ];
+  XLSX.utils.book_append_sheet(wb, wsItens, "Itens Detalhados");
+
+  // Sheet 3: Total por fornecedor (cross-cotação)
+  const fornAgg = new Map<string, { total: number; itens: number; cots: Set<string> }>();
+  for (const c of cotacoes) {
+    for (const g of c.pedidos) {
+      if (!fornAgg.has(g.fornecedor)) {
+        fornAgg.set(g.fornecedor, { total: 0, itens: 0, cots: new Set() });
+      }
+      const e = fornAgg.get(g.fornecedor)!;
+      e.total += g.total;
+      e.itens += g.itens.length;
+      e.cots.add(c.meta.nome);
+    }
+  }
+  const fornData: any[][] = [["Fornecedor", "Cotações", "Itens vendidos", "Total ganho"]];
+  Array.from(fornAgg.entries())
+    .sort((a, b) => b[1].total - a[1].total)
+    .forEach(([nome, e]) => {
+      fornData.push([nome, e.cots.size, e.itens, e.total]);
+    });
+  const wsForn = XLSX.utils.aoa_to_sheet(fornData);
+  wsForn["!cols"] = [{ wch: 28 }, { wch: 12 }, { wch: 16 }, { wch: 14 }];
+  XLSX.utils.book_append_sheet(wb, wsForn, "Por Fornecedor");
+
+  XLSX.writeFile(
+    wb,
+    `consolidado_${summary.totalCotacoes}cotacoes_compra360.xlsx`
+  );
+}
+
+export async function exportConsolidadoToPdf(
+  summary: ConsolidatedSummary,
+  cotacoes: ConsolidatedCotacao[]
+) {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const logo = await loadLogoDataUrl();
+
+  // Header
+  let y = 36;
+  if (logo) {
+    try {
+      doc.addImage(logo, "PNG", 36, y, 90, 28, undefined, "FAST");
+    } catch {
+      // ignore
+    }
+  }
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text("Relatório Consolidado", pageW - 36, y + 14, { align: "right" });
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(110);
+  doc.text(`Gerado em ${formatDateTime(new Date().toISOString())}`, pageW - 36, y + 28, { align: "right" });
+  doc.setTextColor(0);
+
+  y += 56;
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text(`Período: ${summary.periodoLabel}`, 36, y);
+  y += 14;
+  doc.setFontSize(8.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(90);
+  const summaryA = `Loja: ${summary.lojaLabel || "Todas"}`;
+  const summaryB = [
+    `Cotações: ${summary.totalCotacoes}`,
+    `Produtos: ${summary.totalProdutos}`,
+    `Fornecedores: ${summary.totalFornecedores}`,
+  ].join("  ·  ");
+  const summaryC = `Total consolidado: ${formatBRL(summary.totalGeral)}`;
+  doc.text(summaryA, 36, y);
+  y += 11;
+  doc.text(summaryB, 36, y);
+  y += 11;
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(0);
+  doc.text(summaryC, 36, y);
+  y += 12;
+  doc.setFont("helvetica", "normal");
+
+  // Cotação summary table
+  autoTable(doc, {
+    startY: y,
+    head: [["Cotação", "Data", "Status", "Loja", "Prod.", "Forn.", "Total"]],
+    body: cotacoes.map((c) => [
+      c.meta.nome,
+      formatDateTime(c.meta.created_at),
+      c.meta.status,
+      c.meta.loja_nome || "—",
+      String(c.meta.produtos_count),
+      String(c.meta.fornecedores_count),
+      formatBRL(c.meta.total_pedido),
+    ]),
+    foot: [["", "", "", "", "", "TOTAL", formatBRL(summary.totalGeral)]],
+    styles: { fontSize: 8, cellPadding: 3.5 },
+    headStyles: { fillColor: [40, 50, 75], textColor: 255 },
+    footStyles: { fillColor: [240, 240, 245], textColor: 20, fontStyle: "bold" },
+    columnStyles: {
+      0: { cellWidth: 130 },
+      4: { halign: "center" },
+      5: { halign: "center" },
+      6: { halign: "right" },
+    },
+    margin: { left: 36, right: 36 },
+  });
+
+  // Por fornecedor (cross-cotação)
+  const fornAgg = new Map<string, { total: number; itens: number; cots: Set<string> }>();
+  for (const c of cotacoes) {
+    for (const g of c.pedidos) {
+      if (!fornAgg.has(g.fornecedor)) {
+        fornAgg.set(g.fornecedor, { total: 0, itens: 0, cots: new Set() });
+      }
+      const e = fornAgg.get(g.fornecedor)!;
+      e.total += g.total;
+      e.itens += g.itens.length;
+      e.cots.add(c.meta.nome);
+    }
+  }
+  if (fornAgg.size > 0) {
+    let cursor = (doc as any).lastAutoTable.finalY + 18;
+    if (cursor > 700) {
+      doc.addPage();
+      cursor = 40;
+    }
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("Total por fornecedor", 36, cursor);
+    cursor += 6;
+    autoTable(doc, {
+      startY: cursor + 4,
+      head: [["Fornecedor", "Cotações", "Itens", "Total ganho"]],
+      body: Array.from(fornAgg.entries())
+        .sort((a, b) => b[1].total - a[1].total)
+        .map(([nome, e]) => [nome, String(e.cots.size), String(e.itens), formatBRL(e.total)]),
+      styles: { fontSize: 8.5, cellPadding: 3.5 },
+      headStyles: { fillColor: [60, 80, 110], textColor: 255 },
+      columnStyles: {
+        1: { halign: "center" },
+        2: { halign: "center" },
+        3: { halign: "right" },
+      },
+      margin: { left: 36, right: 36 },
+    });
+  }
+
+  // Page numbers
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(140);
+    doc.text(
+      `Compra360 · Consolidado · Página ${i}/${pageCount}`,
+      pageW / 2,
+      doc.internal.pageSize.getHeight() - 18,
+      { align: "center" }
+    );
+  }
+
+  doc.save(`consolidado_${summary.totalCotacoes}cotacoes_compra360.pdf`);
+}
+
