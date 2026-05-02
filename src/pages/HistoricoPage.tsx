@@ -1617,6 +1617,27 @@ const HistoricoPage = () => {
                         <tbody>
                           {produtoVariacao.slice(0, 30).map((p) => {
                             const high = (p.variacaoPct ?? 0) >= 30;
+                            const single = p.amostras < 2;
+                            if (single) {
+                              return (
+                                <tr key={p.produto} className="border-t hover:bg-muted/20">
+                                  <td className="px-3 py-2">
+                                    <div className="font-medium">{p.produto}</div>
+                                    <div className="text-[10px] text-muted-foreground">{p.embalagem}</div>
+                                  </td>
+                                  <td className="px-3 py-2 text-center text-muted-foreground">{p.amostras}</td>
+                                  <td colSpan={4} className="px-3 py-2 text-xs italic text-muted-foreground">
+                                    Apenas 1 cotação — sem variação disponível
+                                  </td>
+                                  <td className="px-3 py-2 text-right">
+                                    <div className="font-mono text-xs">{formatBRL(p.ultimoPreco)}</div>
+                                    <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">
+                                      {p.ultimoFornecedor}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            }
                             return (
                               <tr key={p.produto} className="border-t hover:bg-muted/20">
                                 <td className="px-3 py-2">
