@@ -229,14 +229,26 @@ const HistoricoPage = () => {
       all: Infinity,
     };
     const cutoff = now - periodMs[periodFilter];
+    const activeLojaId = lojaFilter === "active" ? lojaAtiva?.id ?? null : null;
 
     return cotacoes.filter((c) => {
       if (searchCotacao && !c.nome.toLowerCase().includes(searchCotacao.toLowerCase())) return false;
       if (statusFilter !== "all" && c.status !== statusFilter) return false;
       if (periodFilter !== "all" && new Date(c.created_at).getTime() < cutoff) return false;
+      if (lojaFilter === "active" && activeLojaId && c.loja_id !== activeLojaId) return false;
       return true;
     });
-  }, [cotacoes, searchCotacao, statusFilter, periodFilter]);
+  }, [cotacoes, searchCotacao, statusFilter, periodFilter, lojaFilter, lojaAtiva?.id]);
+
+  const activeFiltersCount =
+    (periodFilter !== DEFAULT_PERIOD ? 1 : 0) +
+    (statusFilter !== DEFAULT_STATUS ? 1 : 0) +
+    (lojaFilter !== DEFAULT_LOJA ? 1 : 0);
+
+  const periodLabel = (p: PeriodFilter) =>
+    p === "all" ? "Tudo" : p === "7d" ? "7 dias" : p === "30d" ? "30 dias" : "90 dias";
+  const statusLabel = (s: StatusFilter) =>
+    s === "all" ? "Todos" : s === "finalizada" ? "Finalizada" : "Cancelada";
 
   const visibleCotacoes = filteredCotacoes.slice(0, visibleCount);
 
