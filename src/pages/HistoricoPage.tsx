@@ -602,9 +602,12 @@ const HistoricoPage = () => {
         )}
       </div>
 
-      <Tabs defaultValue="cotacoes">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
         <TabsList className="w-full">
           <TabsTrigger value="cotacoes" className="flex-1 text-xs">Por Cotação</TabsTrigger>
+          <TabsTrigger value="insights" className="flex-1 text-xs">
+            <BarChart3 className="h-3.5 w-3.5 mr-1" /> Insights
+          </TabsTrigger>
           <TabsTrigger value="itens" className="flex-1 text-xs">Buscar Item</TabsTrigger>
         </TabsList>
 
