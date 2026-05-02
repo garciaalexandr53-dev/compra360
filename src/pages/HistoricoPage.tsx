@@ -422,7 +422,9 @@ const HistoricoPage = () => {
     const insightRows: InsightRow[] = [];
     const allPricesByRow = new Map<string, number[]>();
 
-    for (const cot of filteredCotacoes) {
+    const batchSet = new Set(batchIds);
+    const cotsForBatch = cotacoes.filter((c) => batchSet.has(c.id));
+    for (const cot of cotsForBatch) {
       const cps = cpsByCot.get(cot.id) || [];
       const rows = cps.map((cp: any) => {
         const ps = (precosByCp.get(cp.id) || []).sort(
