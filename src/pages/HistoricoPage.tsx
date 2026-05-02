@@ -329,10 +329,202 @@ const HistoricoPage = () => {
   const pedidosByFornecedor = expandedCotacao ? buildPedidosByFornecedor() : [];
   const totalGeral = tableRows.reduce((acc, r) => acc + (r.total || 0), 0);
 
+  // ---------- BATCH detalhes para Insights / Consolidado ----------
+  // Loaded only when the user opens the Insights tab or enables Selection mode,
+  // and limited to the currently filtered cotações to avoid heavy queries.
+  const filteredIds = useMemo(() => filteredCotacoes.map((c) => c.id), [filteredCotacoes]);
+  const filteredIdsKey = filteredIds.join(",");
+  const needsBatchDetails = activeTab === "insights" || selectionMode;
+
+  const { data: batchDetails, isLoading: batchLoading } = useQuery({
+    queryKey: ["historico-batch-details", filteredIdsKey],
+    enabled: needsBatchDetails && filteredIds.length > 0,
+    queryFn: async () => {
+      const { data: cps } = await supabase
+        .from("cotacao_produtos")
+        .select("id, cotacao_id, produto_id, tipo_embalagem, fator_embalagem, quantidade, produtos(nome, embalagem)")
+        .in("cotacao_id", filteredIds);
+      const cpList = cps || [];
+      const cpIds = cpList.map((cp: any) => cp.id);
+      const { data: precos } = cpIds.length
+        ? await supabase
+            .from("precos")
+            .select("id, cotacao_produto_id, fornecedor_id, preco, fornecedores(nome)")
+            .in("cotacao_produto_id", cpIds)
+            .gt("preco", 0)
+        : { data: [] as any[] };
+      return { cps: cpList, precos: precos || [] };
+    },
+  });
+
+  // Build per-cotação rows + winner-only insight rows, in one pass.
+  const consolidated = useMemo(() => {
+    if (!batchDetails) {
+      return {
+        perCotacao: new Map<string, { rows: any[]; pedidos: any[] }>(),
+        insightRows: [] as InsightRow[],
+        allPricesByRow: new Map<string, number[]>(),
+      };
+    }
+    const cpsByCot = new Map<string, any[]>();
+    for (const cp of batchDetails.cps) {
+      if (!cpsByCot.has(cp.cotacao_id)) cpsByCot.set(cp.cotacao_id, []);
+      cpsByCot.get(cp.cotacao_id)!.push(cp);
+    }
+    const precosByCp = new Map<string, any[]>();
+    for (const p of batchDetails.precos) {
+      if (!precosByCp.has(p.cotacao_produto_id)) precosByCp.set(p.cotacao_produto_id, []);
+      precosByCp.get(p.cotacao_produto_id)!.push(p);
+    }
+
+    const perCotacao = new Map<string, { rows: any[]; pedidos: any[] }>();
+    const insightRows: InsightRow[] = [];
+    const allPricesByRow = new Map<string, number[]>();
+
+    for (const cot of filteredCotacoes) {
+      const cps = cpsByCot.get(cot.id) || [];
+      const rows = cps.map((cp: any) => {
+        const ps = (precosByCp.get(cp.id) || []).sort(
+          (a: any, b: any) => Number(a.preco) - Number(b.preco)
+        );
+        const winner = ps[0] || null;
+        const qtd = Number(cp.quantidade || 1);
+        const fator = Number(cp.fator_embalagem || 1);
+        const precoUnit = winner ? Number(winner.preco) : null;
+        const total = precoUnit != null ? precoUnit * qtd * fator : null;
+        const fornecedor = winner?.fornecedores?.nome || "—";
+        const nome = cp.produtos?.nome || "—";
+        const embalagem = cp.tipo_embalagem || cp.produtos?.embalagem || "un";
+        if (winner) {
+          insightRows.push({
+            cotacaoId: cot.id,
+            cotacaoNome: cot.nome,
+            date: cot.created_at,
+            produtoNome: nome,
+            embalagem,
+            fator,
+            qtd,
+            fornecedor,
+            precoUnit: precoUnit!,
+            total: total!,
+          });
+          allPricesByRow.set(
+            `${cot.id}:${cp.id}`,
+            ps.map((p: any) => Number(p.preco))
+          );
+        }
+        return {
+          id: cp.id,
+          cpKey: `${cot.id}:${cp.id}`,
+          nome,
+          embalagem,
+          fator,
+          qtd,
+          fornecedor,
+          precoUnit,
+          total,
+          allPrecos: ps,
+        };
+      });
+      // Pedidos por fornecedor for this cotação (consolidated export needs them).
+      const byForn = new Map<string, { fornecedor: string; itens: any[]; total: number }>();
+      for (const r of rows) {
+        if (!r.fornecedor || r.fornecedor === "—") continue;
+        if (!byForn.has(r.fornecedor)) byForn.set(r.fornecedor, { fornecedor: r.fornecedor, itens: [], total: 0 });
+        const g = byForn.get(r.fornecedor)!;
+        g.itens.push(r);
+        g.total += r.total || 0;
+      }
+      perCotacao.set(cot.id, {
+        rows,
+        pedidos: Array.from(byForn.values()).sort((a, b) => b.total - a.total),
+      });
+    }
+
+    return { perCotacao, insightRows, allPricesByRow };
+  }, [batchDetails, filteredCotacoes]);
+
+  // Insights computed values
+  const kpis = useMemo(() => {
+    const economia = computeEconomia(
+      consolidated.insightRows,
+      (r) => consolidated.allPricesByRow.get(`${r.cotacaoId}:${(r as any).cpId ?? ""}`) ??
+        // Fallback: lookup by re-scan when row mapping above is mismatched
+        (consolidated.allPricesByRow.get(
+          Array.from(consolidated.allPricesByRow.keys()).find((k) => k.startsWith(`${r.cotacaoId}:`)) || ""
+        ) ?? [r.precoUnit])
+    );
+    return computeKPIs(filteredCotacoes, consolidated.insightRows, economia);
+  }, [filteredCotacoes, consolidated]);
+
+  const fornecedorRanking = useMemo(
+    () => buildFornecedorRanking(consolidated.insightRows),
+    [consolidated.insightRows]
+  );
+  const produtoVariacao = useMemo(
+    () => buildProdutoVariacao(consolidated.insightRows),
+    [consolidated.insightRows]
+  );
+
+  // Selection helpers
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const selectAllVisible = () => {
+    setSelectedIds(new Set(filteredCotacoes.map((c) => c.id)));
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const buildConsolidated = (): { summary: ConsolidatedSummary; cotacoes: ConsolidatedCotacao[] } | null => {
+    if (selectedIds.size === 0) return null;
+    const list: ConsolidatedCotacao[] = [];
+    let totalGeralC = 0;
+    let totalProdutos = 0;
+    const fornecedoresUnique = new Set<string>();
+    for (const c of filteredCotacoes) {
+      if (!selectedIds.has(c.id)) continue;
+      const det = consolidated.perCotacao.get(c.id);
+      if (!det) continue;
+      const meta = {
+        nome: c.nome,
+        created_at: c.created_at,
+        status: c.status,
+        loja_nome: c.loja_nome,
+        total_pedido: c.total_pedido,
+        produtos_count: c.produtos_count,
+        fornecedores_count: c.fornecedores_count,
+      };
+      list.push({ meta, rows: det.rows as any, pedidos: det.pedidos as any });
+      totalGeralC += det.rows.reduce((a: number, r: any) => a + (r.total || 0), 0);
+      totalProdutos += det.rows.length;
+      for (const g of det.pedidos) fornecedoresUnique.add(g.fornecedor);
+    }
+    if (list.length === 0) return null;
+    const summary: ConsolidatedSummary = {
+      periodoLabel: periodLabel(periodFilter),
+      lojaLabel: lojaFilter === "active" ? lojaAtiva?.nome ?? null : "Todas as lojas",
+      totalGeral: totalGeralC,
+      totalCotacoes: list.length,
+      totalProdutos,
+      totalFornecedores: fornecedoresUnique.size,
+    };
+    return { summary, cotacoes: list };
+  };
+
   const statusBadgeClass = (status: string) =>
     status === "finalizada"
       ? "bg-green-500/15 text-green-700 dark:text-green-400 border border-green-500/30"
       : "bg-muted text-muted-foreground border";
+
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto">
