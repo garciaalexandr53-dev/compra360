@@ -485,7 +485,7 @@ const HistoricoPage = () => {
     }
 
     return { perCotacao, insightRows, allPricesByRow };
-  }, [batchDetails, filteredCotacoes]);
+  }, [batchDetails, batchIds, cotacoes]);
 
   // ===== Insights tab: derive its OWN filtered set (independent period + loja) =====
   const insightsFilteredCotacoes = useMemo(() => {
