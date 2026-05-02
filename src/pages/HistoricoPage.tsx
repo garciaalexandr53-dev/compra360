@@ -48,9 +48,14 @@ const HistoricoPage = () => {
   // Pagination per product group on "Buscar Item" tab — reset when search changes
   const ITEM_PAGE_SIZE = 25;
   const [itemVisibleByGroup, setItemVisibleByGroup] = useState<Record<string, number>>({});
-  // Reset per-group pagination whenever the search term changes
+  // View mode toggle for "Buscar Item": 'all' = all suppliers, 'best' = winner per cotação
+  const [itemViewMode, setItemViewMode] = useState<"all" | "best">("all");
+  // Collapsed/expanded state per product group
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  // Reset per-group pagination + collapse whenever the search term changes
   useMemo(() => {
     setItemVisibleByGroup({});
+    setExpandedGroups({});
   }, [searchItem]);
 
   // Cotações + loja + summary inline (number of products, suppliers responded, total order value)
@@ -845,14 +850,40 @@ const HistoricoPage = () => {
         </TabsContent>
 
         <TabsContent value="itens" className="space-y-3">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar produto (ex: Detergente)..."
-              value={searchItem}
-              onChange={(e) => setSearchItem(e.target.value)}
-              className="pl-9"
-            />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar produto (ex: Detergente)..."
+                value={searchItem}
+                onChange={(e) => setSearchItem(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <div className="inline-flex rounded-lg border bg-muted/30 p-0.5 shrink-0 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setItemViewMode("all")}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  itemViewMode === "all"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Todos os preços
+              </button>
+              <button
+                type="button"
+                onClick={() => setItemViewMode("best")}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors inline-flex items-center gap-1 ${
+                  itemViewMode === "best"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Trophy className="h-3 w-3" /> Melhor preço
+              </button>
+            </div>
           </div>
 
           {searchItem.length < 2 ? (
@@ -913,24 +944,58 @@ const HistoricoPage = () => {
                     });
                   }
                 }
-                rows.sort((a, b) => b.date.localeCompare(a.date));
+                // Sort: by date desc, then by price asc within the same cotação
+                // (so suppliers within a cotação go cheapest → priciest).
+                rows.sort((a, b) => {
+                  const d = b.date.localeCompare(a.date);
+                  if (d !== 0) return d;
+                  if (a.cotacaoNome !== b.cotacaoNome) return a.cotacaoNome.localeCompare(b.cotacaoNome);
+                  return a.preco - b.preco;
+                });
+
+                // In "best" mode, keep only the winner per cotação
+                const displayRows =
+                  itemViewMode === "best" ? rows.filter((r) => r.isMin) : rows;
 
                 const visibleN = itemVisibleByGroup[group.nome] ?? ITEM_PAGE_SIZE;
-                const visibleRows = rows.slice(0, visibleN);
-                const remaining = rows.length - visibleRows.length;
+                const visibleRows = displayRows.slice(0, visibleN);
+                const remaining = displayRows.length - visibleRows.length;
+                const isExpanded = !!expandedGroups[group.nome];
 
                 return (
                   <div key={group.nome} className="bg-card border rounded-xl shadow-sm overflow-hidden mb-3">
-                    <div className="px-4 py-3 bg-muted/30 border-b flex items-center justify-between gap-2">
-                      <div className="min-w-0">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedGroups((prev) => ({ ...prev, [group.nome]: !prev[group.nome] }))
+                      }
+                      className="w-full px-4 py-3 bg-muted/30 border-b flex items-center justify-between gap-2 hover:bg-muted/50 transition-colors text-left"
+                      aria-expanded={isExpanded}
+                    >
+                      <div className="min-w-0 flex-1">
                         <div className="font-bold text-sm text-foreground truncate">{group.nome}</div>
-                        <div className="text-[11px] text-muted-foreground">{group.embalagem} · {rows.length} registro(s)</div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {group.embalagem} · {displayRows.length} registro(s)
+                          {itemViewMode === "best" && rows.length !== displayRows.length && (
+                            <span className="text-muted-foreground/70"> (de {rows.length})</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                      <ChevronDown
+                        className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${
+                          isExpanded ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
 
-                    {rows.length === 0 ? (
-                      <div className="p-4 text-center text-xs text-muted-foreground">Sem preços registrados.</div>
-                    ) : (
+                    {isExpanded && (
+                      displayRows.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-muted-foreground">
+                          {itemViewMode === "best"
+                            ? "Sem cotação com vencedor."
+                            : "Sem preços registrados."}
+                        </div>
+                      ) : (
                       <>
                         {/* Desktop / wide: table */}
                         <div className="hidden md:block">
@@ -1019,7 +1084,7 @@ const HistoricoPage = () => {
                         {remaining > 0 && (
                           <div className="px-3 py-2 border-t bg-muted/20 flex items-center justify-between gap-2">
                             <span className="text-[11px] text-muted-foreground">
-                              Mostrando {visibleRows.length} de {rows.length}
+                              Mostrando {visibleRows.length} de {displayRows.length}
                             </span>
                             <div className="flex items-center gap-1.5">
                               <Button
@@ -1041,7 +1106,7 @@ const HistoricoPage = () => {
                                   size="sm"
                                   className="h-7 text-xs"
                                   onClick={() =>
-                                    setItemVisibleByGroup((prev) => ({ ...prev, [group.nome]: rows.length }))
+                                    setItemVisibleByGroup((prev) => ({ ...prev, [group.nome]: displayRows.length }))
                                   }
                                 >
                                   Ver todos
@@ -1051,6 +1116,7 @@ const HistoricoPage = () => {
                           </div>
                         )}
                       </>
+                      )
                     )}
                   </div>
                 );
