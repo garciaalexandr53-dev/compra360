@@ -446,14 +446,45 @@ const HistoricoPage = () => {
 
   // Insights computed values
   const kpis = useMemo(() => {
-    const economia = computeEconomia(
-      consolidated.insightRows,
-      (r) => consolidated.allPricesByRow.get(`${r.cotacaoId}:${(r as any).cpId ?? ""}`) ??
-        // Fallback: lookup by re-scan when row mapping above is mismatched
-        (consolidated.allPricesByRow.get(
-          Array.from(consolidated.allPricesByRow.keys()).find((k) => k.startsWith(`${r.cotacaoId}:`)) || ""
-        ) ?? [r.precoUnit])
-    );
+    // Build a quick lookup: cotacaoId|produtoNome → all prices for that cp
+    const priceLookup = new Map<string, number[]>();
+    for (const [, det] of consolidated.perCotacao) {
+      for (const r of det.rows) {
+        if (r.precoUnit == null) continue;
+        const key = `${r.cpKey}`;
+        priceLookup.set(key, r.allPrecos.map((p: any) => Number(p.preco)));
+      }
+    }
+    // Insight rows don't carry cpKey directly; map them by walking perCotacao again.
+    const insightWithKey: { row: InsightRow; key: string }[] = [];
+    for (const [cotId, det] of consolidated.perCotacao) {
+      for (const r of det.rows) {
+        if (r.precoUnit == null) continue;
+        insightWithKey.push({
+          row: {
+            cotacaoId: cotId,
+            cotacaoNome: filteredCotacoes.find((c) => c.id === cotId)?.nome || "",
+            date: filteredCotacoes.find((c) => c.id === cotId)?.created_at || "",
+            produtoNome: r.nome,
+            embalagem: r.embalagem,
+            fator: r.fator,
+            qtd: r.qtd,
+            fornecedor: r.fornecedor,
+            precoUnit: r.precoUnit,
+            total: r.total,
+          },
+          key: r.cpKey,
+        });
+      }
+    }
+    let economia = 0;
+    for (const { row, key } of insightWithKey) {
+      const all = priceLookup.get(key) || [row.precoUnit];
+      if (all.length < 2) continue;
+      const worst = Math.max(...all);
+      const diff = worst - row.precoUnit;
+      if (diff > 0) economia += diff * row.qtd * row.fator;
+    }
     return computeKPIs(filteredCotacoes, consolidated.insightRows, economia);
   }, [filteredCotacoes, consolidated]);
 
