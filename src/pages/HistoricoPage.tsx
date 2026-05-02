@@ -1699,6 +1699,7 @@ const HistoricoPage = () => {
                   </>
                 )}
               </div>
+              </TooltipProvider>
             </>
           )}
         </TabsContent>
