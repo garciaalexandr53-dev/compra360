@@ -946,7 +946,7 @@ const HistoricoPage = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {rows.map((r) => (
+                              {visibleRows.map((r) => (
                                 <tr
                                   key={r.id}
                                   className={`border-t hover:bg-muted/20 ${r.isMin ? "bg-green-500/5" : ""}`}
