@@ -915,6 +915,10 @@ const HistoricoPage = () => {
                 }
                 rows.sort((a, b) => b.date.localeCompare(a.date));
 
+                const visibleN = itemVisibleByGroup[group.nome] ?? ITEM_PAGE_SIZE;
+                const visibleRows = rows.slice(0, visibleN);
+                const remaining = rows.length - visibleRows.length;
+
                 return (
                   <div key={group.nome} className="bg-card border rounded-xl shadow-sm overflow-hidden mb-3">
                     <div className="px-4 py-3 bg-muted/30 border-b flex items-center justify-between gap-2">
