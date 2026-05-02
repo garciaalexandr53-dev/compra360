@@ -238,7 +238,10 @@ const HistoricoPage = () => {
   const buildTableRows = () => {
     if (!cotacaoDetails) return [] as any[];
     return cotacaoDetails.produtos.map((cp: any) => {
-      const cpPrecos = cotacaoDetails.precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco != null);
+      // Suppliers who don't sell the item often record preco = 0; ignore those when picking the winner.
+      const cpPrecos = cotacaoDetails.precos.filter(
+        (p: any) => p.cotacao_produto_id === cp.id && p.preco != null && Number(p.preco) > 0
+      );
       const sorted = [...cpPrecos].sort((a, b) => Number(a.preco) - Number(b.preco));
       const winner = sorted[0] || null;
       const qtd = Number(cp.quantidade || 1);
