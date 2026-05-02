@@ -90,6 +90,15 @@ function CustomRangePicker({
     return isValidDate(d) ? d : undefined;
   };
 
+  // Auto-insert "/" while typing: 12 -> 12/, 1203 -> 12/03/, etc.
+  const formatTyping = (raw: string): string => {
+    const digits = raw.replace(/\D/g, "").slice(0, 6);
+    let out = digits;
+    if (digits.length >= 3 && digits.length <= 4) out = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    else if (digits.length >= 5) out = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+    return out;
+  };
+
   const commitStart = () => {
     const d = parseInput(startText);
     if (d) setStart(d);
@@ -102,6 +111,11 @@ function CustomRangePicker({
     else if (endText === "") setEnd(undefined);
     else setEndText(fmt(end));
   };
+
+  // Validation: start must not be after end
+  const parsedStart = parseInput(startText) ?? start;
+  const parsedEnd = parseInput(endText) ?? end;
+  const invalidRange = !!(parsedStart && parsedEnd && parsedStart > parsedEnd);
 
   // Sequential single calendar: 1st tap = start, 2nd tap = end (auto-close).
   const handleSelect = (range: { from?: Date; to?: Date } | undefined) => {
