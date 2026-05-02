@@ -30,7 +30,7 @@ import {
   type ConsolidatedCotacao, type ConsolidatedSummary,
 } from "@/lib/historicoExports";
 import {
-  computeKPIs, buildFornecedorRanking, buildProdutoVariacao, computeEconomia,
+  computeKPIs, buildFornecedorRanking, buildProdutoVariacao,
   type InsightRow,
 } from "@/lib/historicoInsights";
 import type { Tables } from "@/integrations/supabase/types";
