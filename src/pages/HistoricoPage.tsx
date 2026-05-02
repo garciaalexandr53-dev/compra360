@@ -621,6 +621,79 @@ const HistoricoPage = () => {
         </TabsList>
 
         <TabsContent value="cotacoes" className="space-y-4">
+          {/* Selection mode bar */}
+          {selectionMode && (
+            <div className="sticky top-0 z-20 -mx-4 md:mx-0 px-4 md:px-3 py-2.5 md:rounded-xl bg-primary/95 backdrop-blur text-primary-foreground shadow-md flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-primary-foreground hover:bg-primary-foreground/20"
+                onClick={exitSelectionMode}
+                aria-label="Sair do modo seleção"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-bold">
+                  {selectedIds.size} selecionada{selectedIds.size === 1 ? "" : "s"}
+                </div>
+                <div className="text-[10px] opacity-80 truncate">
+                  Toque nas cotações para selecionar
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-xs text-primary-foreground hover:bg-primary-foreground/20"
+                onClick={selectedIds.size === filteredCotacoes.length ? clearSelection : selectAllVisible}
+              >
+                {selectedIds.size === filteredCotacoes.length ? "Limpar" : "Todas"}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="h-8 gap-1 text-xs"
+                    disabled={selectedIds.size === 0 || batchLoading}
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    Exportar
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      const data = buildConsolidated();
+                      if (!data) return;
+                      try {
+                        exportConsolidadoToExcel(data.summary, data.cotacoes);
+                      } catch (e: any) {
+                        toast.error("Erro ao exportar Excel: " + e.message);
+                      }
+                    }}
+                  >
+                    <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel consolidado
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={async () => {
+                      const data = buildConsolidated();
+                      if (!data) return;
+                      try {
+                        await exportConsolidadoToPdf(data.summary, data.cotacoes);
+                      } catch (e: any) {
+                        toast.error("Erro ao gerar PDF: " + e.message);
+                      }
+                    }}
+                  >
+                    <FileText className="h-4 w-4 mr-2" /> PDF consolidado
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+
           {/* Search + filters trigger */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1 min-w-0">
