@@ -850,14 +850,40 @@ const HistoricoPage = () => {
         </TabsContent>
 
         <TabsContent value="itens" className="space-y-3">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar produto (ex: Detergente)..."
-              value={searchItem}
-              onChange={(e) => setSearchItem(e.target.value)}
-              className="pl-9"
-            />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar produto (ex: Detergente)..."
+                value={searchItem}
+                onChange={(e) => setSearchItem(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <div className="inline-flex rounded-lg border bg-muted/30 p-0.5 shrink-0 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setItemViewMode("all")}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  itemViewMode === "all"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Todos os preços
+              </button>
+              <button
+                type="button"
+                onClick={() => setItemViewMode("best")}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors inline-flex items-center gap-1 ${
+                  itemViewMode === "best"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Trophy className="h-3 w-3" /> Melhor preço
+              </button>
+            </div>
           </div>
 
           {searchItem.length < 2 ? (
