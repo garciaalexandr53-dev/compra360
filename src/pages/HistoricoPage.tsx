@@ -1015,6 +1015,41 @@ const HistoricoPage = () => {
                             </div>
                           ))}
                         </div>
+
+                        {remaining > 0 && (
+                          <div className="px-3 py-2 border-t bg-muted/20 flex items-center justify-between gap-2">
+                            <span className="text-[11px] text-muted-foreground">
+                              Mostrando {visibleRows.length} de {rows.length}
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs"
+                                onClick={() =>
+                                  setItemVisibleByGroup((prev) => ({
+                                    ...prev,
+                                    [group.nome]: (prev[group.nome] ?? ITEM_PAGE_SIZE) + ITEM_PAGE_SIZE,
+                                  }))
+                                }
+                              >
+                                Carregar mais ({Math.min(ITEM_PAGE_SIZE, remaining)})
+                              </Button>
+                              {remaining > ITEM_PAGE_SIZE && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() =>
+                                    setItemVisibleByGroup((prev) => ({ ...prev, [group.nome]: rows.length }))
+                                  }
+                                >
+                                  Ver todos
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
