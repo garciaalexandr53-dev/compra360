@@ -1,4 +1,9 @@
 import { useMemo, useState } from "react";
+import { format as formatDate, parseISO, isValid as isValidDate } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL, formatDateTime, formatNumber } from "@/lib/format";
@@ -35,7 +40,7 @@ import {
 } from "@/lib/historicoInsights";
 import type { Tables } from "@/integrations/supabase/types";
 
-type PeriodFilter = "7d" | "30d" | "90d" | "all";
+type PeriodFilter = "7d" | "30d" | "90d" | "all" | "custom";
 type StatusFilter = "all" | "finalizada" | "cancelada";
 type LojaFilter = "active" | "all";
 
@@ -44,9 +49,187 @@ const DEFAULT_PERIOD: PeriodFilter = "30d";
 const DEFAULT_STATUS: StatusFilter = "all";
 const DEFAULT_LOJA: LojaFilter = "active";
 
+type InsightsFiltersProps = {
+  period: PeriodFilter;
+  setPeriod: (p: PeriodFilter) => void;
+  customStart?: Date;
+  customEnd?: Date;
+  setCustomStart: (d?: Date) => void;
+  setCustomEnd: (d?: Date) => void;
+  lojaId: string | "all" | null;
+  setLojaId: (id: string | "all" | null) => void;
+  lojas: { id: string; nome: string }[];
+  lojaAtivaNome?: string;
+  cotacoesCount: number;
+  periodLabel: (p: PeriodFilter, cs?: Date, ce?: Date) => string;
+};
+
+function InsightsFilters({
+  period, setPeriod, customStart, customEnd, setCustomStart, setCustomEnd,
+  lojaId, setLojaId, lojas, lojaAtivaNome, cotacoesCount, periodLabel,
+}: InsightsFiltersProps) {
+  const [periodOpen, setPeriodOpen] = useState(false);
+  const [customOpen, setCustomOpen] = useState(period === "custom");
+  const [lojaOpen, setLojaOpen] = useState(false);
+
+  const currentLojaName =
+    lojaId === null
+      ? lojaAtivaNome ?? "Loja ativa"
+      : lojaId === "all"
+      ? "Todas as lojas"
+      : lojas.find((l) => l.id === lojaId)?.nome ?? "Loja";
+
+  const periodOptions: { value: PeriodFilter; label: string }[] = [
+    { value: "7d", label: "7 dias" },
+    { value: "30d", label: "30 dias" },
+    { value: "90d", label: "90 dias" },
+    { value: "all", label: "Tudo" },
+    { value: "custom", label: "Personalizado" },
+  ];
+
+  return (
+    <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+      <span>Análise de:</span>
+      <Popover open={periodOpen} onOpenChange={setPeriodOpen}>
+        <PopoverTrigger asChild>
+          <button
+            className="inline-flex items-center gap-1 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 px-2.5 py-0.5 text-xs font-semibold border border-transparent transition-colors"
+            aria-label="Selecionar período"
+          >
+            <Calendar className="h-3 w-3" />
+            {periodLabel(period, customStart, customEnd)}
+            <ChevronDown className="h-3 w-3 opacity-70" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-44 p-1">
+          {periodOptions.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => {
+                if (opt.value === "custom") {
+                  setPeriod("custom");
+                  setPeriodOpen(false);
+                  setCustomOpen(true);
+                } else {
+                  setPeriod(opt.value);
+                  setPeriodOpen(false);
+                }
+              }}
+              className={`w-full text-left px-2.5 py-1.5 rounded-md text-sm hover:bg-muted ${
+                period === opt.value ? "bg-muted font-semibold" : ""
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </PopoverContent>
+      </Popover>
+
+      {/* Custom date range popover */}
+      {period === "custom" && (
+        <Popover open={customOpen} onOpenChange={setCustomOpen}>
+          <PopoverTrigger asChild>
+            <button
+              className="inline-flex items-center gap-1 rounded-full bg-muted text-foreground hover:bg-muted/80 px-2.5 py-0.5 text-xs font-medium border"
+              aria-label="Editar intervalo personalizado"
+            >
+              {customStart ? formatDate(customStart, "dd/MM/yy") : "Início"}
+              <span className="opacity-50">→</span>
+              {customEnd ? formatDate(customEnd, "dd/MM/yy") : "Fim"}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-auto p-2 space-y-2">
+            <div className="grid grid-cols-2 gap-2 text-[11px] font-medium text-muted-foreground">
+              <div>Data inicial</div>
+              <div>Data final</div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <CalendarPicker
+                mode="single"
+                selected={customStart}
+                onSelect={(d) => setCustomStart(d ?? undefined)}
+                className="p-2 pointer-events-auto rounded-md border"
+              />
+              <CalendarPicker
+                mode="single"
+                selected={customEnd}
+                onSelect={(d) => setCustomEnd(d ?? undefined)}
+                disabled={(d) => (customStart ? d < customStart : false)}
+                className="p-2 pointer-events-auto rounded-md border"
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button size="sm" onClick={() => setCustomOpen(false)} disabled={!customStart || !customEnd}>
+                Aplicar
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
+
+      {/* Loja selector */}
+      <Popover open={lojaOpen} onOpenChange={setLojaOpen}>
+        <PopoverTrigger asChild>
+          <button
+            className="inline-flex items-center gap-1 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 px-2.5 py-0.5 text-xs font-semibold border border-transparent transition-colors max-w-[220px]"
+            aria-label="Selecionar loja"
+          >
+            <Store className="h-3 w-3 shrink-0" />
+            <span className="truncate">{currentLojaName}</span>
+            <ChevronDown className="h-3 w-3 opacity-70 shrink-0" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-56 p-1 max-h-72 overflow-auto">
+          <button
+            onClick={() => {
+              setLojaId("all");
+              setLojaOpen(false);
+            }}
+            className={`w-full text-left px-2.5 py-1.5 rounded-md text-sm hover:bg-muted ${
+              lojaId === "all" ? "bg-muted font-semibold" : ""
+            }`}
+          >
+            Todas as lojas
+          </button>
+          {lojaAtivaNome && (
+            <button
+              onClick={() => {
+                setLojaId(null);
+                setLojaOpen(false);
+              }}
+              className={`w-full text-left px-2.5 py-1.5 rounded-md text-sm hover:bg-muted ${
+                lojaId === null ? "bg-muted font-semibold" : ""
+              }`}
+            >
+              Loja ativa · {lojaAtivaNome}
+            </button>
+          )}
+          <div className="h-px bg-border my-1" />
+          {lojas.map((l) => (
+            <button
+              key={l.id}
+              onClick={() => {
+                setLojaId(l.id);
+                setLojaOpen(false);
+              }}
+              className={`w-full text-left px-2.5 py-1.5 rounded-md text-sm hover:bg-muted truncate ${
+                lojaId === l.id ? "bg-muted font-semibold" : ""
+              }`}
+            >
+              {l.nome}
+            </button>
+          ))}
+        </PopoverContent>
+      </Popover>
+
+      <Badge variant="secondary" className="font-normal">{cotacoesCount} cotação(ões)</Badge>
+    </div>
+  );
+}
+
 const HistoricoPage = () => {
   const queryClient = useQueryClient();
-  const { lojaAtiva } = useLojaAtiva();
+  const { lojaAtiva, lojas } = useLojaAtiva();
   const [activeTab, setActiveTab] = useState<"cotacoes" | "insights" | "itens">("cotacoes");
   const [searchItem, setSearchItem] = useState("");
   const [searchCotacao, setSearchCotacao] = useState("");
@@ -54,6 +237,13 @@ const HistoricoPage = () => {
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>(DEFAULT_PERIOD);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(DEFAULT_STATUS);
   const [lojaFilter, setLojaFilter] = useState<LojaFilter>(DEFAULT_LOJA);
+  const [customStart, setCustomStart] = useState<Date | undefined>();
+  const [customEnd, setCustomEnd] = useState<Date | undefined>();
+  // Insights tab uses its own filters (independent of "Por Cotação")
+  const [insightsPeriod, setInsightsPeriod] = useState<PeriodFilter>(DEFAULT_PERIOD);
+  const [insightsCustomStart, setInsightsCustomStart] = useState<Date | undefined>();
+  const [insightsCustomEnd, setInsightsCustomEnd] = useState<Date | undefined>();
+  const [insightsLojaId, setInsightsLojaId] = useState<string | "all" | null>(null); // null = follow active
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   // Selection mode for consolidated export
@@ -245,36 +435,54 @@ const HistoricoPage = () => {
     onError: (e: any) => toast.error("Erro: " + e.message),
   });
 
-  // Filters
-  const filteredCotacoes = useMemo(() => {
+  // Helper: compute [start, end] timestamp window for a period filter
+  const periodWindow = (
+    p: PeriodFilter,
+    cs?: Date,
+    ce?: Date
+  ): { start: number; end: number } => {
     const now = Date.now();
-    const periodMs: Record<PeriodFilter, number> = {
-      "7d": 7 * 86400000,
-      "30d": 30 * 86400000,
-      "90d": 90 * 86400000,
-      all: Infinity,
-    };
-    const cutoff = now - periodMs[periodFilter];
+    if (p === "all") return { start: -Infinity, end: Infinity };
+    if (p === "custom") {
+      const start = cs ? new Date(cs).setHours(0, 0, 0, 0) : -Infinity;
+      const end = ce ? new Date(ce).setHours(23, 59, 59, 999) : Infinity;
+      return { start, end };
+    }
+    const days = p === "7d" ? 7 : p === "30d" ? 30 : 90;
+    return { start: now - days * 86400000, end: Infinity };
+  };
+
+  // Filters (Por Cotação)
+  const filteredCotacoes = useMemo(() => {
+    const { start, end } = periodWindow(periodFilter, customStart, customEnd);
     const activeLojaId = lojaFilter === "active" ? lojaAtiva?.id ?? null : null;
 
     return cotacoes.filter((c) => {
       if (searchCotacao && !c.nome.toLowerCase().includes(searchCotacao.toLowerCase())) return false;
       if (statusFilter !== "all" && c.status !== statusFilter) return false;
-      if (periodFilter !== "all" && new Date(c.created_at).getTime() < cutoff) return false;
+      const t = new Date(c.created_at).getTime();
+      if (t < start || t > end) return false;
       if (lojaFilter === "active" && activeLojaId && c.loja_id !== activeLojaId) return false;
       return true;
     });
-  }, [cotacoes, searchCotacao, statusFilter, periodFilter, lojaFilter, lojaAtiva?.id]);
+  }, [cotacoes, searchCotacao, statusFilter, periodFilter, customStart, customEnd, lojaFilter, lojaAtiva?.id]);
 
   const activeFiltersCount =
     (periodFilter !== DEFAULT_PERIOD ? 1 : 0) +
     (statusFilter !== DEFAULT_STATUS ? 1 : 0) +
     (lojaFilter !== DEFAULT_LOJA ? 1 : 0);
 
-  const periodLabel = (p: PeriodFilter) =>
-    p === "all" ? "Tudo" : p === "7d" ? "7 dias" : p === "30d" ? "30 dias" : "90 dias";
+  const periodLabel = (p: PeriodFilter, cs?: Date, ce?: Date) => {
+    if (p === "all") return "Tudo";
+    if (p === "custom") {
+      const fmt = (d?: Date) => (d ? formatDate(d, "dd/MM/yy") : "—");
+      return `${fmt(cs)} a ${fmt(ce)}`;
+    }
+    return p === "7d" ? "7 dias" : p === "30d" ? "30 dias" : "90 dias";
+  };
   const statusLabel = (s: StatusFilter) =>
     s === "all" ? "Todos" : s === "finalizada" ? "Finalizada" : "Cancelada";
+
 
   const visibleCotacoes = filteredCotacoes.slice(0, visibleCount);
 
@@ -333,17 +541,28 @@ const HistoricoPage = () => {
   // Loaded only when the user opens the Insights tab or enables Selection mode,
   // and limited to the currently filtered cotações to avoid heavy queries.
   const filteredIds = useMemo(() => filteredCotacoes.map((c) => c.id), [filteredCotacoes]);
-  const filteredIdsKey = filteredIds.join(",");
+  // For batch query: union of cotações needed by Por Cotação (selection) and Insights tab.
+  const batchIds = useMemo(() => {
+    const set = new Set<string>(filteredIds);
+    if (activeTab === "insights") {
+      // We do not yet know insightsFilteredCotacoes IDs at this point in code order,
+      // but they are recomputed below from `cotacoes`; include all of `cotacoes` ids.
+      // To avoid over-fetching, we instead include all cotacoes (already filtered server-side)
+      for (const c of cotacoes) set.add(c.id);
+    }
+    return Array.from(set);
+  }, [filteredIds, activeTab, cotacoes]);
+  const batchIdsKey = batchIds.join(",");
   const needsBatchDetails = activeTab === "insights" || selectionMode;
 
   const { data: batchDetails, isLoading: batchLoading } = useQuery({
-    queryKey: ["historico-batch-details", filteredIdsKey],
-    enabled: needsBatchDetails && filteredIds.length > 0,
+    queryKey: ["historico-batch-details", batchIdsKey],
+    enabled: needsBatchDetails && batchIds.length > 0,
     queryFn: async () => {
       const { data: cps } = await supabase
         .from("cotacao_produtos")
         .select("id, cotacao_id, produto_id, tipo_embalagem, fator_embalagem, quantidade, produtos(nome, embalagem)")
-        .in("cotacao_id", filteredIds);
+        .in("cotacao_id", batchIds);
       const cpList = cps || [];
       const cpIds = cpList.map((cp: any) => cp.id);
       const { data: precos } = cpIds.length
@@ -381,7 +600,9 @@ const HistoricoPage = () => {
     const insightRows: InsightRow[] = [];
     const allPricesByRow = new Map<string, number[]>();
 
-    for (const cot of filteredCotacoes) {
+    const batchSet = new Set(batchIds);
+    const cotsForBatch = cotacoes.filter((c) => batchSet.has(c.id));
+    for (const cot of cotsForBatch) {
       const cps = cpsByCot.get(cot.id) || [];
       const rows = cps.map((cp: any) => {
         const ps = (precosByCp.get(cp.id) || []).sort(
@@ -442,59 +663,66 @@ const HistoricoPage = () => {
     }
 
     return { perCotacao, insightRows, allPricesByRow };
-  }, [batchDetails, filteredCotacoes]);
+  }, [batchDetails, batchIds, cotacoes]);
 
-  // Insights computed values
+  // ===== Insights tab: derive its OWN filtered set (independent period + loja) =====
+  const insightsFilteredCotacoes = useMemo(() => {
+    const { start, end } = periodWindow(insightsPeriod, insightsCustomStart, insightsCustomEnd);
+    const targetLoja =
+      insightsLojaId === null ? lojaAtiva?.id ?? null : insightsLojaId === "all" ? null : insightsLojaId;
+    return cotacoes.filter((c) => {
+      const t = new Date(c.created_at).getTime();
+      if (t < start || t > end) return false;
+      if (targetLoja && c.loja_id !== targetLoja) return false;
+      return true;
+    });
+  }, [cotacoes, insightsPeriod, insightsCustomStart, insightsCustomEnd, insightsLojaId, lojaAtiva?.id]);
+
+  const insightsCotIdSet = useMemo(
+    () => new Set(insightsFilteredCotacoes.map((c) => c.id)),
+    [insightsFilteredCotacoes]
+  );
+  const insightRowsForInsights = useMemo(
+    () => consolidated.insightRows.filter((r) => insightsCotIdSet.has(r.cotacaoId)),
+    [consolidated.insightRows, insightsCotIdSet]
+  );
+
+  // Insights computed values (uses insightsFilteredCotacoes)
   const kpis = useMemo(() => {
-    // Build a quick lookup: cotacaoId|produtoNome → all prices for that cp
     const priceLookup = new Map<string, number[]>();
-    for (const [, det] of consolidated.perCotacao) {
-      for (const r of det.rows) {
-        if (r.precoUnit == null) continue;
-        const key = `${r.cpKey}`;
-        priceLookup.set(key, r.allPrecos.map((p: any) => Number(p.preco)));
-      }
-    }
-    // Insight rows don't carry cpKey directly; map them by walking perCotacao again.
-    const insightWithKey: { row: InsightRow; key: string }[] = [];
     for (const [cotId, det] of consolidated.perCotacao) {
+      if (!insightsCotIdSet.has(cotId)) continue;
       for (const r of det.rows) {
         if (r.precoUnit == null) continue;
-        insightWithKey.push({
-          row: {
-            cotacaoId: cotId,
-            cotacaoNome: filteredCotacoes.find((c) => c.id === cotId)?.nome || "",
-            date: filteredCotacoes.find((c) => c.id === cotId)?.created_at || "",
-            produtoNome: r.nome,
-            embalagem: r.embalagem,
-            fator: r.fator,
-            qtd: r.qtd,
-            fornecedor: r.fornecedor,
-            precoUnit: r.precoUnit,
-            total: r.total,
-          },
-          key: r.cpKey,
-        });
+        priceLookup.set(r.cpKey, r.allPrecos.map((p: any) => Number(p.preco)));
       }
     }
     let economia = 0;
-    for (const { row, key } of insightWithKey) {
-      const all = priceLookup.get(key) || [row.precoUnit];
-      if (all.length < 2) continue;
-      const worst = Math.max(...all);
-      const diff = worst - row.precoUnit;
-      if (diff > 0) economia += diff * row.qtd * row.fator;
+    for (const r of insightRowsForInsights) {
+      // find matching cpKey via lookup-set (any key starting with cotacaoId:)
+      // Easier: scan perCotacao
     }
-    return computeKPIs(filteredCotacoes, consolidated.insightRows, economia);
-  }, [filteredCotacoes, consolidated]);
+    for (const [cotId, det] of consolidated.perCotacao) {
+      if (!insightsCotIdSet.has(cotId)) continue;
+      for (const r of det.rows) {
+        if (r.precoUnit == null) continue;
+        const all = priceLookup.get(r.cpKey) || [r.precoUnit];
+        if (all.length < 2) continue;
+        const worst = Math.max(...all);
+        const diff = worst - r.precoUnit;
+        if (diff > 0) economia += diff * r.qtd * r.fator;
+      }
+    }
+    return computeKPIs(insightsFilteredCotacoes, insightRowsForInsights, economia);
+  }, [insightsFilteredCotacoes, insightRowsForInsights, consolidated, insightsCotIdSet]);
 
   const fornecedorRanking = useMemo(
-    () => buildFornecedorRanking(consolidated.insightRows),
-    [consolidated.insightRows]
+    () => buildFornecedorRanking(insightRowsForInsights),
+    [insightRowsForInsights]
   );
   const produtoVariacao = useMemo(
-    () => buildProdutoVariacao(consolidated.insightRows),
-    [consolidated.insightRows]
+    () => buildProdutoVariacao(insightRowsForInsights),
+    [insightRowsForInsights]
   );
 
   // Selection helpers
@@ -1183,9 +1411,24 @@ const HistoricoPage = () => {
         </TabsContent>
 
         <TabsContent value="insights" className="space-y-4">
-          {filteredCotacoes.length === 0 ? (
+          {/* Insights filters bar — always visible */}
+          <InsightsFilters
+            period={insightsPeriod}
+            setPeriod={setInsightsPeriod}
+            customStart={insightsCustomStart}
+            customEnd={insightsCustomEnd}
+            setCustomStart={setInsightsCustomStart}
+            setCustomEnd={setInsightsCustomEnd}
+            lojaId={insightsLojaId}
+            setLojaId={setInsightsLojaId}
+            lojas={lojas}
+            lojaAtivaNome={lojaAtiva?.nome}
+            cotacoesCount={kpis.cotacoes}
+            periodLabel={periodLabel}
+          />
+          {cotacoes.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground text-sm">
-              Sem cotações para analisar. Ajuste os filtros na aba "Por Cotação".
+              Sem cotações no histórico.
             </div>
           ) : batchLoading || !batchDetails ? (
             <div className="space-y-3">
@@ -1197,17 +1440,12 @@ const HistoricoPage = () => {
               <Skeleton className="h-40 rounded-xl" />
               <Skeleton className="h-40 rounded-xl" />
             </div>
+          ) : insightsFilteredCotacoes.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground text-sm">
+              Sem cotações no período/loja selecionados.
+            </div>
           ) : (
             <>
-              {/* Period summary chip */}
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
-                <span>Análise de:</span>
-                <Badge variant="secondary" className="font-normal">{periodLabel(periodFilter)}</Badge>
-                <Badge variant="secondary" className="font-normal">
-                  {lojaFilter === "active" ? lojaAtiva?.nome ?? "Loja ativa" : "Todas as lojas"}
-                </Badge>
-                <Badge variant="secondary" className="font-normal">{kpis.cotacoes} cotação(ões)</Badge>
-              </div>
 
               {/* KPI cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
@@ -1252,10 +1490,23 @@ const HistoricoPage = () => {
               </div>
 
               {/* Ranking de fornecedores */}
+              <TooltipProvider delayDuration={150}>
               <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
                 <div className="px-4 py-2.5 border-b bg-muted/30 flex items-center gap-2">
                   <Trophy className="h-4 w-4 text-primary" />
                   <h2 className="text-sm font-bold">Ranking de fornecedores</h2>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button aria-label="Como funciona o ranking" className="text-muted-foreground hover:text-foreground">
+                        <Info className="h-3.5 w-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-[260px] text-xs">
+                      <strong>Taxa de vitória</strong> = vitórias do fornecedor ÷ cotações em que participou × 100.
+                      Ex: ganhou 8 itens em 2 cotações onde participou ⇒ 8/2 = 400% (média de itens por cotação).
+                      Use junto com "Vitórias" e "Total ganho" para julgar competitividade.
+                    </TooltipContent>
+                  </Tooltip>
                   <span className="text-[11px] text-muted-foreground ml-auto">
                     Por valor total ganho
                   </span>
@@ -1366,6 +1617,27 @@ const HistoricoPage = () => {
                         <tbody>
                           {produtoVariacao.slice(0, 30).map((p) => {
                             const high = (p.variacaoPct ?? 0) >= 30;
+                            const single = p.amostras < 2;
+                            if (single) {
+                              return (
+                                <tr key={p.produto} className="border-t hover:bg-muted/20">
+                                  <td className="px-3 py-2">
+                                    <div className="font-medium">{p.produto}</div>
+                                    <div className="text-[10px] text-muted-foreground">{p.embalagem}</div>
+                                  </td>
+                                  <td className="px-3 py-2 text-center text-muted-foreground">{p.amostras}</td>
+                                  <td colSpan={4} className="px-3 py-2 text-xs italic text-muted-foreground">
+                                    Apenas 1 cotação — sem variação disponível
+                                  </td>
+                                  <td className="px-3 py-2 text-right">
+                                    <div className="font-mono text-xs">{formatBRL(p.ultimoPreco)}</div>
+                                    <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">
+                                      {p.ultimoFornecedor}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            }
                             return (
                               <tr key={p.produto} className="border-t hover:bg-muted/20">
                                 <td className="px-3 py-2">
@@ -1403,6 +1675,7 @@ const HistoricoPage = () => {
                     <div className="md:hidden divide-y">
                       {produtoVariacao.slice(0, 30).map((p) => {
                         const high = (p.variacaoPct ?? 0) >= 30;
+                        const single = p.amostras < 2;
                         return (
                           <div key={p.produto} className="px-3 py-2.5">
                             <div className="flex items-start justify-between gap-2">
@@ -1412,32 +1685,40 @@ const HistoricoPage = () => {
                                   {p.embalagem} · {p.amostras} amostra(s)
                                 </div>
                               </div>
-                              <div className={`text-xs font-mono font-bold shrink-0 ${
-                                high ? "text-red-600 dark:text-red-400" : "text-foreground"
-                              }`}>
-                                {p.variacaoPct != null ? `${p.variacaoPct.toFixed(0)}%` : "—"}
-                              </div>
+                              {!single && (
+                                <div className={`text-xs font-mono font-bold shrink-0 ${
+                                  high ? "text-red-600 dark:text-red-400" : "text-foreground"
+                                }`}>
+                                  {p.variacaoPct != null ? `${p.variacaoPct.toFixed(0)}%` : "—"}
+                                </div>
+                              )}
                             </div>
-                            <div className="grid grid-cols-3 gap-1 mt-2 text-[10px]">
-                              <div className="bg-green-500/10 rounded px-1.5 py-1">
-                                <div className="text-green-700 dark:text-green-400 font-mono font-semibold">
-                                  {formatBRL(p.precoMin)}
-                                </div>
-                                <div className="text-muted-foreground">Mín</div>
+                            {single ? (
+                              <div className="mt-2 text-[11px] italic text-muted-foreground">
+                                Apenas 1 cotação — sem variação disponível
                               </div>
-                              <div className="bg-muted/30 rounded px-1.5 py-1">
-                                <div className="text-foreground font-mono font-semibold">
-                                  {formatBRL(p.precoMedio)}
+                            ) : (
+                              <div className="grid grid-cols-3 gap-1 mt-2 text-[10px]">
+                                <div className="bg-green-500/10 rounded px-1.5 py-1">
+                                  <div className="text-green-700 dark:text-green-400 font-mono font-semibold">
+                                    {formatBRL(p.precoMin)}
+                                  </div>
+                                  <div className="text-muted-foreground">Mín</div>
                                 </div>
-                                <div className="text-muted-foreground">Médio</div>
-                              </div>
-                              <div className="bg-red-500/10 rounded px-1.5 py-1">
-                                <div className="text-red-600 dark:text-red-400 font-mono font-semibold">
-                                  {formatBRL(p.precoMax)}
+                                <div className="bg-muted/30 rounded px-1.5 py-1">
+                                  <div className="text-foreground font-mono font-semibold">
+                                    {formatBRL(p.precoMedio)}
+                                  </div>
+                                  <div className="text-muted-foreground">Médio</div>
                                 </div>
-                                <div className="text-muted-foreground">Máx</div>
+                                <div className="bg-red-500/10 rounded px-1.5 py-1">
+                                  <div className="text-red-600 dark:text-red-400 font-mono font-semibold">
+                                    {formatBRL(p.precoMax)}
+                                  </div>
+                                  <div className="text-muted-foreground">Máx</div>
+                                </div>
                               </div>
-                            </div>
+                            )}
                             <div className="text-[10px] text-muted-foreground mt-1.5 truncate">
                               Último: {formatBRL(p.ultimoPreco)} · {p.ultimoFornecedor}
                             </div>
@@ -1448,6 +1729,7 @@ const HistoricoPage = () => {
                   </>
                 )}
               </div>
+              </TooltipProvider>
             </>
           )}
         </TabsContent>
