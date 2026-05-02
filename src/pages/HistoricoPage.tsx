@@ -48,9 +48,14 @@ const HistoricoPage = () => {
   // Pagination per product group on "Buscar Item" tab — reset when search changes
   const ITEM_PAGE_SIZE = 25;
   const [itemVisibleByGroup, setItemVisibleByGroup] = useState<Record<string, number>>({});
-  // Reset per-group pagination whenever the search term changes
+  // View mode toggle for "Buscar Item": 'all' = all suppliers, 'best' = winner per cotação
+  const [itemViewMode, setItemViewMode] = useState<"all" | "best">("all");
+  // Collapsed/expanded state per product group
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  // Reset per-group pagination + collapse whenever the search term changes
   useMemo(() => {
     setItemVisibleByGroup({});
+    setExpandedGroups({});
   }, [searchItem]);
 
   // Cotações + loja + summary inline (number of products, suppliers responded, total order value)
