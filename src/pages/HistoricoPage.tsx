@@ -1675,6 +1675,7 @@ const HistoricoPage = () => {
                     <div className="md:hidden divide-y">
                       {produtoVariacao.slice(0, 30).map((p) => {
                         const high = (p.variacaoPct ?? 0) >= 30;
+                        const single = p.amostras < 2;
                         return (
                           <div key={p.produto} className="px-3 py-2.5">
                             <div className="flex items-start justify-between gap-2">
@@ -1684,32 +1685,40 @@ const HistoricoPage = () => {
                                   {p.embalagem} · {p.amostras} amostra(s)
                                 </div>
                               </div>
-                              <div className={`text-xs font-mono font-bold shrink-0 ${
-                                high ? "text-red-600 dark:text-red-400" : "text-foreground"
-                              }`}>
-                                {p.variacaoPct != null ? `${p.variacaoPct.toFixed(0)}%` : "—"}
-                              </div>
+                              {!single && (
+                                <div className={`text-xs font-mono font-bold shrink-0 ${
+                                  high ? "text-red-600 dark:text-red-400" : "text-foreground"
+                                }`}>
+                                  {p.variacaoPct != null ? `${p.variacaoPct.toFixed(0)}%` : "—"}
+                                </div>
+                              )}
                             </div>
-                            <div className="grid grid-cols-3 gap-1 mt-2 text-[10px]">
-                              <div className="bg-green-500/10 rounded px-1.5 py-1">
-                                <div className="text-green-700 dark:text-green-400 font-mono font-semibold">
-                                  {formatBRL(p.precoMin)}
-                                </div>
-                                <div className="text-muted-foreground">Mín</div>
+                            {single ? (
+                              <div className="mt-2 text-[11px] italic text-muted-foreground">
+                                Apenas 1 cotação — sem variação disponível
                               </div>
-                              <div className="bg-muted/30 rounded px-1.5 py-1">
-                                <div className="text-foreground font-mono font-semibold">
-                                  {formatBRL(p.precoMedio)}
+                            ) : (
+                              <div className="grid grid-cols-3 gap-1 mt-2 text-[10px]">
+                                <div className="bg-green-500/10 rounded px-1.5 py-1">
+                                  <div className="text-green-700 dark:text-green-400 font-mono font-semibold">
+                                    {formatBRL(p.precoMin)}
+                                  </div>
+                                  <div className="text-muted-foreground">Mín</div>
                                 </div>
-                                <div className="text-muted-foreground">Médio</div>
-                              </div>
-                              <div className="bg-red-500/10 rounded px-1.5 py-1">
-                                <div className="text-red-600 dark:text-red-400 font-mono font-semibold">
-                                  {formatBRL(p.precoMax)}
+                                <div className="bg-muted/30 rounded px-1.5 py-1">
+                                  <div className="text-foreground font-mono font-semibold">
+                                    {formatBRL(p.precoMedio)}
+                                  </div>
+                                  <div className="text-muted-foreground">Médio</div>
                                 </div>
-                                <div className="text-muted-foreground">Máx</div>
+                                <div className="bg-red-500/10 rounded px-1.5 py-1">
+                                  <div className="text-red-600 dark:text-red-400 font-mono font-semibold">
+                                    {formatBRL(p.precoMax)}
+                                  </div>
+                                  <div className="text-muted-foreground">Máx</div>
+                                </div>
                               </div>
-                            </div>
+                            )}
                             <div className="text-[10px] text-muted-foreground mt-1.5 truncate">
                               Último: {formatBRL(p.ultimoPreco)} · {p.ultimoFornecedor}
                             </div>
