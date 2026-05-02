@@ -199,6 +199,7 @@ function CustomRangePicker({
         <p className="text-[10px] text-muted-foreground text-center">
           Toque na data inicial e depois na final, ou digite acima.
         </p>
+        <div className="flex justify-end gap-2">
           <Button size="sm" variant="ghost" onClick={() => { setStart(undefined); setEnd(undefined); }}>
             Limpar
           </Button>
