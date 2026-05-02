@@ -474,53 +474,61 @@ const HistoricoPage = () => {
     return { perCotacao, insightRows, allPricesByRow };
   }, [batchDetails, filteredCotacoes]);
 
-  // Insights computed values
+  // ===== Insights tab: derive its OWN filtered set (independent period + loja) =====
+  const insightsFilteredCotacoes = useMemo(() => {
+    const { start, end } = periodWindow(insightsPeriod, insightsCustomStart, insightsCustomEnd);
+    // null = follow active loja, "all" = all lojas, otherwise specific id
+    const targetLoja =
+      insightsLojaId === null ? lojaAtiva?.id ?? null : insightsLojaId === "all" ? null : insightsLojaId;
+    return filteredCotacoes.filter((c) => {
+      const t = new Date(c.created_at).getTime();
+      if (t < start || t > end) return false;
+      if (targetLoja && c.loja_id !== targetLoja) return false;
+      return true;
+    });
+  }, [filteredCotacoes, insightsPeriod, insightsCustomStart, insightsCustomEnd, insightsLojaId, lojaAtiva?.id]);
+
+  const insightsCotIdSet = useMemo(
+    () => new Set(insightsFilteredCotacoes.map((c) => c.id)),
+    [insightsFilteredCotacoes]
+  );
+  const insightRowsForInsights = useMemo(
+    () => consolidated.insightRows.filter((r) => insightsCotIdSet.has(r.cotacaoId)),
+    [consolidated.insightRows, insightsCotIdSet]
+  );
+
+  // Insights computed values (uses insightsFilteredCotacoes)
   const kpis = useMemo(() => {
-    // Build a quick lookup: cotacaoId|produtoNome → all prices for that cp
     const priceLookup = new Map<string, number[]>();
-    for (const [, det] of consolidated.perCotacao) {
-      for (const r of det.rows) {
-        if (r.precoUnit == null) continue;
-        const key = `${r.cpKey}`;
-        priceLookup.set(key, r.allPrecos.map((p: any) => Number(p.preco)));
-      }
-    }
-    // Insight rows don't carry cpKey directly; map them by walking perCotacao again.
-    const insightWithKey: { row: InsightRow; key: string }[] = [];
     for (const [cotId, det] of consolidated.perCotacao) {
+      if (!insightsCotIdSet.has(cotId)) continue;
       for (const r of det.rows) {
         if (r.precoUnit == null) continue;
-        insightWithKey.push({
-          row: {
-            cotacaoId: cotId,
-            cotacaoNome: filteredCotacoes.find((c) => c.id === cotId)?.nome || "",
-            date: filteredCotacoes.find((c) => c.id === cotId)?.created_at || "",
-            produtoNome: r.nome,
-            embalagem: r.embalagem,
-            fator: r.fator,
-            qtd: r.qtd,
-            fornecedor: r.fornecedor,
-            precoUnit: r.precoUnit,
-            total: r.total,
-          },
-          key: r.cpKey,
-        });
+        priceLookup.set(r.cpKey, r.allPrecos.map((p: any) => Number(p.preco)));
       }
     }
     let economia = 0;
-    for (const { row, key } of insightWithKey) {
-      const all = priceLookup.get(key) || [row.precoUnit];
-      if (all.length < 2) continue;
-      const worst = Math.max(...all);
-      const diff = worst - row.precoUnit;
-      if (diff > 0) economia += diff * row.qtd * row.fator;
+    for (const r of insightRowsForInsights) {
+      // find matching cpKey via lookup-set (any key starting with cotacaoId:)
+      // Easier: scan perCotacao
     }
-    return computeKPIs(filteredCotacoes, consolidated.insightRows, economia);
-  }, [filteredCotacoes, consolidated]);
+    for (const [cotId, det] of consolidated.perCotacao) {
+      if (!insightsCotIdSet.has(cotId)) continue;
+      for (const r of det.rows) {
+        if (r.precoUnit == null) continue;
+        const all = priceLookup.get(r.cpKey) || [r.precoUnit];
+        if (all.length < 2) continue;
+        const worst = Math.max(...all);
+        const diff = worst - r.precoUnit;
+        if (diff > 0) economia += diff * r.qtd * r.fator;
+      }
+    }
+    return computeKPIs(insightsFilteredCotacoes, insightRowsForInsights, economia);
+  }, [insightsFilteredCotacoes, insightRowsForInsights, consolidated, insightsCotIdSet]);
 
   const fornecedorRanking = useMemo(
-    () => buildFornecedorRanking(consolidated.insightRows),
-    [consolidated.insightRows]
+    () => buildFornecedorRanking(insightRowsForInsights),
+    [insightRowsForInsights]
   );
   const produtoVariacao = useMemo(
     () => buildProdutoVariacao(consolidated.insightRows),
