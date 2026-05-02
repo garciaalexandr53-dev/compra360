@@ -9,6 +9,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, SheetTrigger } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
+import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -24,16 +27,23 @@ import type { Tables } from "@/integrations/supabase/types";
 
 type PeriodFilter = "7d" | "30d" | "90d" | "all";
 type StatusFilter = "all" | "finalizada" | "cancelada";
+type LojaFilter = "active" | "all";
 
 const PAGE_SIZE = 10;
+const DEFAULT_PERIOD: PeriodFilter = "30d";
+const DEFAULT_STATUS: StatusFilter = "all";
+const DEFAULT_LOJA: LojaFilter = "active";
 
 const HistoricoPage = () => {
   const queryClient = useQueryClient();
+  const { lojaAtiva } = useLojaAtiva();
   const [searchItem, setSearchItem] = useState("");
   const [searchCotacao, setSearchCotacao] = useState("");
   const [expandedCotacao, setExpandedCotacao] = useState<string | null>(null);
-  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("30d");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>(DEFAULT_PERIOD);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(DEFAULT_STATUS);
+  const [lojaFilter, setLojaFilter] = useState<LojaFilter>(DEFAULT_LOJA);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   // Cotações + loja + summary inline (number of products, suppliers responded, total order value)
@@ -219,14 +229,26 @@ const HistoricoPage = () => {
       all: Infinity,
     };
     const cutoff = now - periodMs[periodFilter];
+    const activeLojaId = lojaFilter === "active" ? lojaAtiva?.id ?? null : null;
 
     return cotacoes.filter((c) => {
       if (searchCotacao && !c.nome.toLowerCase().includes(searchCotacao.toLowerCase())) return false;
       if (statusFilter !== "all" && c.status !== statusFilter) return false;
       if (periodFilter !== "all" && new Date(c.created_at).getTime() < cutoff) return false;
+      if (lojaFilter === "active" && activeLojaId && c.loja_id !== activeLojaId) return false;
       return true;
     });
-  }, [cotacoes, searchCotacao, statusFilter, periodFilter]);
+  }, [cotacoes, searchCotacao, statusFilter, periodFilter, lojaFilter, lojaAtiva?.id]);
+
+  const activeFiltersCount =
+    (periodFilter !== DEFAULT_PERIOD ? 1 : 0) +
+    (statusFilter !== DEFAULT_STATUS ? 1 : 0) +
+    (lojaFilter !== DEFAULT_LOJA ? 1 : 0);
+
+  const periodLabel = (p: PeriodFilter) =>
+    p === "all" ? "Tudo" : p === "7d" ? "7 dias" : p === "30d" ? "30 dias" : "90 dias";
+  const statusLabel = (s: StatusFilter) =>
+    s === "all" ? "Todos" : s === "finalizada" ? "Finalizada" : "Cancelada";
 
   const visibleCotacoes = filteredCotacoes.slice(0, visibleCount);
 
@@ -338,54 +360,162 @@ const HistoricoPage = () => {
         </TabsList>
 
         <TabsContent value="cotacoes" className="space-y-4">
-          {/* Filtros */}
-          <div className="bg-card border rounded-xl p-3 md:p-4 space-y-3">
-            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-              <Filter className="h-3.5 w-3.5" />
-              Filtros
+          {/* Search + filters trigger */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar cotação por nome..."
+                value={searchCotacao}
+                onChange={(e) => setSearchCotacao(e.target.value)}
+                className="pl-9 h-9"
+              />
             </div>
-            <div className="flex flex-col md:flex-row md:items-center gap-3">
-              <div className="relative flex-1 min-w-0">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar cotação por nome..."
-                  value={searchCotacao}
-                  onChange={(e) => setSearchCotacao(e.target.value)}
-                  className="pl-9 h-9"
-                />
-              </div>
-              <div className="flex items-center gap-1.5 bg-muted/40 rounded-lg p-1">
-                {(["7d", "30d", "90d", "all"] as PeriodFilter[]).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setPeriodFilter(p)}
-                    className={`text-xs px-2.5 py-1.5 rounded-md font-medium transition-colors ${
-                      periodFilter === p
-                        ? "bg-background shadow-sm text-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
+            <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" className="h-9 gap-1.5 shrink-0 relative">
+                  <Filter className="h-4 w-4" />
+                  <span className="text-xs font-medium">Filtros</span>
+                  {activeFiltersCount > 0 && (
+                    <Badge
+                      variant="default"
+                      className="h-4 min-w-4 px-1 text-[10px] rounded-full ml-0.5"
+                    >
+                      {activeFiltersCount}
+                    </Badge>
+                  )}
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
+                <SheetHeader>
+                  <SheetTitle>Filtros</SheetTitle>
+                  <SheetDescription>
+                    Refine o histórico de cotações.
+                  </SheetDescription>
+                </SheetHeader>
+
+                <div className="flex-1 overflow-y-auto py-4 space-y-6">
+                  {/* Período */}
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      Período
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(["7d", "30d", "90d", "all"] as PeriodFilter[]).map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => setPeriodFilter(p)}
+                          className={`text-sm px-3 py-2 rounded-lg font-medium border transition-colors ${
+                            periodFilter === p
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-background text-foreground border-input hover:bg-muted"
+                          }`}
+                        >
+                          {periodLabel(p)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Status */}
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      Status
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(["all", "finalizada", "cancelada"] as StatusFilter[]).map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => setStatusFilter(s)}
+                          className={`text-sm px-3 py-2 rounded-lg font-medium border transition-colors ${
+                            statusFilter === s
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-background text-foreground border-input hover:bg-muted"
+                          }`}
+                        >
+                          {statusLabel(s)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Loja */}
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      Loja
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                      <button
+                        onClick={() => setLojaFilter("active")}
+                        className={`text-sm px-3 py-2.5 rounded-lg font-medium border transition-colors text-left flex items-center gap-2 ${
+                          lojaFilter === "active"
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background text-foreground border-input hover:bg-muted"
+                        }`}
+                      >
+                        <Store className="h-4 w-4 shrink-0" />
+                        <span className="truncate">
+                          Loja selecionada
+                          {lojaAtiva ? ` · ${lojaAtiva.nome}` : ""}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => setLojaFilter("all")}
+                        className={`text-sm px-3 py-2.5 rounded-lg font-medium border transition-colors text-left flex items-center gap-2 ${
+                          lojaFilter === "all"
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background text-foreground border-input hover:bg-muted"
+                        }`}
+                      >
+                        <Store className="h-4 w-4 shrink-0" />
+                        <span>Todas as lojas</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <SheetFooter className="flex-row gap-2 sm:gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setPeriodFilter(DEFAULT_PERIOD);
+                      setStatusFilter(DEFAULT_STATUS);
+                      setLojaFilter(DEFAULT_LOJA);
+                    }}
+                    disabled={activeFiltersCount === 0}
                   >
-                    {p === "all" ? "Tudo" : p === "7d" ? "7 dias" : p === "30d" ? "30 dias" : "90 dias"}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-1.5 bg-muted/40 rounded-lg p-1">
-                {(["all", "finalizada", "cancelada"] as StatusFilter[]).map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setStatusFilter(s)}
-                    className={`text-xs px-2.5 py-1.5 rounded-md font-medium transition-colors capitalize ${
-                      statusFilter === s
-                        ? "bg-background shadow-sm text-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {s === "all" ? "Todos" : s}
-                  </button>
-                ))}
-              </div>
-            </div>
+                    Limpar
+                  </Button>
+                  <Button className="flex-1" onClick={() => setFiltersOpen(false)}>
+                    Aplicar
+                  </Button>
+                </SheetFooter>
+              </SheetContent>
+            </Sheet>
           </div>
+
+          {/* Active filter chips summary */}
+          {activeFiltersCount > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+              <span className="text-muted-foreground">Filtros ativos:</span>
+              {periodFilter !== DEFAULT_PERIOD && (
+                <Badge variant="secondary" className="font-normal">
+                  Período: {periodLabel(periodFilter)}
+                </Badge>
+              )}
+              {statusFilter !== DEFAULT_STATUS && (
+                <Badge variant="secondary" className="font-normal">
+                  Status: {statusLabel(statusFilter)}
+                </Badge>
+              )}
+              {lojaFilter !== DEFAULT_LOJA && (
+                <Badge variant="secondary" className="font-normal">
+                  Todas as lojas
+                </Badge>
+              )}
+            </div>
+          )}
 
           {/* Lista de cotações */}
           {isLoading ? (
