@@ -378,13 +378,13 @@ const HistoricoPage = () => {
   const needsBatchDetails = activeTab === "insights" || selectionMode;
 
   const { data: batchDetails, isLoading: batchLoading } = useQuery({
-    queryKey: ["historico-batch-details", filteredIdsKey],
-    enabled: needsBatchDetails && filteredIds.length > 0,
+    queryKey: ["historico-batch-details", batchIdsKey],
+    enabled: needsBatchDetails && batchIds.length > 0,
     queryFn: async () => {
       const { data: cps } = await supabase
         .from("cotacao_produtos")
         .select("id, cotacao_id, produto_id, tipo_embalagem, fator_embalagem, quantidade, produtos(nome, embalagem)")
-        .in("cotacao_id", filteredIds);
+        .in("cotacao_id", batchIds);
       const cpList = cps || [];
       const cpIds = cpList.map((cp: any) => cp.id);
       const { data: precos } = cpIds.length
