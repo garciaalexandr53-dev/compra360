@@ -125,46 +125,16 @@ function InsightsFilters({
         </PopoverContent>
       </Popover>
 
-      {/* Custom date range popover */}
+      {/* Custom date range — sequential single calendar + text inputs */}
       {period === "custom" && (
-        <Popover open={customOpen} onOpenChange={setCustomOpen}>
-          <PopoverTrigger asChild>
-            <button
-              className="inline-flex items-center gap-1 rounded-full bg-muted text-foreground hover:bg-muted/80 px-2.5 py-0.5 text-xs font-medium border"
-              aria-label="Editar intervalo personalizado"
-            >
-              {customStart ? formatDate(customStart, "dd/MM/yy") : "Início"}
-              <span className="opacity-50">→</span>
-              {customEnd ? formatDate(customEnd, "dd/MM/yy") : "Fim"}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-auto p-2 space-y-2">
-            <div className="grid grid-cols-2 gap-2 text-[11px] font-medium text-muted-foreground">
-              <div>Data inicial</div>
-              <div>Data final</div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <CalendarPicker
-                mode="single"
-                selected={customStart}
-                onSelect={(d) => setCustomStart(d ?? undefined)}
-                className="p-2 pointer-events-auto rounded-md border"
-              />
-              <CalendarPicker
-                mode="single"
-                selected={customEnd}
-                onSelect={(d) => setCustomEnd(d ?? undefined)}
-                disabled={(d) => (customStart ? d < customStart : false)}
-                className="p-2 pointer-events-auto rounded-md border"
-              />
-            </div>
-            <div className="flex justify-end">
-              <Button size="sm" onClick={() => setCustomOpen(false)} disabled={!customStart || !customEnd}>
-                Aplicar
-              </Button>
-            </div>
-          </PopoverContent>
-        </Popover>
+        <CustomRangePicker
+          open={customOpen}
+          setOpen={setCustomOpen}
+          start={customStart}
+          end={customEnd}
+          setStart={setCustomStart}
+          setEnd={setCustomEnd}
+        />
       )}
 
       {/* Loja selector */}
