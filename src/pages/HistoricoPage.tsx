@@ -86,18 +86,48 @@ function CustomRangePicker({
     const m = txt.trim().match(/^(\d{2})\/(\d{2})\/(\d{2})$/);
     if (!m) return undefined;
     const [, dd, mm, yy] = m;
+    const day = parseInt(dd, 10);
+    const month = parseInt(mm, 10);
     const year = 2000 + parseInt(yy, 10);
-    const d = new Date(year, parseInt(mm, 10) - 1, parseInt(dd, 10));
-    return isValidDate(d) ? d : undefined;
+    if (day < 1 || day > 31 || month < 1 || month > 12) return undefined;
+    const d = new Date(year, month - 1, day);
+    // Guard against rollover (e.g. 31/02/26 -> 03/03/26)
+    if (
+      !isValidDate(d) ||
+      d.getDate() !== day ||
+      d.getMonth() !== month - 1 ||
+      d.getFullYear() !== year
+    ) return undefined;
+    return d;
   };
 
   // Auto-insert "/" while typing: 12 -> 12/, 1203 -> 12/03/, etc.
+  // Strips any non-digit and validates DD (01-31) / MM (01-12) progressively.
   const formatTyping = (raw: string): string => {
-    const digits = raw.replace(/\D/g, "").slice(0, 6);
-    let out = digits;
-    if (digits.length >= 3 && digits.length <= 4) out = `${digits.slice(0, 2)}/${digits.slice(2)}`;
-    else if (digits.length >= 5) out = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-    return out;
+    let digits = raw.replace(/\D/g, "").slice(0, 6);
+    // Clamp DD as user types: if first digit > 3, prefix with 0; cap at 31.
+    if (digits.length >= 1) {
+      const d0 = parseInt(digits[0], 10);
+      if (d0 > 3) digits = "0" + digits.slice(0, 5);
+    }
+    if (digits.length >= 2) {
+      const dd = parseInt(digits.slice(0, 2), 10);
+      if (dd === 0) digits = "01" + digits.slice(2);
+      else if (dd > 31) digits = "31" + digits.slice(2);
+    }
+    // Clamp MM as user types: if 3rd digit > 1, prefix with 0; cap at 12.
+    if (digits.length >= 3) {
+      const m0 = parseInt(digits[2], 10);
+      if (m0 > 1) digits = digits.slice(0, 2) + "0" + digits.slice(2, 5);
+    }
+    if (digits.length >= 4) {
+      const mm = parseInt(digits.slice(2, 4), 10);
+      if (mm === 0) digits = digits.slice(0, 2) + "01" + digits.slice(4);
+      else if (mm > 12) digits = digits.slice(0, 2) + "12" + digits.slice(4);
+    }
+    if (digits.length >= 5) return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+    if (digits.length >= 3) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    return digits;
   };
 
   const commitStart = () => {
@@ -112,6 +142,10 @@ function CustomRangePicker({
     else if (endText === "") setEnd(undefined);
     else setEndText(fmt(end));
   };
+
+  // Detect partial / malformed entries (something typed but not a complete valid DD/MM/AA).
+  const startPartial = startText.length > 0 && !parseInput(startText);
+  const endPartial = endText.length > 0 && !parseInput(endText);
 
   // Validation: start must not be after end
   const parsedStart = parseInput(startText) ?? start;
@@ -163,8 +197,8 @@ function CustomRangePicker({
               onBlur={commitStart}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitStart(); } }}
               maxLength={8}
-              aria-invalid={invalidRange}
-              className={cn("h-9 text-sm", invalidRange && "border-destructive focus-visible:ring-destructive")}
+              aria-invalid={invalidRange || startPartial}
+              className={cn("h-9 text-sm", (invalidRange || startPartial) && "border-destructive focus-visible:ring-destructive")}
             />
           </div>
           <div className="space-y-1">
@@ -177,11 +211,16 @@ function CustomRangePicker({
               onBlur={commitEnd}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitEnd(); } }}
               maxLength={8}
-              aria-invalid={invalidRange}
-              className={cn("h-9 text-sm", invalidRange && "border-destructive focus-visible:ring-destructive")}
+              aria-invalid={invalidRange || endPartial}
+              className={cn("h-9 text-sm", (invalidRange || endPartial) && "border-destructive focus-visible:ring-destructive")}
             />
           </div>
         </div>
+        {(startPartial || endPartial) && !invalidRange && (
+          <p className="text-[11px] text-destructive text-center font-medium">
+            Use o formato DD/MM/AA com uma data válida.
+          </p>
+        )}
         {invalidRange && (
           <p className="text-[11px] text-destructive text-center font-medium">
             A data inicial não pode ser maior que a data final.
@@ -204,7 +243,7 @@ function CustomRangePicker({
           <Button size="sm" variant="ghost" onClick={() => { setStart(undefined); setEnd(undefined); }}>
             Limpar
           </Button>
-          <Button size="sm" onClick={() => setOpen(false)} disabled={!start || !end || invalidRange}>
+          <Button size="sm" onClick={() => setOpen(false)} disabled={!start || !end || invalidRange || startPartial || endPartial}>
             Aplicar
           </Button>
         </div>
