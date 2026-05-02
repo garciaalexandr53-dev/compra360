@@ -197,8 +197,8 @@ function CustomRangePicker({
               onBlur={commitStart}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitStart(); } }}
               maxLength={8}
-              aria-invalid={invalidRange}
-              className={cn("h-9 text-sm", invalidRange && "border-destructive focus-visible:ring-destructive")}
+              aria-invalid={invalidRange || startPartial}
+              className={cn("h-9 text-sm", (invalidRange || startPartial) && "border-destructive focus-visible:ring-destructive")}
             />
           </div>
           <div className="space-y-1">
@@ -211,11 +211,16 @@ function CustomRangePicker({
               onBlur={commitEnd}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitEnd(); } }}
               maxLength={8}
-              aria-invalid={invalidRange}
-              className={cn("h-9 text-sm", invalidRange && "border-destructive focus-visible:ring-destructive")}
+              aria-invalid={invalidRange || endPartial}
+              className={cn("h-9 text-sm", (invalidRange || endPartial) && "border-destructive focus-visible:ring-destructive")}
             />
           </div>
         </div>
+        {(startPartial || endPartial) && !invalidRange && (
+          <p className="text-[11px] text-destructive text-center font-medium">
+            Use o formato DD/MM/AA com uma data válida.
+          </p>
+        )}
         {invalidRange && (
           <p className="text-[11px] text-destructive text-center font-medium">
             A data inicial não pode ser maior que a data final.
@@ -238,7 +243,7 @@ function CustomRangePicker({
           <Button size="sm" variant="ghost" onClick={() => { setStart(undefined); setEnd(undefined); }}>
             Limpar
           </Button>
-          <Button size="sm" onClick={() => setOpen(false)} disabled={!start || !end || invalidRange}>
+          <Button size="sm" onClick={() => setOpen(false)} disabled={!start || !end || invalidRange || startPartial || endPartial}>
             Aplicar
           </Button>
         </div>
