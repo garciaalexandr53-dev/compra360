@@ -158,10 +158,12 @@ function CustomRangePicker({
               inputMode="numeric"
               placeholder="DD/MM/AA"
               value={startText}
-              onChange={(e) => setStartText(e.target.value)}
+              onChange={(e) => setStartText(formatTyping(e.target.value))}
               onBlur={commitStart}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitStart(); } }}
-              className="h-9 text-sm"
+              maxLength={8}
+              aria-invalid={invalidRange}
+              className={cn("h-9 text-sm", invalidRange && "border-destructive focus-visible:ring-destructive")}
             />
           </div>
           <div className="space-y-1">
@@ -170,31 +172,27 @@ function CustomRangePicker({
               inputMode="numeric"
               placeholder="DD/MM/AA"
               value={endText}
-              onChange={(e) => setEndText(e.target.value)}
+              onChange={(e) => setEndText(formatTyping(e.target.value))}
               onBlur={commitEnd}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitEnd(); } }}
-              className="h-9 text-sm"
+              maxLength={8}
+              aria-invalid={invalidRange}
+              className={cn("h-9 text-sm", invalidRange && "border-destructive focus-visible:ring-destructive")}
             />
           </div>
         </div>
+        {invalidRange && (
+          <p className="text-[11px] text-destructive text-center font-medium">
+            A data inicial não pode ser maior que a data final.
+          </p>
+        )}
         <div className="flex justify-center">
-          <CalendarPicker
-            mode="range"
-            selected={{ from: start, to: end }}
-            onSelect={handleSelect as any}
-            numberOfMonths={1}
-            defaultMonth={start ?? end ?? new Date()}
-            className="p-2 pointer-events-auto rounded-md border"
-          />
-        </div>
-        <p className="text-[10px] text-muted-foreground text-center">
-          Toque na data inicial e depois na final, ou digite acima.
-        </p>
+...
         <div className="flex justify-end gap-2">
           <Button size="sm" variant="ghost" onClick={() => { setStart(undefined); setEnd(undefined); }}>
             Limpar
           </Button>
-          <Button size="sm" onClick={() => setOpen(false)} disabled={!start || !end}>
+          <Button size="sm" onClick={() => setOpen(false)} disabled={!start || !end || invalidRange}>
             Aplicar
           </Button>
         </div>
