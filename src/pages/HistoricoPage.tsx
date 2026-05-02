@@ -59,6 +59,13 @@ const HistoricoPage = () => {
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>(DEFAULT_PERIOD);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(DEFAULT_STATUS);
   const [lojaFilter, setLojaFilter] = useState<LojaFilter>(DEFAULT_LOJA);
+  const [customStart, setCustomStart] = useState<Date | undefined>();
+  const [customEnd, setCustomEnd] = useState<Date | undefined>();
+  // Insights tab uses its own filters (independent of "Por Cotação")
+  const [insightsPeriod, setInsightsPeriod] = useState<PeriodFilter>(DEFAULT_PERIOD);
+  const [insightsCustomStart, setInsightsCustomStart] = useState<Date | undefined>();
+  const [insightsCustomEnd, setInsightsCustomEnd] = useState<Date | undefined>();
+  const [insightsLojaId, setInsightsLojaId] = useState<string | "all" | null>(null); // null = follow active
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   // Selection mode for consolidated export
