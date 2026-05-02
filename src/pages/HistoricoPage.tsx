@@ -81,9 +81,9 @@ const HistoricoPage = () => {
       const { data: precos } = allCpIds.length
         ? await supabase
             .from("precos")
-            .select("cotacao_produto_id, fornecedor_id")
+            .select("cotacao_produto_id, fornecedor_id, preco")
             .in("cotacao_produto_id", allCpIds)
-            .not("preco", "is", null)
+            .gt("preco", 0)
         : { data: [] as any[] };
       const cpToCot = new Map<string, string>();
       for (const cp of cps || []) cpToCot.set(cp.id, cp.cotacao_id);
