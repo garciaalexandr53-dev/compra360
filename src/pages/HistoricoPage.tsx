@@ -1106,7 +1106,7 @@ const HistoricoPage = () => {
                                   size="sm"
                                   className="h-7 text-xs"
                                   onClick={() =>
-                                    setItemVisibleByGroup((prev) => ({ ...prev, [group.nome]: rows.length }))
+                                    setItemVisibleByGroup((prev) => ({ ...prev, [group.nome]: displayRows.length }))
                                   }
                                 >
                                   Ver todos
