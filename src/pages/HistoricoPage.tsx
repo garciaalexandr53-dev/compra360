@@ -531,8 +531,8 @@ const HistoricoPage = () => {
     [insightRowsForInsights]
   );
   const produtoVariacao = useMemo(
-    () => buildProdutoVariacao(consolidated.insightRows),
-    [consolidated.insightRows]
+    () => buildProdutoVariacao(insightRowsForInsights),
+    [insightRowsForInsights]
   );
 
   // Selection helpers
