@@ -16,8 +16,10 @@ import {
 import {
   Search, ChevronDown, ChevronUp, Trash2, MoreHorizontal,
   Package, Users, DollarSign, Trophy, Store, Calendar, Filter,
+  FileSpreadsheet, FileText, Printer,
 } from "lucide-react";
 import { toast } from "sonner";
+import { exportCotacaoToExcel, exportCotacaoToPdf, printCotacao } from "@/lib/historicoExports";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PeriodFilter = "7d" | "30d" | "90d" | "all";
