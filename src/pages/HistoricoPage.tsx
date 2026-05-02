@@ -1116,6 +1116,7 @@ const HistoricoPage = () => {
                           </div>
                         )}
                       </>
+                      )
                     )}
                   </div>
                 );
