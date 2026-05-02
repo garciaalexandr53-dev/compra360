@@ -49,6 +49,184 @@ const DEFAULT_PERIOD: PeriodFilter = "30d";
 const DEFAULT_STATUS: StatusFilter = "all";
 const DEFAULT_LOJA: LojaFilter = "active";
 
+type InsightsFiltersProps = {
+  period: PeriodFilter;
+  setPeriod: (p: PeriodFilter) => void;
+  customStart?: Date;
+  customEnd?: Date;
+  setCustomStart: (d?: Date) => void;
+  setCustomEnd: (d?: Date) => void;
+  lojaId: string | "all" | null;
+  setLojaId: (id: string | "all" | null) => void;
+  lojas: { id: string; nome: string }[];
+  lojaAtivaNome?: string;
+  cotacoesCount: number;
+  periodLabel: (p: PeriodFilter, cs?: Date, ce?: Date) => string;
+};
+
+function InsightsFilters({
+  period, setPeriod, customStart, customEnd, setCustomStart, setCustomEnd,
+  lojaId, setLojaId, lojas, lojaAtivaNome, cotacoesCount, periodLabel,
+}: InsightsFiltersProps) {
+  const [periodOpen, setPeriodOpen] = useState(false);
+  const [customOpen, setCustomOpen] = useState(period === "custom");
+  const [lojaOpen, setLojaOpen] = useState(false);
+
+  const currentLojaName =
+    lojaId === null
+      ? lojaAtivaNome ?? "Loja ativa"
+      : lojaId === "all"
+      ? "Todas as lojas"
+      : lojas.find((l) => l.id === lojaId)?.nome ?? "Loja";
+
+  const periodOptions: { value: PeriodFilter; label: string }[] = [
+    { value: "7d", label: "7 dias" },
+    { value: "30d", label: "30 dias" },
+    { value: "90d", label: "90 dias" },
+    { value: "all", label: "Tudo" },
+    { value: "custom", label: "Personalizado" },
+  ];
+
+  return (
+    <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+      <span>Análise de:</span>
+      <Popover open={periodOpen} onOpenChange={setPeriodOpen}>
+        <PopoverTrigger asChild>
+          <button
+            className="inline-flex items-center gap-1 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 px-2.5 py-0.5 text-xs font-semibold border border-transparent transition-colors"
+            aria-label="Selecionar período"
+          >
+            <Calendar className="h-3 w-3" />
+            {periodLabel(period, customStart, customEnd)}
+            <ChevronDown className="h-3 w-3 opacity-70" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-44 p-1">
+          {periodOptions.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => {
+                if (opt.value === "custom") {
+                  setPeriod("custom");
+                  setPeriodOpen(false);
+                  setCustomOpen(true);
+                } else {
+                  setPeriod(opt.value);
+                  setPeriodOpen(false);
+                }
+              }}
+              className={`w-full text-left px-2.5 py-1.5 rounded-md text-sm hover:bg-muted ${
+                period === opt.value ? "bg-muted font-semibold" : ""
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </PopoverContent>
+      </Popover>
+
+      {/* Custom date range popover */}
+      {period === "custom" && (
+        <Popover open={customOpen} onOpenChange={setCustomOpen}>
+          <PopoverTrigger asChild>
+            <button
+              className="inline-flex items-center gap-1 rounded-full bg-muted text-foreground hover:bg-muted/80 px-2.5 py-0.5 text-xs font-medium border"
+              aria-label="Editar intervalo personalizado"
+            >
+              {customStart ? formatDate(customStart, "dd/MM/yy") : "Início"}
+              <span className="opacity-50">→</span>
+              {customEnd ? formatDate(customEnd, "dd/MM/yy") : "Fim"}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-auto p-2 space-y-2">
+            <div className="grid grid-cols-2 gap-2 text-[11px] font-medium text-muted-foreground">
+              <div>Data inicial</div>
+              <div>Data final</div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <CalendarPicker
+                mode="single"
+                selected={customStart}
+                onSelect={(d) => setCustomStart(d ?? undefined)}
+                className="p-2 pointer-events-auto rounded-md border"
+              />
+              <CalendarPicker
+                mode="single"
+                selected={customEnd}
+                onSelect={(d) => setCustomEnd(d ?? undefined)}
+                disabled={(d) => (customStart ? d < customStart : false)}
+                className="p-2 pointer-events-auto rounded-md border"
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button size="sm" onClick={() => setCustomOpen(false)} disabled={!customStart || !customEnd}>
+                Aplicar
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
+
+      {/* Loja selector */}
+      <Popover open={lojaOpen} onOpenChange={setLojaOpen}>
+        <PopoverTrigger asChild>
+          <button
+            className="inline-flex items-center gap-1 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 px-2.5 py-0.5 text-xs font-semibold border border-transparent transition-colors max-w-[220px]"
+            aria-label="Selecionar loja"
+          >
+            <Store className="h-3 w-3 shrink-0" />
+            <span className="truncate">{currentLojaName}</span>
+            <ChevronDown className="h-3 w-3 opacity-70 shrink-0" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-56 p-1 max-h-72 overflow-auto">
+          <button
+            onClick={() => {
+              setLojaId("all");
+              setLojaOpen(false);
+            }}
+            className={`w-full text-left px-2.5 py-1.5 rounded-md text-sm hover:bg-muted ${
+              lojaId === "all" ? "bg-muted font-semibold" : ""
+            }`}
+          >
+            Todas as lojas
+          </button>
+          {lojaAtivaNome && (
+            <button
+              onClick={() => {
+                setLojaId(null);
+                setLojaOpen(false);
+              }}
+              className={`w-full text-left px-2.5 py-1.5 rounded-md text-sm hover:bg-muted ${
+                lojaId === null ? "bg-muted font-semibold" : ""
+              }`}
+            >
+              Loja ativa · {lojaAtivaNome}
+            </button>
+          )}
+          <div className="h-px bg-border my-1" />
+          {lojas.map((l) => (
+            <button
+              key={l.id}
+              onClick={() => {
+                setLojaId(l.id);
+                setLojaOpen(false);
+              }}
+              className={`w-full text-left px-2.5 py-1.5 rounded-md text-sm hover:bg-muted truncate ${
+                lojaId === l.id ? "bg-muted font-semibold" : ""
+              }`}
+            >
+              {l.nome}
+            </button>
+          ))}
+        </PopoverContent>
+      </Popover>
+
+      <Badge variant="secondary" className="font-normal">{cotacoesCount} cotação(ões)</Badge>
+    </div>
+  );
+}
+
 const HistoricoPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva, lojas } = useLojaAtiva();
