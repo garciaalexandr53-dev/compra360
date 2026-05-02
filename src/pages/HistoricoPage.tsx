@@ -247,7 +247,7 @@ const HistoricoPage = () => {
       const qtd = Number(cp.quantidade || 1);
       const fator = Number(cp.fator_embalagem || 1);
       const precoUnit = winner ? Number(winner.preco) : null;
-      const total = precoUnit != null ? precoUnit * qtd : null;
+      const total = precoUnit != null ? precoUnit * qtd * fator : null;
       return {
         id: cp.id,
         nome: cp.produtos?.nome || "—",
