@@ -155,20 +155,27 @@ export async function exportCotacaoToPdf(
   doc.setFont("helvetica", "bold");
   doc.text(meta.nome, 36, y);
   y += 14;
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(90);
-  const metaLine = [
+  const lineA = [
     `Data: ${formatDateTime(meta.created_at)}`,
     `Status: ${meta.status}`,
     meta.loja_nome ? `Unidade: ${meta.loja_nome}` : null,
+  ].filter(Boolean).join("  ·  ");
+  const lineB = [
     `Produtos: ${meta.produtos_count}`,
     `Fornecedores: ${meta.fornecedores_count}`,
     `Total: ${formatBRL(meta.total_pedido)}`,
-  ].filter(Boolean).join("  ·  ");
-  doc.text(metaLine, 36, y);
+  ].join("  ·  ");
+  // Wrap defensively in case of very long unit names
+  const wrappedA = doc.splitTextToSize(lineA, pageW - 72);
+  const wrappedB = doc.splitTextToSize(lineB, pageW - 72);
+  doc.text(wrappedA, 36, y);
+  y += wrappedA.length * 11;
+  doc.text(wrappedB, 36, y);
+  y += wrappedB.length * 11 + 6;
   doc.setTextColor(0);
-  y += 16;
 
   // Main table
   autoTable(doc, {

@@ -838,7 +838,7 @@ const HistoricoPage = () => {
         </TabsContent>
 
         <TabsContent value="itens" className="space-y-3">
-          <div className="relative max-w-sm">
+          <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar produto (ex: Detergente)..."
@@ -858,58 +858,157 @@ const HistoricoPage = () => {
             </div>
           ) : (
             (() => {
-              const grouped: Record<string, { nome: string; embalagem: string; entries: typeof itemSearchResults }> = {};
+              // Group by product name
+              const grouped: Record<string, { nome: string; embalagem: string; entries: any[] }> = {};
               itemSearchResults.forEach((item: any) => {
                 const key = item.produtos?.nome || "?";
                 if (!grouped[key]) grouped[key] = { nome: key, embalagem: item.produtos?.embalagem || "un", entries: [] };
                 grouped[key].entries.push(item);
               });
 
-              return Object.values(grouped).map((group) => (
-                <div key={group.nome} className="bg-card border rounded-xl shadow-sm overflow-hidden mb-3">
-                  <div className="px-4 py-3 bg-muted/30 border-b">
-                    <span className="font-bold text-sm text-foreground">{group.nome}</span>
-                    <span className="text-xs text-muted-foreground ml-2">({group.embalagem})</span>
-                  </div>
-                  <div className="divide-y">
-                    {group.entries
-                      .sort((a: any, b: any) => {
-                        const da = a.cotacoes?.created_at || "";
-                        const db = b.cotacoes?.created_at || "";
-                        return db.localeCompare(da);
-                      })
-                      .map((item: any) => {
-                        const minPreco = item.precos.length ? Math.min(...item.precos.map((p: any) => p.preco)) : null;
-                        return (
-                          <div key={item.id} className="px-4 py-2.5 flex items-start gap-4">
-                            <div className="min-w-[140px]">
-                              <div className="text-xs font-medium text-muted-foreground">
-                                {item.cotacoes?.created_at ? formatDateTime(item.cotacoes.created_at) : "—"}
-                              </div>
-                              <div className="text-[10px] text-muted-foreground/70">{item.cotacoes?.nome}</div>
-                            </div>
-                            <div className="flex flex-wrap gap-1 flex-1">
-                              {item.precos.length === 0 ? (
-                                <span className="text-muted-foreground text-xs">—</span>
-                              ) : (
-                                item.precos.sort((a: any, b: any) => a.preco - b.preco).map((p: any) => (
-                                  <span
-                                    key={p.id}
-                                    className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
-                                      p.preco === minPreco ? "bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" : "bg-muted text-muted-foreground"
-                                    }`}
-                                  >
-                                    {p.fornecedores?.nome}: R${formatNumber(p.preco)}
+              // Build extract rows: one row per (cotacao item × supplier price)
+              type ExtractRow = {
+                id: string;
+                date: string;
+                cotacaoNome: string;
+                fornecedor: string;
+                embalagem: string;
+                fator: number;
+                qtd: number;
+                preco: number;
+                total: number;
+                isMin: boolean;
+              };
+
+              return Object.values(grouped).map((group) => {
+                const rows: ExtractRow[] = [];
+                for (const cp of group.entries) {
+                  const qtd = Number(cp.quantidade || 1);
+                  const fator = Number(cp.fator_embalagem || 1);
+                  const embalagem = cp.tipo_embalagem || group.embalagem;
+                  const validPrecos = (cp.precos || []).filter((p: any) => Number(p.preco) > 0);
+                  const minPreco = validPrecos.length
+                    ? Math.min(...validPrecos.map((p: any) => Number(p.preco)))
+                    : null;
+                  for (const p of validPrecos) {
+                    const preco = Number(p.preco);
+                    rows.push({
+                      id: p.id,
+                      date: cp.cotacoes?.created_at || "",
+                      cotacaoNome: cp.cotacoes?.nome || "—",
+                      fornecedor: p.fornecedores?.nome || "—",
+                      embalagem,
+                      fator,
+                      qtd,
+                      preco,
+                      total: preco * qtd * fator,
+                      isMin: preco === minPreco,
+                    });
+                  }
+                }
+                rows.sort((a, b) => b.date.localeCompare(a.date));
+
+                return (
+                  <div key={group.nome} className="bg-card border rounded-xl shadow-sm overflow-hidden mb-3">
+                    <div className="px-4 py-3 bg-muted/30 border-b flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-bold text-sm text-foreground truncate">{group.nome}</div>
+                        <div className="text-[11px] text-muted-foreground">{group.embalagem} · {rows.length} registro(s)</div>
+                      </div>
+                    </div>
+
+                    {rows.length === 0 ? (
+                      <div className="p-4 text-center text-xs text-muted-foreground">Sem preços registrados.</div>
+                    ) : (
+                      <>
+                        {/* Desktop / wide: table */}
+                        <div className="hidden md:block">
+                          <table className="w-full text-sm">
+                            <thead className="bg-muted/40 text-xs text-muted-foreground">
+                              <tr>
+                                <th className="px-3 py-2 text-left font-semibold">Data</th>
+                                <th className="px-3 py-2 text-left font-semibold">Fornecedor</th>
+                                <th className="px-3 py-2 text-left font-semibold">Embalagem</th>
+                                <th className="px-3 py-2 text-center font-semibold">Qtd</th>
+                                <th className="px-3 py-2 text-right font-semibold">Preço un.</th>
+                                <th className="px-3 py-2 text-right font-semibold">Total</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {rows.map((r) => (
+                                <tr
+                                  key={r.id}
+                                  className={`border-t hover:bg-muted/20 ${r.isMin ? "bg-green-500/5" : ""}`}
+                                >
+                                  <td className="px-3 py-2">
+                                    <div className="text-xs font-medium text-foreground">{formatDateTime(r.date)}</div>
+                                    <div className="text-[10px] text-muted-foreground truncate max-w-[200px]">{r.cotacaoNome}</div>
+                                  </td>
+                                  <td className="px-3 py-2 text-foreground">
+                                    <span className="inline-flex items-center gap-1">
+                                      {r.isMin && <Trophy className="h-3 w-3 text-green-600 shrink-0" />}
+                                      <span className={r.isMin ? "font-semibold" : ""}>{r.fornecedor}</span>
+                                    </span>
+                                  </td>
+                                  <td className="px-3 py-2 text-muted-foreground text-xs">
+                                    {r.embalagem} {r.fator > 1 && <span className="text-[10px]">×{r.fator}</span>}
+                                  </td>
+                                  <td className="px-3 py-2 text-center">{r.qtd}</td>
+                                  <td className={`px-3 py-2 text-right font-mono ${r.isMin ? "text-green-700 dark:text-green-400 font-bold" : ""}`}>
+                                    {formatBRL(r.preco)}
+                                  </td>
+                                  <td className={`px-3 py-2 text-right font-mono font-semibold ${r.isMin ? "text-green-700 dark:text-green-400" : ""}`}>
+                                    {formatBRL(r.total)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Mobile: stacked rows */}
+                        <div className="md:hidden divide-y">
+                          {rows.map((r) => (
+                            <div
+                              key={r.id}
+                              className={`px-3 py-2.5 ${r.isMin ? "bg-green-500/5" : ""}`}
+                            >
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <div className="text-[11px] font-medium text-muted-foreground">
+                                  {formatDateTime(r.date)}
+                                </div>
+                                {r.isMin && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 dark:text-green-400 bg-green-500/15 px-1.5 py-0.5 rounded">
+                                    <Trophy className="h-2.5 w-2.5" /> Menor
                                   </span>
-                                ))
-                              )}
+                                )}
+                              </div>
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <div className={`text-sm truncate ${r.isMin ? "font-semibold text-foreground" : "text-foreground"}`}>
+                                    {r.fornecedor}
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground truncate">
+                                    {r.embalagem}{r.fator > 1 ? ` ×${r.fator}` : ""} · Qtd {r.qtd} · {r.cotacaoNome}
+                                  </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <div className={`font-mono text-sm ${r.isMin ? "text-green-700 dark:text-green-400 font-bold" : "text-foreground"}`}>
+                                    {formatBRL(r.preco)}
+                                  </div>
+                                  <div className={`font-mono text-[11px] ${r.isMin ? "text-green-700 dark:text-green-400 font-semibold" : "text-muted-foreground"}`}>
+                                    Σ {formatBRL(r.total)}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
-                </div>
-              ));
+                );
+              });
             })()
           )}
         </TabsContent>
