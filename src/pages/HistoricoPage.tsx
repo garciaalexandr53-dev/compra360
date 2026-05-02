@@ -1182,6 +1182,276 @@ const HistoricoPage = () => {
           )}
         </TabsContent>
 
+        <TabsContent value="insights" className="space-y-4">
+          {filteredCotacoes.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground text-sm">
+              Sem cotações para analisar. Ajuste os filtros na aba "Por Cotação".
+            </div>
+          ) : batchLoading || !batchDetails ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-20 rounded-xl" />
+                ))}
+              </div>
+              <Skeleton className="h-40 rounded-xl" />
+              <Skeleton className="h-40 rounded-xl" />
+            </div>
+          ) : (
+            <>
+              {/* Period summary chip */}
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+                <span>Análise de:</span>
+                <Badge variant="secondary" className="font-normal">{periodLabel(periodFilter)}</Badge>
+                <Badge variant="secondary" className="font-normal">
+                  {lojaFilter === "active" ? lojaAtiva?.nome ?? "Loja ativa" : "Todas as lojas"}
+                </Badge>
+                <Badge variant="secondary" className="font-normal">{kpis.cotacoes} cotação(ões)</Badge>
+              </div>
+
+              {/* KPI cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
+                <div className="bg-card border rounded-xl p-3 shadow-sm">
+                  <div className="flex items-center gap-1 text-[10px] uppercase text-muted-foreground tracking-wide">
+                    <DollarSign className="h-3 w-3" /> Total no período
+                  </div>
+                  <div className="text-base md:text-lg font-bold text-primary mt-1 break-words">
+                    {formatBRL(kpis.totalGeral)}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">
+                    Ticket médio: {formatBRL(kpis.ticketMedio)}
+                  </div>
+                </div>
+                <div className="bg-card border rounded-xl p-3 shadow-sm">
+                  <div className="flex items-center gap-1 text-[10px] uppercase text-muted-foreground tracking-wide">
+                    <Sparkles className="h-3 w-3" /> Economia estimada
+                  </div>
+                  <div className="text-base md:text-lg font-bold text-green-600 dark:text-green-400 mt-1 break-words">
+                    {formatBRL(kpis.economiaEstimada)}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">vs. piores preços recebidos</div>
+                </div>
+                <div className="bg-card border rounded-xl p-3 shadow-sm">
+                  <div className="flex items-center gap-1 text-[10px] uppercase text-muted-foreground tracking-wide">
+                    <Package className="h-3 w-3" /> Produtos únicos
+                  </div>
+                  <div className="text-base md:text-lg font-bold text-foreground mt-1">
+                    {kpis.produtosUnicos}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">cotados no período</div>
+                </div>
+                <div className="bg-card border rounded-xl p-3 shadow-sm">
+                  <div className="flex items-center gap-1 text-[10px] uppercase text-muted-foreground tracking-wide">
+                    <Users className="h-3 w-3" /> Fornecedores
+                  </div>
+                  <div className="text-base md:text-lg font-bold text-foreground mt-1">
+                    {kpis.fornecedoresUnicos}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">venceram pelo menos 1 item</div>
+                </div>
+              </div>
+
+              {/* Ranking de fornecedores */}
+              <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
+                <div className="px-4 py-2.5 border-b bg-muted/30 flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-primary" />
+                  <h2 className="text-sm font-bold">Ranking de fornecedores</h2>
+                  <span className="text-[11px] text-muted-foreground ml-auto">
+                    Por valor total ganho
+                  </span>
+                </div>
+                {fornecedorRanking.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-muted-foreground">
+                    Sem dados de vencedores no período.
+                  </div>
+                ) : (
+                  <>
+                    {/* Desktop */}
+                    <div className="hidden md:block">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/40 text-xs text-muted-foreground">
+                          <tr>
+                            <th className="px-3 py-2 text-left font-semibold w-12">#</th>
+                            <th className="px-3 py-2 text-left font-semibold">Fornecedor</th>
+                            <th className="px-3 py-2 text-center font-semibold">Vitórias</th>
+                            <th className="px-3 py-2 text-center font-semibold">Cotações</th>
+                            <th className="px-3 py-2 text-right font-semibold">Taxa</th>
+                            <th className="px-3 py-2 text-right font-semibold">Total ganho</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {fornecedorRanking.slice(0, 20).map((f, idx) => (
+                            <tr key={f.nome} className="border-t hover:bg-muted/20">
+                              <td className="px-3 py-2 text-muted-foreground font-mono text-xs">
+                                {idx + 1}
+                              </td>
+                              <td className="px-3 py-2 font-medium">
+                                <span className="inline-flex items-center gap-1.5">
+                                  {idx === 0 && <Trophy className="h-3.5 w-3.5 text-yellow-500" />}
+                                  {f.nome}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-center">{f.vitorias}</td>
+                              <td className="px-3 py-2 text-center text-muted-foreground">{f.totalCotacoes}</td>
+                              <td className="px-3 py-2 text-right text-muted-foreground">
+                                {f.taxa.toFixed(0)}%
+                              </td>
+                              <td className="px-3 py-2 text-right font-mono font-semibold text-primary">
+                                {formatBRL(f.totalGanho)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {/* Mobile */}
+                    <div className="md:hidden divide-y">
+                      {fornecedorRanking.slice(0, 20).map((f, idx) => (
+                        <div key={f.nome} className="px-3 py-2.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] text-muted-foreground font-mono w-5">
+                                  {idx + 1}
+                                </span>
+                                {idx === 0 && <Trophy className="h-3.5 w-3.5 text-yellow-500 shrink-0" />}
+                                <span className="text-sm font-semibold truncate">{f.nome}</span>
+                              </div>
+                              <div className="text-[10px] text-muted-foreground ml-6">
+                                {f.vitorias} vitória(s) · {f.totalCotacoes} cotação(ões) · {f.taxa.toFixed(0)}%
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="font-mono font-bold text-sm text-primary">
+                                {formatBRL(f.totalGanho)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Variação de preço por produto */}
+              <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
+                <div className="px-4 py-2.5 border-b bg-muted/30 flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  <h2 className="text-sm font-bold">Variação de preço por produto</h2>
+                  <span className="text-[11px] text-muted-foreground ml-auto">
+                    Maior variação primeiro
+                  </span>
+                </div>
+                {produtoVariacao.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-muted-foreground">
+                    Sem dados suficientes.
+                  </div>
+                ) : (
+                  <>
+                    {/* Desktop */}
+                    <div className="hidden md:block">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/40 text-xs text-muted-foreground">
+                          <tr>
+                            <th className="px-3 py-2 text-left font-semibold">Produto</th>
+                            <th className="px-3 py-2 text-center font-semibold">Amostras</th>
+                            <th className="px-3 py-2 text-right font-semibold">Mín</th>
+                            <th className="px-3 py-2 text-right font-semibold">Médio</th>
+                            <th className="px-3 py-2 text-right font-semibold">Máx</th>
+                            <th className="px-3 py-2 text-right font-semibold">Variação</th>
+                            <th className="px-3 py-2 text-right font-semibold">Último</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {produtoVariacao.slice(0, 30).map((p) => {
+                            const high = (p.variacaoPct ?? 0) >= 30;
+                            return (
+                              <tr key={p.produto} className="border-t hover:bg-muted/20">
+                                <td className="px-3 py-2">
+                                  <div className="font-medium">{p.produto}</div>
+                                  <div className="text-[10px] text-muted-foreground">{p.embalagem}</div>
+                                </td>
+                                <td className="px-3 py-2 text-center text-muted-foreground">{p.amostras}</td>
+                                <td className="px-3 py-2 text-right font-mono text-green-700 dark:text-green-400">
+                                  {formatBRL(p.precoMin)}
+                                </td>
+                                <td className="px-3 py-2 text-right font-mono text-muted-foreground">
+                                  {formatBRL(p.precoMedio)}
+                                </td>
+                                <td className="px-3 py-2 text-right font-mono text-red-600 dark:text-red-400">
+                                  {formatBRL(p.precoMax)}
+                                </td>
+                                <td className={`px-3 py-2 text-right font-mono font-semibold ${
+                                  high ? "text-red-600 dark:text-red-400" : "text-foreground"
+                                }`}>
+                                  {p.variacaoPct != null ? `${p.variacaoPct.toFixed(1)}%` : "—"}
+                                </td>
+                                <td className="px-3 py-2 text-right">
+                                  <div className="font-mono text-xs">{formatBRL(p.ultimoPreco)}</div>
+                                  <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">
+                                    {p.ultimoFornecedor}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    {/* Mobile */}
+                    <div className="md:hidden divide-y">
+                      {produtoVariacao.slice(0, 30).map((p) => {
+                        const high = (p.variacaoPct ?? 0) >= 30;
+                        return (
+                          <div key={p.produto} className="px-3 py-2.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <div className="font-semibold text-sm truncate">{p.produto}</div>
+                                <div className="text-[10px] text-muted-foreground">
+                                  {p.embalagem} · {p.amostras} amostra(s)
+                                </div>
+                              </div>
+                              <div className={`text-xs font-mono font-bold shrink-0 ${
+                                high ? "text-red-600 dark:text-red-400" : "text-foreground"
+                              }`}>
+                                {p.variacaoPct != null ? `${p.variacaoPct.toFixed(0)}%` : "—"}
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1 mt-2 text-[10px]">
+                              <div className="bg-green-500/10 rounded px-1.5 py-1">
+                                <div className="text-green-700 dark:text-green-400 font-mono font-semibold">
+                                  {formatBRL(p.precoMin)}
+                                </div>
+                                <div className="text-muted-foreground">Mín</div>
+                              </div>
+                              <div className="bg-muted/30 rounded px-1.5 py-1">
+                                <div className="text-foreground font-mono font-semibold">
+                                  {formatBRL(p.precoMedio)}
+                                </div>
+                                <div className="text-muted-foreground">Médio</div>
+                              </div>
+                              <div className="bg-red-500/10 rounded px-1.5 py-1">
+                                <div className="text-red-600 dark:text-red-400 font-mono font-semibold">
+                                  {formatBRL(p.precoMax)}
+                                </div>
+                                <div className="text-muted-foreground">Máx</div>
+                              </div>
+                            </div>
+                            <div className="text-[10px] text-muted-foreground mt-1.5 truncate">
+                              Último: {formatBRL(p.ultimoPreco)} · {p.ultimoFornecedor}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </TabsContent>
+
         <TabsContent value="itens" className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <div className="relative flex-1 max-w-md">
