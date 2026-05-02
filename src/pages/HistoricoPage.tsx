@@ -27,16 +27,23 @@ import type { Tables } from "@/integrations/supabase/types";
 
 type PeriodFilter = "7d" | "30d" | "90d" | "all";
 type StatusFilter = "all" | "finalizada" | "cancelada";
+type LojaFilter = "active" | "all";
 
 const PAGE_SIZE = 10;
+const DEFAULT_PERIOD: PeriodFilter = "30d";
+const DEFAULT_STATUS: StatusFilter = "all";
+const DEFAULT_LOJA: LojaFilter = "active";
 
 const HistoricoPage = () => {
   const queryClient = useQueryClient();
+  const { lojaAtiva } = useLojaAtiva();
   const [searchItem, setSearchItem] = useState("");
   const [searchCotacao, setSearchCotacao] = useState("");
   const [expandedCotacao, setExpandedCotacao] = useState<string | null>(null);
-  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("30d");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>(DEFAULT_PERIOD);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(DEFAULT_STATUS);
+  const [lojaFilter, setLojaFilter] = useState<LojaFilter>(DEFAULT_LOJA);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   // Cotações + loja + summary inline (number of products, suppliers responded, total order value)
