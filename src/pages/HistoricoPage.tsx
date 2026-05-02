@@ -629,8 +629,57 @@ const HistoricoPage = () => {
                               </CollapsibleContent>
                             </Collapsible>
 
-                            <div className="text-[10px] text-muted-foreground text-center pt-1">
-                              Exportações (Excel, PDF, Imprimir) chegam na próxima etapa.
+                            {/* Toolbar de exportação */}
+                            <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 gap-1.5 text-xs"
+                                onClick={() => {
+                                  const meta = {
+                                    nome: c.nome, created_at: c.created_at, status: c.status,
+                                    loja_nome: c.loja_nome, total_pedido: c.total_pedido,
+                                    produtos_count: c.produtos_count, fornecedores_count: c.fornecedores_count,
+                                  };
+                                  exportCotacaoToExcel(meta, tableRows, pedidosByFornecedor);
+                                }}
+                              >
+                                <FileSpreadsheet className="h-3.5 w-3.5" /> Excel
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 gap-1.5 text-xs"
+                                onClick={async () => {
+                                  const meta = {
+                                    nome: c.nome, created_at: c.created_at, status: c.status,
+                                    loja_nome: c.loja_nome, total_pedido: c.total_pedido,
+                                    produtos_count: c.produtos_count, fornecedores_count: c.fornecedores_count,
+                                  };
+                                  try {
+                                    await exportCotacaoToPdf(meta, tableRows, pedidosByFornecedor);
+                                  } catch (e: any) {
+                                    toast.error("Erro ao gerar PDF: " + e.message);
+                                  }
+                                }}
+                              >
+                                <FileText className="h-3.5 w-3.5" /> PDF
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 gap-1.5 text-xs"
+                                onClick={() => {
+                                  const meta = {
+                                    nome: c.nome, created_at: c.created_at, status: c.status,
+                                    loja_nome: c.loja_nome, total_pedido: c.total_pedido,
+                                    produtos_count: c.produtos_count, fornecedores_count: c.fornecedores_count,
+                                  };
+                                  printCotacao(meta, tableRows, pedidosByFornecedor);
+                                }}
+                              >
+                                <Printer className="h-3.5 w-3.5" /> Imprimir
+                              </Button>
                             </div>
                           </div>
                         )}
