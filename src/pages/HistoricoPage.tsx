@@ -45,6 +45,13 @@ const HistoricoPage = () => {
   const [lojaFilter, setLojaFilter] = useState<LojaFilter>(DEFAULT_LOJA);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  // Pagination per product group on "Buscar Item" tab — reset when search changes
+  const ITEM_PAGE_SIZE = 25;
+  const [itemVisibleByGroup, setItemVisibleByGroup] = useState<Record<string, number>>({});
+  // Reset per-group pagination whenever the search term changes
+  useMemo(() => {
+    setItemVisibleByGroup({});
+  }, [searchItem]);
 
   // Cotações + loja + summary inline (number of products, suppliers responded, total order value)
   const { data: cotacoes = [], isLoading } = useQuery({
