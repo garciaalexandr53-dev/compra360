@@ -1233,9 +1233,24 @@ const HistoricoPage = () => {
         </TabsContent>
 
         <TabsContent value="insights" className="space-y-4">
-          {filteredCotacoes.length === 0 ? (
+          {/* Insights filters bar — always visible */}
+          <InsightsFilters
+            period={insightsPeriod}
+            setPeriod={setInsightsPeriod}
+            customStart={insightsCustomStart}
+            customEnd={insightsCustomEnd}
+            setCustomStart={setInsightsCustomStart}
+            setCustomEnd={setInsightsCustomEnd}
+            lojaId={insightsLojaId}
+            setLojaId={setInsightsLojaId}
+            lojas={lojas}
+            lojaAtivaNome={lojaAtiva?.nome}
+            cotacoesCount={kpis.cotacoes}
+            periodLabel={periodLabel}
+          />
+          {cotacoes.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground text-sm">
-              Sem cotações para analisar. Ajuste os filtros na aba "Por Cotação".
+              Sem cotações no histórico.
             </div>
           ) : batchLoading || !batchDetails ? (
             <div className="space-y-3">
@@ -1247,17 +1262,12 @@ const HistoricoPage = () => {
               <Skeleton className="h-40 rounded-xl" />
               <Skeleton className="h-40 rounded-xl" />
             </div>
+          ) : insightsFilteredCotacoes.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground text-sm">
+              Sem cotações no período/loja selecionados.
+            </div>
           ) : (
             <>
-              {/* Period summary chip */}
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
-                <span>Análise de:</span>
-                <Badge variant="secondary" className="font-normal">{periodLabel(periodFilter)}</Badge>
-                <Badge variant="secondary" className="font-normal">
-                  {lojaFilter === "active" ? lojaAtiva?.nome ?? "Loja ativa" : "Todas as lojas"}
-                </Badge>
-                <Badge variant="secondary" className="font-normal">{kpis.cotacoes} cotação(ões)</Badge>
-              </div>
 
               {/* KPI cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
