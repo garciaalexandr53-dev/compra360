@@ -7,6 +7,7 @@ import { Info } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL, formatDateTime, formatNumber } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -90,6 +91,15 @@ function CustomRangePicker({
     return isValidDate(d) ? d : undefined;
   };
 
+  // Auto-insert "/" while typing: 12 -> 12/, 1203 -> 12/03/, etc.
+  const formatTyping = (raw: string): string => {
+    const digits = raw.replace(/\D/g, "").slice(0, 6);
+    let out = digits;
+    if (digits.length >= 3 && digits.length <= 4) out = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    else if (digits.length >= 5) out = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+    return out;
+  };
+
   const commitStart = () => {
     const d = parseInput(startText);
     if (d) setStart(d);
@@ -102,6 +112,11 @@ function CustomRangePicker({
     else if (endText === "") setEnd(undefined);
     else setEndText(fmt(end));
   };
+
+  // Validation: start must not be after end
+  const parsedStart = parseInput(startText) ?? start;
+  const parsedEnd = parseInput(endText) ?? end;
+  const invalidRange = !!(parsedStart && parsedEnd && parsedStart > parsedEnd);
 
   // Sequential single calendar: 1st tap = start, 2nd tap = end (auto-close).
   const handleSelect = (range: { from?: Date; to?: Date } | undefined) => {
@@ -144,10 +159,12 @@ function CustomRangePicker({
               inputMode="numeric"
               placeholder="DD/MM/AA"
               value={startText}
-              onChange={(e) => setStartText(e.target.value)}
+              onChange={(e) => setStartText(formatTyping(e.target.value))}
               onBlur={commitStart}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitStart(); } }}
-              className="h-9 text-sm"
+              maxLength={8}
+              aria-invalid={invalidRange}
+              className={cn("h-9 text-sm", invalidRange && "border-destructive focus-visible:ring-destructive")}
             />
           </div>
           <div className="space-y-1">
@@ -156,13 +173,20 @@ function CustomRangePicker({
               inputMode="numeric"
               placeholder="DD/MM/AA"
               value={endText}
-              onChange={(e) => setEndText(e.target.value)}
+              onChange={(e) => setEndText(formatTyping(e.target.value))}
               onBlur={commitEnd}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitEnd(); } }}
-              className="h-9 text-sm"
+              maxLength={8}
+              aria-invalid={invalidRange}
+              className={cn("h-9 text-sm", invalidRange && "border-destructive focus-visible:ring-destructive")}
             />
           </div>
         </div>
+        {invalidRange && (
+          <p className="text-[11px] text-destructive text-center font-medium">
+            A data inicial não pode ser maior que a data final.
+          </p>
+        )}
         <div className="flex justify-center">
           <CalendarPicker
             mode="range"
@@ -180,7 +204,7 @@ function CustomRangePicker({
           <Button size="sm" variant="ghost" onClick={() => { setStart(undefined); setEnd(undefined); }}>
             Limpar
           </Button>
-          <Button size="sm" onClick={() => setOpen(false)} disabled={!start || !end}>
+          <Button size="sm" onClick={() => setOpen(false)} disabled={!start || !end || invalidRange}>
             Aplicar
           </Button>
         </div>
