@@ -363,7 +363,18 @@ const HistoricoPage = () => {
   // Loaded only when the user opens the Insights tab or enables Selection mode,
   // and limited to the currently filtered cotações to avoid heavy queries.
   const filteredIds = useMemo(() => filteredCotacoes.map((c) => c.id), [filteredCotacoes]);
-  const filteredIdsKey = filteredIds.join(",");
+  // For batch query: union of cotações needed by Por Cotação (selection) and Insights tab.
+  const batchIds = useMemo(() => {
+    const set = new Set<string>(filteredIds);
+    if (activeTab === "insights") {
+      // We do not yet know insightsFilteredCotacoes IDs at this point in code order,
+      // but they are recomputed below from `cotacoes`; include all of `cotacoes` ids.
+      // To avoid over-fetching, we instead include all cotacoes (already filtered server-side)
+      for (const c of cotacoes) set.add(c.id);
+    }
+    return Array.from(set);
+  }, [filteredIds, activeTab, cotacoes]);
+  const batchIdsKey = batchIds.join(",");
   const needsBatchDetails = activeTab === "insights" || selectionMode;
 
   const { data: batchDetails, isLoading: batchLoading } = useQuery({
