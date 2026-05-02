@@ -1084,7 +1084,7 @@ const HistoricoPage = () => {
                         {remaining > 0 && (
                           <div className="px-3 py-2 border-t bg-muted/20 flex items-center justify-between gap-2">
                             <span className="text-[11px] text-muted-foreground">
-                              Mostrando {visibleRows.length} de {rows.length}
+                              Mostrando {visibleRows.length} de {displayRows.length}
                             </span>
                             <div className="flex items-center gap-1.5">
                               <Button
