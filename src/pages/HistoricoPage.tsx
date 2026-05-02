@@ -187,8 +187,18 @@ function CustomRangePicker({
           </p>
         )}
         <div className="flex justify-center">
-...
-        <div className="flex justify-end gap-2">
+          <CalendarPicker
+            mode="range"
+            selected={{ from: start, to: end }}
+            onSelect={handleSelect as any}
+            numberOfMonths={1}
+            defaultMonth={start ?? end ?? new Date()}
+            className="p-2 pointer-events-auto rounded-md border"
+          />
+        </div>
+        <p className="text-[10px] text-muted-foreground text-center">
+          Toque na data inicial e depois na final, ou digite acima.
+        </p>
           <Button size="sm" variant="ghost" onClick={() => { setStart(undefined); setEnd(undefined); }}>
             Limpar
           </Button>
