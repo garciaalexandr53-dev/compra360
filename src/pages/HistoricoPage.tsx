@@ -477,16 +477,15 @@ const HistoricoPage = () => {
   // ===== Insights tab: derive its OWN filtered set (independent period + loja) =====
   const insightsFilteredCotacoes = useMemo(() => {
     const { start, end } = periodWindow(insightsPeriod, insightsCustomStart, insightsCustomEnd);
-    // null = follow active loja, "all" = all lojas, otherwise specific id
     const targetLoja =
       insightsLojaId === null ? lojaAtiva?.id ?? null : insightsLojaId === "all" ? null : insightsLojaId;
-    return filteredCotacoes.filter((c) => {
+    return cotacoes.filter((c) => {
       const t = new Date(c.created_at).getTime();
       if (t < start || t > end) return false;
       if (targetLoja && c.loja_id !== targetLoja) return false;
       return true;
     });
-  }, [filteredCotacoes, insightsPeriod, insightsCustomStart, insightsCustomEnd, insightsLojaId, lojaAtiva?.id]);
+  }, [cotacoes, insightsPeriod, insightsCustomStart, insightsCustomEnd, insightsLojaId, lojaAtiva?.id]);
 
   const insightsCotIdSet = useMemo(
     () => new Set(insightsFilteredCotacoes.map((c) => c.id)),
