@@ -865,7 +865,7 @@ const HistoricoPage = () => {
           ) : (
             <>
               {visibleCotacoes.map((c) => {
-                const isOpen = expandedCotacao === c.id;
+                const isOpen = !selectionMode && expandedCotacao === c.id;
                 const isSelected = selectedIds.has(c.id);
                 return (
                   <div
