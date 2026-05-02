@@ -44,6 +44,10 @@ type PeriodFilter = "7d" | "30d" | "90d" | "all";
 type StatusFilter = "all" | "finalizada" | "cancelada";
 type LojaFilter = "active" | "all";
 
+type PeriodFilter = "7d" | "30d" | "90d" | "all" | "custom";
+type StatusFilter = "all" | "finalizada" | "cancelada";
+type LojaFilter = "active" | "all";
+
 const PAGE_SIZE = 10;
 const DEFAULT_PERIOD: PeriodFilter = "30d";
 const DEFAULT_STATUS: StatusFilter = "all";
