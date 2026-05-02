@@ -45,6 +45,13 @@ const HistoricoPage = () => {
   const [lojaFilter, setLojaFilter] = useState<LojaFilter>(DEFAULT_LOJA);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  // Pagination per product group on "Buscar Item" tab — reset when search changes
+  const ITEM_PAGE_SIZE = 25;
+  const [itemVisibleByGroup, setItemVisibleByGroup] = useState<Record<string, number>>({});
+  // Reset per-group pagination whenever the search term changes
+  useMemo(() => {
+    setItemVisibleByGroup({});
+  }, [searchItem]);
 
   // Cotações + loja + summary inline (number of products, suppliers responded, total order value)
   const { data: cotacoes = [], isLoading } = useQuery({
@@ -908,6 +915,10 @@ const HistoricoPage = () => {
                 }
                 rows.sort((a, b) => b.date.localeCompare(a.date));
 
+                const visibleN = itemVisibleByGroup[group.nome] ?? ITEM_PAGE_SIZE;
+                const visibleRows = rows.slice(0, visibleN);
+                const remaining = rows.length - visibleRows.length;
+
                 return (
                   <div key={group.nome} className="bg-card border rounded-xl shadow-sm overflow-hidden mb-3">
                     <div className="px-4 py-3 bg-muted/30 border-b flex items-center justify-between gap-2">
@@ -935,7 +946,7 @@ const HistoricoPage = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {rows.map((r) => (
+                              {visibleRows.map((r) => (
                                 <tr
                                   key={r.id}
                                   className={`border-t hover:bg-muted/20 ${r.isMin ? "bg-green-500/5" : ""}`}
@@ -968,7 +979,7 @@ const HistoricoPage = () => {
 
                         {/* Mobile: stacked rows */}
                         <div className="md:hidden divide-y">
-                          {rows.map((r) => (
+                          {visibleRows.map((r) => (
                             <div
                               key={r.id}
                               className={`px-3 py-2.5 ${r.isMin ? "bg-green-500/5" : ""}`}
@@ -1004,6 +1015,41 @@ const HistoricoPage = () => {
                             </div>
                           ))}
                         </div>
+
+                        {remaining > 0 && (
+                          <div className="px-3 py-2 border-t bg-muted/20 flex items-center justify-between gap-2">
+                            <span className="text-[11px] text-muted-foreground">
+                              Mostrando {visibleRows.length} de {rows.length}
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs"
+                                onClick={() =>
+                                  setItemVisibleByGroup((prev) => ({
+                                    ...prev,
+                                    [group.nome]: (prev[group.nome] ?? ITEM_PAGE_SIZE) + ITEM_PAGE_SIZE,
+                                  }))
+                                }
+                              >
+                                Carregar mais ({Math.min(ITEM_PAGE_SIZE, remaining)})
+                              </Button>
+                              {remaining > ITEM_PAGE_SIZE && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() =>
+                                    setItemVisibleByGroup((prev) => ({ ...prev, [group.nome]: rows.length }))
+                                  }
+                                >
+                                  Ver todos
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
