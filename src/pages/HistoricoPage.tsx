@@ -158,7 +158,7 @@ const HistoricoPage = () => {
         .from("precos")
         .select("*, fornecedores(nome)")
         .in("cotacao_produto_id", cpIds)
-        .not("preco", "is", null);
+        .gt("preco", 0);
 
       return cps.map((cp: any) => ({
         ...cp,
