@@ -257,36 +257,54 @@ const HistoricoPage = () => {
     onError: (e: any) => toast.error("Erro: " + e.message),
   });
 
-  // Filters
-  const filteredCotacoes = useMemo(() => {
+  // Helper: compute [start, end] timestamp window for a period filter
+  const periodWindow = (
+    p: PeriodFilter,
+    cs?: Date,
+    ce?: Date
+  ): { start: number; end: number } => {
     const now = Date.now();
-    const periodMs: Record<PeriodFilter, number> = {
-      "7d": 7 * 86400000,
-      "30d": 30 * 86400000,
-      "90d": 90 * 86400000,
-      all: Infinity,
-    };
-    const cutoff = now - periodMs[periodFilter];
+    if (p === "all") return { start: -Infinity, end: Infinity };
+    if (p === "custom") {
+      const start = cs ? new Date(cs).setHours(0, 0, 0, 0) : -Infinity;
+      const end = ce ? new Date(ce).setHours(23, 59, 59, 999) : Infinity;
+      return { start, end };
+    }
+    const days = p === "7d" ? 7 : p === "30d" ? 30 : 90;
+    return { start: now - days * 86400000, end: Infinity };
+  };
+
+  // Filters (Por Cotação)
+  const filteredCotacoes = useMemo(() => {
+    const { start, end } = periodWindow(periodFilter, customStart, customEnd);
     const activeLojaId = lojaFilter === "active" ? lojaAtiva?.id ?? null : null;
 
     return cotacoes.filter((c) => {
       if (searchCotacao && !c.nome.toLowerCase().includes(searchCotacao.toLowerCase())) return false;
       if (statusFilter !== "all" && c.status !== statusFilter) return false;
-      if (periodFilter !== "all" && new Date(c.created_at).getTime() < cutoff) return false;
+      const t = new Date(c.created_at).getTime();
+      if (t < start || t > end) return false;
       if (lojaFilter === "active" && activeLojaId && c.loja_id !== activeLojaId) return false;
       return true;
     });
-  }, [cotacoes, searchCotacao, statusFilter, periodFilter, lojaFilter, lojaAtiva?.id]);
+  }, [cotacoes, searchCotacao, statusFilter, periodFilter, customStart, customEnd, lojaFilter, lojaAtiva?.id]);
 
   const activeFiltersCount =
     (periodFilter !== DEFAULT_PERIOD ? 1 : 0) +
     (statusFilter !== DEFAULT_STATUS ? 1 : 0) +
     (lojaFilter !== DEFAULT_LOJA ? 1 : 0);
 
-  const periodLabel = (p: PeriodFilter) =>
-    p === "all" ? "Tudo" : p === "7d" ? "7 dias" : p === "30d" ? "30 dias" : "90 dias";
+  const periodLabel = (p: PeriodFilter, cs?: Date, ce?: Date) => {
+    if (p === "all") return "Tudo";
+    if (p === "custom") {
+      const fmt = (d?: Date) => (d ? formatDate(d, "dd/MM/yy") : "—");
+      return `${fmt(cs)} a ${fmt(ce)}`;
+    }
+    return p === "7d" ? "7 dias" : p === "30d" ? "30 dias" : "90 dias";
+  };
   const statusLabel = (s: StatusFilter) =>
     s === "all" ? "Todos" : s === "finalizada" ? "Finalizada" : "Cancelada";
+
 
   const visibleCotacoes = filteredCotacoes.slice(0, visibleCount);
 
