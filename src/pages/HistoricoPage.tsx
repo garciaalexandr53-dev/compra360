@@ -866,14 +866,25 @@ const HistoricoPage = () => {
             <>
               {visibleCotacoes.map((c) => {
                 const isOpen = expandedCotacao === c.id;
+                const isSelected = selectedIds.has(c.id);
                 return (
-                  <div key={c.id} className="bg-card border rounded-xl shadow-sm overflow-hidden">
+                  <div
+                    key={c.id}
+                    className={`bg-card border rounded-xl shadow-sm overflow-hidden transition-colors ${
+                      selectionMode && isSelected ? "border-primary ring-2 ring-primary/30" : ""
+                    }`}
+                  >
                     {/* Card compacto */}
                     <div
                       className="px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors"
-                      onClick={() => toggleExpand(c.id)}
+                      onClick={() => (selectionMode ? toggleSelected(c.id) : toggleExpand(c.id))}
                     >
                       <div className="flex items-start justify-between gap-3">
+                        {selectionMode && (
+                          <div className="pt-0.5">
+                            <Checkbox checked={isSelected} aria-label="Selecionar cotação" />
+                          </div>
+                        )}
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm md:text-base font-bold text-foreground truncate">{c.nome}</span>
