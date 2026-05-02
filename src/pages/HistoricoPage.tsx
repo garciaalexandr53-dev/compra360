@@ -573,6 +573,15 @@ const HistoricoPage = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onSelect={() => {
+                  setActiveTab("cotacoes");
+                  setSelectionMode(true);
+                  setExpandedCotacao(null);
+                }}
+              >
+                <CheckSquare className="h-4 w-4 mr-2" /> Selecionar para consolidar
+              </DropdownMenuItem>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
