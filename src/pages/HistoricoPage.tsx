@@ -19,10 +19,20 @@ import {
 import {
   Search, ChevronDown, ChevronUp, Trash2, MoreHorizontal,
   Package, Users, DollarSign, Trophy, Store, Calendar, Filter,
-  FileSpreadsheet, FileText, Printer,
+  FileSpreadsheet, FileText, Printer, BarChart3, TrendingUp,
+  CheckSquare, X, Sparkles,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { exportCotacaoToExcel, exportCotacaoToPdf, printCotacao } from "@/lib/historicoExports";
+import {
+  exportCotacaoToExcel, exportCotacaoToPdf, printCotacao,
+  exportConsolidadoToExcel, exportConsolidadoToPdf,
+  type ConsolidatedCotacao, type ConsolidatedSummary,
+} from "@/lib/historicoExports";
+import {
+  computeKPIs, buildFornecedorRanking, buildProdutoVariacao, computeEconomia,
+  type InsightRow,
+} from "@/lib/historicoInsights";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PeriodFilter = "7d" | "30d" | "90d" | "all";
