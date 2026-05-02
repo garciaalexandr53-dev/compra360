@@ -979,7 +979,7 @@ const HistoricoPage = () => {
 
                         {/* Mobile: stacked rows */}
                         <div className="md:hidden divide-y">
-                          {rows.map((r) => (
+                          {visibleRows.map((r) => (
                             <div
                               key={r.id}
                               className={`px-3 py-2.5 ${r.isMin ? "bg-green-500/5" : ""}`}
