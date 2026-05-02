@@ -989,10 +989,13 @@ const HistoricoPage = () => {
                     </button>
 
                     {isExpanded && (
-
-                    {rows.length === 0 ? (
-                      <div className="p-4 text-center text-xs text-muted-foreground">Sem preços registrados.</div>
-                    ) : (
+                      displayRows.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-muted-foreground">
+                          {itemViewMode === "best"
+                            ? "Sem cotação com vencedor."
+                            : "Sem preços registrados."}
+                        </div>
+                      ) : (
                       <>
                         {/* Desktop / wide: table */}
                         <div className="hidden md:block">
