@@ -51,7 +51,7 @@ const DEFAULT_LOJA: LojaFilter = "active";
 
 const HistoricoPage = () => {
   const queryClient = useQueryClient();
-  const { lojaAtiva } = useLojaAtiva();
+  const { lojaAtiva, lojas } = useLojaAtiva();
   const [activeTab, setActiveTab] = useState<"cotacoes" | "insights" | "itens">("cotacoes");
   const [searchItem, setSearchItem] = useState("");
   const [searchCotacao, setSearchCotacao] = useState("");
