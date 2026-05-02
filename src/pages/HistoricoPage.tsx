@@ -1490,10 +1490,23 @@ const HistoricoPage = () => {
               </div>
 
               {/* Ranking de fornecedores */}
+              <TooltipProvider delayDuration={150}>
               <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
                 <div className="px-4 py-2.5 border-b bg-muted/30 flex items-center gap-2">
                   <Trophy className="h-4 w-4 text-primary" />
                   <h2 className="text-sm font-bold">Ranking de fornecedores</h2>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button aria-label="Como funciona o ranking" className="text-muted-foreground hover:text-foreground">
+                        <Info className="h-3.5 w-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-[260px] text-xs">
+                      <strong>Taxa de vitória</strong> = vitórias do fornecedor ÷ cotações em que participou × 100.
+                      Ex: ganhou 8 itens em 2 cotações onde participou ⇒ 8/2 = 400% (média de itens por cotação).
+                      Use junto com "Vitórias" e "Total ganho" para julgar competitividade.
+                    </TooltipContent>
+                  </Tooltip>
                   <span className="text-[11px] text-muted-foreground ml-auto">
                     Por valor total ganho
                   </span>
