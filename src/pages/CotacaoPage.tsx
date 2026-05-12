@@ -22,7 +22,7 @@ import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugesta
 import TabelaCotacao from "@/components/cotacao/TabelaCotacao";
 import ReviewHeader from "@/components/cotacao/ReviewHeader";
 import ReviewFooter from "@/components/cotacao/ReviewFooter";
-import PrazoCotacaoBadge from "@/components/cotacao/PrazoCotacaoBadge";
+
 import StatusFornecedorBadge, { type FornecedorVisualStatus } from "@/components/cotacao/StatusFornecedorBadge";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
