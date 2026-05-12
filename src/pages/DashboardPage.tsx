@@ -28,6 +28,7 @@ import ModalNovaCotacao from "@/components/cotacao/ModalNovaCotacao";
 import TrialBanner from "@/components/dashboard/TrialBanner";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
+import PrazoCountdownBadge from "@/components/dashboard/PrazoCountdownBadge";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -732,6 +733,9 @@ const DashboardPage = () => {
               <div>
                 <Badge variant="secondary" className="mb-1 text-xs px-2 py-0.5 bg-primary/10 text-primary border-primary/20">{statusMsg}</Badge>
                 <h1 className="text-2xl font-bold text-foreground">{respostaCount} de {selectedSupplierCount} fornecedores responderam</h1>
+                <div className="mt-2">
+                  <PrazoCountdownBadge prazoIso={(cotacaoAtiva as any)?.prazo_resposta ?? null} />
+                </div>
               </div>
 
               {/* Progress bar — thin & elegant */}
@@ -960,6 +964,13 @@ const DashboardPage = () => {
           setSelectedSuppliers(next);
         }}
         onSave={saveSupplierSelection}
+        prazoIso={(cotacaoAtiva as any)?.prazo_resposta ?? null}
+        onPrazoChange={async (iso) => {
+          if (!cotacaoAtiva?.id) return;
+          const { error } = await supabase.from("cotacoes").update({ prazo_resposta: iso } as any).eq("id", cotacaoAtiva.id);
+          if (error) { toast.error("Erro ao salvar prazo: " + error.message); return; }
+          queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
+        }}
       />
       <ModalFornecedorSugestao open={fornSuggestOpen} onOpenChange={setFornSuggestOpen} text={fornSuggestText} loading={fornSuggestLoading} hasHistory={fornSuggestHasHistory} recommendedIds={fornSuggestRecommendedIds} onApply={applyFornSuggestions} />
       <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} loading={novaCotacaoLoading} lojaId={lojaAtiva?.id} />
