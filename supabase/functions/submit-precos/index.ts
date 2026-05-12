@@ -86,37 +86,42 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Upsert prices only for valid cotacao_produtos
-    let upsertedCount = 0;
-    for (const p of prices) {
-      if (!validCpIds.has(p.cotacao_produto_id)) continue;
+    // Build upsert payload only for valid cotacao_produtos
+    const rows = prices
+      .filter((p: any) => validCpIds.has(p.cotacao_produto_id))
+      .map((p: any) => ({
+        cotacao_produto_id: p.cotacao_produto_id,
+        fornecedor_id: supplierId,
+        preco: p.preco,
+      }));
 
-      const { data: existing } = await supabase
-        .from("precos")
-        .select("id")
-        .eq("cotacao_produto_id", p.cotacao_produto_id)
-        .eq("fornecedor_id", supplierId)
-        .maybeSingle();
+    if (rows.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Nenhum item válido para registrar." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-      if (existing) {
-        await supabase.from("precos").update({ preco: p.preco }).eq("id", existing.id);
-      } else {
-        await supabase.from("precos").insert({
-          cotacao_produto_id: p.cotacao_produto_id,
-          fornecedor_id: supplierId,
-          preco: p.preco,
-        });
-      }
-      upsertedCount++;
+    // Single upsert (much faster than per-row select+update/insert).
+    const { error: upsertErr } = await supabase
+      .from("precos")
+      .upsert(rows, { onConflict: "cotacao_produto_id,fornecedor_id" });
+
+    if (upsertErr) {
+      console.error("submit-precos upsert error:", upsertErr);
+      return new Response(
+        JSON.stringify({ error: "Erro ao salvar preços: " + upsertErr.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     return new Response(
-      JSON.stringify({ success: true, count: upsertedCount }),
+      JSON.stringify({ success: true, count: rows.length }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
     console.error("submit-precos error:", e);
-    return new Response(JSON.stringify({ error: "Erro interno" }), {
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro interno" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
