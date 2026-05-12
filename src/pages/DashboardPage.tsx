@@ -29,6 +29,7 @@ import TrialBanner from "@/components/dashboard/TrialBanner";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
 import PrazoCountdownBadge from "@/components/dashboard/PrazoCountdownBadge";
+import PrazoEditableBadge from "@/components/dashboard/PrazoEditableBadge";
 
 type Fornecedor = Tables<"fornecedores">;
 
