@@ -213,7 +213,14 @@ const FornecedorCotacaoPage = () => {
         .map(([cpId, val]) => ({
           cotacao_produto_id: cpId,
           preco: parseFloat(val.replace(/\./g, "").replace(",", ".")),
-        }));
+        }))
+        .filter((p) => Number.isFinite(p.preco) && p.preco >= 0);
+
+      if (priceEntries.length === 0) {
+        toast.error("Preencha pelo menos um preço válido antes de enviar.");
+        setSending(false);
+        return;
+      }
 
       const { data, error } = await supabase.functions.invoke("submit-precos", {
         body: { token, prices: priceEntries },
