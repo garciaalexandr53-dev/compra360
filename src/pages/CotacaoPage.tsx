@@ -730,13 +730,6 @@ const CotacaoPage = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
-        {cotacaoAtiva && (
-          <PrazoCotacaoBadge
-            cotacaoId={cotacaoAtiva.id}
-            prazoIso={(cotacaoAtiva as any).prazo_resposta}
-            onChange={() => queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] })}
-          />
-        )}
         <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"><Save className="h-4 w-4 mr-1" /> Salvar</Button>
         {!isFromDashboard && isReviewMode && (
           <Button size="sm" variant="outline" onClick={runAiAnalysis} disabled={aiAnalysisLoading} className="gap-1 text-green-700 dark:text-green-400 border-green-500/30 hover:bg-green-500/5">
