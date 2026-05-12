@@ -29,7 +29,12 @@ Deno.serve(async (req) => {
 
     // Validate each price entry
     for (const p of prices) {
-      if (!p.cotacao_produto_id || typeof p.preco !== "number" || p.preco < 0) {
+      if (
+        !p.cotacao_produto_id ||
+        typeof p.preco !== "number" ||
+        !Number.isFinite(p.preco) ||
+        p.preco < 0
+      ) {
         return new Response(JSON.stringify({ error: "Dados de preço inválidos" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
