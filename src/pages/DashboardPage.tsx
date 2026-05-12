@@ -733,6 +733,9 @@ const DashboardPage = () => {
               <div>
                 <Badge variant="secondary" className="mb-1 text-xs px-2 py-0.5 bg-primary/10 text-primary border-primary/20">{statusMsg}</Badge>
                 <h1 className="text-2xl font-bold text-foreground">{respostaCount} de {selectedSupplierCount} fornecedores responderam</h1>
+                <div className="mt-2">
+                  <PrazoCountdownBadge prazoIso={(cotacaoAtiva as any)?.prazo_resposta ?? null} />
+                </div>
               </div>
 
               {/* Progress bar — thin & elegant */}
