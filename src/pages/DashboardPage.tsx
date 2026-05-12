@@ -28,6 +28,7 @@ import ModalNovaCotacao from "@/components/cotacao/ModalNovaCotacao";
 import TrialBanner from "@/components/dashboard/TrialBanner";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
+import PrazoCountdownBadge from "@/components/dashboard/PrazoCountdownBadge";
 
 type Fornecedor = Tables<"fornecedores">;
 
