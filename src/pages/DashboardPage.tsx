@@ -960,6 +960,13 @@ const DashboardPage = () => {
           setSelectedSuppliers(next);
         }}
         onSave={saveSupplierSelection}
+        prazoIso={(cotacaoAtiva as any)?.prazo_resposta ?? null}
+        onPrazoChange={async (iso) => {
+          if (!cotacaoAtiva?.id) return;
+          const { error } = await supabase.from("cotacoes").update({ prazo_resposta: iso } as any).eq("id", cotacaoAtiva.id);
+          if (error) { toast.error("Erro ao salvar prazo: " + error.message); return; }
+          queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
+        }}
       />
       <ModalFornecedorSugestao open={fornSuggestOpen} onOpenChange={setFornSuggestOpen} text={fornSuggestText} loading={fornSuggestLoading} hasHistory={fornSuggestHasHistory} recommendedIds={fornSuggestRecommendedIds} onApply={applyFornSuggestions} />
       <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} loading={novaCotacaoLoading} lojaId={lojaAtiva?.id} />
