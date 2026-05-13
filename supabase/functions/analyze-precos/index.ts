@@ -141,6 +141,17 @@ serve(async (req) => {
 
     // Products without any price
     const semPreco: string[] = [];
+    // Pre-calculated typing alerts
+    const alertasDigitacao: Array<{
+      produto: string;
+      fornecedor: string;
+      precoDigitado: number;
+      mediaHistorica: number;
+      tipo: "muito_baixo" | "muito_alto";
+      variacaoPct: number;
+    }> = [];
+    // Track per-supplier total based on assigned items (lowest price wins)
+    const supplierTotals: Record<string, number> = {};
 
     lines.push("PRODUTOS E PREÇOS ATUAIS:");
     (cotacaoProdutos || []).forEach((cp: any) => {
@@ -161,11 +172,45 @@ serve(async (req) => {
         lines.push(`  Preços: ${precosStr}`);
         lines.push(`  Média: R$${avg.toFixed(2)} | Min: R$${min.toFixed(2)} | Max: R$${max.toFixed(2)} | Spread: ${spread}%`);
 
+        // Assign to lowest-price supplier for pedido_minimo total
+        const winner = cpPrecos.reduce((a: any, b: any) => (Number(a.preco) <= Number(b.preco) ? a : b));
+        const qtd = Number(cp.quantidade) || 1;
+        const fator = Number(cp.fator_embalagem) || 1;
+        supplierTotals[winner.fornecedor_id] = (supplierTotals[winner.fornecedor_id] || 0) + Number(winner.preco) * qtd * fator;
+
         // Historical comparison
         const hist = historicalAvgs[cp.produto_id];
         if (hist) {
           const diffPct = ((avg - hist.avg) / hist.avg * 100).toFixed(1);
           lines.push(`  Histórico (últimas 3): Média R$${hist.avg.toFixed(2)} | Variação: ${Number(diffPct) > 0 ? "+" : ""}${diffPct}%${hist.bestSupplier ? ` | Fornecedor mais competitivo: ${hist.bestSupplier} (R$${hist.bestPrice?.toFixed(2)})` : ""}`);
+        }
+
+        // Per-supplier typing alerts vs historical avg
+        if (hist && hist.count >= 2 && hist.avg > 0) {
+          for (const p of cpPrecos) {
+            const preco = Number(p.preco);
+            const ratio = preco / hist.avg;
+            const variacaoPct = (preco - hist.avg) / hist.avg * 100;
+            if (ratio < 0.35) {
+              alertasDigitacao.push({
+                produto: prod?.nome || "?",
+                fornecedor: fornecedorMap[p.fornecedor_id] || "?",
+                precoDigitado: preco,
+                mediaHistorica: hist.avg,
+                tipo: "muito_baixo",
+                variacaoPct,
+              });
+            } else if (ratio > 1.4) {
+              alertasDigitacao.push({
+                produto: prod?.nome || "?",
+                fornecedor: fornecedorMap[p.fornecedor_id] || "?",
+                precoDigitado: preco,
+                mediaHistorica: hist.avg,
+                tipo: "muito_alto",
+                variacaoPct,
+              });
+            }
+          }
         }
       } else {
         lines.push(`- ${prod?.nome} [${cat}] → sem preço informado`);
@@ -173,8 +218,45 @@ serve(async (req) => {
       }
     });
 
-    if (semPreco.length > 0) {
-      lines.push(`\nPRODUTOS SEM NENHUM PREÇO: ${semPreco.join(", ")}`);
+    // RESUMO DE COBERTURA
+    const totalProdutos = (cotacaoProdutos || []).length;
+    const comPreco = totalProdutos - semPreco.length;
+    lines.push("");
+    lines.push("RESUMO DE COBERTURA:");
+    lines.push(`- Total de produtos na cotação: ${totalProdutos}`);
+    lines.push(`- Com pelo menos 1 preço: ${comPreco}`);
+    lines.push(`- Sem nenhum preço: ${semPreco.length}${semPreco.length > 0 ? ` (${semPreco.join(", ")})` : ""}`);
+
+    // SITUAÇÃO DE PEDIDO MÍNIMO POR FORNECEDOR
+    const minLines: string[] = [];
+    (cotacaoFornecedores || []).forEach((cf: any) => {
+      const min = Number(cf.fornecedores?.pedido_minimo) || 0;
+      const total = supplierTotals[cf.fornecedor_id] || 0;
+      const nome = cf.fornecedores?.nome || "Desconhecido";
+      if (min > 0) {
+        if (total >= min) {
+          minLines.push(`- ${nome}: total atual R$${total.toFixed(2)} | mínimo R$${min.toFixed(2)} | ✅ OK`);
+        } else {
+          minLines.push(`- ${nome}: total atual R$${total.toFixed(2)} | mínimo R$${min.toFixed(2)} | ⚠️ abaixo em R$${(min - total).toFixed(2)}`);
+        }
+      } else {
+        minLines.push(`- ${nome}: total atual R$${total.toFixed(2)} | mínimo não definido`);
+      }
+    });
+    if (minLines.length > 0) {
+      lines.push("");
+      lines.push("SITUAÇÃO DE PEDIDO MÍNIMO POR FORNECEDOR:");
+      lines.push(...minLines);
+    }
+
+    // ALERTAS DE DIGITAÇÃO PRÉ-CALCULADOS
+    if (alertasDigitacao.length > 0) {
+      lines.push("");
+      lines.push("ALERTAS DE DIGITAÇÃO PRÉ-CALCULADOS:");
+      for (const a of alertasDigitacao) {
+        const sinal = a.variacaoPct > 0 ? "+" : "";
+        lines.push(`- ${a.produto} | ${a.fornecedor}: R$${a.precoDigitado.toFixed(2)} digitado vs média histórica R$${a.mediaHistorica.toFixed(2)} (${sinal}${a.variacaoPct.toFixed(1)}%) → POSSÍVEL ERRO DE DIGITAÇÃO`);
+      }
     }
 
     const contextText = lines.join("\n");
