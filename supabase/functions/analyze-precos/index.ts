@@ -290,7 +290,15 @@ FORMATO DA RESPOSTA (use esta estrutura exata):
 
 Se não houver anomalias, diga claramente que os preços estão dentro do esperado.
 Use formato monetário brasileiro (R$ X,XX).
-Seja direto e objetivo.`;
+Seja direto e objetivo.
+
+SEÇÕES ADICIONAIS NO CONTEXTO — use-as obrigatoriamente:
+
+- ALERTAS DE DIGITAÇÃO PRÉ-CALCULADOS: são erros detectados pelo sistema com base no histórico. Sempre mencione cada um deles na seção ⚠️ Alertas, com o valor digitado, a média histórica e a variação. Nunca ignore um alerta pré-calculado.
+
+- SITUAÇÃO DE PEDIDO MÍNIMO: mencione na seção 💡 Recomendações Finais quais fornecedores estão abaixo do pedido mínimo e o quanto falta para atingi-lo.
+
+- RESUMO DE COBERTURA: use os números exatos desta seção no 📊 Resumo Geral. Nunca invente ou recalcule esses números.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
