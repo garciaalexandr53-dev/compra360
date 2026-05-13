@@ -53,6 +53,14 @@ export interface ScenarioSupplier {
   pedidoMinimo: number;
 }
 
+export interface CascadeResult {
+  fornecedoresIniciais: number;
+  fornecedoresFinais: number;
+  fornecedoresBoostados: number;
+  itensPuxados: number;
+  fornecedoresDescartados: number;
+}
+
 export interface Scenario {
   id: string;
   nome: string;
@@ -63,6 +71,7 @@ export interface Scenario {
   fornecedores: ScenarioSupplier[];
   semPreco: number;
   numFornecedores: number;
+  cascadeResult?: CascadeResult;
 }
 
 interface ProductPrice {
@@ -229,6 +238,9 @@ function scenarioEconomiaInteligente(
 
   let madeChanges = false;
   let iterations = 0;
+  let boostCount = 0;    // suppliers resolved via Boost
+  let pullCount = 0;     // items effectively moved via Pull
+  let discardCount = 0;  // suppliers discarded via Discard
 
   while (iterations < 30) {
     iterations++;
@@ -280,7 +292,10 @@ function scenarioEconomiaInteligente(
       }
     }
 
-    if (gap <= 0) continue; // Successfully filled gap with quantity boosts
+    if (gap <= 0) {
+      boostCount++;
+      continue; // Successfully filled gap with quantity boosts
+    }
 
     // === STRATEGY 2: Pull items from other suppliers ===
     type PullCandidate = {
@@ -336,6 +351,7 @@ function scenarioEconomiaInteligente(
         gap -= c.itemTotal;
         pulledAny = true;
         madeChanges = true;
+        pullCount++;
       }
       if (pulledAny) continue;
     }
@@ -355,6 +371,9 @@ function scenarioEconomiaInteligente(
         madeChanges = true;
       }
     }
+    if (discarded) {
+      discardCount++;
+    }
     if (!discarded) break;
   }
 
@@ -363,16 +382,19 @@ function scenarioEconomiaInteligente(
   const { suppliers, total, semPreco } = buildSupplierResult(assignments, cotacaoProdutos, fornecedorMap, qtyOverrides);
   const diff = total - baselineTotal;
   const aindaAbaixo = suppliers.filter(s => !s.minimoOk);
-  const hasBoosts = Object.keys(qtyOverrides).length > 0;
 
-  const parts: string[] = [];
-  if (hasBoosts) parts.push("ajustou quantidades");
-  if (madeChanges && !hasBoosts) parts.push("redistribuiu itens");
-  else if (madeChanges && hasBoosts) parts.push("redistribuiu itens");
-  
+  const acoes: string[] = [];
+  if (boostCount > 0) acoes.push(`ajustou quantidades em ${boostCount} fornecedor(es)`);
+  if (pullCount > 0) acoes.push(`redistribuiu ${pullCount} item(ns)`);
+  if (discardCount > 0) acoes.push(`removeu ${discardCount} fornecedor(es)`);
+
   const descricao = aindaAbaixo.length > 0
-    ? `${parts.join(" e ")} para atingir pedidos mínimos. ${aindaAbaixo.length} fornecedor(es) sem alternativa suficiente.`
-    : `Todos os fornecedores atingem o pedido mínimo${hasBoosts ? " (com ajuste de quantidades)" : ""}.`;
+    ? `${acoes.join(", ")} para atingir pedidos mínimos. ${aindaAbaixo.length} fornecedor(es) sem alternativa suficiente.`
+    : acoes.length > 0
+      ? `${acoes.join(", ")}. Todos os fornecedores atingem o pedido mínimo.`
+      : "Todos os fornecedores já atingiam o pedido mínimo.";
+
+  const fornecedoresIniciais = Object.keys(fornecedorMap).length;
 
   return {
     id: "sem-minimo-abaixo",
@@ -384,6 +406,13 @@ function scenarioEconomiaInteligente(
     fornecedores: suppliers,
     semPreco,
     numFornecedores: suppliers.length,
+    cascadeResult: {
+      fornecedoresIniciais,
+      fornecedoresFinais: suppliers.length,
+      fornecedoresBoostados: boostCount,
+      itensPuxados: pullCount,
+      fornecedoresDescartados: discardCount,
+    },
   };
 }
 
