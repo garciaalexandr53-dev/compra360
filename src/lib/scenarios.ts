@@ -53,6 +53,14 @@ export interface ScenarioSupplier {
   pedidoMinimo: number;
 }
 
+export interface CascadeResult {
+  fornecedoresIniciais: number;
+  fornecedoresFinais: number;
+  fornecedoresBoostados: number;
+  itensPuxados: number;
+  fornecedoresDescartados: number;
+}
+
 export interface Scenario {
   id: string;
   nome: string;
@@ -63,6 +71,7 @@ export interface Scenario {
   fornecedores: ScenarioSupplier[];
   semPreco: number;
   numFornecedores: number;
+  cascadeResult?: CascadeResult;
 }
 
 interface ProductPrice {
