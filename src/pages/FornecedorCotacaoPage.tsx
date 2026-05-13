@@ -445,7 +445,7 @@ const FornecedorCotacaoPage = () => {
               if (!raw || !raw.trim()) return null;
               const num = parseFloat(raw.replace(/\./g, "").replace(",", "."));
               if (!Number.isFinite(num) || num <= 0) return null;
-              if (num < 0.5 || num > 9999) {
+              if (num < 0.5 || num > 999) {
                 return (
                   <div className="mt-2 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-1">
                     <span>⚠️</span>
