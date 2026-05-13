@@ -424,11 +424,11 @@ const FornecedorCotacaoPage = () => {
           >
             <div className="flex items-center justify-between mb-2 gap-2">
               <span className="text-xs text-muted-foreground shrink-0">{i + 1}.</span>
-              <span className="text-xs text-muted-foreground truncate text-right">
-                {p.embalagem} · {p.quantidade * p.fator} un
-              </span>
             </div>
-            <div className="font-semibold text-sm mb-3 break-words">{p.nome}</div>
+            <div className="font-semibold text-sm mb-1 break-words">{p.nome}</div>
+            <div className="text-xs text-primary font-medium mb-3">
+              💰 Informe o preço por unidade
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">R$</span>
               <Input
@@ -440,6 +440,21 @@ const FornecedorCotacaoPage = () => {
                 className="font-mono text-right text-base font-bold"
               />
             </div>
+            {(() => {
+              const raw = prices[p.cotacao_produto_id];
+              if (!raw || !raw.trim()) return null;
+              const num = parseFloat(raw.replace(/\./g, "").replace(",", "."));
+              if (!Number.isFinite(num) || num <= 0) return null;
+              if (num < 0.5 || num > 9999) {
+                return (
+                  <div className="mt-2 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-1">
+                    <span>⚠️</span>
+                    <span>Valor incomum — confirme se está correto</span>
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
         ))}
       </div>
