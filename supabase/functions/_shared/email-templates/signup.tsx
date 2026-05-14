@@ -24,7 +24,7 @@ interface SignupEmailProps {
 }
 
 const LOGO_URL =
-  'https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/email-assets/compra360-logo.png'
+  'https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada/logo-completa.png'
 
 export const SignupEmail = ({
   siteName,
