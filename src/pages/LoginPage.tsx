@@ -110,7 +110,7 @@ const LoginPage = () => {
       <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-3">
-            <img src="/compra360-logo.png" alt="Compra360" className="max-w-[220px] w-full h-auto object-contain" />
+            <img src="/compra360-logo.png" alt="Compra360" className="w-[200px] h-auto object-contain" />
           </div>
           <CardTitle className="text-2xl font-bold">
             Compra<span className="text-primary">360</span>
