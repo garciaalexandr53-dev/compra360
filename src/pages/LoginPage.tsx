@@ -177,8 +177,9 @@ const LoginPage = () => {
               <div className="space-y-2">
                 <Label htmlFor="whatsapp">WhatsApp (com DDD) *</Label>
                 <Input
-                  id="whatsapp" type="tel" placeholder="(11) 99999-9999" inputMode="tel"
-                  value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} required
+                  id="whatsapp" type="tel" placeholder="(11) 99999-9999" inputMode="numeric"
+                  value={whatsapp} onChange={(e) => setWhatsapp(formatWhatsapp(e.target.value))}
+                  required maxLength={16} autoComplete="tel-national"
                 />
                 <p className="text-[11px] text-muted-foreground">Usaremos para suporte e contato direto.</p>
               </div>
