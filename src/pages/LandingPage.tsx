@@ -379,7 +379,7 @@ export default function LandingPage() {
             <img
               src="https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png"
               alt="Compra360 - Sistema de cotação"
-              className="h-14 w-auto max-w-[200px] object-contain"
+              className="h-[72px] w-auto max-w-[260px] object-contain"
             />
           </div>
           <div className="hidden sm:flex items-center gap-6 text-sm text-slate-400">
