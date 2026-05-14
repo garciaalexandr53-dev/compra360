@@ -375,9 +375,12 @@ export default function LandingPage() {
       {/* ── NAV ── */}
       <nav className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-5 h-14">
-          <div className="flex items-center gap-2">
-            <img src="/compra360-icon.png" alt="Compra360 - Sistema de cotação" width="36" height="36" className="w-9 h-9" />
-            <span className="font-bold text-white text-xl">Compra360</span>
+          <div className="flex items-center">
+            <img
+              src="/compra360-logo.png"
+              alt="Compra360 - Sistema de cotação"
+              className="h-9 w-auto max-w-[160px] object-contain"
+            />
           </div>
           <div className="hidden sm:flex items-center gap-6 text-sm text-slate-400">
             <a href="#como-funciona" className="hover:text-white transition-colors">Como funciona</a>
@@ -694,9 +697,12 @@ export default function LandingPage() {
       {/* ── FOOTER ── */}
       <footer className="border-t border-white/5 py-10 px-5">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <img src="/compra360-icon.png" alt="Compra360" width="24" height="24" className="w-6 h-6 rounded-md" />
-            <span className="font-semibold text-white text-sm">Compra360</span>
+          <div className="flex items-center">
+            <img
+              src="/compra360-logo.png"
+              alt="Compra360"
+              className="h-7 w-auto max-w-[140px] object-contain"
+            />
           </div>
           <div className="flex items-center gap-4 text-sm text-slate-500">
             <a href="#como-funciona" className="hover:text-slate-300 transition-colors">Como funciona</a>

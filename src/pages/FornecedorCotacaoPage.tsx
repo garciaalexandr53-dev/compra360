@@ -270,8 +270,12 @@ const FornecedorCotacaoPage = () => {
   );
 
   const BrandLogo = () => (
-    <div className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[hsl(var(--brand-dark))] to-[hsl(var(--brand-light))] shadow-lg">
-      <span className="text-white text-2xl font-bold">C360</span>
+    <div className="mb-6 flex justify-center">
+      <img
+        src="/compra360-logo.png"
+        alt="Compra360"
+        className="max-w-[200px] w-full h-auto object-contain"
+      />
     </div>
   );
 

@@ -110,7 +110,7 @@ const GuiaPage = () => {
   return (
     <div className="max-w-3xl mx-auto p-5 pb-20">
       <div className="text-center mb-8">
-        <img src="/compra360-icon.png" alt="Compra360" width="56" height="56" className="w-14 h-14 rounded-2xl shadow-lg mx-auto mb-4" />
+        <img src="/compra360-icon.png" alt="Compra360" width="56" height="56" className="w-14 h-14 rounded-2xl shadow-lg mx-auto mb-4 object-contain" />
         <h1 className="text-2xl font-extrabold text-foreground">Guia do Compra360</h1>
         <p className="text-sm text-muted-foreground mt-1">Como usar o sistema passo a passo</p>
       </div>

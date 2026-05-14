@@ -15,7 +15,7 @@ const sendBrowserNotification = (fornecedorNome: string, isUpdate: boolean) => {
   if (Notification.permission === "granted") {
     new Notification(isUpdate ? "📬 Preços atualizados!" : "📬 Preços recebidos!", {
       body: `${fornecedorNome} ${isUpdate ? "atualizou" : "enviou"} preços na cotação.`,
-      icon: "/favicon.ico",
+      icon: "/favicon-32.png",
       tag: `price-${isUpdate ? "update" : "insert"}`,
     });
   }
