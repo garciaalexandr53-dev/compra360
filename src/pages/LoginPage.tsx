@@ -12,6 +12,7 @@ import { Download } from "lucide-react";
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -136,6 +137,16 @@ const LoginPage = () => {
                 value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
               />
             </div>
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp">WhatsApp (com DDD) *</Label>
+                <Input
+                  id="whatsapp" type="tel" placeholder="(11) 99999-9999" inputMode="tel"
+                  value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} required
+                />
+                <p className="text-[11px] text-muted-foreground">Usaremos para suporte e contato direto.</p>
+              </div>
+            )}
             <Button type="submit" className="w-full bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] hover:opacity-90" disabled={loading}>
               {loading ? "Aguarde..." : isSignUp ? "Criar Conta" : "Entrar"}
             </Button>
