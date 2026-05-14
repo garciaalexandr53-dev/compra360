@@ -44,6 +44,39 @@ export type Database = {
         }
         Relationships: []
       }
+      catalogo_mestre: {
+        Row: {
+          ativo: boolean
+          categoria: string | null
+          created_at: string
+          ean: string | null
+          embalagem: string | null
+          fator_embalagem: number
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria?: string | null
+          created_at?: string
+          ean?: string | null
+          embalagem?: string | null
+          fator_embalagem?: number
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string | null
+          created_at?: string
+          ean?: string | null
+          embalagem?: string | null
+          fator_embalagem?: number
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       categorias: {
         Row: {
           created_at: string
