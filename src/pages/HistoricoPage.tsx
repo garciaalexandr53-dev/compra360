@@ -428,6 +428,7 @@ const HistoricoPage = () => {
         .from("cotacoes")
         .select("id, nome, status, created_at, finalizada_at, loja_id")
         .neq("status", "ativa")
+        .order("finalizada_at", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false });
       if (error) throw error;
       if (!cots?.length) return [];
@@ -618,7 +619,7 @@ const HistoricoPage = () => {
     return cotacoes.filter((c) => {
       if (searchCotacao && !c.nome.toLowerCase().includes(searchCotacao.toLowerCase())) return false;
       if (statusFilter !== "all" && c.status !== statusFilter) return false;
-      const t = new Date(c.created_at).getTime();
+      const t = new Date(c.finalizada_at || c.created_at).getTime();
       if (t < start || t > end) return false;
       if (lojaFilter === "active" && activeLojaId && c.loja_id !== activeLojaId) return false;
       return true;
@@ -1280,7 +1281,10 @@ const HistoricoPage = () => {
                           </div>
                           <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground flex-wrap">
                             <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" /> {formatDateTime(c.created_at)}
+                              <Calendar className="h-3 w-3" />
+                              {c.finalizada_at
+                                ? `Finalizada em ${formatDateTime(c.finalizada_at)}`
+                                : formatDateTime(c.created_at)}
                             </span>
                             {c.loja_nome && (
                               <span className="flex items-center gap-1">
