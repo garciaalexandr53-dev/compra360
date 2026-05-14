@@ -36,7 +36,7 @@ export const InviteEmail = ({
     <Body style={main}>
       <Container style={container}>
         <Section style={logoSection}>
-          <Img src={LOGO_URL} alt={siteName} width="140" style={logo} />
+          <Img src={LOGO_URL} alt={siteName} width="180" style={logo} />
         </Section>
         <Heading style={h1}>Você recebeu um convite</Heading>
         <Text style={text}>

@@ -269,12 +269,12 @@ const FornecedorCotacaoPage = () => {
     </div>
   );
 
-  const BrandLogo = () => (
-    <div className="mb-6 flex justify-center">
+  const BrandLogo = ({ spacious = false }: { spacious?: boolean } = {}) => (
+    <div className={`${spacious ? "mb-10" : "mb-6"} flex justify-center`}>
       <img
         src="/compra360-logo.png"
         alt="Compra360"
-        className="max-w-[200px] w-full h-auto object-contain"
+        className="w-[220px] max-w-full h-auto object-contain"
       />
     </div>
   );
@@ -358,7 +358,7 @@ const FornecedorCotacaoPage = () => {
   if (screen === "sent") {
     return (
       <Shell>
-        <BrandLogo />
+        <BrandLogo spacious />
         <div className="text-5xl mb-4">✅</div>
         <h1 className="text-xl font-bold mb-2">Preços Enviados!</h1>
         <p className="text-muted-foreground">

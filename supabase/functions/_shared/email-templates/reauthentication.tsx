@@ -28,7 +28,7 @@ export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => 
     <Body style={main}>
       <Container style={container}>
         <Section style={logoSection}>
-          <Img src={LOGO_URL} alt="Compra360" width="140" style={logo} />
+          <Img src={LOGO_URL} alt="Compra360" width="180" style={logo} />
         </Section>
         <Heading style={h1}>Confirme sua identidade</Heading>
         <Text style={text}>
