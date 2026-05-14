@@ -108,13 +108,14 @@ const LoginPage = () => {
   return (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm shadow-lg">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-3">
-            <img src="/compra360-logo.png" alt="Compra360" className="w-[200px] h-auto object-contain" />
+        <CardHeader className="text-center pb-2">
+          <div className="flex justify-center">
+            <img
+              src="/compra360-logo.png"
+              alt="Compra360"
+              className="max-w-[200px] sm:max-w-[260px] w-full h-auto object-contain"
+            />
           </div>
-          <CardTitle className="text-2xl font-bold">
-            Compra<span className="text-primary">360</span>
-          </CardTitle>
           <CardDescription>
             {isSignUp ? "Crie sua conta" : "Entre com sua conta para continuar"}
           </CardDescription>
