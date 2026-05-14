@@ -554,27 +554,10 @@ const AnalisePage = () => {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({
-            messages: [{
-              role: "user",
-              content: `Explique em português por que a estratégia "${scenario.nome}" faz sentido nesta compra.
-
-Dados: Total: ${formatBRL(scenario.totalGeral)}, ${scenario.numFornecedores} fornecedores, ${cotacaoProdutos.length} produtos. Comparação: ${comparisons || "Única opção disponível"}. Status mínimos: ${minAlert}.
-
-REGRAS DE LINGUAGEM:
-- Responda em linguagem simples e direta, como se estivesse explicando para um comprador de supermercado que não tem conhecimento técnico.
-- Evite palavras como "burocrático", "ínfima", "conformidade", "operacional", "otimização".
-- Use frases curtas. Fale sobre economia em reais, número de entregas, facilidade no dia a dia.
-- Máximo 3 linhas no parágrafo explicativo.
-- Depois do parágrafo, pule uma linha e escreva exatamente 3 bullet points, cada um em sua própria linha, começando com ✅ ou ⚠️.
-- Não use markdown headers (#). Não misture bullet points dentro do texto.
-
-Exemplo de tom:
-"Com essa opção você gasta quase o mesmo valor, mas recebe de 2 fornecedores a menos. Isso significa menos entregas para conferir e menos notas para lançar no sistema."
-
-✅ Primeiro destaque
-✅ Segundo destaque
-⚠️ Terceiro destaque`
-            }],
+          messages: [{
+            role: "user",
+            content: `Explique em português o que o sistema fez ao aplicar a estratégia "${scenario.nome}" nesta compra.\n\nDados do cenário:\n- Total: ${formatBRL(scenario.totalGeral)}\n- Fornecedores: ${scenario.numFornecedores}\n- Produtos: ${cotacaoProdutos.length}\n- Comparação com outras opções: ${comparisons || "Única opção disponível"}\n- Status pedidos mínimos: ${minAlert}\n\nO que o sistema realmente fez (cascade):\n- Fornecedores com quantidade ajustada (boost): ${scenario.cascadeResult?.fornecedoresBoostados ?? 0}\n- Itens redistribuídos (pull): ${scenario.cascadeResult?.itensPuxados ?? 0}\n- Fornecedores removidos (discard): ${scenario.cascadeResult?.fornecedoresDescartados ?? 0}\n- Fornecedores antes: ${scenario.cascadeResult?.fornecedoresIniciais ?? scenario.numFornecedores}\n- Fornecedores depois: ${scenario.cascadeResult?.fornecedoresFinais ?? scenario.numFornecedores}\n\nREGRAS ABSOLUTAS:\n- Descreva APENAS o que realmente aconteceu com base nos dados do cascade acima\n- Se fornecedoresDescartados for 0, NUNCA mencione eliminação de fornecedores\n- Se fornecedoresBoostados > 0, explique que o sistema ajustou quantidades para atingir pedido mínimo\n- Nunca invente números ou ações que não ocorreram\n- Linguagem simples e direta para comprador de supermercado\n- Evite: "burocrático", "ínfima", "conformidade", "operacional", "otimização"\n- Máximo 3 linhas no parágrafo explicativo\n- Depois do parágrafo, pule uma linha e escreva exatamente 3 bullet points, cada um começando com ✅ ou ⚠️\n- Não use markdown headers (#)`
+          }],
           }),
         }
       );
