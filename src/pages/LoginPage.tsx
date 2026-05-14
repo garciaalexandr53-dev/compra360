@@ -84,12 +84,48 @@ const LoginPage = () => {
     return msg;
   };
 
+  const formatWhatsapp = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+    if (digits.length <= 2) return digits.length ? `(${digits}` : "";
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  };
+
+  const validateWhatsapp = (value: string): string | null => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length !== 10 && digits.length !== 11) {
+      return "WhatsApp deve ter 10 ou 11 dígitos (com DDD).";
+    }
+    const ddd = parseInt(digits.slice(0, 2), 10);
+    if (isNaN(ddd) || ddd < 11 || ddd > 99) {
+      return "DDD inválido. Informe um DDD entre 11 e 99.";
+    }
+    if (digits.length === 11 && digits[2] !== "9") {
+      return "Celular com 11 dígitos deve começar com 9 após o DDD.";
+    }
+    if (/^(\d)\1+$/.test(digits)) {
+      return "Número de WhatsApp inválido.";
+    }
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    
+
     if (isSignUp) {
-      const { error } = await signUp(email, password);
+      const wppError = validateWhatsapp(whatsapp);
+      if (wppError) {
+        toast.error(wppError);
+        return;
+      }
+    }
+
+    setLoading(true);
+
+    if (isSignUp) {
+      const digits = whatsapp.replace(/\D/g, "");
+      const { error } = await signUp(email, password, digits);
       if (error) {
         toast.error(translateAuthError(error.message));
       } else {
