@@ -33,7 +33,7 @@ export const RecoveryEmail = ({
     <Body style={main}>
       <Container style={container}>
         <Section style={logoSection}>
-          <Img src={LOGO_URL} alt={siteName} width="140" style={logo} />
+          <Img src={LOGO_URL} alt={siteName} width="180" style={logo} />
         </Section>
         <Heading style={h1}>Redefina sua senha</Heading>
         <Text style={text}>
