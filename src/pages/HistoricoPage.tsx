@@ -428,6 +428,7 @@ const HistoricoPage = () => {
         .from("cotacoes")
         .select("id, nome, status, created_at, finalizada_at, loja_id")
         .neq("status", "ativa")
+        .order("finalizada_at", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false });
       if (error) throw error;
       if (!cots?.length) return [];
