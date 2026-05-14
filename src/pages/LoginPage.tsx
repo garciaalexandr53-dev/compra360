@@ -113,7 +113,7 @@ const LoginPage = () => {
             <img
               src="/compra360-logo.png"
               alt="Compra360"
-              className="max-w-[220px] w-full h-auto object-contain"
+              className="max-w-[200px] sm:max-w-[260px] w-full h-auto object-contain"
             />
           </div>
           <CardDescription>
