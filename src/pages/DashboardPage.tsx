@@ -30,6 +30,7 @@ import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
 import PrazoCountdownBadge from "@/components/dashboard/PrazoCountdownBadge";
 import PrazoEditableBadge from "@/components/dashboard/PrazoEditableBadge";
+import WhatsAppRequiredModal from "@/components/dashboard/WhatsAppRequiredModal";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -541,6 +542,7 @@ const DashboardPage = () => {
 
   return (
     <div className="p-5 max-w-2xl mx-auto">
+      <WhatsAppRequiredModal />
       <TrialBanner />
       <div className="animate-fade-in">
         {/* ── STATE 1: No active quote — guided flow ── */}
