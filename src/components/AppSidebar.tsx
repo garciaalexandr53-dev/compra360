@@ -120,17 +120,19 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="p-4">
+      <SidebarHeader className={collapsed ? "p-2" : "px-4 py-6"}>
         {!collapsed ? (
-          <div className="flex justify-center">
+          <div className="flex w-full items-center justify-center">
             <img
               src="https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png"
               alt="Compra360"
-              className="w-[200px] max-w-full h-auto object-contain"
+              className="block w-full max-w-[180px] h-auto object-contain mx-auto"
             />
           </div>
         ) : (
-          <img src={logoCompra360} alt="Compra360" className="w-9 h-9 rounded-lg shadow-md mx-auto object-contain" />
+          <div className="flex w-full items-center justify-center">
+            <img src={logoCompra360} alt="Compra360" className="w-8 h-8 rounded-lg shadow-md object-contain" />
+          </div>
         )}
       </SidebarHeader>
 
