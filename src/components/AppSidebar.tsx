@@ -123,13 +123,13 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         {!collapsed ? (
           <div className="flex items-center gap-3">
-            <img src={logoCompra360} alt="Compra360" className="w-8 h-8 rounded-lg shadow-md" />
+            <img src={logoCompra360} alt="Compra360" className="w-9 h-9 rounded-lg shadow-md object-contain" />
             <span className="text-lg font-bold text-sidebar-foreground">
               Compra<span className="text-sidebar-primary">360</span>
             </span>
           </div>
         ) : (
-          <img src={logoCompra360} alt="Compra360" className="w-8 h-8 rounded-lg shadow-md mx-auto" />
+          <img src={logoCompra360} alt="Compra360" className="w-9 h-9 rounded-lg shadow-md mx-auto object-contain" />
         )}
       </SidebarHeader>
 
