@@ -374,12 +374,12 @@ export default function LandingPage() {
     <div className="min-h-screen bg-slate-950 text-slate-200">
       {/* ── NAV ── */}
       <nav className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-5 h-20">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-5 h-24 sm:h-20">
           <div className="flex items-center">
             <img
               src="https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png"
               alt="Compra360 - Sistema de cotação"
-              className="h-[72px] w-auto max-w-[260px] object-contain"
+              className="h-[88px] w-auto max-w-[300px] sm:h-[72px] sm:max-w-[260px] object-contain"
             />
           </div>
           <div className="hidden sm:flex items-center gap-6 text-sm text-slate-400">
