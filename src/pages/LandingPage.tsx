@@ -375,9 +375,12 @@ export default function LandingPage() {
       {/* ── NAV ── */}
       <nav className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-5 h-14">
-          <div className="flex items-center gap-2">
-            <img src="/compra360-icon.png" alt="Compra360 - Sistema de cotação" width="36" height="36" className="w-9 h-9" />
-            <span className="font-bold text-white text-xl">Compra360</span>
+          <div className="flex items-center">
+            <img
+              src="/compra360-logo.png"
+              alt="Compra360 - Sistema de cotação"
+              className="h-9 w-auto max-w-[160px] object-contain"
+            />
           </div>
           <div className="hidden sm:flex items-center gap-6 text-sm text-slate-400">
             <a href="#como-funciona" className="hover:text-white transition-colors">Como funciona</a>
