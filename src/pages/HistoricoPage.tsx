@@ -619,7 +619,7 @@ const HistoricoPage = () => {
     return cotacoes.filter((c) => {
       if (searchCotacao && !c.nome.toLowerCase().includes(searchCotacao.toLowerCase())) return false;
       if (statusFilter !== "all" && c.status !== statusFilter) return false;
-      const t = new Date(c.created_at).getTime();
+      const t = new Date(c.finalizada_at || c.created_at).getTime();
       if (t < start || t > end) return false;
       if (lojaFilter === "active" && activeLojaId && c.loja_id !== activeLojaId) return false;
       return true;
