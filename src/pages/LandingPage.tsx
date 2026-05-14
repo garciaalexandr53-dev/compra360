@@ -377,7 +377,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto flex items-center justify-between px-5 h-14">
           <div className="flex items-center">
             <img
-              src="/compra360-logo.png"
+              src="https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png"
               alt="Compra360 - Sistema de cotação"
               className="h-10 w-auto object-contain"
             />
@@ -699,7 +699,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center">
             <img
-              src="/compra360-logo.png"
+              src="https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png"
               alt="Compra360"
               className="h-7 w-auto max-w-[140px] object-contain"
             />

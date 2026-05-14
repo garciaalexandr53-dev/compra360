@@ -272,7 +272,7 @@ const FornecedorCotacaoPage = () => {
   const BrandLogo = ({ spacious = false }: { spacious?: boolean } = {}) => (
     <div className={`${spacious ? "mb-10" : "mb-6"} flex justify-center`}>
       <img
-        src="/compra360-logo.png"
+        src="https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png"
         alt="Compra360"
         className="w-[220px] max-w-full h-auto object-contain"
       />
