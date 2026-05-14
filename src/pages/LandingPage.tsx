@@ -697,9 +697,12 @@ export default function LandingPage() {
       {/* ── FOOTER ── */}
       <footer className="border-t border-white/5 py-10 px-5">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <img src="/compra360-icon.png" alt="Compra360" width="24" height="24" className="w-6 h-6 rounded-md" />
-            <span className="font-semibold text-white text-sm">Compra360</span>
+          <div className="flex items-center">
+            <img
+              src="/compra360-logo.png"
+              alt="Compra360"
+              className="h-7 w-auto max-w-[140px] object-contain"
+            />
           </div>
           <div className="flex items-center gap-4 text-sm text-slate-500">
             <a href="#como-funciona" className="hover:text-slate-300 transition-colors">Como funciona</a>
