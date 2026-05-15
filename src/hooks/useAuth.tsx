@@ -40,11 +40,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, whatsapp?: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: whatsapp ? { whatsapp } : undefined },
     });
+
+    if (!error && data?.user?.id) {
+      // Fire-and-forget welcome email; never block signup UX
+      supabase.functions
+        .invoke('send-transactional-email', {
+          body: {
+            templateName: 'welcome',
+            recipientEmail: email,
+            idempotencyKey: `welcome-${data.user.id}`,
+            templateData: {},
+          },
+        })
+        .catch((e) => console.warn('welcome email failed', e));
+    }
+
     return { error };
   };
 
