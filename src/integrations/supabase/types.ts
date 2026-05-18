@@ -885,6 +885,16 @@ export type Database = {
         Args: { _user_id: string }
         Returns: number
       }
+      admin_email_stats: {
+        Args: { _end?: string; _start?: string; _template?: string }
+        Returns: Json
+      }
+      admin_email_template_names: {
+        Args: never
+        Returns: {
+          template_name: string
+        }[]
+      }
       admin_global_metrics: { Args: never; Returns: Json }
       admin_list_clientes: {
         Args: never
@@ -904,6 +914,27 @@ export type Database = {
           trial_end: string
           ultima_cotacao_at: string
           user_id: string
+        }[]
+      }
+      admin_list_email_logs: {
+        Args: {
+          _end?: string
+          _limit?: number
+          _offset?: number
+          _start?: string
+          _status?: string
+          _template?: string
+        }
+        Returns: {
+          created_at: string
+          error_message: string
+          id: string
+          message_id: string
+          metadata: Json
+          recipient_email: string
+          status: string
+          template_name: string
+          total_count: number
         }[]
       }
       admin_set_user_plan: {

@@ -30,6 +30,7 @@ import { PLAN_PRICE_NUMERIC } from "@/lib/planPrices";
 import ContatoModal from "@/components/admin/ContatoModal";
 import MetricSheets, { SheetType } from "@/components/admin/MetricSheets";
 import AlertasTab from "@/components/admin/AlertasTab";
+import EmailsTab from "@/components/admin/EmailsTab";
 
 type GlobalMetrics = {
   total_usuarios: number;
@@ -217,13 +218,17 @@ export default function AdminPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Tabs defaultValue="metricas" className="space-y-6">
-          <TabsList className="grid grid-cols-3 w-full sm:w-auto sm:inline-flex">
+          <TabsList className="grid grid-cols-4 w-full sm:w-auto sm:inline-flex">
             <TabsTrigger value="metricas">Métricas</TabsTrigger>
             <TabsTrigger value="alertas" className="gap-1.5">
               <AlertTriangle className="h-3.5 w-3.5" />
               Alertas
             </TabsTrigger>
             <TabsTrigger value="clientes">Clientes</TabsTrigger>
+            <TabsTrigger value="emails" className="gap-1.5">
+              <Mail className="h-3.5 w-3.5" />
+              E-mails
+            </TabsTrigger>
           </TabsList>
 
           {/* MÉTRICAS */}
@@ -447,6 +452,11 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* E-MAILS */}
+          <TabsContent value="emails">
+            <EmailsTab />
           </TabsContent>
         </Tabs>
       </main>
