@@ -11,7 +11,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Loader2, Mail, CheckCircle2, XCircle, ShieldOff, Clock, RefreshCw, Download, FileSpreadsheet } from "lucide-react";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
 
