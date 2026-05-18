@@ -53,11 +53,23 @@ export default function AlertasTab({ clientes, onContatar }: Props) {
     <div className="space-y-6">
       {/* Trials expirando */}
       <section>
-        <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-destructive" />
-          Trials expirando (≤7 dias)
-          <Badge variant="outline" className="ml-1">{trialsExpirando.length}</Badge>
-        </h2>
+        <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+          <h2 className="text-sm font-semibold flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            Trials expirando (≤7 dias)
+            <Badge variant="outline" className="ml-1">{trialsExpirando.length}</Badge>
+          </h2>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs gap-1"
+            onClick={() => downloadCsv(alertasTrialsFilename(), buildAlertasCsv(trialsExpirando, "trial"))}
+            disabled={trialsExpirando.length === 0}
+          >
+            <Download className="h-3 w-3" />
+            Exportar CSV
+          </Button>
+        </div>
         {trialsExpirando.length === 0 ? (
           <EmptyState texto="Nenhum trial expirando esta semana 🎉" />
         ) : (
