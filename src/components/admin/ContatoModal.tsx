@@ -148,6 +148,7 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
         return;
       }
       window.open(buildWhatsAppUrl(whatsappCliente, mensagemEditada), "_blank");
+      void registrarContato("whatsapp");
       return;
     }
     if (!emailDestinatario) {
@@ -158,6 +159,7 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
       });
       return;
     }
+
     setEnviando(true);
     try {
       const { error } = await supabase.functions.invoke("send-transactional-email", {
