@@ -425,7 +425,7 @@ export default function AdminPage() {
           {/* CLIENTES */}
           <TabsContent value="clientes" className="space-y-4">
             <div className="space-y-3">
-              {/* Busca + contador */}
+              {/* Busca + contador + exports */}
               <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
                 <div className="relative flex-1 max-w-md">
                   <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -438,77 +438,96 @@ export default function AdminPage() {
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="secondary" className="font-normal">
-                    {filteredClientes.length} de {clientes?.length || 0} clientes
+                    {filteredClientes.length} de {clientes?.length || 0}
                   </Badge>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 px-2 text-xs gap-1"
+                    className="h-8 px-2.5 text-xs gap-1"
                     onClick={() => downloadCsv(clientesFilename(), buildClientesCsv(filteredClientes))}
                     disabled={filteredClientes.length === 0}
                   >
-                    <Download className="h-3 w-3" />
-                    Exportar CSV
+                    <Download className="h-3.5 w-3.5" />
+                    CSV
                   </Button>
-                  {filtrosAtivos && (
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={limparFiltros}>
-                      <X className="h-3 w-3 mr-1" />
-                      Limpar filtros
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2.5 text-xs gap-1"
+                    onClick={() => downloadXlsx(clientesFilenameXlsx(), buildClientesXlsx(filteredClientes))}
+                    disabled={filteredClientes.length === 0}
+                  >
+                    <FileSpreadsheet className="h-3.5 w-3.5" />
+                    Excel
+                  </Button>
                 </div>
               </div>
 
-              {/* Filtros */}
-              <div className="flex flex-wrap gap-2 items-center">
-                <Select value={filtroPlano} onValueChange={(v) => setFiltroPlano(v as typeof filtroPlano)}>
-                  <SelectTrigger className="h-8 text-xs w-[130px]">
-                    <SelectValue placeholder="Plano" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos os planos</SelectItem>
-                    <SelectItem value="free">Free</SelectItem>
-                    <SelectItem value="business">Business</SelectItem>
-                    <SelectItem value="pro">Pro</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* Filtros 2x2 com destaque quando ativos */}
+              <div className="grid grid-cols-2 gap-2 sm:max-w-2xl">
+                {(() => {
+                  const activeCls = (active: boolean) =>
+                    `h-9 text-xs ${active ? "border-teal-500 text-teal-700 dark:text-teal-400 font-medium" : ""}`;
+                  return (
+                    <>
+                      <Select value={filtroPlano} onValueChange={(v) => setFiltroPlano(v as typeof filtroPlano)}>
+                        <SelectTrigger className={activeCls(filtroPlano !== "todos")}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Plano: Todos</SelectItem>
+                          <SelectItem value="free">Plano: Free</SelectItem>
+                          <SelectItem value="business">Plano: Business</SelectItem>
+                          <SelectItem value="pro">Plano: Pro</SelectItem>
+                        </SelectContent>
+                      </Select>
 
-                <Select value={filtroStatus} onValueChange={(v) => setFiltroStatus(v as typeof filtroStatus)}>
-                  <SelectTrigger className="h-8 text-xs w-[130px]">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos os status</SelectItem>
-                    <SelectItem value="ativo">Ativo (7d)</SelectItem>
-                    <SelectItem value="dormindo">Dormindo (&gt;14d)</SelectItem>
-                    <SelectItem value="risco">Risco (&gt;21d)</SelectItem>
-                    <SelectItem value="trial">Trial</SelectItem>
-                  </SelectContent>
-                </Select>
+                      <Select value={filtroStatus} onValueChange={(v) => setFiltroStatus(v as typeof filtroStatus)}>
+                        <SelectTrigger className={activeCls(filtroStatus !== "todos")}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Status: Todos</SelectItem>
+                          <SelectItem value="ativo">Status: Ativo</SelectItem>
+                          <SelectItem value="dormindo">Status: Dormindo</SelectItem>
+                          <SelectItem value="risco">Status: Risco</SelectItem>
+                          <SelectItem value="trial">Status: Trial</SelectItem>
+                        </SelectContent>
+                      </Select>
 
-                <Select value={filtroAtivacao} onValueChange={(v) => setFiltroAtivacao(v as typeof filtroAtivacao)}>
-                  <SelectTrigger className="h-8 text-xs w-[150px]">
-                    <SelectValue placeholder="Ativação" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="com_cotacao">Com cotação</SelectItem>
-                    <SelectItem value="sem_cotacao">Sem cotação</SelectItem>
-                  </SelectContent>
-                </Select>
+                      <Select value={filtroAtivacao} onValueChange={(v) => setFiltroAtivacao(v as typeof filtroAtivacao)}>
+                        <SelectTrigger className={activeCls(filtroAtivacao !== "todos")}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Ativação: Todos</SelectItem>
+                          <SelectItem value="com_cotacao">Ativação: Com cotação</SelectItem>
+                          <SelectItem value="sem_cotacao">Ativação: Sem cotação</SelectItem>
+                        </SelectContent>
+                      </Select>
 
-                <Select value={ordenacao} onValueChange={(v) => setOrdenacao(v as typeof ordenacao)}>
-                  <SelectTrigger className="h-8 text-xs w-[170px]">
-                    <SelectValue placeholder="Ordenar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="recentes">Mais recentes</SelectItem>
-                    <SelectItem value="antigos">Mais antigos</SelectItem>
-                    <SelectItem value="maior_uso">Maior uso</SelectItem>
-                    <SelectItem value="risco_churn">Risco de churn</SelectItem>
-                  </SelectContent>
-                </Select>
+                      <Select value={ordenacao} onValueChange={(v) => setOrdenacao(v as typeof ordenacao)}>
+                        <SelectTrigger className={activeCls(ordenacao !== "recentes")}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="recentes">Ordem: Recentes</SelectItem>
+                          <SelectItem value="antigos">Ordem: Antigos</SelectItem>
+                          <SelectItem value="maior_uso">Ordem: Maior uso</SelectItem>
+                          <SelectItem value="risco_churn">Ordem: Risco de churn</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </>
+                  );
+                })()}
               </div>
+
+              {filtrosAtivos && (
+                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={limparFiltros}>
+                  <X className="h-3 w-3 mr-1" />
+                  Limpar filtros
+                </Button>
+              )}
             </div>
 
             {loadingClientes ? (
@@ -517,135 +536,65 @@ export default function AdminPage() {
               </div>
             ) : (
               <Card>
-                <CardContent className="p-0 overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Cliente</TableHead>
-                        <TableHead>Plano</TableHead>
-                        <TableHead className="text-right">Lojas</TableHead>
-                        <TableHead className="text-right">Produtos</TableHead>
-                        <TableHead className="text-right">Forn.</TableHead>
-                        <TableHead className="text-right">Cotações</TableHead>
-                        <TableHead className="text-right">Pedidos</TableHead>
-                        <TableHead>Cadastro</TableHead>
-                        <TableHead>Último contato</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredClientes.map((c) => {
-                        const saude = getSaudeCliente(c);
-                        const diasTrial = getDiasTrialRestantes(c.trial_end);
-                        const trialUrgente = c.plan_status === "trialing" && diasTrial !== null && diasTrial <= 3;
-                        return (
-                          <TableRow
-                            key={c.user_id}
-                            className="cursor-pointer hover:bg-muted/40"
+                <CardContent className="p-0">
+                  <ul className="divide-y">
+                    {filteredClientes.map((c) => {
+                      const saude = getSaudeCliente(c);
+                      const diasTrial = getDiasTrialRestantes(c.trial_end);
+                      const isTrial = c.plan_status === "trialing";
+                      const uc = ultimosContatos?.get(c.user_id);
+                      const dotColor =
+                        saude.status === "ativo" ? "bg-emerald-500"
+                          : saude.status === "dormindo" ? "bg-destructive"
+                          : saude.status === "risco" ? "bg-amber-500"
+                          : "bg-muted-foreground/50";
+                      return (
+                        <li key={c.user_id}>
+                          <button
+                            type="button"
                             onClick={() => setClienteDetalhe(c)}
+                            className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 hover:bg-muted/40 transition-colors text-left min-h-[52px] max-h-[52px] sm:max-h-none"
+                            title={saude.label}
                           >
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <div className="min-w-0">
-                                  <div className="font-medium flex items-center gap-1.5 flex-wrap">
-                                    <span className="truncate max-w-[180px]">{c.loja_principal || "—"}</span>
-                                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${saude.className}`}>
-                                      {saude.emoji} {saude.label}
-                                    </Badge>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground truncate max-w-[200px]">{c.email}</div>
-                                  {c.cnpj && <div className="text-xs text-muted-foreground">{c.cnpj}</div>}
-                                </div>
+                            <span
+                              className={`shrink-0 h-2.5 w-2.5 rounded-full ${dotColor}`}
+                              aria-label={saude.label}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium truncate">
+                                {c.loja_principal || c.email}
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={trialUrgente
-                                  ? "bg-destructive/15 text-destructive border-destructive/30"
-                                  : (PLAN_COLORS[c.plan_name] || "")}
-                              >
-                                {c.plan_name}
-                                {c.plan_status === "trialing" && diasTrial !== null && (
-                                  <span className="ml-1">(trial · {diasTrial}d)</span>
-                                )}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">{c.total_lojas}</TableCell>
-                            <TableCell className="text-right">
-                              {c.total_produtos}
-                              {c.total_produtos_inativos > 0 && (
-                                <Badge variant="destructive" className="ml-1 text-[10px] px-1 py-0">
-                                  {c.total_produtos_inativos} inat.
-                                </Badge>
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={`shrink-0 text-[10px] px-1.5 py-0 hidden sm:inline-flex ${PLAN_COLORS[c.plan_name] || ""}`}
+                            >
+                              {c.plan_name}
+                              {isTrial && diasTrial !== null && <span className="ml-1">·{diasTrial}d</span>}
+                            </Badge>
+                            <div className="shrink-0 text-xs text-muted-foreground whitespace-nowrap hidden xs:flex items-center gap-1 min-w-[28px] justify-end">
+                              {uc ? (
+                                <>
+                                  {uc.canal === "whatsapp"
+                                    ? <MessageCircle className="h-3 w-3 text-emerald-600" />
+                                    : <Mail className="h-3 w-3 text-blue-600" />}
+                                  <span className="hidden sm:inline">{formatDate(uc.created_at)}</span>
+                                </>
+                              ) : (
+                                <span>—</span>
                               )}
-                            </TableCell>
-                            <TableCell className="text-right">{c.total_fornecedores}</TableCell>
-                            <TableCell className="text-right">{c.total_cotacoes}</TableCell>
-                            <TableCell className="text-right">{c.total_pedidos}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground">{formatDate(c.created_at)}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                              {(() => {
-                                const uc = ultimosContatos?.get(c.user_id);
-                                if (!uc) return <span className="text-muted-foreground">—</span>;
-                                return (
-                                  <span className="inline-flex items-center gap-1">
-                                    {uc.canal === "whatsapp"
-                                      ? <MessageCircle className="h-3 w-3 text-emerald-600" />
-                                      : <Mail className="h-3 w-3 text-blue-600" />}
-                                    {formatDate(uc.created_at)}
-                                  </span>
-                                );
-                              })()}
-                            </TableCell>
-
-                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex justify-end gap-1 flex-wrap">
-                                <Button
-                                  size="icon"
-                                  variant="outline"
-                                  className="h-7 w-7"
-                                  title="WhatsApp"
-                                  onClick={() => abrirContato(c, undefined, "whatsapp")}
-                                >
-                                  <MessageCircle className="h-3.5 w-3.5 text-emerald-600" />
-                                </Button>
-                                {c.email && (
-                                  <Button
-                                    size="icon"
-                                    variant="outline"
-                                    className="h-7 w-7"
-                                    title="Email"
-                                    onClick={() => abrirContato(c, undefined, "email")}
-                                  >
-                                    <Mail className="h-3.5 w-3.5 text-blue-600" />
-                                  </Button>
-                                )}
-                                {c.total_produtos_inativos > 0 && (
-                                  <Button size="sm" variant="outline" className="h-7 text-xs"
-                                    onClick={() => setConfirmActivate(c)}>
-                                    Ativar
-                                  </Button>
-                                )}
-                                <Button size="sm" variant="outline" className="h-7 text-xs"
-                                  onClick={() => setPlanEdit({ cliente: c, novoPlano: c.plan_name })}>
-                                  Plano
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                      {filteredClientes.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
-                            Nenhum cliente encontrado.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                            </div>
+                            <ChevronRight className="shrink-0 h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </li>
+                      );
+                    })}
+                    {filteredClientes.length === 0 && (
+                      <li className="text-center py-8 text-muted-foreground text-sm">
+                        Nenhum cliente encontrado.
+                      </li>
+                    )}
+                  </ul>
                 </CardContent>
               </Card>
             )}
