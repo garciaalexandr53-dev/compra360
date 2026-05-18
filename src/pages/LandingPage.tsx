@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { PLAN_PRICES } from "@/lib/planPrices";
+import { withAssetVersion } from "@/lib/assetVersion";
 import {
   Accordion,
   AccordionContent,
