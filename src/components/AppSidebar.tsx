@@ -124,7 +124,7 @@ export function AppSidebar() {
         {!collapsed ? (
           <div className="flex w-full items-center justify-center">
             <img
-              src="https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png?v=2"
+              src="https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png"
               alt="Compra360"
               className="block w-full max-w-[180px] h-auto object-contain mx-auto"
             />
