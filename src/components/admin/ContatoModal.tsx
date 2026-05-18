@@ -110,6 +110,14 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
 
   const handleAbrir = async () => {
     if (canal === "whatsapp") {
+      if (!whatsappCliente) {
+        toast({
+          title: "WhatsApp do cliente inválido",
+          description: "O cliente não tem um número de WhatsApp válido cadastrado (mínimo 10 dígitos). Atualize o cadastro para abrir a conversa direta.",
+          variant: "destructive",
+        });
+        return;
+      }
       window.open(buildWhatsAppUrl(whatsappCliente, mensagemEditada), "_blank");
       return;
     }
@@ -221,7 +229,7 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
             <div className={`rounded-md border p-2.5 text-xs flex items-start gap-2 ${
               whatsappCliente
                 ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400"
-                : "border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400"
+                : "border-destructive/40 bg-destructive/5 text-destructive"
             }`}>
               <MessageCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               <div className="min-w-0">
@@ -232,8 +240,8 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
                   </>
                 ) : (
                   <>
-                    <div className="font-medium">Sem WhatsApp cadastrado</div>
-                    <div>O WhatsApp abrirá só com a mensagem pronta para colar no contato escolhido.</div>
+                    <div className="font-medium">WhatsApp do cliente inválido</div>
+                    <div>Não é possível abrir a conversa — o cliente não tem um número válido cadastrado (mínimo 10 dígitos).</div>
                   </>
                 )}
               </div>
@@ -248,7 +256,7 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
           </Button>
           <Button
             onClick={handleAbrir}
-            disabled={enviando || (canal === "email" && !emailDestinatario)}
+            disabled={enviando || (canal === "email" && !emailDestinatario) || (canal === "whatsapp" && !whatsappCliente)}
             className={canal === "whatsapp"
               ? "bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
               : "bg-blue-600 hover:bg-blue-700 text-white gap-1.5"}
