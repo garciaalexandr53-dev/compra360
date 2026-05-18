@@ -584,6 +584,21 @@ export default function AdminPage() {
                             <TableCell className="text-right">{c.total_cotacoes}</TableCell>
                             <TableCell className="text-right">{c.total_pedidos}</TableCell>
                             <TableCell className="text-xs text-muted-foreground">{formatDate(c.created_at)}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                              {(() => {
+                                const uc = ultimosContatos?.get(c.user_id);
+                                if (!uc) return <span className="text-muted-foreground">—</span>;
+                                return (
+                                  <span className="inline-flex items-center gap-1">
+                                    {uc.canal === "whatsapp"
+                                      ? <MessageCircle className="h-3 w-3 text-emerald-600" />
+                                      : <Mail className="h-3 w-3 text-blue-600" />}
+                                    {formatDate(uc.created_at)}
+                                  </span>
+                                );
+                              })()}
+                            </TableCell>
+
                             <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                               <div className="flex justify-end gap-1 flex-wrap">
                                 <Button
