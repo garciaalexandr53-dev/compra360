@@ -104,8 +104,13 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
   const emailValidation = useMemo(() => emailSchema.safeParse(cliente?.email ?? ""), [cliente?.email]);
   const emailDestinatario = emailValidation.success ? emailValidation.data : null;
   const whatsappCliente = useMemo(() => {
-    const raw = cliente?.whatsapp?.replace(/\D/g, "");
-    return raw && raw.length >= 10 ? raw : null;
+    // Normaliza: remove espaços, parênteses, hífens, '+' e qualquer caractere não numérico
+    let raw = (cliente?.whatsapp ?? "").replace(/\D/g, "");
+    // Remove DDI do Brasil (55) quando presente em números com 12 ou 13 dígitos
+    if ((raw.length === 12 || raw.length === 13) && raw.startsWith("55")) {
+      raw = raw.slice(2);
+    }
+    return raw.length >= 10 ? raw : null;
   }, [cliente?.whatsapp]);
 
   const handleAbrir = async () => {
