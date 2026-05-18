@@ -77,6 +77,23 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
     enabled: !!cliente,
   });
 
+  const { data: contatos } = useQuery({
+    queryKey: ["admin-contatos-cliente", cliente?.user_id],
+    queryFn: async () => {
+      if (!cliente) return [];
+      const { data, error } = await supabase.rpc("admin_get_contatos_cliente", {
+        _user_id: cliente.user_id,
+        _limit: 10,
+      });
+      if (error) throw error;
+      return (data || []) as Array<{
+        id: string; canal: string; motivo: string; observacao: string | null; created_at: string;
+      }>;
+    },
+    enabled: !!cliente,
+  });
+
+
   const saude = useMemo(() => (cliente ? getSaudeCliente(cliente) : null), [cliente]);
   const diasTrial = useMemo(() => (cliente ? getDiasTrialRestantes(cliente.trial_end) : null), [cliente]);
   const whatsappOk = useMemo(
