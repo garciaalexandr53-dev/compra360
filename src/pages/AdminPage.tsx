@@ -528,7 +528,9 @@ export default function AdminPage() {
                         <TableHead className="text-right">Cotações</TableHead>
                         <TableHead className="text-right">Pedidos</TableHead>
                         <TableHead>Cadastro</TableHead>
+                        <TableHead>Último contato</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
+
                       </TableRow>
                     </TableHeader>
                     <TableBody>
