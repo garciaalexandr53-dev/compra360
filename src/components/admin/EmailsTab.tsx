@@ -103,6 +103,71 @@ export default function EmailsTab() {
 
   const refresh = () => { refetchStats(); refetchLogs(); };
 
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportCsv = async () => {
+    setExporting(true);
+    try {
+      const BATCH = 1000;
+      let offset = 0;
+      const all: LogRow[] = [];
+      // Pull all rows matching current filters (ignoring pagination)
+      while (true) {
+        const { data, error } = await supabase.rpc("admin_list_email_logs" as any, {
+          _start: filters.start, _end: filters.end,
+          _template: filters.template, _status: filters.status,
+          _limit: BATCH, _offset: offset,
+        });
+        if (error) throw error;
+        const rows = (data || []) as LogRow[];
+        all.push(...rows);
+        if (rows.length < BATCH) break;
+        offset += BATCH;
+        if (offset > 50000) break; // safety cap
+      }
+
+      if (all.length === 0) {
+        toast({ title: "Nada para exportar", description: "Nenhum e-mail nos filtros atuais." });
+        return;
+      }
+
+      const esc = (v: unknown) => {
+        const s = v == null ? "" : String(v);
+        return /[",;\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const header = ["Data", "Template", "Destinatário", "Status", "Message ID", "Erro"];
+      const lines = [header.join(";")];
+      for (const r of all) {
+        lines.push([
+          new Date(r.created_at).toISOString(),
+          r.template_name,
+          r.recipient_email,
+          r.status,
+          r.message_id ?? "",
+          r.error_message ?? "",
+        ].map(esc).join(";"));
+      }
+      const csv = "\uFEFF" + lines.join("\r\n"); // BOM for Excel pt-BR
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      a.href = url;
+      a.download = `email-logs-${range}-${stamp}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      toast({ title: "Exportação concluída", description: `${all.length} e-mails exportados.` });
+    } catch (e) {
+      toast({ title: "Erro ao exportar", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Filters */}
