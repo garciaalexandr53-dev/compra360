@@ -10,6 +10,7 @@ import {
   MessageCircle, Mail, Copy, AlertTriangle, Clock, UserPlus, TimerReset,
 } from "lucide-react";
 import { buildWhatsAppUrl } from "@/lib/format";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Cliente, SituacaoCliente, detectarSituacao, getMensagem,
 } from "@/lib/adminHelpers";
