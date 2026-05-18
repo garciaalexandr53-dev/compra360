@@ -52,7 +52,7 @@ export default function AlertasTab({ clientes, onContatar }: Props) {
   return (
     <div className="space-y-6">
       {/* Trials expirando */}
-      <section>
+      <section id="alertas-trials">
         <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
           <h2 className="text-sm font-semibold flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-destructive" />
@@ -106,7 +106,7 @@ export default function AlertasTab({ clientes, onContatar }: Props) {
       </section>
 
       {/* Em risco de churn */}
-      <section>
+      <section id="alertas-churn">
         <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
           <h2 className="text-sm font-semibold flex items-center gap-2">
             <span className="text-amber-500">🟡</span>

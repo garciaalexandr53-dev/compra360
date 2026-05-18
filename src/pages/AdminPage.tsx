@@ -61,6 +61,8 @@ export default function AdminPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState("metricas");
+  const [scrollToSection, setScrollToSection] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filtroPlano, setFiltroPlano] = useState<"todos" | "free" | "business" | "pro">("todos");
   const [filtroStatus, setFiltroStatus] = useState<"todos" | "ativo" | "dormindo" | "risco" | "trial">("todos");
@@ -93,6 +95,18 @@ export default function AdminPage() {
   useEffect(() => {
     if (!authLoading && !user) navigate("/login", { replace: true });
   }, [authLoading, user, navigate]);
+
+  useEffect(() => {
+    if (activeTab === "alertas" && scrollToSection) {
+      requestAnimationFrame(() => {
+        const el = document.getElementById(scrollToSection);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        setScrollToSection(null);
+      });
+    }
+  }, [activeTab, scrollToSection]);
 
   const { data: metrics, isLoading: loadingMetrics, refetch: refetchMetrics } = useQuery({
     queryKey: ["admin-metrics"],
@@ -315,7 +329,7 @@ export default function AdminPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
-        <Tabs defaultValue="metricas" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid grid-cols-3 sm:grid-cols-5 w-full sm:w-auto sm:inline-flex">
             <TabsTrigger value="metricas">Métricas</TabsTrigger>
             <TabsTrigger value="alertas" className="gap-1.5">
@@ -368,9 +382,18 @@ export default function AdminPage() {
                     label="Trials expirando (7d)"
                     value={metrics.trials_expirando_7d.toString()}
                     danger={metrics.trials_expirando_7d > 0}
-                    onClick={() => setSheetType("trials")}
+                    onClick={() => {
+                      setActiveTab("alertas");
+                      setScrollToSection("alertas-trials");
+                    }}
                   />
-                  <ChurnRiskCard clientes={clientes || []} />
+                  <ChurnRiskCard
+                    clientes={clientes || []}
+                    onClick={() => {
+                      setActiveTab("alertas");
+                      setScrollToSection("alertas-churn");
+                    }}
+                  />
                   <MetricCard
                     icon={<Activity className="h-4 w-4" />}
                     label="Taxa de ativação"
