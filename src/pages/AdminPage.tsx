@@ -654,8 +654,10 @@ export default function AdminPage() {
         cliente={contato.cliente}
         initialCanal={contato.canal}
         forcarSituacao={contato.situacao}
+        motivo={contato.motivo}
         onClose={() => setContato({ cliente: null, canal: "whatsapp" })}
       />
+
 
       {/* Detalhes do cliente */}
       <ClienteDetalhesSheet
