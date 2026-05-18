@@ -61,6 +61,8 @@ export default function AdminPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState("metricas");
+  const [scrollToSection, setScrollToSection] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filtroPlano, setFiltroPlano] = useState<"todos" | "free" | "business" | "pro">("todos");
   const [filtroStatus, setFiltroStatus] = useState<"todos" | "ativo" | "dormindo" | "risco" | "trial">("todos");
