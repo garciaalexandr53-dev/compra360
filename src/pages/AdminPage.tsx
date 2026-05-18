@@ -409,7 +409,7 @@ export default function AdminPage() {
                             <TableCell className="text-right">{c.total_cotacoes}</TableCell>
                             <TableCell className="text-right">{c.total_pedidos}</TableCell>
                             <TableCell className="text-xs text-muted-foreground">{formatDate(c.created_at)}</TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                               <div className="flex justify-end gap-1 flex-wrap">
                                 <Button
                                   size="icon"
