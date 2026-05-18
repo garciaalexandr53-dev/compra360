@@ -20,6 +20,12 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
+    {
+      name: "html-asset-version",
+      transformIndexHtml(html) {
+        return html.replace(/%ASSET_VERSION%/g, ASSET_VERSION);
+      },
+    },
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
