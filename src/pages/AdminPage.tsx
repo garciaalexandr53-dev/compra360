@@ -382,9 +382,18 @@ export default function AdminPage() {
                     label="Trials expirando (7d)"
                     value={metrics.trials_expirando_7d.toString()}
                     danger={metrics.trials_expirando_7d > 0}
-                    onClick={() => setSheetType("trials")}
+                    onClick={() => {
+                      setActiveTab("alertas");
+                      setScrollToSection("alertas-trials");
+                    }}
                   />
-                  <ChurnRiskCard clientes={clientes || []} />
+                  <ChurnRiskCard
+                    clientes={clientes || []}
+                    onClick={() => {
+                      setActiveTab("alertas");
+                      setScrollToSection("alertas-churn");
+                    }}
+                  />
                   <MetricCard
                     icon={<Activity className="h-4 w-4" />}
                     label="Taxa de ativação"
