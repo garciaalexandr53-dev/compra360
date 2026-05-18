@@ -26,7 +26,9 @@ import { buildClientesCsv, clientesFilename, downloadCsv } from "@/lib/adminExpo
 import { formatBRL, formatDate } from "@/lib/format";
 import {
   Cliente, getDiasSemUso, getDiasTrialRestantes, getSaudeCliente, PLAN_COLORS, SituacaoCliente,
+  MotivoContato, situacaoParaMotivo,
 } from "@/lib/adminHelpers";
+
 import { PLAN_PRICE_NUMERIC } from "@/lib/planPrices";
 import ContatoModal from "@/components/admin/ContatoModal";
 import MetricSheets, { SheetType } from "@/components/admin/MetricSheets";
