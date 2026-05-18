@@ -55,6 +55,7 @@ const SITUACAO_INFO: Record<SituacaoCliente, { label: string; icon: React.ReactN
 
 export default function ContatoModal({ cliente, initialCanal = "whatsapp", forcarSituacao, onClose }: Props) {
   const [canal, setCanal] = useState<Canal>(initialCanal);
+  const [enviando, setEnviando] = useState(false);
   const [mensagemEditada, setMensagemEditada] = useState("");
   const [assuntoEditado, setAssuntoEditado] = useState("");
 
