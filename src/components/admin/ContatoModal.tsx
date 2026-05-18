@@ -12,9 +12,10 @@ import {
 } from "lucide-react";
 import { buildWhatsAppUrl } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Cliente, SituacaoCliente, detectarSituacao, getMensagem,
-  normalizarWhatsAppCliente,
+  normalizarWhatsAppCliente, MotivoContato, situacaoParaMotivo,
 } from "@/lib/adminHelpers";
 
 const emailSchema = z.string().trim().email("E-mail inválido").max(255);
@@ -26,8 +27,11 @@ interface Props {
   initialCanal?: Canal;
   /** Força uma situação específica (ex.: aba Alertas). Se omitido, detecta automaticamente. */
   forcarSituacao?: SituacaoCliente;
+  /** Motivo do contato — se omitido é derivado da situação. */
+  motivo?: MotivoContato;
   onClose: () => void;
 }
+
 
 const SITUACAO_INFO: Record<SituacaoCliente, { label: string; icon: React.ReactNode; color: string }> = {
   sem_uso_7d: {
@@ -57,16 +61,40 @@ const SITUACAO_INFO: Record<SituacaoCliente, { label: string; icon: React.ReactN
   },
 };
 
-export default function ContatoModal({ cliente, initialCanal = "whatsapp", forcarSituacao, onClose }: Props) {
+export default function ContatoModal({ cliente, initialCanal = "whatsapp", forcarSituacao, motivo, onClose }: Props) {
   const [canal, setCanal] = useState<Canal>(initialCanal);
   const [enviando, setEnviando] = useState(false);
   const [mensagemEditada, setMensagemEditada] = useState("");
   const [assuntoEditado, setAssuntoEditado] = useState("");
+  const queryClient = useQueryClient();
 
   const situacao = useMemo<SituacaoCliente | null>(() => {
     if (!cliente) return null;
     return forcarSituacao ?? detectarSituacao(cliente);
   }, [cliente, forcarSituacao]);
+
+  const motivoFinal = useMemo<MotivoContato>(
+    () => motivo ?? situacaoParaMotivo(situacao),
+    [motivo, situacao],
+  );
+
+  const registrarContato = async (canalUsado: Canal) => {
+    if (!cliente) return;
+    try {
+      await supabase.rpc("admin_registrar_contato", {
+        _user_id: cliente.user_id,
+        _canal: canalUsado,
+        _motivo: motivoFinal,
+        _observacao: null,
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin-ultimos-contatos"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-contatos-cliente", cliente.user_id] });
+    } catch (e) {
+      console.warn("Falha ao registrar contato admin", e);
+    }
+  };
+
+
 
   const mensagem = useMemo(() => {
     if (!cliente || !situacao) return null;
@@ -120,6 +148,7 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
         return;
       }
       window.open(buildWhatsAppUrl(whatsappCliente, mensagemEditada), "_blank");
+      void registrarContato("whatsapp");
       return;
     }
     if (!emailDestinatario) {
@@ -130,6 +159,7 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
       });
       return;
     }
+
     setEnviando(true);
     try {
       const { error } = await supabase.functions.invoke("send-transactional-email", {
@@ -144,11 +174,13 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
         },
       });
       if (error) throw error;
+      await registrarContato("email");
       toast({
         title: "Email enviado!",
         description: `Mensagem enviada para ${emailDestinatario} a partir do Compra360.`,
       });
       onClose();
+
     } catch (e: any) {
       toast({
         title: "Erro ao enviar email",

@@ -48,3 +48,23 @@ describe("normalizarWhatsAppCliente", () => {
     expect(normalizarWhatsAppCliente("14155551234")).toBe("14155551234"); // EUA: 11 dígitos
   });
 });
+
+import { situacaoParaMotivo } from "@/lib/adminHelpers";
+
+describe("situacaoParaMotivo", () => {
+  it("mapeia trials para trial_expirando", () => {
+    expect(situacaoParaMotivo("trial_3d")).toBe("trial_expirando");
+    expect(situacaoParaMotivo("trial_7d")).toBe("trial_expirando");
+  });
+  it("mapeia inativo_15d para risco_churn", () => {
+    expect(situacaoParaMotivo("inativo_15d")).toBe("risco_churn");
+  });
+  it("mapeia sem_uso/boas_vindas para sem_ativacao", () => {
+    expect(situacaoParaMotivo("sem_uso_7d")).toBe("sem_ativacao");
+    expect(situacaoParaMotivo("boas_vindas")).toBe("sem_ativacao");
+  });
+  it("defaults para manual quando não houver situação", () => {
+    expect(situacaoParaMotivo(undefined)).toBe("manual");
+    expect(situacaoParaMotivo(null)).toBe("manual");
+  });
+});

@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_contatos: {
+        Row: {
+          admin_id: string
+          canal: string
+          created_at: string
+          id: string
+          motivo: string
+          observacao: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_id: string
+          canal: string
+          created_at?: string
+          id?: string
+          motivo: string
+          observacao?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_id?: string
+          canal?: string
+          created_at?: string
+          id?: string
+          motivo?: string
+          observacao?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       catalogo_base: {
         Row: {
           categoria: string
@@ -896,6 +926,24 @@ export type Database = {
         }[]
       }
       admin_get_cliente_detalhes: { Args: { _user_id: string }; Returns: Json }
+      admin_get_contatos_cliente: {
+        Args: { _limit?: number; _user_id: string }
+        Returns: {
+          canal: string
+          created_at: string
+          id: string
+          motivo: string
+          observacao: string
+        }[]
+      }
+      admin_get_ultimos_contatos: {
+        Args: never
+        Returns: {
+          canal: string
+          created_at: string
+          user_id: string
+        }[]
+      }
       admin_global_metrics: { Args: never; Returns: Json }
       admin_list_clientes: {
         Args: never
@@ -938,6 +986,15 @@ export type Database = {
           template_name: string
           total_count: number
         }[]
+      }
+      admin_registrar_contato: {
+        Args: {
+          _canal: string
+          _motivo: string
+          _observacao?: string
+          _user_id: string
+        }
+        Returns: string
       }
       admin_set_user_plan: {
         Args: { _plan_name: string; _user_id: string }

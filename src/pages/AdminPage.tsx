@@ -26,7 +26,9 @@ import { buildClientesCsv, clientesFilename, downloadCsv } from "@/lib/adminExpo
 import { formatBRL, formatDate } from "@/lib/format";
 import {
   Cliente, getDiasSemUso, getDiasTrialRestantes, getSaudeCliente, PLAN_COLORS, SituacaoCliente,
+  MotivoContato, situacaoParaMotivo,
 } from "@/lib/adminHelpers";
+
 import { PLAN_PRICE_NUMERIC } from "@/lib/planPrices";
 import ContatoModal from "@/components/admin/ContatoModal";
 import MetricSheets, { SheetType } from "@/components/admin/MetricSheets";
@@ -72,8 +74,10 @@ export default function AdminPage() {
     cliente: Cliente | null;
     canal: "whatsapp" | "email";
     situacao?: SituacaoCliente;
+    motivo?: MotivoContato;
   }>({ cliente: null, canal: "whatsapp" });
   const [clienteDetalhe, setClienteDetalhe] = useState<Cliente | null>(null);
+
 
   const { data: isAdmin, isLoading: checkingRole } = useQuery({
     queryKey: ["is-admin", user?.id],
@@ -119,6 +123,22 @@ export default function AdminPage() {
     },
     enabled: !!isAdmin,
   });
+
+  const { data: ultimosContatos } = useQuery({
+    queryKey: ["admin-ultimos-contatos"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_get_ultimos_contatos");
+      if (error) throw error;
+      const map = new Map<string, { canal: string; created_at: string }>();
+      ((data || []) as Array<{ user_id: string; canal: string; created_at: string }>).forEach((r) => {
+        map.set(r.user_id, { canal: r.canal, created_at: r.created_at });
+      });
+      return map;
+    },
+    enabled: !!isAdmin,
+  });
+
+
 
   // MRR recalculado a partir dos clientes únicos (evita inflação por duplicatas)
   const mrrCalculado = (clientes || [])
@@ -267,9 +287,10 @@ export default function AdminPage() {
     return result;
   }, [clientes, search, filtroPlano, filtroStatus, filtroAtivacao, ordenacao]);
 
-  const abrirContato = (cliente: Cliente, situacao?: SituacaoCliente, canal: "whatsapp" | "email" = "whatsapp") => {
-    setContato({ cliente, canal, situacao });
+  const abrirContato = (cliente: Cliente, situacao?: SituacaoCliente, canal: "whatsapp" | "email" = "whatsapp", motivo?: MotivoContato) => {
+    setContato({ cliente, canal, situacao, motivo: motivo ?? situacaoParaMotivo(situacao) });
   };
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -507,7 +528,9 @@ export default function AdminPage() {
                         <TableHead className="text-right">Cotações</TableHead>
                         <TableHead className="text-right">Pedidos</TableHead>
                         <TableHead>Cadastro</TableHead>
+                        <TableHead>Último contato</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
+
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -561,6 +584,21 @@ export default function AdminPage() {
                             <TableCell className="text-right">{c.total_cotacoes}</TableCell>
                             <TableCell className="text-right">{c.total_pedidos}</TableCell>
                             <TableCell className="text-xs text-muted-foreground">{formatDate(c.created_at)}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                              {(() => {
+                                const uc = ultimosContatos?.get(c.user_id);
+                                if (!uc) return <span className="text-muted-foreground">—</span>;
+                                return (
+                                  <span className="inline-flex items-center gap-1">
+                                    {uc.canal === "whatsapp"
+                                      ? <MessageCircle className="h-3 w-3 text-emerald-600" />
+                                      : <Mail className="h-3 w-3 text-blue-600" />}
+                                    {formatDate(uc.created_at)}
+                                  </span>
+                                );
+                              })()}
+                            </TableCell>
+
                             <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                               <div className="flex justify-end gap-1 flex-wrap">
                                 <Button
@@ -600,7 +638,7 @@ export default function AdminPage() {
                       })}
                       {filteredClientes.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                             Nenhum cliente encontrado.
                           </TableCell>
                         </TableRow>
@@ -633,8 +671,10 @@ export default function AdminPage() {
         cliente={contato.cliente}
         initialCanal={contato.canal}
         forcarSituacao={contato.situacao}
+        motivo={contato.motivo}
         onClose={() => setContato({ cliente: null, canal: "whatsapp" })}
       />
+
 
       {/* Detalhes do cliente */}
       <ClienteDetalhesSheet
@@ -642,8 +682,9 @@ export default function AdminPage() {
         onClose={() => setClienteDetalhe(null)}
         onContatar={(c, canal) => {
           setClienteDetalhe(null);
-          abrirContato(c, undefined, canal);
+          abrirContato(c, undefined, canal, "manual");
         }}
+
         onAlterarPlano={(c) => {
           setClienteDetalhe(null);
           setPlanEdit({ cliente: c, novoPlano: c.plan_name });
