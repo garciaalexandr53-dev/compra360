@@ -96,6 +96,18 @@ export default function AdminPage() {
     if (!authLoading && !user) navigate("/login", { replace: true });
   }, [authLoading, user, navigate]);
 
+  useEffect(() => {
+    if (activeTab === "alertas" && scrollToSection) {
+      requestAnimationFrame(() => {
+        const el = document.getElementById(scrollToSection);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        setScrollToSection(null);
+      });
+    }
+  }, [activeTab, scrollToSection]);
+
   const { data: metrics, isLoading: loadingMetrics, refetch: refetchMetrics } = useQuery({
     queryKey: ["admin-metrics"],
     queryFn: async () => {
