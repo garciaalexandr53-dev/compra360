@@ -183,3 +183,19 @@ export const PLAN_COLORS: Record<string, string> = {
   pro: "bg-primary/15 text-primary border-primary/30",
   business: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
 };
+
+/**
+ * Normaliza um número de WhatsApp para abertura de conversa.
+ * - Remove todos os caracteres não numéricos
+ * - Remove o DDI do Brasil (55) quando presente em números com 12 ou 13 dígitos
+ * - Retorna null se o resultado tiver menos de 10 dígitos
+ */
+export function normalizarWhatsAppCliente(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  let digits = raw.replace(/\D/g, "");
+  if ((digits.length === 12 || digits.length === 13) && digits.startsWith("55")) {
+    digits = digits.slice(2);
+  }
+  return digits.length >= 10 ? digits : null;
+}
+
