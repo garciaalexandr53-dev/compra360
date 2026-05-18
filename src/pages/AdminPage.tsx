@@ -60,6 +60,10 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [filtroPlano, setFiltroPlano] = useState<"todos" | "free" | "business" | "pro">("todos");
+  const [filtroStatus, setFiltroStatus] = useState<"todos" | "ativo" | "dormindo" | "risco" | "trial">("todos");
+  const [filtroAtivacao, setFiltroAtivacao] = useState<"todos" | "com_cotacao" | "sem_cotacao">("todos");
+  const [ordenacao, setOrdenacao] = useState<"recentes" | "antigos" | "maior_uso" | "risco_churn">("recentes");
   const [confirmActivate, setConfirmActivate] = useState<Cliente | null>(null);
   const [planEdit, setPlanEdit] = useState<{ cliente: Cliente; novoPlano: string } | null>(null);
   const [sheetType, setSheetType] = useState<SheetType>(null);
