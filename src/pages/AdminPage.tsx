@@ -141,10 +141,6 @@ export default function AdminPage() {
 
 
 
-  // MRR recalculado a partir dos clientes únicos (evita inflação por duplicatas)
-  const mrrCalculado = (clientes || [])
-    .filter((c) => c.plan_status === "active" && (c.plan_name === "pro" || c.plan_name === "business"))
-    .reduce((s, c) => s + (PLAN_PRICE_NUMERIC[c.plan_name] || 0), 0);
 
   const activateMutation = useMutation({
     mutationFn: async (userId: string) => {
