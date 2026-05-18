@@ -11,7 +11,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Loader2, Mail, CheckCircle2, XCircle, ShieldOff, Clock, RefreshCw, Download, FileSpreadsheet } from "lucide-react";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
 
@@ -145,7 +145,7 @@ export default function EmailsTab() {
       const lines = [header.join(";")];
       for (const r of all) {
         lines.push([
-          new Date(r.created_at).toISOString(),
+          formatDateTime(r.created_at),
           r.template_name,
           r.recipient_email,
           r.status,
@@ -183,7 +183,7 @@ export default function EmailsTab() {
       }
 
       const rows = all.map((r) => ({
-        Data: new Date(r.created_at).toISOString(),
+        Data: formatDateTime(r.created_at),
         Template: r.template_name,
         "Destinatário": r.recipient_email,
         Status: r.status,
