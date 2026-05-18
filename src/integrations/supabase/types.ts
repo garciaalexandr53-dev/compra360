@@ -914,6 +914,7 @@ export type Database = {
           trial_end: string
           ultima_cotacao_at: string
           user_id: string
+          whatsapp: string
         }[]
       }
       admin_list_email_logs: {
