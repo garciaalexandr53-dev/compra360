@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,11 +20,11 @@ import { toast } from "@/hooks/use-toast";
 import {
   Users, Store, Package, FileText, Send, ClipboardCheck, TrendingUp, Loader2,
   Search, ShieldCheck, RefreshCw, ArrowLeft, AlertTriangle, TimerReset, Activity,
-  MessageCircle, Mail,
+  MessageCircle, Mail, X,
 } from "lucide-react";
 import { formatBRL, formatDate } from "@/lib/format";
 import {
-  Cliente, getDiasTrialRestantes, getSaudeCliente, PLAN_COLORS, SituacaoCliente,
+  Cliente, getDiasSemUso, getDiasTrialRestantes, getSaudeCliente, PLAN_COLORS, SituacaoCliente,
 } from "@/lib/adminHelpers";
 import { PLAN_PRICE_NUMERIC } from "@/lib/planPrices";
 import ContatoModal from "@/components/admin/ContatoModal";
