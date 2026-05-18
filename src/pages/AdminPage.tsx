@@ -344,8 +344,9 @@ export default function AdminPage() {
             ) : metrics ? (
               <>
                 <Section titulo="Receita e assinaturas">
-                  <MetricCard icon={<TrendingUp className="h-4 w-4" />} label="MRR estimado"
-                    value={formatBRL(mrrCalculado)} highlight onClick={() => setSheetType("mrr")} />
+                  <div className="col-span-2 md:col-span-2">
+                    <MrrBreakdownCard clientes={clientes || []} onOpenMrr={() => setSheetType("mrr")} />
+                  </div>
                   <MetricCard icon={<Users className="h-4 w-4" />} label="Trials ativos"
                     value={metrics.trials_ativos.toString()} onClick={() => setSheetType("trials")} />
                   <MetricCard icon={<Users className="h-4 w-4" />} label="Plano Free"
@@ -371,12 +372,7 @@ export default function AdminPage() {
                     danger={metrics.trials_expirando_7d > 0}
                     onClick={() => setSheetType("trials")}
                   />
-                  <MetricCard
-                    icon={<AlertTriangle className="h-4 w-4" />}
-                    label="Em risco de churn"
-                    value={metrics.em_risco_churn.toString()}
-                    danger={metrics.em_risco_churn > 0}
-                  />
+                  <ChurnRiskCard clientes={clientes || []} />
                   <MetricCard
                     icon={<Activity className="h-4 w-4" />}
                     label="Taxa de ativação"
@@ -384,6 +380,9 @@ export default function AdminPage() {
                     sub="usuários com cotação"
                   />
                 </Section>
+
+                <GrowthChart clientes={clientes || []} />
+
 
                 <Section titulo="Uso da plataforma">
                   <MetricCard icon={<Package className="h-4 w-4" />} label="Produtos"
