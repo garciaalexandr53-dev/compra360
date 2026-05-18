@@ -103,10 +103,14 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
 
   const emailValidation = useMemo(() => emailSchema.safeParse(cliente?.email ?? ""), [cliente?.email]);
   const emailDestinatario = emailValidation.success ? emailValidation.data : null;
+  const whatsappCliente = useMemo(() => {
+    const raw = cliente?.whatsapp?.replace(/\D/g, "");
+    return raw && raw.length >= 10 ? raw : null;
+  }, [cliente?.whatsapp]);
 
   const handleAbrir = async () => {
     if (canal === "whatsapp") {
-      window.open(buildWhatsAppUrl(null, mensagemEditada), "_blank");
+      window.open(buildWhatsAppUrl(whatsappCliente, mensagemEditada), "_blank");
       return;
     }
     if (!emailDestinatario) {
