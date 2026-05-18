@@ -68,6 +68,7 @@ export default function AdminPage() {
     canal: "whatsapp" | "email";
     situacao?: SituacaoCliente;
   }>({ cliente: null, canal: "whatsapp" });
+  const [clienteDetalhe, setClienteDetalhe] = useState<Cliente | null>(null);
 
   const { data: isAdmin, isLoading: checkingRole } = useQuery({
     queryKey: ["is-admin", user?.id],
