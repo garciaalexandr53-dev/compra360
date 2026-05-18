@@ -45,11 +45,16 @@ describe("csvEscape", () => {
 });
 
 describe("buildCsv", () => {
-  it("inclui BOM UTF-8 e separa colunas com ;", () => {
+  it("usa UTF-8 puro sem BOM e separa colunas com ;", () => {
     const csv = buildCsv(["A", "B"], [[1, 2]]);
-    expect(csv.charCodeAt(0)).toBe(0xfeff);
+    expect(csv.charCodeAt(0)).not.toBe(0xfeff);
     expect(csv).toContain("A;B");
     expect(csv).toContain("1;2");
+  });
+  it("preserva caracteres acentuados (Ação, Cotação, Supermercado)", () => {
+    const csv = buildCsv(["Nome"], [["Supermercado Ação"], ["Cotação BR"]]);
+    expect(csv).toContain("Supermercado Ação");
+    expect(csv).toContain("Cotação BR");
   });
 });
 
