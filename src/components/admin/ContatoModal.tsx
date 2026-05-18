@@ -174,11 +174,13 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
         },
       });
       if (error) throw error;
+      await registrarContato("email");
       toast({
         title: "Email enviado!",
         description: `Mensagem enviada para ${emailDestinatario} a partir do Compra360.`,
       });
       onClose();
+
     } catch (e: any) {
       toast({
         title: "Erro ao enviar email",
