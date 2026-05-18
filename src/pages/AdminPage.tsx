@@ -665,8 +665,9 @@ export default function AdminPage() {
         onClose={() => setClienteDetalhe(null)}
         onContatar={(c, canal) => {
           setClienteDetalhe(null);
-          abrirContato(c, undefined, canal);
+          abrirContato(c, undefined, canal, "manual");
         }}
+
         onAlterarPlano={(c) => {
           setClienteDetalhe(null);
           setPlanEdit({ cliente: c, novoPlano: c.plan_name });
