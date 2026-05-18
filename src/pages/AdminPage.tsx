@@ -364,7 +364,11 @@ export default function AdminPage() {
                         const diasTrial = getDiasTrialRestantes(c.trial_end);
                         const trialUrgente = c.plan_status === "trialing" && diasTrial !== null && diasTrial <= 3;
                         return (
-                          <TableRow key={c.user_id}>
+                          <TableRow
+                            key={c.user_id}
+                            className="cursor-pointer hover:bg-muted/40"
+                            onClick={() => setClienteDetalhe(c)}
+                          >
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <div className="min-w-0">
