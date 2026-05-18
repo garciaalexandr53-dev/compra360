@@ -110,6 +110,14 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
 
   const handleAbrir = async () => {
     if (canal === "whatsapp") {
+      if (!whatsappCliente) {
+        toast({
+          title: "WhatsApp do cliente inválido",
+          description: "O cliente não tem um número de WhatsApp válido cadastrado (mínimo 10 dígitos). Atualize o cadastro para abrir a conversa direta.",
+          variant: "destructive",
+        });
+        return;
+      }
       window.open(buildWhatsAppUrl(whatsappCliente, mensagemEditada), "_blank");
       return;
     }
