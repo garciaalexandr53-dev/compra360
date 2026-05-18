@@ -26,6 +26,7 @@ type ContatoRow = {
 
 interface Props {
   clientes: Cliente[] | undefined;
+  onSelectCliente?: (userId: string) => void;
 }
 
 const PAGE_SIZE = 50;
