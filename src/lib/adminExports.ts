@@ -1,9 +1,9 @@
-// Helpers de exportação CSV para o Painel Administrativo
-// Padrão Brasil: UTF-8 BOM, separador ";", datas DD/MM/AAAA, vírgula decimal
+// Helpers de exportação CSV/Excel para o Painel Administrativo
+// Padrão Brasil: UTF-8, separador ";", datas DD/MM/AAAA, vírgula decimal
+import * as XLSX from "xlsx";
 import { Cliente, getDiasSemUso, getDiasTrialRestantes, getSaudeCliente } from "@/lib/adminHelpers";
 
 const CSV_SEP = ";";
-const BOM = "\uFEFF";
 
 /** Escapa um campo para CSV padrão Brasil (separador ;). */
 export function csvEscape(value: unknown): string {
@@ -19,10 +19,10 @@ export function csvLine(cells: unknown[]): string {
   return cells.map(csvEscape).join(CSV_SEP);
 }
 
-/** Constrói um CSV completo com BOM (Excel pt-BR). */
+/** Constrói um CSV completo (UTF-8 puro, sem BOM). */
 export function buildCsv(header: string[], rows: unknown[][]): string {
   const lines = [csvLine(header), ...rows.map(csvLine)];
-  return BOM + lines.join("\r\n");
+  return lines.join("\r\n");
 }
 
 /** Formata ISO em DD/MM/AAAA (vazio se inválido). */
