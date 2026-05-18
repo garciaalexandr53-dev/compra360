@@ -18,23 +18,24 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import {
-  Users, Store, Package, FileText, Send, ClipboardCheck, TrendingUp, Loader2,
+  Users, Store, Package, FileText, Send, ClipboardCheck, Loader2,
   Search, ShieldCheck, RefreshCw, ArrowLeft, AlertTriangle, TimerReset, Activity,
   MessageCircle, Mail, X, Download,
 } from "lucide-react";
 import { buildClientesCsv, clientesFilename, downloadCsv } from "@/lib/adminExports";
-import { formatBRL, formatDate } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import {
   Cliente, getDiasSemUso, getDiasTrialRestantes, getSaudeCliente, PLAN_COLORS, SituacaoCliente,
   MotivoContato, situacaoParaMotivo,
 } from "@/lib/adminHelpers";
 
-import { PLAN_PRICE_NUMERIC } from "@/lib/planPrices";
+
 import ContatoModal from "@/components/admin/ContatoModal";
 import MetricSheets, { SheetType } from "@/components/admin/MetricSheets";
 import AlertasTab from "@/components/admin/AlertasTab";
 import EmailsTab from "@/components/admin/EmailsTab";
 import ClienteDetalhesSheet from "@/components/admin/ClienteDetalhesSheet";
+import { MrrBreakdownCard, GrowthChart, ChurnRiskCard } from "@/components/admin/MetricasExtras";
 
 type GlobalMetrics = {
   total_usuarios: number;
@@ -140,10 +141,6 @@ export default function AdminPage() {
 
 
 
-  // MRR recalculado a partir dos clientes únicos (evita inflação por duplicatas)
-  const mrrCalculado = (clientes || [])
-    .filter((c) => c.plan_status === "active" && (c.plan_name === "pro" || c.plan_name === "business"))
-    .reduce((s, c) => s + (PLAN_PRICE_NUMERIC[c.plan_name] || 0), 0);
 
   const activateMutation = useMutation({
     mutationFn: async (userId: string) => {
@@ -343,8 +340,9 @@ export default function AdminPage() {
             ) : metrics ? (
               <>
                 <Section titulo="Receita e assinaturas">
-                  <MetricCard icon={<TrendingUp className="h-4 w-4" />} label="MRR estimado"
-                    value={formatBRL(mrrCalculado)} highlight onClick={() => setSheetType("mrr")} />
+                  <div className="col-span-2 md:col-span-2">
+                    <MrrBreakdownCard clientes={clientes || []} onOpenMrr={() => setSheetType("mrr")} />
+                  </div>
                   <MetricCard icon={<Users className="h-4 w-4" />} label="Trials ativos"
                     value={metrics.trials_ativos.toString()} onClick={() => setSheetType("trials")} />
                   <MetricCard icon={<Users className="h-4 w-4" />} label="Plano Free"
@@ -370,12 +368,7 @@ export default function AdminPage() {
                     danger={metrics.trials_expirando_7d > 0}
                     onClick={() => setSheetType("trials")}
                   />
-                  <MetricCard
-                    icon={<AlertTriangle className="h-4 w-4" />}
-                    label="Em risco de churn"
-                    value={metrics.em_risco_churn.toString()}
-                    danger={metrics.em_risco_churn > 0}
-                  />
+                  <ChurnRiskCard clientes={clientes || []} />
                   <MetricCard
                     icon={<Activity className="h-4 w-4" />}
                     label="Taxa de ativação"
@@ -383,6 +376,9 @@ export default function AdminPage() {
                     sub="usuários com cotação"
                   />
                 </Section>
+
+                <GrowthChart clientes={clientes || []} />
+
 
                 <Section titulo="Uso da plataforma">
                   <MetricCard icon={<Package className="h-4 w-4" />} label="Produtos"
