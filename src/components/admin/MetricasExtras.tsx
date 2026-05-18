@@ -114,7 +114,13 @@ export function ChurnRiskCard({ clientes, onClick }: { clientes: Cliente[]; onCl
   const danger = count > 0;
 
   return (
-    <Card className={danger ? "border-destructive/40 bg-destructive/5" : ""}>
+    <Card
+      onClick={onClick}
+      className={[
+        danger ? "border-destructive/40 bg-destructive/5" : "",
+        onClick ? "cursor-pointer hover:border-destructive/60 hover:shadow-sm transition-all" : "",
+      ].filter(Boolean).join(" ")}
+    >
       <CardContent className="p-4">
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
           <AlertTriangle className="h-4 w-4" />
