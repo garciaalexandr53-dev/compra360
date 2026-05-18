@@ -30,6 +30,7 @@ import { PLAN_PRICE_NUMERIC } from "@/lib/planPrices";
 import ContatoModal from "@/components/admin/ContatoModal";
 import MetricSheets, { SheetType } from "@/components/admin/MetricSheets";
 import AlertasTab from "@/components/admin/AlertasTab";
+import EmailsTab from "@/components/admin/EmailsTab";
 
 type GlobalMetrics = {
   total_usuarios: number;
