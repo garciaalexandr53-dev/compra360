@@ -895,6 +895,7 @@ export type Database = {
           template_name: string
         }[]
       }
+      admin_get_cliente_detalhes: { Args: { _user_id: string }; Returns: Json }
       admin_global_metrics: { Args: never; Returns: Json }
       admin_list_clientes: {
         Args: never

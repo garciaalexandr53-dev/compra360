@@ -31,6 +31,7 @@ import ContatoModal from "@/components/admin/ContatoModal";
 import MetricSheets, { SheetType } from "@/components/admin/MetricSheets";
 import AlertasTab from "@/components/admin/AlertasTab";
 import EmailsTab from "@/components/admin/EmailsTab";
+import ClienteDetalhesSheet from "@/components/admin/ClienteDetalhesSheet";
 
 type GlobalMetrics = {
   total_usuarios: number;
@@ -67,6 +68,7 @@ export default function AdminPage() {
     canal: "whatsapp" | "email";
     situacao?: SituacaoCliente;
   }>({ cliente: null, canal: "whatsapp" });
+  const [clienteDetalhe, setClienteDetalhe] = useState<Cliente | null>(null);
 
   const { data: isAdmin, isLoading: checkingRole } = useQuery({
     queryKey: ["is-admin", user?.id],
@@ -362,7 +364,11 @@ export default function AdminPage() {
                         const diasTrial = getDiasTrialRestantes(c.trial_end);
                         const trialUrgente = c.plan_status === "trialing" && diasTrial !== null && diasTrial <= 3;
                         return (
-                          <TableRow key={c.user_id}>
+                          <TableRow
+                            key={c.user_id}
+                            className="cursor-pointer hover:bg-muted/40"
+                            onClick={() => setClienteDetalhe(c)}
+                          >
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <div className="min-w-0">
@@ -403,7 +409,7 @@ export default function AdminPage() {
                             <TableCell className="text-right">{c.total_cotacoes}</TableCell>
                             <TableCell className="text-right">{c.total_pedidos}</TableCell>
                             <TableCell className="text-xs text-muted-foreground">{formatDate(c.created_at)}</TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                               <div className="flex justify-end gap-1 flex-wrap">
                                 <Button
                                   size="icon"
@@ -476,6 +482,20 @@ export default function AdminPage() {
         initialCanal={contato.canal}
         forcarSituacao={contato.situacao}
         onClose={() => setContato({ cliente: null, canal: "whatsapp" })}
+      />
+
+      {/* Detalhes do cliente */}
+      <ClienteDetalhesSheet
+        cliente={clienteDetalhe}
+        onClose={() => setClienteDetalhe(null)}
+        onContatar={(c, canal) => {
+          setClienteDetalhe(null);
+          abrirContato(c, undefined, canal);
+        }}
+        onAlterarPlano={(c) => {
+          setClienteDetalhe(null);
+          setPlanEdit({ cliente: c, novoPlano: c.plan_name });
+        }}
       />
 
       {/* Ativar produtos */}
