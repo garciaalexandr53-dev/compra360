@@ -170,35 +170,6 @@ export default function AdminPage() {
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
-  if (authLoading || checkingRole) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-6">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-destructive" />
-              Acesso negado
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">Esta área é restrita a administradores.</p>
-            <Button variant="outline" className="w-full" onClick={() => navigate("/dashboard")}>
-              Voltar ao dashboard
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   const filtrosAtivos = useMemo(() => {
     return (
       filtroPlano !== "todos" ||
@@ -208,14 +179,6 @@ export default function AdminPage() {
       search.trim().length > 0
     );
   }, [filtroPlano, filtroStatus, filtroAtivacao, ordenacao, search]);
-
-  const limparFiltros = () => {
-    setSearch("");
-    setFiltroPlano("todos");
-    setFiltroStatus("todos");
-    setFiltroAtivacao("todos");
-    setOrdenacao("recentes");
-  };
 
   const filteredClientes = useMemo(() => {
     let result = (clientes || []).filter((c) => {
@@ -283,6 +246,43 @@ export default function AdminPage() {
 
     return result;
   }, [clientes, search, filtroPlano, filtroStatus, filtroAtivacao, ordenacao]);
+
+  if (authLoading || checkingRole) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-destructive" />
+              Acesso negado
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">Esta área é restrita a administradores.</p>
+            <Button variant="outline" className="w-full" onClick={() => navigate("/dashboard")}>
+              Voltar ao dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const limparFiltros = () => {
+    setSearch("");
+    setFiltroPlano("todos");
+    setFiltroStatus("todos");
+    setFiltroAtivacao("todos");
+    setOrdenacao("recentes");
+  };
 
   const abrirContato = (cliente: Cliente, situacao?: SituacaoCliente, canal: "whatsapp" | "email" = "whatsapp", motivo?: MotivoContato) => {
     setContato({ cliente, canal, situacao, motivo: motivo ?? situacaoParaMotivo(situacao) });
