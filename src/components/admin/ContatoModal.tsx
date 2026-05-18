@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -7,13 +8,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import {
-  MessageCircle, Mail, Copy, AlertTriangle, Clock, UserPlus, TimerReset,
+  MessageCircle, Mail, Copy, AlertTriangle, Clock, UserPlus, TimerReset, Send,
 } from "lucide-react";
 import { buildWhatsAppUrl } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Cliente, SituacaoCliente, detectarSituacao, getMensagem,
 } from "@/lib/adminHelpers";
+
+const emailSchema = z.string().trim().email("E-mail inválido").max(255);
 
 type Canal = "whatsapp" | "email";
 
