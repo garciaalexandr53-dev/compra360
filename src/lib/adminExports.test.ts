@@ -132,4 +132,38 @@ describe("filenames", () => {
   it("usa o padrão alertas_churn_YYYY-MM-DD.csv", () => {
     expect(alertasChurnFilename(d)).toBe("alertas_churn_2026-05-18.csv");
   });
+  it("usa o padrão clientes_compra360_YYYY-MM-DD.xlsx", () => {
+    expect(clientesFilenameXlsx(d)).toBe("clientes_compra360_2026-05-18.xlsx");
+  });
+});
+
+describe("buildXlsx", () => {
+  it("gera workbook com aba contendo cabeçalho em negrito e larguras de coluna", () => {
+    const wb = buildXlsx(["Nome", "Plano"], [["Açaí Mart", "Pro"]], "Teste");
+    expect(wb.SheetNames).toContain("Teste");
+    const ws = wb.Sheets["Teste"];
+    expect(ws["A1"].v).toBe("Nome");
+    expect(ws["A1"].s?.font?.bold).toBe(true);
+    expect(ws["A2"].v).toBe("Açaí Mart");
+    expect(ws["!cols"]).toBeDefined();
+    expect((ws["!cols"] as { wch: number }[])[0].wch).toBeGreaterThan(0);
+  });
+});
+
+describe("buildClientesXlsx", () => {
+  it("usa cabeçalho de clientes na aba", () => {
+    function makeCliente(): Cliente {
+      return {
+        user_id: "u1", email: "x@y.com", created_at: "2026-01-15T12:00:00Z",
+        loja_principal: "L", cnpj: null, whatsapp: null,
+        total_lojas: 1, total_produtos: 0, total_produtos_inativos: 0,
+        total_fornecedores: 0, total_cotacoes: 0, total_pedidos: 0,
+        plan_name: "free", plan_status: "active", trial_end: null,
+        ultima_cotacao_at: null,
+      };
+    }
+    const wb = buildClientesXlsx([makeCliente()]);
+    expect(wb.SheetNames).toContain("Clientes");
+    expect(wb.Sheets["Clientes"]["A1"].v).toBe("Nome da loja");
+  });
 });
