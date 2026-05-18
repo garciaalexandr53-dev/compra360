@@ -124,6 +124,22 @@ export default function AdminPage() {
     enabled: !!isAdmin,
   });
 
+  const { data: ultimosContatos } = useQuery({
+    queryKey: ["admin-ultimos-contatos"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_get_ultimos_contatos");
+      if (error) throw error;
+      const map = new Map<string, { canal: string; created_at: string }>();
+      ((data || []) as Array<{ user_id: string; canal: string; created_at: string }>).forEach((r) => {
+        map.set(r.user_id, { canal: r.canal, created_at: r.created_at });
+      });
+      return map;
+    },
+    enabled: !!isAdmin,
+  });
+
+
+
   // MRR recalculado a partir dos clientes únicos (evita inflação por duplicatas)
   const mrrCalculado = (clientes || [])
     .filter((c) => c.plan_status === "active" && (c.plan_name === "pro" || c.plan_name === "business"))
