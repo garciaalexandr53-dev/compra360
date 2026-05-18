@@ -199,3 +199,28 @@ export function normalizarWhatsAppCliente(raw: string | null | undefined): strin
   return digits.length >= 10 ? digits : null;
 }
 
+export type MotivoContato = "trial_expirando" | "risco_churn" | "sem_ativacao" | "manual";
+
+export const MOTIVO_LABEL: Record<MotivoContato, string> = {
+  trial_expirando: "Trial expirando",
+  risco_churn: "Risco de churn",
+  sem_ativacao: "Sem ativação",
+  manual: "Contato manual",
+};
+
+export function situacaoParaMotivo(situacao: SituacaoCliente | null | undefined): MotivoContato {
+  switch (situacao) {
+    case "trial_3d":
+    case "trial_7d":
+      return "trial_expirando";
+    case "inativo_15d":
+      return "risco_churn";
+    case "sem_uso_7d":
+    case "boas_vindas":
+      return "sem_ativacao";
+    default:
+      return "manual";
+  }
+}
+
+
