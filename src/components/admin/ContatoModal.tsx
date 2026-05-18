@@ -240,8 +240,8 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
                   </>
                 ) : (
                   <>
-                    <div className="font-medium">Sem WhatsApp cadastrado</div>
-                    <div>O WhatsApp abrirá só com a mensagem pronta para colar no contato escolhido.</div>
+                    <div className="font-medium">WhatsApp do cliente inválido</div>
+                    <div>Não é possível abrir a conversa — o cliente não tem um número válido cadastrado (mínimo 10 dígitos).</div>
                   </>
                 )}
               </div>
