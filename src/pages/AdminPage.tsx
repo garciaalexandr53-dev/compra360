@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,11 +20,11 @@ import { toast } from "@/hooks/use-toast";
 import {
   Users, Store, Package, FileText, Send, ClipboardCheck, TrendingUp, Loader2,
   Search, ShieldCheck, RefreshCw, ArrowLeft, AlertTriangle, TimerReset, Activity,
-  MessageCircle, Mail,
+  MessageCircle, Mail, X,
 } from "lucide-react";
 import { formatBRL, formatDate } from "@/lib/format";
 import {
-  Cliente, getDiasTrialRestantes, getSaudeCliente, PLAN_COLORS, SituacaoCliente,
+  Cliente, getDiasSemUso, getDiasTrialRestantes, getSaudeCliente, PLAN_COLORS, SituacaoCliente,
 } from "@/lib/adminHelpers";
 import { PLAN_PRICE_NUMERIC } from "@/lib/planPrices";
 import ContatoModal from "@/components/admin/ContatoModal";
@@ -60,6 +60,10 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [filtroPlano, setFiltroPlano] = useState<"todos" | "free" | "business" | "pro">("todos");
+  const [filtroStatus, setFiltroStatus] = useState<"todos" | "ativo" | "dormindo" | "risco" | "trial">("todos");
+  const [filtroAtivacao, setFiltroAtivacao] = useState<"todos" | "com_cotacao" | "sem_cotacao">("todos");
+  const [ordenacao, setOrdenacao] = useState<"recentes" | "antigos" | "maior_uso" | "risco_churn">("recentes");
   const [confirmActivate, setConfirmActivate] = useState<Cliente | null>(null);
   const [planEdit, setPlanEdit] = useState<{ cliente: Cliente; novoPlano: string } | null>(null);
   const [sheetType, setSheetType] = useState<SheetType>(null);
@@ -177,15 +181,90 @@ export default function AdminPage() {
     );
   }
 
-  const filteredClientes = (clientes || []).filter((c) => {
-    const q = search.toLowerCase().trim();
-    if (!q) return true;
+  const filtrosAtivos = useMemo(() => {
     return (
-      c.email?.toLowerCase().includes(q) ||
-      c.loja_principal?.toLowerCase().includes(q) ||
-      c.cnpj?.toLowerCase().includes(q)
+      filtroPlano !== "todos" ||
+      filtroStatus !== "todos" ||
+      filtroAtivacao !== "todos" ||
+      ordenacao !== "recentes" ||
+      search.trim().length > 0
     );
-  });
+  }, [filtroPlano, filtroStatus, filtroAtivacao, ordenacao, search]);
+
+  const limparFiltros = () => {
+    setSearch("");
+    setFiltroPlano("todos");
+    setFiltroStatus("todos");
+    setFiltroAtivacao("todos");
+    setOrdenacao("recentes");
+  };
+
+  const filteredClientes = useMemo(() => {
+    let result = (clientes || []).filter((c) => {
+      // Busca textual
+      const q = search.toLowerCase().trim();
+      if (q) {
+        const matchText =
+          c.email?.toLowerCase().includes(q) ||
+          c.loja_principal?.toLowerCase().includes(q) ||
+          c.cnpj?.toLowerCase().includes(q);
+        if (!matchText) return false;
+      }
+
+      // Filtro por plano
+      if (filtroPlano !== "todos" && c.plan_name !== filtroPlano) return false;
+
+      // Filtro por status
+      if (filtroStatus !== "todos") {
+        const diasSemUso = getDiasSemUso(c);
+        const saude = getSaudeCliente(c);
+        switch (filtroStatus) {
+          case "ativo":
+            if (saude.status !== "ativo") return false;
+            break;
+          case "dormindo":
+            if (diasSemUso === null || diasSemUso <= 14) return false;
+            break;
+          case "risco":
+            if (diasSemUso === null || diasSemUso <= 21) return false;
+            break;
+          case "trial":
+            if (c.plan_status !== "trialing") return false;
+            break;
+        }
+      }
+
+      // Filtro por ativação
+      if (filtroAtivacao !== "todos") {
+        const temCotacao = (c.total_cotacoes || 0) > 0;
+        if (filtroAtivacao === "com_cotacao" && !temCotacao) return false;
+        if (filtroAtivacao === "sem_cotacao" && temCotacao) return false;
+      }
+
+      return true;
+    });
+
+    // Ordenação
+    result = [...result].sort((a, b) => {
+      switch (ordenacao) {
+        case "recentes":
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case "antigos":
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case "maior_uso":
+          return (b.total_cotacoes || 0) - (a.total_cotacoes || 0);
+        case "risco_churn": {
+          const diasA = getDiasSemUso(a) ?? -1;
+          const diasB = getDiasSemUso(b) ?? -1;
+          return diasB - diasA;
+        }
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [clientes, search, filtroPlano, filtroStatus, filtroAtivacao, ordenacao]);
 
   const abrirContato = (cliente: Cliente, situacao?: SituacaoCliente, canal: "whatsapp" | "email" = "whatsapp") => {
     setContato({ cliente, canal, situacao });
@@ -322,19 +401,81 @@ export default function AdminPage() {
 
           {/* CLIENTES */}
           <TabsContent value="clientes" className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-              <div className="relative flex-1 max-w-md">
-                <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por email, loja ou CNPJ..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9"
-                />
+            <div className="space-y-3">
+              {/* Busca + contador */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por email, loja ou CNPJ..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="font-normal">
+                    {filteredClientes.length} de {clientes?.length || 0} clientes
+                  </Badge>
+                  {filtrosAtivos && (
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={limparFiltros}>
+                      <X className="h-3 w-3 mr-1" />
+                      Limpar filtros
+                    </Button>
+                  )}
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {filteredClientes.length} de {clientes?.length || 0} clientes
-              </p>
+
+              {/* Filtros */}
+              <div className="flex flex-wrap gap-2 items-center">
+                <Select value={filtroPlano} onValueChange={(v) => setFiltroPlano(v as typeof filtroPlano)}>
+                  <SelectTrigger className="h-8 text-xs w-[130px]">
+                    <SelectValue placeholder="Plano" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os planos</SelectItem>
+                    <SelectItem value="free">Free</SelectItem>
+                    <SelectItem value="business">Business</SelectItem>
+                    <SelectItem value="pro">Pro</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={filtroStatus} onValueChange={(v) => setFiltroStatus(v as typeof filtroStatus)}>
+                  <SelectTrigger className="h-8 text-xs w-[130px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os status</SelectItem>
+                    <SelectItem value="ativo">Ativo (7d)</SelectItem>
+                    <SelectItem value="dormindo">Dormindo (&gt;14d)</SelectItem>
+                    <SelectItem value="risco">Risco (&gt;21d)</SelectItem>
+                    <SelectItem value="trial">Trial</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={filtroAtivacao} onValueChange={(v) => setFiltroAtivacao(v as typeof filtroAtivacao)}>
+                  <SelectTrigger className="h-8 text-xs w-[150px]">
+                    <SelectValue placeholder="Ativação" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="com_cotacao">Com cotação</SelectItem>
+                    <SelectItem value="sem_cotacao">Sem cotação</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={ordenacao} onValueChange={(v) => setOrdenacao(v as typeof ordenacao)}>
+                  <SelectTrigger className="h-8 text-xs w-[170px]">
+                    <SelectValue placeholder="Ordenar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="recentes">Mais recentes</SelectItem>
+                    <SelectItem value="antigos">Mais antigos</SelectItem>
+                    <SelectItem value="maior_uso">Maior uso</SelectItem>
+                    <SelectItem value="risco_churn">Risco de churn</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {loadingClientes ? (
