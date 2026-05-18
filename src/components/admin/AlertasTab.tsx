@@ -3,13 +3,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  AlertTriangle, TimerReset, UserPlus, MessageCircle, Mail, CheckCircle2, XCircle,
+  AlertTriangle, TimerReset, UserPlus, MessageCircle, Mail, CheckCircle2, XCircle, Download,
 } from "lucide-react";
 import {
   Cliente, getDiasTrialRestantes, getDiasSemUso, getDiasDesdeCadastro, getSaudeCliente,
   SituacaoCliente,
 } from "@/lib/adminHelpers";
 import { formatDate } from "@/lib/format";
+import {
+  buildAlertasCsv, downloadCsv, alertasTrialsFilename, alertasChurnFilename,
+} from "@/lib/adminExports";
 
 interface Props {
   clientes: Cliente[];
