@@ -287,9 +287,10 @@ export default function AdminPage() {
     return result;
   }, [clientes, search, filtroPlano, filtroStatus, filtroAtivacao, ordenacao]);
 
-  const abrirContato = (cliente: Cliente, situacao?: SituacaoCliente, canal: "whatsapp" | "email" = "whatsapp") => {
-    setContato({ cliente, canal, situacao });
+  const abrirContato = (cliente: Cliente, situacao?: SituacaoCliente, canal: "whatsapp" | "email" = "whatsapp", motivo?: MotivoContato) => {
+    setContato({ cliente, canal, situacao, motivo: motivo ?? situacaoParaMotivo(situacao) });
   };
+
 
   return (
     <div className="min-h-screen bg-background">
