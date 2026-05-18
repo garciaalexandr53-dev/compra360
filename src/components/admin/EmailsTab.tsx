@@ -12,6 +12,14 @@ import {
 } from "@/components/ui/table";
 import { Loader2, Mail, CheckCircle2, XCircle, ShieldOff, Clock, RefreshCw, Download, FileSpreadsheet } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/format";
+
+const EXPORT_TZ = "America/Sao_Paulo";
+const formatDateExport = (iso: string) =>
+  new Date(iso).toLocaleString("pt-BR", {
+    timeZone: EXPORT_TZ,
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  });
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
 
