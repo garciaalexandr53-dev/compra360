@@ -86,6 +86,13 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
     if (cliente) setCanal(initialCanal);
   }, [cliente, initialCanal]);
 
+  const emailValidation = useMemo(() => emailSchema.safeParse(cliente?.email ?? ""), [cliente?.email]);
+  const emailDestinatario = emailValidation.success ? emailValidation.data : null;
+  const whatsappCliente = useMemo(
+    () => normalizarWhatsAppCliente(cliente?.whatsapp),
+    [cliente?.whatsapp],
+  );
+
   if (!cliente || !situacao || !mensagem) return null;
 
   const info = SITUACAO_INFO[situacao];
@@ -101,13 +108,6 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
       toast({ title: "Erro ao copiar", variant: "destructive" });
     }
   };
-
-  const emailValidation = useMemo(() => emailSchema.safeParse(cliente?.email ?? ""), [cliente?.email]);
-  const emailDestinatario = emailValidation.success ? emailValidation.data : null;
-  const whatsappCliente = useMemo(
-    () => normalizarWhatsAppCliente(cliente?.whatsapp),
-    [cliente?.whatsapp],
-  );
 
   const handleAbrir = async () => {
     if (canal === "whatsapp") {
