@@ -10,8 +10,9 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Loader2, Mail, CheckCircle2, XCircle, ShieldOff, Clock, RefreshCw } from "lucide-react";
+import { Loader2, Mail, CheckCircle2, XCircle, ShieldOff, Clock, RefreshCw, Download } from "lucide-react";
 import { formatDate } from "@/lib/format";
+import { toast } from "@/hooks/use-toast";
 
 type Range = "24h" | "7d" | "30d";
 
