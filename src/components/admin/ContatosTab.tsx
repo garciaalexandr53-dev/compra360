@@ -31,7 +31,7 @@ interface Props {
 
 const PAGE_SIZE = 50;
 
-export default function ContatosTab({ clientes }: Props) {
+export default function ContatosTab({ clientes, onSelectCliente }: Props) {
   const [filtroCliente, setFiltroCliente] = useState<string>("todos");
   const [filtroCanal, setFiltroCanal] = useState<"todos" | "whatsapp" | "email">("todos");
   const [filtroMotivo, setFiltroMotivo] = useState<"todos" | MotivoContato>("todos");
