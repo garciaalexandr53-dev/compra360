@@ -191,7 +191,7 @@ export default function EmailsTab() {
       }
 
       const rows = all.map((r) => ({
-        Data: formatDateTime(r.created_at),
+        Data: formatDateExport(r.created_at),
         Template: r.template_name,
         "Destinatário": r.recipient_email,
         Status: r.status,
