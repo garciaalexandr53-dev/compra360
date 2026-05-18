@@ -18,12 +18,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import {
-  Users, Store, Package, FileText, Send, ClipboardCheck, TrendingUp, Loader2,
+  Users, Store, Package, FileText, Send, ClipboardCheck, Loader2,
   Search, ShieldCheck, RefreshCw, ArrowLeft, AlertTriangle, TimerReset, Activity,
   MessageCircle, Mail, X, Download,
 } from "lucide-react";
 import { buildClientesCsv, clientesFilename, downloadCsv } from "@/lib/adminExports";
-import { formatBRL, formatDate } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import {
   Cliente, getDiasSemUso, getDiasTrialRestantes, getSaudeCliente, PLAN_COLORS, SituacaoCliente,
   MotivoContato, situacaoParaMotivo,
