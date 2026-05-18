@@ -401,19 +401,81 @@ export default function AdminPage() {
 
           {/* CLIENTES */}
           <TabsContent value="clientes" className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-              <div className="relative flex-1 max-w-md">
-                <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por email, loja ou CNPJ..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9"
-                />
+            <div className="space-y-3">
+              {/* Busca + contador */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por email, loja ou CNPJ..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="font-normal">
+                    {filteredClientes.length} de {clientes?.length || 0} clientes
+                  </Badge>
+                  {filtrosAtivos && (
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={limparFiltros}>
+                      <X className="h-3 w-3 mr-1" />
+                      Limpar filtros
+                    </Button>
+                  )}
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {filteredClientes.length} de {clientes?.length || 0} clientes
-              </p>
+
+              {/* Filtros */}
+              <div className="flex flex-wrap gap-2 items-center">
+                <Select value={filtroPlano} onValueChange={(v) => setFiltroPlano(v as typeof filtroPlano)}>
+                  <SelectTrigger className="h-8 text-xs w-[130px]">
+                    <SelectValue placeholder="Plano" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os planos</SelectItem>
+                    <SelectItem value="free">Free</SelectItem>
+                    <SelectItem value="business">Business</SelectItem>
+                    <SelectItem value="pro">Pro</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={filtroStatus} onValueChange={(v) => setFiltroStatus(v as typeof filtroStatus)}>
+                  <SelectTrigger className="h-8 text-xs w-[130px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os status</SelectItem>
+                    <SelectItem value="ativo">Ativo (7d)</SelectItem>
+                    <SelectItem value="dormindo">Dormindo (&gt;14d)</SelectItem>
+                    <SelectItem value="risco">Risco (&gt;21d)</SelectItem>
+                    <SelectItem value="trial">Trial</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={filtroAtivacao} onValueChange={(v) => setFiltroAtivacao(v as typeof filtroAtivacao)}>
+                  <SelectTrigger className="h-8 text-xs w-[150px]">
+                    <SelectValue placeholder="Ativação" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="com_cotacao">Com cotação</SelectItem>
+                    <SelectItem value="sem_cotacao">Sem cotação</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={ordenacao} onValueChange={(v) => setOrdenacao(v as typeof ordenacao)}>
+                  <SelectTrigger className="h-8 text-xs w-[170px]">
+                    <SelectValue placeholder="Ordenar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="recentes">Mais recentes</SelectItem>
+                    <SelectItem value="antigos">Mais antigos</SelectItem>
+                    <SelectItem value="maior_uso">Maior uso</SelectItem>
+                    <SelectItem value="risco_churn">Risco de churn</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {loadingClientes ? (
