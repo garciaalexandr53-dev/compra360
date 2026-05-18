@@ -186,7 +186,17 @@ export default function ContatosTab({ clientes, onSelectCliente }: Props) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium text-sm truncate">{nome}</span>
+                      {onSelectCliente ? (
+                        <button
+                          type="button"
+                          onClick={() => onSelectCliente(c.user_id)}
+                          className="font-medium text-sm truncate text-left hover:underline hover:text-primary transition-colors"
+                        >
+                          {nome}
+                        </button>
+                      ) : (
+                        <span className="font-medium text-sm truncate">{nome}</span>
+                      )}
                       <Badge variant="outline" className="text-[10px] uppercase">
                         {MOTIVO_LABEL[c.motivo]}
                       </Badge>
