@@ -14,6 +14,7 @@ import { buildWhatsAppUrl } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Cliente, SituacaoCliente, detectarSituacao, getMensagem,
+  normalizarWhatsAppCliente,
 } from "@/lib/adminHelpers";
 
 const emailSchema = z.string().trim().email("E-mail inválido").max(255);
