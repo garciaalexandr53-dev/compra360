@@ -103,10 +103,14 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
 
   const emailValidation = useMemo(() => emailSchema.safeParse(cliente?.email ?? ""), [cliente?.email]);
   const emailDestinatario = emailValidation.success ? emailValidation.data : null;
+  const whatsappCliente = useMemo(() => {
+    const raw = cliente?.whatsapp?.replace(/\D/g, "");
+    return raw && raw.length >= 10 ? raw : null;
+  }, [cliente?.whatsapp]);
 
   const handleAbrir = async () => {
     if (canal === "whatsapp") {
-      window.open(buildWhatsAppUrl(null, mensagemEditada), "_blank");
+      window.open(buildWhatsAppUrl(whatsappCliente, mensagemEditada), "_blank");
       return;
     }
     if (!emailDestinatario) {
@@ -214,10 +218,26 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
           </div>
 
           {canal === "whatsapp" && (
-            <p className="text-xs text-muted-foreground">
-              Como não temos telefone direto, abriremos o WhatsApp Web com a mensagem pronta para
-              colar no contato escolhido.
-            </p>
+            <div className={`rounded-md border p-2.5 text-xs flex items-start gap-2 ${
+              whatsappCliente
+                ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400"
+                : "border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400"
+            }`}>
+              <MessageCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                {whatsappCliente ? (
+                  <>
+                    <div className="font-medium">Abrir conversa direta com:</div>
+                    <div className="font-mono">+55 {whatsappCliente}</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="font-medium">Sem WhatsApp cadastrado</div>
+                    <div>O WhatsApp abrirá só com a mensagem pronta para colar no contato escolhido.</div>
+                  </>
+                )}
+              </div>
+            </div>
           )}
         </div>
 

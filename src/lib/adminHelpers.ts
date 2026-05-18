@@ -8,6 +8,7 @@ export type Cliente = {
   created_at: string;
   loja_principal: string | null;
   cnpj: string | null;
+  whatsapp: string | null;
   total_lojas: number;
   total_produtos: number;
   total_produtos_inativos: number;
