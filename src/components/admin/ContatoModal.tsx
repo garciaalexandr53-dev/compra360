@@ -98,13 +98,39 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
     }
   };
 
-  const handleAbrir = () => {
+  const handleAbrir = async () => {
     if (canal === "whatsapp") {
       window.open(buildWhatsAppUrl(null, mensagemEditada), "_blank");
-    } else if (cliente.email) {
-      const subject = encodeURIComponent(assuntoEditado);
-      const body = encodeURIComponent(mensagemEditada);
-      window.location.href = `mailto:${cliente.email}?subject=${subject}&body=${body}`;
+      return;
+    }
+    if (!cliente.email) return;
+    setEnviando(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "notification",
+          recipientEmail: cliente.email,
+          idempotencyKey: `admin-contato-${cliente.id}-${situacao}-${Date.now()}`,
+          templateData: {
+            titulo: assuntoEditado,
+            mensagem: mensagemEditada,
+          },
+        },
+      });
+      if (error) throw error;
+      toast({
+        title: "Email enviado!",
+        description: `Mensagem enviada para ${cliente.email} a partir do Compra360.`,
+      });
+      onClose();
+    } catch (e: any) {
+      toast({
+        title: "Erro ao enviar email",
+        description: e?.message || "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+    } finally {
+      setEnviando(false);
     }
   };
 
