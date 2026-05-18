@@ -10,9 +10,10 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Loader2, Mail, CheckCircle2, XCircle, ShieldOff, Clock, RefreshCw, Download } from "lucide-react";
+import { Loader2, Mail, CheckCircle2, XCircle, ShieldOff, Clock, RefreshCw, Download, FileSpreadsheet } from "lucide-react";
 import { formatDate } from "@/lib/format";
 import { toast } from "@/hooks/use-toast";
+import * as XLSX from "xlsx";
 
 type Range = "24h" | "7d" | "30d";
 
@@ -103,29 +104,34 @@ export default function EmailsTab() {
 
   const refresh = () => { refetchStats(); refetchLogs(); };
 
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<false | "csv" | "xlsx">(false);
+
+  const fetchAllFiltered = async (): Promise<LogRow[]> => {
+    const BATCH = 1000;
+    let offset = 0;
+    const all: LogRow[] = [];
+    while (true) {
+      const { data, error } = await supabase.rpc("admin_list_email_logs" as any, {
+        _start: filters.start, _end: filters.end,
+        _template: filters.template, _status: filters.status,
+        _limit: BATCH, _offset: offset,
+      });
+      if (error) throw error;
+      const rows = (data || []) as LogRow[];
+      all.push(...rows);
+      if (rows.length < BATCH) break;
+      offset += BATCH;
+      if (offset > 50000) break; // safety cap
+    }
+    return all;
+  };
+
+  const buildStamp = () => new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
 
   const handleExportCsv = async () => {
-    setExporting(true);
+    setExporting("csv");
     try {
-      const BATCH = 1000;
-      let offset = 0;
-      const all: LogRow[] = [];
-      // Pull all rows matching current filters (ignoring pagination)
-      while (true) {
-        const { data, error } = await supabase.rpc("admin_list_email_logs" as any, {
-          _start: filters.start, _end: filters.end,
-          _template: filters.template, _status: filters.status,
-          _limit: BATCH, _offset: offset,
-        });
-        if (error) throw error;
-        const rows = (data || []) as LogRow[];
-        all.push(...rows);
-        if (rows.length < BATCH) break;
-        offset += BATCH;
-        if (offset > 50000) break; // safety cap
-      }
-
+      const all = await fetchAllFiltered();
       if (all.length === 0) {
         toast({ title: "Nada para exportar", description: "Nenhum e-mail nos filtros atuais." });
         return;
@@ -152,13 +158,46 @@ export default function EmailsTab() {
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
       a.href = url;
-      a.download = `email-logs-${range}-${stamp}.csv`;
+      a.download = `email-logs-${range}-${buildStamp()}.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
+
+      toast({ title: "Exportação concluída", description: `${all.length} e-mails exportados.` });
+    } catch (e) {
+      toast({ title: "Erro ao exportar", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportXlsx = async () => {
+    setExporting("xlsx");
+    try {
+      const all = await fetchAllFiltered();
+      if (all.length === 0) {
+        toast({ title: "Nada para exportar", description: "Nenhum e-mail nos filtros atuais." });
+        return;
+      }
+
+      const rows = all.map((r) => ({
+        Data: new Date(r.created_at).toISOString(),
+        Template: r.template_name,
+        "Destinatário": r.recipient_email,
+        Status: r.status,
+        "Message ID": r.message_id ?? "",
+        Erro: r.error_message ?? "",
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws["!cols"] = [
+        { wch: 22 }, { wch: 22 }, { wch: 32 }, { wch: 14 }, { wch: 36 }, { wch: 50 },
+      ];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "E-mails");
+      XLSX.writeFile(wb, `email-logs-${range}-${buildStamp()}.xlsx`);
 
       toast({ title: "Exportação concluída", description: `${all.length} e-mails exportados.` });
     } catch (e) {
@@ -194,11 +233,21 @@ export default function EmailsTab() {
             variant="outline"
             size="sm"
             onClick={handleExportCsv}
-            disabled={exporting || loadingLogs}
+            disabled={!!exporting || loadingLogs}
             className="h-8"
           >
-            {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin sm:mr-1.5" /> : <Download className="h-3.5 w-3.5 sm:mr-1.5" />}
+            {exporting === "csv" ? <Loader2 className="h-3.5 w-3.5 animate-spin sm:mr-1.5" /> : <Download className="h-3.5 w-3.5 sm:mr-1.5" />}
             <span className="hidden sm:inline">Exportar CSV</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportXlsx}
+            disabled={!!exporting || loadingLogs}
+            className="h-8"
+          >
+            {exporting === "xlsx" ? <Loader2 className="h-3.5 w-3.5 animate-spin sm:mr-1.5" /> : <FileSpreadsheet className="h-3.5 w-3.5 sm:mr-1.5" />}
+            <span className="hidden sm:inline">Exportar XLSX</span>
           </Button>
         </div>
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
