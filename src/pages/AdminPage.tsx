@@ -653,7 +653,13 @@ export default function AdminPage() {
 
           {/* CONTATOS */}
           <TabsContent value="contatos">
-            <ContatosTab clientes={clientes} />
+            <ContatosTab
+              clientes={clientes}
+              onSelectCliente={(userId) => {
+                const c = (clientes || []).find((x) => x.user_id === userId);
+                if (c) setClienteDetalhe(c);
+              }}
+            />
           </TabsContent>
 
           {/* E-MAILS */}
