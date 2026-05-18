@@ -16,8 +16,8 @@ describe("normalizarWhatsAppCliente", () => {
   });
 
   it("remove o DDI 55 quando o número tem 12 ou 13 dígitos", () => {
-    expect(normalizarWhatsAppCliente("5511999999999")).toBe("11999999999"); // 13 dígitos
-    expect(normalizarWhatsAppCliente("551199999999")).toBe("11999999999");  // 12 dígitos
+    expect(normalizarWhatsAppCliente("5511999999999")).toBe("11999999999"); // 13 dígitos -> 11
+    expect(normalizarWhatsAppCliente("551199999999")).toBe("11999999999");  // 12 dígitos -> 10
     expect(normalizarWhatsAppCliente("+55 (11) 99999-9999")).toBe("11999999999");
   });
 
