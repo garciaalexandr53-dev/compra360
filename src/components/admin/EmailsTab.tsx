@@ -153,7 +153,7 @@ export default function EmailsTab() {
       const lines = [header.join(";")];
       for (const r of all) {
         lines.push([
-          formatDateTime(r.created_at),
+          formatDateExport(r.created_at),
           r.template_name,
           r.recipient_email,
           r.status,
