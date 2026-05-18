@@ -22,7 +22,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     {
       name: "html-asset-version",
-      transformIndexHtml(html) {
+      transformIndexHtml(html: string) {
         return html.replace(/%ASSET_VERSION%/g, ASSET_VERSION);
       },
     },
