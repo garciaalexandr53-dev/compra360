@@ -12,9 +12,10 @@ import {
 } from "lucide-react";
 import { buildWhatsAppUrl } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Cliente, SituacaoCliente, detectarSituacao, getMensagem,
-  normalizarWhatsAppCliente,
+  normalizarWhatsAppCliente, MotivoContato, situacaoParaMotivo,
 } from "@/lib/adminHelpers";
 
 const emailSchema = z.string().trim().email("E-mail inválido").max(255);
@@ -26,8 +27,11 @@ interface Props {
   initialCanal?: Canal;
   /** Força uma situação específica (ex.: aba Alertas). Se omitido, detecta automaticamente. */
   forcarSituacao?: SituacaoCliente;
+  /** Motivo do contato — se omitido é derivado da situação. */
+  motivo?: MotivoContato;
   onClose: () => void;
 }
+
 
 const SITUACAO_INFO: Record<SituacaoCliente, { label: string; icon: React.ReactNode; color: string }> = {
   sem_uso_7d: {
