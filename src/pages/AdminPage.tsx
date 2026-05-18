@@ -651,6 +651,11 @@ export default function AdminPage() {
             )}
           </TabsContent>
 
+          {/* CONTATOS */}
+          <TabsContent value="contatos">
+            <ContatosTab clientes={clientes} />
+          </TabsContent>
+
           {/* E-MAILS */}
           <TabsContent value="emails">
             <EmailsTab />
