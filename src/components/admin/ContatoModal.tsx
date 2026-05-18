@@ -101,18 +101,28 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
     }
   };
 
+  const emailValidation = useMemo(() => emailSchema.safeParse(cliente?.email ?? ""), [cliente?.email]);
+  const emailDestinatario = emailValidation.success ? emailValidation.data : null;
+
   const handleAbrir = async () => {
     if (canal === "whatsapp") {
       window.open(buildWhatsAppUrl(null, mensagemEditada), "_blank");
       return;
     }
-    if (!cliente.email) return;
+    if (!emailDestinatario) {
+      toast({
+        title: "E-mail do cliente inválido",
+        description: "Não é possível enviar — verifique o cadastro do cliente.",
+        variant: "destructive",
+      });
+      return;
+    }
     setEnviando(true);
     try {
       const { error } = await supabase.functions.invoke("send-transactional-email", {
         body: {
           templateName: "notification",
-          recipientEmail: cliente.email,
+          recipientEmail: emailDestinatario,
           idempotencyKey: `admin-contato-${cliente.user_id}-${situacao}-${Date.now()}`,
           templateData: {
             titulo: assuntoEditado,
@@ -123,7 +133,7 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
       if (error) throw error;
       toast({
         title: "Email enviado!",
-        description: `Mensagem enviada para ${cliente.email} a partir do Compra360.`,
+        description: `Mensagem enviada para ${emailDestinatario} a partir do Compra360.`,
       });
       onClose();
     } catch (e: any) {
