@@ -12,6 +12,14 @@ import {
 } from "@/components/ui/table";
 import { Loader2, Mail, CheckCircle2, XCircle, ShieldOff, Clock, RefreshCw, Download, FileSpreadsheet } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/format";
+
+const EXPORT_TZ = "America/Sao_Paulo";
+const formatDateExport = (iso: string) =>
+  new Date(iso).toLocaleString("pt-BR", {
+    timeZone: EXPORT_TZ,
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  });
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
 
@@ -145,7 +153,7 @@ export default function EmailsTab() {
       const lines = [header.join(";")];
       for (const r of all) {
         lines.push([
-          formatDateTime(r.created_at),
+          formatDateExport(r.created_at),
           r.template_name,
           r.recipient_email,
           r.status,
@@ -183,7 +191,7 @@ export default function EmailsTab() {
       }
 
       const rows = all.map((r) => ({
-        Data: formatDateTime(r.created_at),
+        Data: formatDateExport(r.created_at),
         Template: r.template_name,
         "Destinatário": r.recipient_email,
         Status: r.status,
