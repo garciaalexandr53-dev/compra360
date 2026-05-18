@@ -414,10 +414,20 @@ export default function AdminPage() {
                     className="pl-9"
                   />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="secondary" className="font-normal">
                     {filteredClientes.length} de {clientes?.length || 0} clientes
                   </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-xs gap-1"
+                    onClick={() => downloadCsv(clientesFilename(), buildClientesCsv(filteredClientes))}
+                    disabled={filteredClientes.length === 0}
+                  >
+                    <Download className="h-3 w-3" />
+                    Exportar CSV
+                  </Button>
                   {filtrosAtivos && (
                     <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={limparFiltros}>
                       <X className="h-3 w-3 mr-1" />
