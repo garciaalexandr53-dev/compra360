@@ -453,6 +453,11 @@ export default function AdminPage() {
               </Card>
             )}
           </TabsContent>
+
+          {/* E-MAILS */}
+          <TabsContent value="emails">
+            <EmailsTab />
+          </TabsContent>
         </Tabs>
       </main>
 
