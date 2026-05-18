@@ -209,7 +209,51 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
                 value={temCotacao ? "Sim — já fez cotação" : "Não — sem cotações"}
               />
             </Secao>
+
+            <Separator />
+
+            {/* HISTÓRICO DE CONTATOS */}
+            <div>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <History className="h-3.5 w-3.5" />
+                Histórico de contatos
+              </h3>
+              {!contatos || contatos.length === 0 ? (
+                <div className="text-sm text-muted-foreground italic">
+                  Nenhum contato registrado ainda
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {contatos.map((ct) => (
+                    <li
+                      key={ct.id}
+                      className="flex items-start gap-2 rounded-md border bg-card/50 px-2.5 py-2"
+                    >
+                      {ct.canal === "whatsapp"
+                        ? <MessageCircle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-emerald-600" />
+                        : <Mail className="h-3.5 w-3.5 mt-0.5 shrink-0 text-blue-600" />}
+                      <div className="min-w-0 flex-1 text-sm">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                          <span className="font-medium">
+                            {formatDateTime(ct.created_at)}
+                          </span>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            {MOTIVO_LABEL[ct.motivo as MotivoContato] || ct.motivo}
+                          </Badge>
+                        </div>
+                        {ct.observacao && (
+                          <div className="text-xs text-muted-foreground mt-0.5 break-words">
+                            {ct.observacao}
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
+
         </ScrollArea>
 
         {/* AÇÕES */}
