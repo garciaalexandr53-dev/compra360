@@ -22,7 +22,7 @@ import {
   Search, ShieldCheck, RefreshCw, ArrowLeft, AlertTriangle, TimerReset, Activity,
   MessageCircle, Mail, X, Download,
 } from "lucide-react";
-import { buildClientesCsv, clientesFilename, downloadCsv } from "@/lib/adminExports";
+import { buildClientesCsv, buildClientesXlsx, clientesFilename, clientesFilenameXlsx, downloadCsv, downloadXlsx } from "@/lib/adminExports";
 import { formatDate } from "@/lib/format";
 import {
   Cliente, getDiasSemUso, getDiasTrialRestantes, getSaudeCliente, PLAN_COLORS, SituacaoCliente,
