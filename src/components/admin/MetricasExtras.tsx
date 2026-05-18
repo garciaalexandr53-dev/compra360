@@ -92,7 +92,7 @@ export function MrrBreakdownCard({ clientes, onOpenMrr }: { clientes: Cliente[];
   );
 }
 
-export function ChurnRiskCard({ clientes }: { clientes: Cliente[] }) {
+export function ChurnRiskCard({ clientes, onClick }: { clientes: Cliente[]; onClick?: () => void }) {
   const { count, receita } = useMemo(() => {
     const now = Date.now();
     const limite = 15 * 86400000;
