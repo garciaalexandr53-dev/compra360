@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sidebar";
 import { BarChart3, Package, Users, TrendingUp, History, UserCheck, ClipboardCheck, Store, LayoutDashboard, Shield } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { withAssetVersion } from "@/lib/assetVersion";
 
 const mainMenu = [
   { title: "Painel", url: "/dashboard", icon: LayoutDashboard, emoji: "🏠" },
