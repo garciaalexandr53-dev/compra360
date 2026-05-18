@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import { Download } from "lucide-react";
+import { withAssetVersion } from "@/lib/assetVersion";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
