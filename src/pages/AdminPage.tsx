@@ -572,7 +572,7 @@ export default function AdminPage() {
                               {c.plan_name}
                               {isTrial && diasTrial !== null && <span className="ml-1">·{diasTrial}d</span>}
                             </Badge>
-                            <div className="shrink-0 text-xs text-muted-foreground whitespace-nowrap hidden xs:flex items-center gap-1 min-w-[28px] justify-end">
+                            <div className="shrink-0 text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1 min-w-[28px] justify-end">
                               {uc ? (
                                 <>
                                   {uc.canal === "whatsapp"
