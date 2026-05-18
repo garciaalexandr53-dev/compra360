@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import { Download } from "lucide-react";
+import { withAssetVersion } from "@/lib/assetVersion";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -148,7 +149,7 @@ const LoginPage = () => {
         <CardHeader className="text-center pb-2">
           <div className="flex justify-center">
             <img
-              src="https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png?v=2"
+              src={withAssetVersion("https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png")}
               alt="Compra360"
               className="max-w-[200px] sm:max-w-[260px] w-full h-auto object-contain"
             />

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sidebar";
 import { BarChart3, Package, Users, TrendingUp, History, UserCheck, ClipboardCheck, Store, LayoutDashboard, Shield } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { withAssetVersion } from "@/lib/assetVersion";
 
 const mainMenu = [
   { title: "Painel", url: "/dashboard", icon: LayoutDashboard, emoji: "🏠" },
@@ -124,7 +125,7 @@ export function AppSidebar() {
         {!collapsed ? (
           <div className="flex w-full items-center justify-center">
             <img
-              src="https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png?v=2"
+              src={withAssetVersion("https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png")}
               alt="Compra360"
               className="block w-full max-w-[180px] h-auto object-contain mx-auto"
             />

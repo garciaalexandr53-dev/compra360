@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { PLAN_PRICES } from "@/lib/planPrices";
+import { withAssetVersion } from "@/lib/assetVersion";
 import {
   Accordion,
   AccordionContent,
@@ -377,7 +378,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto flex items-center justify-between px-5 h-24 sm:h-20">
           <div className="flex items-center">
             <img
-              src="https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png?v=2"
+              src={withAssetVersion("https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png")}
               alt="Compra360 - Sistema de cotação"
               className="h-[88px] w-auto max-w-[300px] sm:h-[72px] sm:max-w-[260px] object-contain"
             />
@@ -699,7 +700,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center">
             <img
-              src="https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png?v=2"
+              src={withAssetVersion("https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png")}
               alt="Compra360"
               className="h-7 w-auto max-w-[140px] object-contain"
             />

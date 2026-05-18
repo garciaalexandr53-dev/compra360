@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { formatBRL, formatDateTime } from "@/lib/format";
+import { withAssetVersion } from "@/lib/assetVersion";
 
 export interface ExportRow {
   nome: string;
@@ -30,7 +31,7 @@ export interface ExportCotacaoMeta {
   fornecedores_count: number;
 }
 
-const LOGO_URL = "https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png?v=2";
+const LOGO_URL = withAssetVersion("https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png");
 
 async function loadLogoDataUrl(): Promise<string | null> {
   try {
