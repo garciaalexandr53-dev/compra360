@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { formatBRL, formatDateTime } from "@/lib/format";
+import { withAssetVersion } from "@/lib/assetVersion";
 
 export interface ExportRow {
   nome: string;
