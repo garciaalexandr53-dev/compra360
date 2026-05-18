@@ -10,6 +10,7 @@ import {
   MessageCircle, Mail, Copy, AlertTriangle, Clock, UserPlus, TimerReset,
 } from "lucide-react";
 import { buildWhatsAppUrl } from "@/lib/format";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Cliente, SituacaoCliente, detectarSituacao, getMensagem,
 } from "@/lib/adminHelpers";
@@ -54,6 +55,7 @@ const SITUACAO_INFO: Record<SituacaoCliente, { label: string; icon: React.ReactN
 
 export default function ContatoModal({ cliente, initialCanal = "whatsapp", forcarSituacao, onClose }: Props) {
   const [canal, setCanal] = useState<Canal>(initialCanal);
+  const [enviando, setEnviando] = useState(false);
   const [mensagemEditada, setMensagemEditada] = useState("");
   const [assuntoEditado, setAssuntoEditado] = useState("");
 
@@ -96,13 +98,39 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
     }
   };
 
-  const handleAbrir = () => {
+  const handleAbrir = async () => {
     if (canal === "whatsapp") {
       window.open(buildWhatsAppUrl(null, mensagemEditada), "_blank");
-    } else if (cliente.email) {
-      const subject = encodeURIComponent(assuntoEditado);
-      const body = encodeURIComponent(mensagemEditada);
-      window.location.href = `mailto:${cliente.email}?subject=${subject}&body=${body}`;
+      return;
+    }
+    if (!cliente.email) return;
+    setEnviando(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "notification",
+          recipientEmail: cliente.email,
+          idempotencyKey: `admin-contato-${cliente.user_id}-${situacao}-${Date.now()}`,
+          templateData: {
+            titulo: assuntoEditado,
+            mensagem: mensagemEditada,
+          },
+        },
+      });
+      if (error) throw error;
+      toast({
+        title: "Email enviado!",
+        description: `Mensagem enviada para ${cliente.email} a partir do Compra360.`,
+      });
+      onClose();
+    } catch (e: any) {
+      toast({
+        title: "Erro ao enviar email",
+        description: e?.message || "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+    } finally {
+      setEnviando(false);
     }
   };
 
@@ -170,12 +198,15 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
           </Button>
           <Button
             onClick={handleAbrir}
+            disabled={enviando}
             className={canal === "whatsapp"
               ? "bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
               : "bg-blue-600 hover:bg-blue-700 text-white gap-1.5"}
           >
             {canal === "whatsapp" ? <MessageCircle className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
-            {canal === "whatsapp" ? "Abrir WhatsApp" : "Abrir Email"}
+            {canal === "whatsapp"
+              ? "Abrir WhatsApp"
+              : enviando ? "Enviando..." : "Enviar Email"}
           </Button>
         </DialogFooter>
       </DialogContent>

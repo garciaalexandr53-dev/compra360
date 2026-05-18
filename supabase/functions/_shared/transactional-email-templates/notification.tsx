@@ -52,6 +52,6 @@ export const template = {
 const main = { backgroundColor: '#ffffff', fontFamily: '"Sora", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif' }
 const container = { padding: '32px 28px', maxWidth: '560px' }
 const h1 = { fontSize: '22px', fontWeight: 'bold' as const, color: 'hsl(174, 78%, 26%)', margin: '0 0 16px', textAlign: 'center' as const }
-const text = { fontSize: '15px', color: 'hsl(221, 16%, 47%)', lineHeight: '1.6', margin: '0 0 24px', textAlign: 'center' as const }
+const text = { fontSize: '15px', color: 'hsl(221, 16%, 47%)', lineHeight: '1.6', margin: '0 0 24px', textAlign: 'center' as const, whiteSpace: 'pre-line' as const }
 const button = { backgroundColor: 'hsl(174, 78%, 26%)', color: '#ffffff', fontSize: '15px', fontWeight: 600, borderRadius: '8px', padding: '14px 28px', textDecoration: 'none', display: 'inline-block' }
 const footer = { fontSize: '12px', color: 'hsl(221, 16%, 60%)', margin: '32px 0 0', textAlign: 'center' as const }
