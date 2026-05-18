@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   buildCsv, csvEscape, formatDateBR, todayFileSuffix,
   buildClientesCsv, buildAlertasCsv, clienteRow, alertaRow,
-  clientesFilename, alertasTrialsFilename, alertasChurnFilename,
+  clientesFilename, clientesFilenameXlsx, alertasTrialsFilename, alertasChurnFilename,
+  buildClientesXlsx, buildXlsx,
 } from "./adminExports";
 import type { Cliente } from "./adminHelpers";
 
