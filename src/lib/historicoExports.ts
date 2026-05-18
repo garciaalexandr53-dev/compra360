@@ -31,7 +31,7 @@ export interface ExportCotacaoMeta {
   fornecedores_count: number;
 }
 
-const LOGO_URL = "https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png";
+const LOGO_URL = withAssetVersion("https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png");
 
 async function loadLogoDataUrl(): Promise<string | null> {
   try {
