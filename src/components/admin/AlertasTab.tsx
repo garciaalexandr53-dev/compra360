@@ -107,11 +107,23 @@ export default function AlertasTab({ clientes, onContatar }: Props) {
 
       {/* Em risco de churn */}
       <section>
-        <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <span className="text-amber-500">🟡</span>
-          Sem atividade — risco de churn
-          <Badge variant="outline" className="ml-1">{emRiscoChurn.length}</Badge>
-        </h2>
+        <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+          <h2 className="text-sm font-semibold flex items-center gap-2">
+            <span className="text-amber-500">🟡</span>
+            Sem atividade — risco de churn
+            <Badge variant="outline" className="ml-1">{emRiscoChurn.length}</Badge>
+          </h2>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs gap-1"
+            onClick={() => downloadCsv(alertasChurnFilename(), buildAlertasCsv(emRiscoChurn, "churn"))}
+            disabled={emRiscoChurn.length === 0}
+          >
+            <Download className="h-3 w-3" />
+            Exportar CSV
+          </Button>
+        </div>
         {emRiscoChurn.length === 0 ? (
           <EmptyState texto="Todos os clientes estão ativos 🚀" />
         ) : (
