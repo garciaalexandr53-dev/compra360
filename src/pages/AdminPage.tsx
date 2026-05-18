@@ -20,8 +20,9 @@ import { toast } from "@/hooks/use-toast";
 import {
   Users, Store, Package, FileText, Send, ClipboardCheck, TrendingUp, Loader2,
   Search, ShieldCheck, RefreshCw, ArrowLeft, AlertTriangle, TimerReset, Activity,
-  MessageCircle, Mail, X,
+  MessageCircle, Mail, X, Download,
 } from "lucide-react";
+import { buildClientesCsv, clientesFilename, downloadCsv } from "@/lib/adminExports";
 import { formatBRL, formatDate } from "@/lib/format";
 import {
   Cliente, getDiasSemUso, getDiasTrialRestantes, getSaudeCliente, PLAN_COLORS, SituacaoCliente,
@@ -413,10 +414,20 @@ export default function AdminPage() {
                     className="pl-9"
                   />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="secondary" className="font-normal">
                     {filteredClientes.length} de {clientes?.length || 0} clientes
                   </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-xs gap-1"
+                    onClick={() => downloadCsv(clientesFilename(), buildClientesCsv(filteredClientes))}
+                    disabled={filteredClientes.length === 0}
+                  >
+                    <Download className="h-3 w-3" />
+                    Exportar CSV
+                  </Button>
                   {filtrosAtivos && (
                     <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={limparFiltros}>
                       <X className="h-3 w-3 mr-1" />
