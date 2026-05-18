@@ -190,6 +190,16 @@ export default function EmailsTab() {
             <RefreshCw className="h-3.5 w-3.5 sm:mr-1.5" />
             <span className="hidden sm:inline">Atualizar</span>
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={exporting || loadingLogs}
+            className="h-8"
+          >
+            {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin sm:mr-1.5" /> : <Download className="h-3.5 w-3.5 sm:mr-1.5" />}
+            <span className="hidden sm:inline">Exportar CSV</span>
+          </Button>
         </div>
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
           <Select value={template} onValueChange={(v) => { setTemplate(v); setPage(0); }}>
