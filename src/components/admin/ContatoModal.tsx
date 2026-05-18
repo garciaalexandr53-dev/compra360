@@ -173,15 +173,32 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
           </Tabs>
 
           {canal === "email" && (
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">Assunto</label>
-              <input
-                type="text"
-                value={assuntoEditado}
-                onChange={(e) => setAssuntoEditado(e.target.value)}
-                className="mt-1 w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-              />
-            </div>
+            <>
+              <div className={`rounded-md border p-2.5 text-xs flex items-start gap-2 ${
+                emailDestinatario
+                  ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400"
+                  : "border-destructive/40 bg-destructive/5 text-destructive"
+              }`}>
+                <Send className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <div className="font-medium">
+                    {emailDestinatario ? "Será enviado para:" : "E-mail do cliente inválido"}
+                  </div>
+                  <div className="truncate font-mono">
+                    {emailDestinatario ?? (cliente.email || "— sem e-mail cadastrado —")}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Assunto</label>
+                <input
+                  type="text"
+                  value={assuntoEditado}
+                  onChange={(e) => setAssuntoEditado(e.target.value)}
+                  className="mt-1 w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                />
+              </div>
+            </>
           )}
 
           <div>
