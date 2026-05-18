@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -7,13 +8,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import {
-  MessageCircle, Mail, Copy, AlertTriangle, Clock, UserPlus, TimerReset,
+  MessageCircle, Mail, Copy, AlertTriangle, Clock, UserPlus, TimerReset, Send,
 } from "lucide-react";
 import { buildWhatsAppUrl } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Cliente, SituacaoCliente, detectarSituacao, getMensagem,
 } from "@/lib/adminHelpers";
+
+const emailSchema = z.string().trim().email("E-mail inválido").max(255);
 
 type Canal = "whatsapp" | "email";
 
@@ -98,18 +101,28 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
     }
   };
 
+  const emailValidation = useMemo(() => emailSchema.safeParse(cliente?.email ?? ""), [cliente?.email]);
+  const emailDestinatario = emailValidation.success ? emailValidation.data : null;
+
   const handleAbrir = async () => {
     if (canal === "whatsapp") {
       window.open(buildWhatsAppUrl(null, mensagemEditada), "_blank");
       return;
     }
-    if (!cliente.email) return;
+    if (!emailDestinatario) {
+      toast({
+        title: "E-mail do cliente inválido",
+        description: "Não é possível enviar — verifique o cadastro do cliente.",
+        variant: "destructive",
+      });
+      return;
+    }
     setEnviando(true);
     try {
       const { error } = await supabase.functions.invoke("send-transactional-email", {
         body: {
           templateName: "notification",
-          recipientEmail: cliente.email,
+          recipientEmail: emailDestinatario,
           idempotencyKey: `admin-contato-${cliente.user_id}-${situacao}-${Date.now()}`,
           templateData: {
             titulo: assuntoEditado,
@@ -120,7 +133,7 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
       if (error) throw error;
       toast({
         title: "Email enviado!",
-        description: `Mensagem enviada para ${cliente.email} a partir do Compra360.`,
+        description: `Mensagem enviada para ${emailDestinatario} a partir do Compra360.`,
       });
       onClose();
     } catch (e: any) {
@@ -160,15 +173,32 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
           </Tabs>
 
           {canal === "email" && (
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">Assunto</label>
-              <input
-                type="text"
-                value={assuntoEditado}
-                onChange={(e) => setAssuntoEditado(e.target.value)}
-                className="mt-1 w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-              />
-            </div>
+            <>
+              <div className={`rounded-md border p-2.5 text-xs flex items-start gap-2 ${
+                emailDestinatario
+                  ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400"
+                  : "border-destructive/40 bg-destructive/5 text-destructive"
+              }`}>
+                <Send className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <div className="font-medium">
+                    {emailDestinatario ? "Será enviado para:" : "E-mail do cliente inválido"}
+                  </div>
+                  <div className="truncate font-mono">
+                    {emailDestinatario ?? (cliente.email || "— sem e-mail cadastrado —")}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Assunto</label>
+                <input
+                  type="text"
+                  value={assuntoEditado}
+                  onChange={(e) => setAssuntoEditado(e.target.value)}
+                  className="mt-1 w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                />
+              </div>
+            </>
           )}
 
           <div>
@@ -198,7 +228,7 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
           </Button>
           <Button
             onClick={handleAbrir}
-            disabled={enviando}
+            disabled={enviando || (canal === "email" && !emailDestinatario)}
             className={canal === "whatsapp"
               ? "bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
               : "bg-blue-600 hover:bg-blue-700 text-white gap-1.5"}
