@@ -119,9 +119,15 @@ export function buildAlertasCsv(clientes: Cliente[], tipo: "trial" | "churn"): s
   return buildCsv(ALERTAS_HEADER, clientes.map((c) => alertaRow(c, tipo)));
 }
 
-/** Dispara o download do CSV no browser. */
+/** Dispara o download do CSV no browser (UTF-8 com BOM no Blob para o Excel pt-BR reconhecer). */
 export function downloadCsv(filename: string, csv: string): void {
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  // O conteúdo (`csv`) é UTF-8 puro; o BOM é adicionado apenas no Blob
+  // para garantir que o Excel pt-BR interprete acentos corretamente.
+  const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+  triggerDownload(filename, blob);
+}
+
+function triggerDownload(filename: string, blob: Blob): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -132,8 +138,55 @@ export function downloadCsv(filename: string, csv: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/** Constrói um workbook XLSX com cabeçalhos em negrito e larguras automáticas. */
+export function buildXlsx(header: string[], rows: unknown[][], sheetName = "Dados"): XLSX.WorkBook {
+  const aoa: unknown[][] = [header, ...rows];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // Cabeçalho em negrito
+  header.forEach((_, c) => {
+    const ref = XLSX.utils.encode_cell({ r: 0, c });
+    const cell = ws[ref];
+    if (cell) {
+      cell.s = { font: { bold: true } };
+    }
+  });
+
+  // Largura automática (wch) por coluna
+  ws["!cols"] = header.map((h, c) => {
+    let max = String(h).length;
+    for (const row of rows) {
+      const v = row[c];
+      const s = v === null || v === undefined ? "" : String(v);
+      if (s.length > max) max = s.length;
+    }
+    return { wch: Math.min(Math.max(max + 2, 8), 60) };
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  return wb;
+}
+
+export function buildClientesXlsx(clientes: Cliente[]): XLSX.WorkBook {
+  return buildXlsx(CLIENTES_HEADER, clientes.map(clienteRow), "Clientes");
+}
+
+/** Dispara o download do XLSX no browser. */
+export function downloadXlsx(filename: string, wb: XLSX.WorkBook): void {
+  const buffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  triggerDownload(filename, blob);
+}
+
 export function clientesFilename(now: Date = new Date()): string {
   return `clientes_compra360_${todayFileSuffix(now)}.csv`;
+}
+
+export function clientesFilenameXlsx(now: Date = new Date()): string {
+  return `clientes_compra360_${todayFileSuffix(now)}.xlsx`;
 }
 
 export function alertasTrialsFilename(now: Date = new Date()): string {
