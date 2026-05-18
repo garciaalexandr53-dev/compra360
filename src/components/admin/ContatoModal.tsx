@@ -61,16 +61,40 @@ const SITUACAO_INFO: Record<SituacaoCliente, { label: string; icon: React.ReactN
   },
 };
 
-export default function ContatoModal({ cliente, initialCanal = "whatsapp", forcarSituacao, onClose }: Props) {
+export default function ContatoModal({ cliente, initialCanal = "whatsapp", forcarSituacao, motivo, onClose }: Props) {
   const [canal, setCanal] = useState<Canal>(initialCanal);
   const [enviando, setEnviando] = useState(false);
   const [mensagemEditada, setMensagemEditada] = useState("");
   const [assuntoEditado, setAssuntoEditado] = useState("");
+  const queryClient = useQueryClient();
 
   const situacao = useMemo<SituacaoCliente | null>(() => {
     if (!cliente) return null;
     return forcarSituacao ?? detectarSituacao(cliente);
   }, [cliente, forcarSituacao]);
+
+  const motivoFinal = useMemo<MotivoContato>(
+    () => motivo ?? situacaoParaMotivo(situacao),
+    [motivo, situacao],
+  );
+
+  const registrarContato = async (canalUsado: Canal) => {
+    if (!cliente) return;
+    try {
+      await supabase.rpc("admin_registrar_contato", {
+        _user_id: cliente.user_id,
+        _canal: canalUsado,
+        _motivo: motivoFinal,
+        _observacao: null,
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin-ultimos-contatos"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-contatos-cliente", cliente.user_id] });
+    } catch (e) {
+      console.warn("Falha ao registrar contato admin", e);
+    }
+  };
+
+
 
   const mensagem = useMemo(() => {
     if (!cliente || !situacao) return null;
