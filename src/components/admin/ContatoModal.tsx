@@ -229,7 +229,7 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
             <div className={`rounded-md border p-2.5 text-xs flex items-start gap-2 ${
               whatsappCliente
                 ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400"
-                : "border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400"
+                : "border-destructive/40 bg-destructive/5 text-destructive"
             }`}>
               <MessageCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               <div className="min-w-0">
