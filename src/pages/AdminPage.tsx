@@ -181,15 +181,90 @@ export default function AdminPage() {
     );
   }
 
-  const filteredClientes = (clientes || []).filter((c) => {
-    const q = search.toLowerCase().trim();
-    if (!q) return true;
+  const filtrosAtivos = useMemo(() => {
     return (
-      c.email?.toLowerCase().includes(q) ||
-      c.loja_principal?.toLowerCase().includes(q) ||
-      c.cnpj?.toLowerCase().includes(q)
+      filtroPlano !== "todos" ||
+      filtroStatus !== "todos" ||
+      filtroAtivacao !== "todos" ||
+      ordenacao !== "recentes" ||
+      search.trim().length > 0
     );
-  });
+  }, [filtroPlano, filtroStatus, filtroAtivacao, ordenacao, search]);
+
+  const limparFiltros = () => {
+    setSearch("");
+    setFiltroPlano("todos");
+    setFiltroStatus("todos");
+    setFiltroAtivacao("todos");
+    setOrdenacao("recentes");
+  };
+
+  const filteredClientes = useMemo(() => {
+    let result = (clientes || []).filter((c) => {
+      // Busca textual
+      const q = search.toLowerCase().trim();
+      if (q) {
+        const matchText =
+          c.email?.toLowerCase().includes(q) ||
+          c.loja_principal?.toLowerCase().includes(q) ||
+          c.cnpj?.toLowerCase().includes(q);
+        if (!matchText) return false;
+      }
+
+      // Filtro por plano
+      if (filtroPlano !== "todos" && c.plan_name !== filtroPlano) return false;
+
+      // Filtro por status
+      if (filtroStatus !== "todos") {
+        const diasSemUso = getDiasSemUso(c);
+        const saude = getSaudeCliente(c);
+        switch (filtroStatus) {
+          case "ativo":
+            if (saude.status !== "ativo") return false;
+            break;
+          case "dormindo":
+            if (diasSemUso === null || diasSemUso <= 14) return false;
+            break;
+          case "risco":
+            if (diasSemUso === null || diasSemUso <= 21) return false;
+            break;
+          case "trial":
+            if (c.plan_status !== "trialing") return false;
+            break;
+        }
+      }
+
+      // Filtro por ativação
+      if (filtroAtivacao !== "todos") {
+        const temCotacao = (c.total_cotacoes || 0) > 0;
+        if (filtroAtivacao === "com_cotacao" && !temCotacao) return false;
+        if (filtroAtivacao === "sem_cotacao" && temCotacao) return false;
+      }
+
+      return true;
+    });
+
+    // Ordenação
+    result = [...result].sort((a, b) => {
+      switch (ordenacao) {
+        case "recentes":
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case "antigos":
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case "maior_uso":
+          return (b.total_cotacoes || 0) - (a.total_cotacoes || 0);
+        case "risco_churn": {
+          const diasA = getDiasSemUso(a) ?? -1;
+          const diasB = getDiasSemUso(b) ?? -1;
+          return diasB - diasA;
+        }
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [clientes, search, filtroPlano, filtroStatus, filtroAtivacao, ordenacao]);
 
   const abrirContato = (cliente: Cliente, situacao?: SituacaoCliente, canal: "whatsapp" | "email" = "whatsapp") => {
     setContato({ cliente, canal, situacao });
