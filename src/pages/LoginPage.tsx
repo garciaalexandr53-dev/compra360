@@ -148,7 +148,7 @@ const LoginPage = () => {
         <CardHeader className="text-center pb-2">
           <div className="flex justify-center">
             <img
-              src="https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png"
+              src="https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png?v=2"
               alt="Compra360"
               className="max-w-[200px] sm:max-w-[260px] w-full h-auto object-contain"
             />
