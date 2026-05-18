@@ -198,12 +198,15 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
           </Button>
           <Button
             onClick={handleAbrir}
+            disabled={enviando}
             className={canal === "whatsapp"
               ? "bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
               : "bg-blue-600 hover:bg-blue-700 text-white gap-1.5"}
           >
             {canal === "whatsapp" ? <MessageCircle className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
-            {canal === "whatsapp" ? "Abrir WhatsApp" : "Abrir Email"}
+            {canal === "whatsapp"
+              ? "Abrir WhatsApp"
+              : enviando ? "Enviando..." : "Enviar Email"}
           </Button>
         </DialogFooter>
       </DialogContent>
