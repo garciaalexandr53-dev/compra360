@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "compra360"
+const SITE_NAME = "Compra360"
 const SENDER_DOMAIN = "notify.compra360app.com.br"
 const ROOT_DOMAIN = "compra360app.com.br"
 const FROM_DOMAIN = "notify.compra360app.com.br" // Domain shown in From address (may be root or sender subdomain)
