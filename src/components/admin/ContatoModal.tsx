@@ -110,7 +110,7 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
         body: {
           templateName: "notification",
           recipientEmail: cliente.email,
-          idempotencyKey: `admin-contato-${cliente.id}-${situacao}-${Date.now()}`,
+          idempotencyKey: `admin-contato-${cliente.user_id}-${situacao}-${Date.now()}`,
           templateData: {
             titulo: assuntoEditado,
             mensagem: mensagemEditada,
