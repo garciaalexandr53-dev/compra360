@@ -484,6 +484,20 @@ export default function AdminPage() {
         onClose={() => setContato({ cliente: null, canal: "whatsapp" })}
       />
 
+      {/* Detalhes do cliente */}
+      <ClienteDetalhesSheet
+        cliente={clienteDetalhe}
+        onClose={() => setClienteDetalhe(null)}
+        onContatar={(c, canal) => {
+          setClienteDetalhe(null);
+          abrirContato(c, undefined, canal);
+        }}
+        onAlterarPlano={(c) => {
+          setClienteDetalhe(null);
+          setPlanEdit({ cliente: c, novoPlano: c.plan_name });
+        }}
+      />
+
       {/* Ativar produtos */}
       <AlertDialog open={!!confirmActivate} onOpenChange={(o) => !o && setConfirmActivate(null)}>
         <AlertDialogContent>
