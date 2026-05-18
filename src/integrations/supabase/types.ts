@@ -966,6 +966,27 @@ export type Database = {
           whatsapp: string
         }[]
       }
+      admin_list_contatos: {
+        Args: {
+          _canal?: string
+          _limit?: number
+          _motivo?: string
+          _offset?: number
+          _search?: string
+          _user_id?: string
+        }
+        Returns: {
+          canal: string
+          cliente_email: string
+          cliente_nome: string
+          created_at: string
+          id: string
+          motivo: string
+          observacao: string
+          total_count: number
+          user_id: string
+        }[]
+      }
       admin_list_email_logs: {
         Args: {
           _end?: string

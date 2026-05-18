@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,51 +19,56 @@ type ContatoRow = {
   motivo: MotivoContato;
   observacao: string | null;
   created_at: string;
-  admin_id: string;
+  cliente_nome: string | null;
+  cliente_email: string | null;
+  total_count: number;
 };
 
 interface Props {
   clientes: Cliente[] | undefined;
 }
 
+const PAGE_SIZE = 50;
+
 export default function ContatosTab({ clientes }: Props) {
   const [filtroCliente, setFiltroCliente] = useState<string>("todos");
   const [filtroCanal, setFiltroCanal] = useState<"todos" | "whatsapp" | "email">("todos");
   const [filtroMotivo, setFiltroMotivo] = useState<"todos" | MotivoContato>("todos");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(0);
 
-  const { data: contatos, isLoading } = useQuery({
-    queryKey: ["admin-contatos-all"],
+  // Debounce search 300ms
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(0);
+  }, [filtroCliente, filtroCanal, filtroMotivo, debouncedSearch]);
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ["admin-contatos", filtroCliente, filtroCanal, filtroMotivo, debouncedSearch, page],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("admin_contatos")
-        .select("id, user_id, canal, motivo, observacao, created_at, admin_id")
-        .order("created_at", { ascending: false })
-        .limit(500);
+      const { data, error } = await supabase.rpc("admin_list_contatos", {
+        _user_id: filtroCliente === "todos" ? null : filtroCliente,
+        _canal: filtroCanal === "todos" ? null : filtroCanal,
+        _motivo: filtroMotivo === "todos" ? null : filtroMotivo,
+        _search: debouncedSearch || null,
+        _limit: PAGE_SIZE,
+        _offset: page * PAGE_SIZE,
+      });
       if (error) throw error;
       return (data || []) as ContatoRow[];
     },
+    placeholderData: keepPreviousData,
   });
 
-  const clienteMap = useMemo(() => {
-    const m = new Map<string, Cliente>();
-    (clientes || []).forEach((c) => m.set(c.user_id, c));
-    return m;
-  }, [clientes]);
-
-  const filtrados = useMemo(() => {
-    return (contatos || []).filter((c) => {
-      if (filtroCliente !== "todos" && c.user_id !== filtroCliente) return false;
-      if (filtroCanal !== "todos" && c.canal !== filtroCanal) return false;
-      if (filtroMotivo !== "todos" && c.motivo !== filtroMotivo) return false;
-      if (search.trim()) {
-        const cli = clienteMap.get(c.user_id);
-        const hay = `${cli?.loja_principal || ""} ${cli?.email || ""} ${c.observacao || ""}`.toLowerCase();
-        if (!hay.includes(search.trim().toLowerCase())) return false;
-      }
-      return true;
-    });
-  }, [contatos, filtroCliente, filtroCanal, filtroMotivo, search, clienteMap]);
+  const rows = data || [];
+  const total = rows[0]?.total_count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(Number(total) / PAGE_SIZE));
 
   const temFiltro =
     filtroCliente !== "todos" || filtroCanal !== "todos" || filtroMotivo !== "todos" || search.trim() !== "";
@@ -125,8 +130,9 @@ export default function ContatosTab({ clientes }: Props) {
         </div>
 
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="text-sm text-muted-foreground">
-            {filtrados.length} {filtrados.length === 1 ? "contato" : "contatos"}
+          <div className="text-sm text-muted-foreground flex items-center gap-2">
+            {isFetching && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {Number(total)} {Number(total) === 1 ? "contato" : "contatos"}
           </div>
           {temFiltro && (
             <Button
@@ -149,15 +155,14 @@ export default function ContatosTab({ clientes }: Props) {
           <div className="flex justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-        ) : filtrados.length === 0 ? (
+        ) : rows.length === 0 ? (
           <div className="text-center py-12 text-sm text-muted-foreground">
             Nenhum contato registrado{temFiltro ? " com esses filtros" : ""}.
           </div>
         ) : (
           <div className="space-y-2">
-            {filtrados.map((c) => {
-              const cli = clienteMap.get(c.user_id);
-              const nome = cli?.loja_principal || cli?.email || "Cliente removido";
+            {rows.map((c) => {
+              const nome = c.cliente_nome || c.cliente_email || "Cliente removido";
               const Icon = c.canal === "whatsapp" ? MessageCircle : Mail;
               return (
                 <div
@@ -185,8 +190,8 @@ export default function ContatosTab({ clientes }: Props) {
                         {MOTIVO_LABEL[c.motivo]}
                       </Badge>
                     </div>
-                    {cli?.email && cli.loja_principal && (
-                      <div className="text-xs text-muted-foreground truncate">{cli.email}</div>
+                    {c.cliente_email && c.cliente_nome && (
+                      <div className="text-xs text-muted-foreground truncate">{c.cliente_email}</div>
                     )}
                     {c.observacao && (
                       <div className="text-sm mt-1 text-foreground/80 whitespace-pre-wrap break-words">
@@ -200,6 +205,31 @@ export default function ContatosTab({ clientes }: Props) {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Paginação */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-2 border-t">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === 0 || isFetching}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+            >
+              Anterior
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Página {page + 1} de {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages - 1 || isFetching}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Próxima
+            </Button>
           </div>
         )}
       </CardContent>
