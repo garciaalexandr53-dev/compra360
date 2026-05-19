@@ -12,6 +12,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import BottomNav from "@/components/BottomNav";
 import OnboardingWizard from "@/components/OnboardingWizard";
+import BannerAviso from "@/components/BannerAviso";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -108,6 +109,7 @@ export default function AppLayout() {
               </Button>
             </div>
           </header>
+          <BannerAviso />
           <main className="flex-1 overflow-auto pb-16 md:pb-0">
             <Outlet />
           </main>
