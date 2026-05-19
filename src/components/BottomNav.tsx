@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, BarChart3, TrendingUp, MoreHorizontal, Package, Users, Store, UserCheck, ClipboardCheck, History, Shield } from "lucide-react";
+import { LayoutDashboard, BarChart3, TrendingUp, MoreHorizontal, Package, Users, Store, UserCheck, ClipboardCheck, History, Shield, UserCog } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,7 @@ const moreItems = [
   { label: "Funcionários", icon: UserCheck, path: "/funcionarios" },
   { label: "Conferências", icon: ClipboardCheck, path: "/conferencias" },
   { label: "Histórico", icon: History, path: "/historico" },
+  { label: "Meus dados", icon: UserCog, path: "/perfil" },
 ];
 
 export default function BottomNav() {
