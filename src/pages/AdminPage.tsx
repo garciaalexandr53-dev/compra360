@@ -31,6 +31,7 @@ import ContatoModal from "@/components/admin/ContatoModal";
 import MetricSheets, { SheetType } from "@/components/admin/MetricSheets";
 import AlertasTab from "@/components/admin/AlertasTab";
 import EmailsTab from "@/components/admin/EmailsTab";
+import PagamentosTab from "@/components/admin/PagamentosTab";
 import ClienteDetalhesSheet from "@/components/admin/ClienteDetalhesSheet";
 import ContatosTab from "@/components/admin/ContatosTab";
 import { MrrBreakdownCard, GrowthChart, ChurnRiskCard } from "@/components/admin/MetricasExtras";
