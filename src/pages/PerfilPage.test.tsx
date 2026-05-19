@@ -15,9 +15,9 @@ const lojaRow = {
   telefone: "1133334444",
 };
 
-const upsertMock = vi.fn(() => Promise.resolve({ error: null }));
-const updateEqMock = vi.fn(() => Promise.resolve({ error: null }));
-const resetPasswordMock = vi.fn(() => Promise.resolve({ error: null }));
+const upsertMock : any = vi.fn((..._a: any[]) => Promise.resolve({ error: null }));
+const updateEqMock : any = vi.fn((..._a: any[]) => Promise.resolve({ error: null }));
+const resetPasswordMock : any = vi.fn((..._a: any[]) => Promise.resolve({ error: null }));
 
 let profileMaybeError: any = null;
 let lojaMaybeError: any = null;
@@ -33,7 +33,7 @@ vi.mock("@/integrations/supabase/client", () => ({
                 Promise.resolve({ data: profileRow, error: profileMaybeError }),
             }),
           }),
-          upsert: (...args: any[]) => upsertMock(...args),
+          upsert: (...args: any[]) => (upsertMock as any)(...args),
         };
       }
       if (table === "lojas") {
@@ -46,14 +46,14 @@ vi.mock("@/integrations/supabase/client", () => ({
             order: () => Promise.resolve({ data: [], error: null }),
           }),
           update: (payload: any) => ({
-            eq: (...a: any[]) => updateEqMock(payload, ...a),
+            eq: (...a: any[]) => (updateEqMock as any)(payload, ...a),
           }),
         };
       }
       return { select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null, error: null }) }) }) };
     },
     auth: {
-      resetPasswordForEmail: (...args: any[]) => resetPasswordMock(...args),
+      resetPasswordForEmail: (...args: any[]) => (resetPasswordMock as any)(...args),
     },
   },
 }));
