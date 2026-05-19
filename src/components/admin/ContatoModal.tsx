@@ -81,14 +81,29 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
   const registrarContato = async (canalUsado: Canal) => {
     if (!cliente) return;
     try {
-      await supabase.rpc("admin_registrar_contato", {
+      const { error } = await supabase.rpc("admin_registrar_contato", {
         _user_id: cliente.user_id,
         _canal: canalUsado,
         _motivo: motivoFinal,
         _observacao: null,
       });
+      if (error) {
+        console.error("[admin_registrar_contato] RPC error", {
+          error,
+          user_id: cliente.user_id,
+          canal: canalUsado,
+          motivo: motivoFinal,
+        });
+        toast({
+          title: "Não foi possível registrar o contato",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
       queryClient.invalidateQueries({ queryKey: ["admin-ultimos-contatos"] });
       queryClient.invalidateQueries({ queryKey: ["admin-contatos-cliente", cliente.user_id] });
+      queryClient.invalidateQueries({ queryKey: ["admin-contatos"] });
     } catch (e) {
       console.warn("Falha ao registrar contato admin", e);
     }
