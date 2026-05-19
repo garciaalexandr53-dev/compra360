@@ -35,6 +35,7 @@ const ConferenciasPage = lazy(() => retryImport(() => import("./pages/Conferenci
 const LojasPage = lazy(() => retryImport(() => import("./pages/LojasPage")));
 const AddProdutosCotacaoPage = lazy(() => retryImport(() => import("./pages/AddProdutosCotacaoPage")));
 const AdminPage = lazy(() => retryImport(() => import("./pages/AdminPage")));
+const PerfilPage = lazy(() => retryImport(() => import("./pages/PerfilPage")));
 const NotFound = lazy(() => retryImport(() => import("./pages/NotFound")));
 const UnsubscribePage = lazy(() => retryImport(() => import("./pages/UnsubscribePage")));
 const PriceNotificationListener = lazy(() => retryImport(() => import("./components/PriceNotificationListener")));
@@ -72,6 +73,7 @@ const App = () => (
                   <Route path="/conferencias" element={<Suspense fallback={null}><ConferenciasPage /></Suspense>} />
                   <Route path="/lojas" element={<Suspense fallback={null}><LojasPage /></Suspense>} />
                   <Route path="/add-produtos" element={<Suspense fallback={null}><AddProdutosCotacaoPage /></Suspense>} />
+                  <Route path="/perfil" element={<Suspense fallback={null}><PerfilPage /></Suspense>} />
                 </Route>
 
                 {/* Legacy redirects */}

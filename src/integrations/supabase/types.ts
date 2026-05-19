@@ -548,6 +548,7 @@ export type Database = {
           nome: string
           nome_fantasia: string | null
           razao_social: string | null
+          telefone: string | null
           user_id: string | null
         }
         Insert: {
@@ -559,6 +560,7 @@ export type Database = {
           nome: string
           nome_fantasia?: string | null
           razao_social?: string | null
+          telefone?: string | null
           user_id?: string | null
         }
         Update: {
@@ -570,6 +572,7 @@ export type Database = {
           nome?: string
           nome_fantasia?: string | null
           razao_social?: string | null
+          telefone?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -766,18 +769,21 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          nome: string | null
           updated_at: string
           user_id: string
           whatsapp: string | null
         }
         Insert: {
           created_at?: string
+          nome?: string | null
           updated_at?: string
           user_id: string
           whatsapp?: string | null
         }
         Update: {
           created_at?: string
+          nome?: string | null
           updated_at?: string
           user_id?: string
           whatsapp?: string | null
