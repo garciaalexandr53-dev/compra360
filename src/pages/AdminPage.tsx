@@ -17,7 +17,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Users, Store, Package, FileText, Send, ClipboardCheck, Loader2,
   Search, ShieldCheck, RefreshCw, ArrowLeft, AlertTriangle, TimerReset, Activity,
-  MessageCircle, Mail, X, Download, ChevronRight, FileSpreadsheet,
+  MessageCircle, Mail, X, Download, ChevronRight, FileSpreadsheet, CreditCard,
 } from "lucide-react";
 import { buildClientesCsv, buildClientesXlsx, clientesFilename, clientesFilenameXlsx, downloadCsv, downloadXlsx } from "@/lib/adminExports";
 import { formatDate } from "@/lib/format";
@@ -31,6 +31,7 @@ import ContatoModal from "@/components/admin/ContatoModal";
 import MetricSheets, { SheetType } from "@/components/admin/MetricSheets";
 import AlertasTab from "@/components/admin/AlertasTab";
 import EmailsTab from "@/components/admin/EmailsTab";
+import PagamentosTab from "@/components/admin/PagamentosTab";
 import ClienteDetalhesSheet from "@/components/admin/ClienteDetalhesSheet";
 import ContatosTab from "@/components/admin/ContatosTab";
 import { MrrBreakdownCard, GrowthChart, ChurnRiskCard } from "@/components/admin/MetricasExtras";
@@ -330,13 +331,17 @@ export default function AdminPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-3 sm:grid-cols-5 w-full sm:w-auto sm:inline-flex">
+          <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full sm:w-auto sm:inline-flex">
             <TabsTrigger value="metricas">Métricas</TabsTrigger>
             <TabsTrigger value="alertas" className="gap-1.5">
               <AlertTriangle className="h-3.5 w-3.5" />
               Alertas
             </TabsTrigger>
             <TabsTrigger value="clientes">Clientes</TabsTrigger>
+            <TabsTrigger value="pagamentos" className="gap-1.5">
+              <CreditCard className="h-3.5 w-3.5" />
+              Pagamentos
+            </TabsTrigger>
             <TabsTrigger value="contatos" className="gap-1.5">
               <MessageCircle className="h-3.5 w-3.5" />
               Contatos
@@ -618,6 +623,11 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* PAGAMENTOS */}
+          <TabsContent value="pagamentos">
+            <PagamentosTab />
           </TabsContent>
 
           {/* CONTATOS */}
