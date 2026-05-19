@@ -174,10 +174,17 @@ export default function PerfilPage() {
   return (
     <div className="container max-w-3xl mx-auto p-4 md:p-6 space-y-4">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Voltar">
-          <ArrowLeft className="h-5 w-5" />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(-1)}
+          aria-label="Voltar ao menu anterior"
+          className="gap-1.5 -ml-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Voltar</span>
         </Button>
-        <h1 className="text-xl md:text-2xl font-bold">Meus dados</h1>
+        <h1 className="text-xl md:text-2xl font-bold ml-1">Meus dados</h1>
       </div>
 
       {loading ? (
