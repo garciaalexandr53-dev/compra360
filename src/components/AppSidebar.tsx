@@ -27,6 +27,7 @@ const maisMenu = [
   { title: "App Funcionários", url: "/funcionarios", icon: UserCheck, emoji: "👥" },
   { title: "Conferências", url: "/conferencias", icon: ClipboardCheck, emoji: "📋" },
   { title: "Histórico", url: "/historico", icon: History, emoji: "🕐" },
+  { title: "Meus dados", url: "/perfil", icon: UserCog, emoji: "👤" },
 ];
 
 export function AppSidebar() {
