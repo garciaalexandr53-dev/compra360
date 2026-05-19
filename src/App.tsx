@@ -73,6 +73,7 @@ const App = () => (
                   <Route path="/conferencias" element={<Suspense fallback={null}><ConferenciasPage /></Suspense>} />
                   <Route path="/lojas" element={<Suspense fallback={null}><LojasPage /></Suspense>} />
                   <Route path="/add-produtos" element={<Suspense fallback={null}><AddProdutosCotacaoPage /></Suspense>} />
+                  <Route path="/perfil" element={<Suspense fallback={null}><PerfilPage /></Suspense>} />
                 </Route>
 
                 {/* Legacy redirects */}
