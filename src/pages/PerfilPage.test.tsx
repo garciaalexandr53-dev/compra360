@@ -162,7 +162,7 @@ describe("PerfilPage", () => {
 
   it("mostra toast de erro quando upsert do profile falha", async () => {
     upsertMock.mockImplementationOnce(() =>
-      Promise.resolve({ error: { message: "falha ao salvar profile" } }),
+      Promise.resolve({ error: new Error("falha ao salvar profile") }),
     );
     wrap();
     await waitFor(() => screen.getByLabelText(/Nome completo/i));
@@ -186,7 +186,7 @@ describe("PerfilPage", () => {
 
   it("mostra erro quando reset de senha falha", async () => {
     resetPasswordMock.mockImplementationOnce(() =>
-      Promise.resolve({ error: { message: "rate limited" } }),
+      Promise.resolve({ error: new Error("rate limited") }),
     );
     wrap();
     await waitFor(() => screen.getByRole("button", { name: /Alterar senha/i }));
