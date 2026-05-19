@@ -92,25 +92,17 @@ export default function PagamentosTab() {
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["stripe-dados", periodo],
     queryFn: async (): Promise<StripeDadosResponse> => {
-      const { data, error } = await supabase.functions.invoke("stripe-dados", {
-        body: {},
-        method: "GET" as any,
-        // Pass period via query string by appending to URL is not supported by invoke;
-        // we send via headers/body and the function defaults to 30 if missing.
-        // Workaround: use direct fetch when period != 30.
-      });
-      if (periodo !== "30") {
-        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        const token = (await supabase.auth.getSession()).data.session?.access_token;
-        const resp = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/stripe-dados?invoices_days=${periodo}`,
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
-        if (!resp.ok) throw new Error(await resp.text());
-        return resp.json();
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const resp = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/stripe-dados?invoices_days=${periodo}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(text || `HTTP ${resp.status}`);
       }
-      if (error) throw error;
-      return data as StripeDadosResponse;
+      return resp.json();
     },
   });
 
