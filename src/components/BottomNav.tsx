@@ -20,6 +20,7 @@ const moreItems = [
   { label: "Funcionários", icon: UserCheck, path: "/funcionarios" },
   { label: "Conferências", icon: ClipboardCheck, path: "/conferencias" },
   { label: "Histórico", icon: History, path: "/historico" },
+  { label: "Meus dados", icon: UserCog, path: "/perfil" },
 ];
 
 export default function BottomNav() {
