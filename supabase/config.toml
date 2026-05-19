@@ -3,6 +3,8 @@ project_id = "gkokwhkpjfozhtgfcrhz"
 [functions]
   [functions.stripe-webhook]
     verify_jwt = false
+  [functions.stripe-dados]
+    verify_jwt = false
   [functions.auth-email-hook]
     verify_jwt = false
   [functions.process-email-queue]
