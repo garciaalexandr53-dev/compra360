@@ -61,8 +61,8 @@ export default function TrialExpiredOverlay({ totalProdutos, economiaTotal }: Pr
         aria-modal="true"
         role="dialog"
       >
-        <div className="min-h-full flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-card border rounded-xl shadow-lg p-6 space-y-5 animate-fade-in">
+        <div className="min-h-full flex items-center justify-center p-4 sm:p-6">
+          <div className="w-full max-w-md sm:max-w-lg bg-card border rounded-xl shadow-lg p-5 sm:p-8 space-y-5 animate-fade-in">
             <div className="text-center">
               <h2 className="text-2xl font-bold text-foreground">
                 Seu período grátis terminou
@@ -92,21 +92,19 @@ export default function TrialExpiredOverlay({ totalProdutos, economiaTotal }: Pr
               Escolha um plano para continuar
             </p>
 
-            <div className="space-y-2">
+            <div className="grid gap-2 sm:grid-cols-2">
               <Button
                 variant="outline"
-                className="w-full h-12"
+                className="w-full h-12 text-sm sm:text-base"
                 onClick={() => setShowPlanos(true)}
               >
-                Pro {PLAN_PRICES.pro.display}
-                {PLAN_PRICES.pro.note}
+                <span className="truncate">Pro {PLAN_PRICES.pro.display}{PLAN_PRICES.pro.note}</span>
               </Button>
               <Button
-                className="w-full h-12 bg-gradient-to-r from-primary to-primary/80 shadow-lg"
+                className="w-full h-12 text-sm sm:text-base bg-gradient-to-r from-primary to-primary/80 shadow-lg"
                 onClick={() => setShowPlanos(true)}
               >
-                Business {PLAN_PRICES.business.display}
-                {PLAN_PRICES.business.note} ⭐
+                <span className="truncate">Business {PLAN_PRICES.business.display}{PLAN_PRICES.business.note} ⭐</span>
               </Button>
             </div>
           </div>
