@@ -442,7 +442,7 @@ const FuncionariosPage = () => {
     }
   };
 
-  const publicOrigin = import.meta.env.VITE_APP_PUBLIC_URL || "https://compra360.lovable.app";
+  const publicOrigin = import.meta.env.VITE_APP_PUBLIC_URL || "https://compra360app.com.br";
   const baseUrl = `${publicOrigin.replace(/\/$/, "")}/app-funcionarios`;
   const appUrl = effectiveLinkLojaId
     ? `${baseUrl}?loja=${effectiveLinkLojaId}`
