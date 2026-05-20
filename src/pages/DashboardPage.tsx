@@ -56,7 +56,7 @@ const DashboardPage = () => {
       const cotIds = cots.map((c) => c.id);
       const { data: cps } = await supabase
         .from("cotacao_produtos")
-        .select("id, quantidade")
+        .select("id, produto_id, quantidade")
         .in("cotacao_id", cotIds);
       if (!cps?.length) return { totalProdutos: 0, economiaTotal: 0 };
       const cpIds = cps.map((c) => c.id);
@@ -74,13 +74,15 @@ const DashboardPage = () => {
         precosByCp.set(p.cotacao_produto_id, arr);
       });
       let economiaTotal = 0;
+      const produtosUnicos = new Set<string>();
       for (const cp of cps) {
+        if (cp.produto_id) produtosUnicos.add(cp.produto_id);
         const arr = precosByCp.get(cp.id);
         if (!arr || arr.length < 2) continue;
         const qty = Number(cp.quantidade) || 1;
         economiaTotal += (Math.max(...arr) - Math.min(...arr)) * qty;
       }
-      return { totalProdutos: cps.length, economiaTotal };
+      return { totalProdutos: produtosUnicos.size, economiaTotal };
     },
   });
 
