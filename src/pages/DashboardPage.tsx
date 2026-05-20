@@ -43,6 +43,46 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { checkPlan, showPlanos, setShowPlanos } = useFeatureCheck();
+  const { isTrial } = useSubscription();
+
+  // ── Economia histórica acumulada (todas as cotações finalizadas) ──
+  const { data: economiaHistorica = { totalProdutos: 0, economiaTotal: 0 } } = useQuery({
+    queryKey: ["economia-historica", lojaAtiva?.id],
+    queryFn: async () => {
+      let q = supabase.from("cotacoes").select("id").eq("status", "finalizada");
+      if (lojaAtiva?.id) q = q.eq("loja_id", lojaAtiva.id);
+      const { data: cots } = await q;
+      if (!cots?.length) return { totalProdutos: 0, economiaTotal: 0 };
+      const cotIds = cots.map((c) => c.id);
+      const { data: cps } = await supabase
+        .from("cotacao_produtos")
+        .select("id, quantidade")
+        .in("cotacao_id", cotIds);
+      if (!cps?.length) return { totalProdutos: 0, economiaTotal: 0 };
+      const cpIds = cps.map((c) => c.id);
+      const { data: precos } = await supabase
+        .from("precos")
+        .select("cotacao_produto_id, preco")
+        .in("cotacao_produto_id", cpIds)
+        .not("preco", "is", null);
+      const precosByCp = new Map<string, number[]>();
+      (precos || []).forEach((p) => {
+        const v = Number(p.preco);
+        if (!v || v <= 0) return;
+        const arr = precosByCp.get(p.cotacao_produto_id) || [];
+        arr.push(v);
+        precosByCp.set(p.cotacao_produto_id, arr);
+      });
+      let economiaTotal = 0;
+      for (const cp of cps) {
+        const arr = precosByCp.get(cp.id);
+        if (!arr || arr.length < 2) continue;
+        const qty = Number(cp.quantidade) || 1;
+        economiaTotal += (Math.max(...arr) - Math.min(...arr)) * qty;
+      }
+      return { totalProdutos: cps.length, economiaTotal };
+    },
+  });
 
   // Sync subscription after Stripe checkout redirect
   useEffect(() => {
