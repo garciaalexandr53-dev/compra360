@@ -26,11 +26,15 @@ import ModalFornecedores from "@/components/cotacao/ModalFornecedores";
 import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugestao";
 import ModalNovaCotacao from "@/components/cotacao/ModalNovaCotacao";
 import TrialBanner from "@/components/dashboard/TrialBanner";
+import TrialUpsellCard from "@/components/dashboard/TrialUpsellCard";
+import TrialExpiredOverlay from "@/components/dashboard/TrialExpiredOverlay";
 import { useFeatureCheck } from "@/components/FeatureGate";
+import { useSubscription } from "@/hooks/useSubscription";
 import PlanosModal from "@/components/PlanosModal";
 import PrazoCountdownBadge from "@/components/dashboard/PrazoCountdownBadge";
 import PrazoEditableBadge from "@/components/dashboard/PrazoEditableBadge";
 import WhatsAppRequiredModal from "@/components/dashboard/WhatsAppRequiredModal";
+import { Flame } from "lucide-react";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -39,6 +43,46 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { checkPlan, showPlanos, setShowPlanos } = useFeatureCheck();
+  const { isTrial } = useSubscription();
+
+  // ── Economia histórica acumulada (todas as cotações finalizadas) ──
+  const { data: economiaHistorica = { totalProdutos: 0, economiaTotal: 0 } } = useQuery({
+    queryKey: ["economia-historica", lojaAtiva?.id],
+    queryFn: async () => {
+      let q = supabase.from("cotacoes").select("id").eq("status", "finalizada");
+      if (lojaAtiva?.id) q = q.eq("loja_id", lojaAtiva.id);
+      const { data: cots } = await q;
+      if (!cots?.length) return { totalProdutos: 0, economiaTotal: 0 };
+      const cotIds = cots.map((c) => c.id);
+      const { data: cps } = await supabase
+        .from("cotacao_produtos")
+        .select("id, quantidade")
+        .in("cotacao_id", cotIds);
+      if (!cps?.length) return { totalProdutos: 0, economiaTotal: 0 };
+      const cpIds = cps.map((c) => c.id);
+      const { data: precos } = await supabase
+        .from("precos")
+        .select("cotacao_produto_id, preco")
+        .in("cotacao_produto_id", cpIds)
+        .not("preco", "is", null);
+      const precosByCp = new Map<string, number[]>();
+      (precos || []).forEach((p) => {
+        const v = Number(p.preco);
+        if (!v || v <= 0) return;
+        const arr = precosByCp.get(p.cotacao_produto_id) || [];
+        arr.push(v);
+        precosByCp.set(p.cotacao_produto_id, arr);
+      });
+      let economiaTotal = 0;
+      for (const cp of cps) {
+        const arr = precosByCp.get(cp.id);
+        if (!arr || arr.length < 2) continue;
+        const qty = Number(cp.quantidade) || 1;
+        economiaTotal += (Math.max(...arr) - Math.min(...arr)) * qty;
+      }
+      return { totalProdutos: cps.length, economiaTotal };
+    },
+  });
 
   // Sync subscription after Stripe checkout redirect
   useEffect(() => {
@@ -544,6 +588,14 @@ const DashboardPage = () => {
     <div className="p-5 max-w-2xl mx-auto">
       <WhatsAppRequiredModal />
       <TrialBanner />
+      <TrialUpsellCard
+        totalProdutos={economiaHistorica.totalProdutos}
+        economiaTotal={economiaHistorica.economiaTotal}
+      />
+      <TrialExpiredOverlay
+        totalProdutos={economiaHistorica.totalProdutos}
+        economiaTotal={economiaHistorica.economiaTotal}
+      />
       <div className="animate-fade-in">
         {/* ── STATE 1: No active quote — guided flow ── */}
         {state === 1 && (
@@ -884,6 +936,15 @@ const DashboardPage = () => {
                   <p className="text-xs text-muted-foreground mb-1">💰 Economia estimada</p>
                   <p className="text-2xl font-bold text-green-500 dark:text-green-400">{formatBRL(economyEstimate)}</p>
                   <p className="text-[11px] text-muted-foreground mt-1">comparado ao fornecedor mais caro</p>
+                  {isTrial && (
+                    <Button
+                      size="sm"
+                      className="mt-3 w-full gap-2 bg-gradient-to-r from-primary to-primary/80"
+                      onClick={() => setShowPlanos(true)}
+                    >
+                      <Flame className="h-4 w-4" /> Ativar Business — continue economizando
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             )}
