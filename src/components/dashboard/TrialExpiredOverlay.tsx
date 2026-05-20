@@ -61,8 +61,8 @@ export default function TrialExpiredOverlay({ totalProdutos, economiaTotal }: Pr
         aria-modal="true"
         role="dialog"
       >
-        <div className="min-h-full flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-card border rounded-xl shadow-lg p-6 space-y-5 animate-fade-in">
+        <div className="min-h-full flex items-center justify-center p-4 sm:p-6">
+          <div className="w-full max-w-md sm:max-w-lg bg-card border rounded-xl shadow-lg p-5 sm:p-8 space-y-5 animate-fade-in">
             <div className="text-center">
               <h2 className="text-2xl font-bold text-foreground">
                 Seu período grátis terminou
