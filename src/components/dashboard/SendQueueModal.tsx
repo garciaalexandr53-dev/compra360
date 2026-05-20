@@ -49,7 +49,7 @@ const SendQueueModal = ({ open, onOpenChange, fornecedores, onConclude }: Props 
   }, [statuses]);
 
   const getLink = (f: Fornecedor) => {
-    const publicOrigin = (import.meta.env.VITE_APP_PUBLIC_URL || "https://compra360.lovable.app").replace(/\/$/, "");
+    const publicOrigin = (import.meta.env.VITE_APP_PUBLIC_URL || "https://compra360app.com.br").replace(/\/$/, "");
     const base = `${publicOrigin}/fornecedor/${f.token}`;
     return lojaAtiva?.id ? `${base}?loja=${lojaAtiva.id}` : base;
   };
