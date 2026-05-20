@@ -588,6 +588,14 @@ const DashboardPage = () => {
     <div className="p-5 max-w-2xl mx-auto">
       <WhatsAppRequiredModal />
       <TrialBanner />
+      <TrialUpsellCard
+        totalProdutos={economiaHistorica.totalProdutos}
+        economiaTotal={economiaHistorica.economiaTotal}
+      />
+      <TrialExpiredOverlay
+        totalProdutos={economiaHistorica.totalProdutos}
+        economiaTotal={economiaHistorica.economiaTotal}
+      />
       <div className="animate-fade-in">
         {/* ── STATE 1: No active quote — guided flow ── */}
         {state === 1 && (
