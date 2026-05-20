@@ -92,21 +92,19 @@ export default function TrialExpiredOverlay({ totalProdutos, economiaTotal }: Pr
               Escolha um plano para continuar
             </p>
 
-            <div className="space-y-2">
+            <div className="grid gap-2 sm:grid-cols-2">
               <Button
                 variant="outline"
-                className="w-full h-12"
+                className="w-full h-12 text-sm sm:text-base"
                 onClick={() => setShowPlanos(true)}
               >
-                Pro {PLAN_PRICES.pro.display}
-                {PLAN_PRICES.pro.note}
+                <span className="truncate">Pro {PLAN_PRICES.pro.display}{PLAN_PRICES.pro.note}</span>
               </Button>
               <Button
-                className="w-full h-12 bg-gradient-to-r from-primary to-primary/80 shadow-lg"
+                className="w-full h-12 text-sm sm:text-base bg-gradient-to-r from-primary to-primary/80 shadow-lg"
                 onClick={() => setShowPlanos(true)}
               >
-                Business {PLAN_PRICES.business.display}
-                {PLAN_PRICES.business.note} ⭐
+                <span className="truncate">Business {PLAN_PRICES.business.display}{PLAN_PRICES.business.note} ⭐</span>
               </Button>
             </div>
           </div>
