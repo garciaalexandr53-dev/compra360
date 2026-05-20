@@ -936,6 +936,15 @@ const DashboardPage = () => {
                   <p className="text-xs text-muted-foreground mb-1">💰 Economia estimada</p>
                   <p className="text-2xl font-bold text-green-500 dark:text-green-400">{formatBRL(economyEstimate)}</p>
                   <p className="text-[11px] text-muted-foreground mt-1">comparado ao fornecedor mais caro</p>
+                  {isTrial && (
+                    <Button
+                      size="sm"
+                      className="mt-3 w-full gap-2 bg-gradient-to-r from-primary to-primary/80"
+                      onClick={() => setShowPlanos(true)}
+                    >
+                      <Flame className="h-4 w-4" /> Ativar Business — continue economizando
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             )}
