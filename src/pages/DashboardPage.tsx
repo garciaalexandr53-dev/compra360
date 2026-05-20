@@ -26,11 +26,15 @@ import ModalFornecedores from "@/components/cotacao/ModalFornecedores";
 import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugestao";
 import ModalNovaCotacao from "@/components/cotacao/ModalNovaCotacao";
 import TrialBanner from "@/components/dashboard/TrialBanner";
+import TrialUpsellCard from "@/components/dashboard/TrialUpsellCard";
+import TrialExpiredOverlay from "@/components/dashboard/TrialExpiredOverlay";
 import { useFeatureCheck } from "@/components/FeatureGate";
+import { useSubscription } from "@/hooks/useSubscription";
 import PlanosModal from "@/components/PlanosModal";
 import PrazoCountdownBadge from "@/components/dashboard/PrazoCountdownBadge";
 import PrazoEditableBadge from "@/components/dashboard/PrazoEditableBadge";
 import WhatsAppRequiredModal from "@/components/dashboard/WhatsAppRequiredModal";
+import { Flame } from "lucide-react";
 
 type Fornecedor = Tables<"fornecedores">;
 
