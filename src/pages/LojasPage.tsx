@@ -36,15 +36,27 @@ const LojasPage = () => {
     },
   });
 
-  // Restore sheet when user comes back from a destination page (Produtos, Fornecedores, etc.)
+  // Restaura o sheet apenas se o usuário voltou explicitamente via BackToLojaButton
+  // (intent registrado) e dentro da TTL. Consome em uma única vez por mount.
+  const restoredOnceRef = useRef(false);
   useEffect(() => {
+    if (restoredOnceRef.current) return;
     if (lojas.length === 0) return;
-    const id = sessionStorage.getItem("voltar_loja_id");
+    const id = consumeVoltarLoja();
+    restoredOnceRef.current = true;
     if (id && lojas.some((l) => l.id === id)) {
       setSheetLojaId(id);
-      sessionStorage.removeItem("voltar_loja_id");
     }
   }, [lojas]);
+
+  // Garante limpeza ao sair da página de Lojas — qualquer estado pendente
+  // não deve sobreviver para futuras visitas a /lojas.
+  useEffect(() => {
+    return () => {
+      clearVoltarLoja();
+    };
+  }, []);
+
 
   // ===== Métricas em uma única bateria de queries (eficiente) =====
   const { data: metricsByLoja = {}, isLoading: loadingMetrics } = useQuery({
