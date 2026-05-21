@@ -55,6 +55,8 @@ const AppFuncionariosPublic = () => {
   const [dialogQtd, setDialogQtd] = useState("1");
   const [dialogEmbal, setDialogEmbal] = useState("UNI");
   const [dialogFator, setDialogFator] = useState("1");
+  const [filtroEnviados, setFiltroEnviados] = useState<"7" | "30" | "90">("30");
+  const [frequentesAberto, setFrequentesAberto] = useState(true);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Keep title consistent and capture install prompt
