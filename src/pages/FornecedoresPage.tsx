@@ -230,6 +230,7 @@ const FornecedoresPage = () => {
 
   return (
     <div className="p-5">
+      <BackToLojaButton />
       {/* Toolbar */}
       <div className="space-y-2 mb-4">
         {/* Linha 1 — busca */}
