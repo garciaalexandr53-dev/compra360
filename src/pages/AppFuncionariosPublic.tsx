@@ -218,9 +218,9 @@ const AppFuncionariosPublic = () => {
     [produtosData]
   );
 
-  // Query for sent items history (last 30 days)
-  const thirtyDaysAgo = useMemo(() => subDays(new Date(), 30).toISOString(), []);
-  const { data: enviados = [], isLoading: enviadosLoading } = useQuery({
+  // Query for sent items history (last 90 days)
+  const ninetyDaysAgo = useMemo(() => subDays(new Date(), 90).toISOString(), []);
+  const { data: enviadosRaw = [], isLoading: enviadosLoading } = useQuery({
     queryKey: ["itens-enviados", selectedLojaId],
     enabled: !!selectedLojaId && activeTab === "enviados",
     queryFn: async () => {
@@ -228,12 +228,32 @@ const AppFuncionariosPublic = () => {
         .from("itens_faltantes")
         .select("id, nome, quantidade, observacao, registrado_por, created_at, importado")
         .eq("loja_id", selectedLojaId)
-        .gte("created_at", thirtyDaysAgo)
+        .gte("created_at", ninetyDaysAgo)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data || [];
     },
   });
+
+  // Client-side filter by selected period
+  const enviados = useMemo(() => {
+    const cutoff = subDays(new Date(), Number(filtroEnviados)).getTime();
+    return enviadosRaw.filter((item) => new Date(item.created_at).getTime() >= cutoff);
+  }, [enviadosRaw, filtroEnviados]);
+
+  // Frequent items: nome appears > 2 times within last 90 days (full dataset)
+  const itensFrequentes = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of enviadosRaw) {
+      const key = item.nome.trim();
+      if (!key) continue;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .filter(([, count]) => count > 2)
+      .sort((a, b) => b[1] - a[1])
+      .map(([nome, count]) => ({ nome, count }));
+  }, [enviadosRaw]);
 
   const enviadosGrouped = useMemo(() => {
     const groups: Record<string, typeof enviados> = {};
@@ -248,6 +268,7 @@ const AppFuncionariosPublic = () => {
     }
     return Object.entries(groups);
   }, [enviados]);
+
 
   useEffect(() => {
     if (!productsListRef.current || !hasNextPage || isFetchingNextPage || produtosLoading) return;
