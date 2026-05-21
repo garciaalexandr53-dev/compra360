@@ -620,9 +620,42 @@ export default function LandingPage() {
           <h2 className={`text-2xl sm:text-3xl font-bold text-white text-center mb-3 ${anim(plansSection.visible)}`}>
             Planos para todo tipo de negócio
           </h2>
-          <p className={`text-slate-400 text-center mb-12 ${anim(plansSection.visible)}`} style={{ transitionDelay: "100ms" }}>
-            Comece grátis. Pague só quando fizer sentido.
+          <p className={`text-slate-400 text-center mb-6 ${anim(plansSection.visible)}`} style={{ transitionDelay: "100ms" }}>
+            Teste grátis 30 dias no Business · Sem cartão
           </p>
+
+          {/* Toggle Mensal / Anual */}
+          <div className={`flex justify-center mb-10 ${anim(plansSection.visible)}`} style={{ transitionDelay: "150ms" }}>
+            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-slate-900 border border-white/10">
+              <button
+                type="button"
+                onClick={() => setPeriodoLanding("mensal")}
+                aria-pressed={periodoLanding === "mensal"}
+                className={
+                  periodoLanding === "mensal"
+                    ? "px-4 py-2 rounded-full bg-teal-500 text-white text-sm font-bold transition-colors"
+                    : "px-4 py-2 rounded-full text-slate-400 text-sm hover:text-white transition-colors"
+                }
+              >
+                Mensal
+              </button>
+              <button
+                type="button"
+                onClick={() => setPeriodoLanding("anual")}
+                aria-pressed={periodoLanding === "anual"}
+                className={
+                  periodoLanding === "anual"
+                    ? "px-4 py-2 rounded-full bg-teal-500 text-white text-sm font-bold transition-colors inline-flex items-center gap-1"
+                    : "px-4 py-2 rounded-full text-slate-400 text-sm hover:text-white transition-colors inline-flex items-center gap-1"
+                }
+              >
+                <span>Anual</span>
+                <span aria-hidden>🔥</span>
+                <span className="hidden sm:inline">Economize até 25%</span>
+              </button>
+            </div>
+          </div>
+
           <div className="grid sm:grid-cols-3 gap-5 max-w-4xl mx-auto">
             {plans.map((plan, i) => (
               <div
