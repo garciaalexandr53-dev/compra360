@@ -69,7 +69,7 @@ export default function PlanosModal({ open, onClose }: PlanosModalProps) {
   const handleCheckout = async (planKey: "pro" | "business") => {
     setLoading(planKey);
     try {
-      const priceId = STRIPE_PLANS[planKey].price_id;
+      const priceId = planKey === "pro" ? STRIPE_PRICES.pro_mensal : STRIPE_PRICES.business_mensal;
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { priceId },
       });
