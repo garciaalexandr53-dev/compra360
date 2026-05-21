@@ -384,6 +384,9 @@ export default function LandingPage() {
   const faqSection = useInView();
   const ctaSection = useInView();
 
+  const [periodoLanding, setPeriodoLanding] = useState<PeriodoLanding>("mensal");
+  const plans = useMemo(() => buildPlans(periodoLanding), [periodoLanding]);
+
   useEffect(() => {
     if (user) navigate("/dashboard", { replace: true });
   }, [user, navigate]);
