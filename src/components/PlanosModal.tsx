@@ -15,7 +15,7 @@ interface PlanosModalProps {
   onClose: () => void;
 }
 
-type Periodo = "mensal" | "anual";
+
 
 const plans = [
   {
