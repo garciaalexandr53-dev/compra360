@@ -35,6 +35,16 @@ const LojasPage = () => {
     },
   });
 
+  // Restore sheet when user comes back from a destination page (Produtos, Fornecedores, etc.)
+  useEffect(() => {
+    if (lojas.length === 0) return;
+    const id = sessionStorage.getItem("voltar_loja_id");
+    if (id && lojas.some((l) => l.id === id)) {
+      setSheetLojaId(id);
+      sessionStorage.removeItem("voltar_loja_id");
+    }
+  }, [lojas]);
+
   // ===== Métricas em uma única bateria de queries (eficiente) =====
   const { data: metricsByLoja = {}, isLoading: loadingMetrics } = useQuery({
     queryKey: ["lojas-metrics", user?.id, lojas.map((l) => l.id).join(",")],
