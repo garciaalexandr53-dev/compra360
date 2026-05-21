@@ -507,7 +507,9 @@ const FuncionariosPage = () => {
             ) : effectiveLinkLoja ? (
               <p className="text-sm text-foreground font-medium">{effectiveLinkLoja.nome}</p>
             ) : null}
+            <p className="text-xs text-muted-foreground text-left mt-1 mb-2">Enviar formulário para equipe</p>
             <div className="flex flex-row gap-2">
+
               <Button
                 variant={linkCopiado ? "default" : "outline"}
                 size="sm"
