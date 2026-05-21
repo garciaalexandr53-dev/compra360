@@ -78,7 +78,7 @@ export default function AppLayout() {
               {isDashboard ? (
                 <span className="text-lg font-bold text-primary tracking-tight">Compra360</span>
               ) : isFuncionarios ? (
-                <span className="text-lg font-bold text-primary tracking-tight">App Funcionários</span>
+                <span className="text-lg font-bold text-primary tracking-tight">Reposição</span>
               ) : isLojas ? (
                 <span className="text-lg font-bold text-primary tracking-tight">Lojas</span>
               ) : isFornecedores ? (

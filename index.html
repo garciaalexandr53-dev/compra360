@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
       (() => {
-        const isFuncionarios = window.location.pathname.startsWith("/app-funcionarios");
+        const path = window.location.pathname;
+        const isFuncionarios = path.startsWith("/app-funcionarios") || path.startsWith("/reposicao");
         const search = new URLSearchParams(window.location.search);
         const tokenFromSearch = search.get("__lovable_token");
         const tokenFromHref = window.location.href.match(/[?&]__lovable_token=([^&#]+)/)?.[1] || null;
         const token = tokenFromSearch || (tokenFromHref ? decodeURIComponent(tokenFromHref) : null);
 
-        const appTitle = isFuncionarios ? "Compra360 Funcionários" : "Compra360";
+        const appTitle = isFuncionarios ? "Compra360 Reposição" : "Compra360";
         const manifestBase = isFuncionarios ? "/manifest-funcionarios.json" : "/manifest.json";
         const manifestHref = token
           ? `${manifestBase}?__lovable_token=${encodeURIComponent(token)}`

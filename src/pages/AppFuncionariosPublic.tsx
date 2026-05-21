@@ -64,7 +64,7 @@ const AppFuncionariosPublic = () => {
     const originalAppleTitle =
       document.querySelector('meta[name="apple-mobile-web-app-title"]')?.getAttribute("content") || "Compra360";
 
-    document.title = "Compra360 Funcionários";
+    document.title = "Compra360 Reposição";
 
     const search = new URLSearchParams(window.location.search);
     const tokenFromSearch = search.get("__lovable_token");
@@ -78,7 +78,7 @@ const AppFuncionariosPublic = () => {
     if (manifest) manifest.setAttribute("href", manifestHref);
 
     const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-    if (appleTitle) appleTitle.setAttribute("content", "Compra360 Funcionários");
+    if (appleTitle) appleTitle.setAttribute("content", "Compra360 Reposição");
 
     const handler = (e: Event) => {
       e.preventDefault();
@@ -422,7 +422,7 @@ const AppFuncionariosPublic = () => {
           <div className="flex items-center gap-2">
             <span className="text-lg">📋</span>
             <div>
-              <h1 className="text-base font-bold leading-tight">Compra360 Funcionários</h1>
+              <h1 className="text-base font-bold leading-tight">Compra360 Reposição</h1>
               {selectedLojaName && (
                 <p className="text-[11px] opacity-80 flex items-center gap-1">
                   <MapPin className="h-3 w-3" />

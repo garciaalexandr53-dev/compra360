@@ -690,7 +690,7 @@ export default function AdminPage() {
             <AlertDialogDescription>
               Isso reativará {confirmActivate?.total_produtos_inativos} produtos inativos de{" "}
               <strong>{confirmActivate?.loja_principal || confirmActivate?.email}</strong>. Eles voltarão
-              a aparecer no App Funcionários.
+              a aparecer na Reposição.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

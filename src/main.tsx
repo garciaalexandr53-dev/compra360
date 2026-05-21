@@ -11,7 +11,9 @@ const isPreviewHost =
   window.location.hostname.includes("id-preview--") ||
   window.location.hostname.includes("lovableproject.com");
 
-const isFuncionariosApp = window.location.pathname.startsWith("/app-funcionarios");
+const isFuncionariosApp =
+  window.location.pathname.startsWith("/app-funcionarios") ||
+  window.location.pathname.startsWith("/reposicao");
 const FUNCIONARIOS_CACHE_RESET_VERSION = "funcionarios-cache-reset-v1";
 
 /* ── Funcionários: one-time cache clear ──────────────── */
