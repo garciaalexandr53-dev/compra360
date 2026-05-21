@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { Download, Check, X, History } from "lucide-react";
+import { Download, Check, X, History, ChevronDown, ChevronUp, Repeat } from "lucide-react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, isToday, isYesterday, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
