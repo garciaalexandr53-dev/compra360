@@ -428,19 +428,18 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
           <div>
             <p className={`text-teal-400 text-sm font-medium mb-6 ${anim(hero.visible)}`}>
-              Sistema de cotação para supermercado e comércio
+              Economize tempo e dinheiro nas compras da sua empresa
             </p>
             <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-6 ${anim(hero.visible)}`} style={{ transitionDelay: "100ms" }}>
-              Pare de perder dinheiro com cotações lentas
-              <span className="text-slate-500"> — comece a comprar melhor.</span>
+              Sua empresa pode estar pagando mais caro sem perceber.
             </h1>
             <p className={`text-lg text-slate-400 leading-relaxed mb-4 max-w-xl ${anim(hero.visible)}`} style={{ transitionDelay: "200ms" }}>
-              O Compra360 reúne seus fornecedores em uma única tela. Compare preços em tempo real e feche o melhor pedido em minutos, direto do celular.
+              O Compra360 reúne fornecedores em uma única tela para encontrar a melhor compra em minutos.
             </p>
             <ul className={`space-y-2.5 mb-8 ${anim(hero.visible)}`} style={{ transitionDelay: "250ms" }}>
-              <li className="flex items-center gap-2 text-slate-300 text-sm sm:text-base"><CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" /> Compare preços de todos os fornecedores em segundos</li>
-              <li className="flex items-center gap-2 text-slate-300 text-sm sm:text-base"><CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" /> Descubra automaticamente o fornecedor mais barato</li>
-              <li className="flex items-center gap-2 text-slate-300 text-sm sm:text-base"><CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" /> Nunca mais pague caro sem perceber</li>
+              <li className="flex items-center gap-2 text-slate-300 text-sm sm:text-base"><CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" /> Compare preços de vários fornecedores em segundos</li>
+              <li className="flex items-center gap-2 text-slate-300 text-sm sm:text-base"><CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" /> Descubra automaticamente a melhor compra</li>
+              <li className="flex items-center gap-2 text-slate-300 text-sm sm:text-base"><CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" /> Economize sem depender de planilhas ou WhatsApp</li>
             </ul>
             <div className={`flex flex-col sm:flex-row gap-3 ${anim(hero.visible)}`} style={{ transitionDelay: "300ms" }}>
               <Button
