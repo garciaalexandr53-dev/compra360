@@ -946,6 +946,7 @@ const HistoricoPage = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto">
+      <BackToLojaButton />
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <h1 className="text-lg md:text-xl font-bold">Histórico</h1>
