@@ -16,8 +16,16 @@ const TIERS_BY_PRODUCT: Record<string, string> = {
 
 // Map Stripe price_id -> internal plan name (fallback / explicit)
 const TIERS_BY_PRICE: Record<string, string> = {
-  price_1TKpAORqa8H38ghzur73xJl8: "pro",
-  price_1TKpAoRqa8H38ghzHoJp4PWR: "business",
+  // Produção (live)
+  price_1TZYctRsAnnCWikuFoi74yDA: "pro",
+  price_1TZYrmRsAnnCWikupP0T8XEL: "pro",
+  price_1TZYusRsAnnCWikuRWNE0cJ6: "business",
+  price_1TZYvrRsAnnCWikueV1dORha: "business",
+  // Teste (fallback p/ não quebrar usuários existentes)
+  price_1TKpAoRqa8H38ghzHoJp4PWR: "pro",
+  price_1TKpAORqa8H38ghzur73xJl8: "business",
+  price_1TYyddRqa8H38ghzos78Tvwq: "pro",
+  price_1TYykORqa8H38ghznsu67izE: "business",
 };
 
 const log = (step: string, details?: unknown) => {
