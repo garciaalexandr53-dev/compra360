@@ -40,6 +40,7 @@ import {
   type InsightRow,
 } from "@/lib/historicoInsights";
 import type { Tables } from "@/integrations/supabase/types";
+import BackToLojaButton from "@/components/shared/BackToLojaButton";
 
 type PeriodFilter = "7d" | "30d" | "90d" | "all" | "custom";
 type StatusFilter = "all" | "finalizada" | "cancelada";
