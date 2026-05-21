@@ -77,11 +77,11 @@ describe("LandingPage — badge '30 dias grátis' na seção de planos", () => {
     ).toHaveAttribute("aria-pressed", "true");
 
     const business = getPlanCardByName(/Business/i);
-    const gratis = getPlanCardByName(/Grátis/i);
-    const pro = getPlanCardByName(/^👑?\s*Pro$/i);
+    const gratuito = getPlanCardByName(/^Gratuito$/i);
+    const pro = getPlanCardByName(/^Pro$/i);
 
     expect(within(business).getAllByText(BADGE).length).toBeGreaterThan(0);
-    expect(within(gratis).queryByText(BADGE)).toBeNull();
+    expect(within(gratuito).queryByText(BADGE)).toBeNull();
     expect(within(pro).queryByText(BADGE)).toBeNull();
   });
 });
