@@ -56,7 +56,8 @@ export default function LojaSheet({
   };
 
   const navState = { fromLoja: true, lojaId: loja.id, lojaName: display };
-  const markReturn = () => sessionStorage.setItem("voltar_loja_id", loja.id);
+  const markReturn = () => markVoltarLoja(loja.id);
+
 
   const goProdutos = () => {
     ensureActive();
