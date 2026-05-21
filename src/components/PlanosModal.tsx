@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Crown, Loader2, ExternalLink, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { STRIPE_PRICES } from "@/lib/stripePrices";
+import { STRIPE_PRICES, getStripePriceId, type Periodo } from "@/lib/stripePrices";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import { PLAN_PRICES } from "@/lib/planPrices";
