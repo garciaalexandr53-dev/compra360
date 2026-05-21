@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
 import type { Tables } from "@/integrations/supabase/types";
+import BackToLojaButton from "@/components/shared/BackToLojaButton";
 
 
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
