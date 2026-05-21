@@ -13,6 +13,7 @@ import LojaCard from "@/components/lojas/LojaCard";
 import LojaSheet from "@/components/lojas/LojaSheet";
 import LojaEditModal from "@/components/lojas/LojaEditModal";
 import { Loja, LojaForm, LojaMetrics, emptyLojaForm, getDisplayName } from "@/components/lojas/lojaUtils";
+import { consumeVoltarLoja, clearVoltarLoja } from "@/lib/voltarLoja";
 
 const LojasPage = () => {
   const queryClient = useQueryClient();
