@@ -18,6 +18,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Loja, LojaMetrics, getDisplayName, isLojaAtiva } from "./lojaUtils";
 import { toast } from "sonner";
+import { markVoltarLoja } from "@/lib/voltarLoja";
 
 interface Props {
   loja: Loja | null;
