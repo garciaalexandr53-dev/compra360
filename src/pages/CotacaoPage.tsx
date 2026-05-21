@@ -30,6 +30,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
+import BackToLojaButton from "@/components/shared/BackToLojaButton";
 
 type Fornecedor = Tables<"fornecedores">;
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
