@@ -86,10 +86,13 @@ describe("LojaSheet — navegação com state fromLoja", () => {
     });
   });
 
-  it("registra voltar_loja_id no sessionStorage", () => {
+  it("registra voltar_loja_id no sessionStorage ao navegar", () => {
     renderSheet();
     fireEvent.click(screen.getByText(/Produtos ativos/i).closest("button")!);
     expect(sessionStorage.getItem("voltar_loja_id")).toBe("loja-1");
+    expect(sessionStorage.getItem("voltar_loja_ts")).not.toBeNull();
+    // Intent ainda não foi sinalizado — só o BackToLojaButton sinaliza.
+    expect(sessionStorage.getItem("voltar_loja_intent")).toBeNull();
   });
 });
 

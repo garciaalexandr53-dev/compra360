@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { signalVoltarIntent } from "@/lib/voltarLoja";
 
 /**
  * Renders a "Voltar para {lojaName}" button when the user navigated
@@ -13,9 +14,15 @@ export default function BackToLojaButton({ className = "" }: { className?: strin
 
   if (!state.fromLoja) return null;
 
+  const handleClick = () => {
+    // Sinaliza intenção explícita de retorno; só assim o LojasPage reabre o sheet.
+    signalVoltarIntent();
+    navigate(-1);
+  };
+
   return (
     <button
-      onClick={() => navigate(-1)}
+      onClick={handleClick}
       className={`flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3 ${className}`}
     >
       <ArrowLeft className="h-4 w-4" />

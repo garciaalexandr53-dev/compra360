@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import LojaCard from "@/components/lojas/LojaCard";
 import LojaSheet from "@/components/lojas/LojaSheet";
 import LojaEditModal from "@/components/lojas/LojaEditModal";
 import { Loja, LojaForm, LojaMetrics, emptyLojaForm, getDisplayName } from "@/components/lojas/lojaUtils";
+import { consumeVoltarLoja, clearVoltarLoja } from "@/lib/voltarLoja";
 
 const LojasPage = () => {
   const queryClient = useQueryClient();
@@ -35,15 +36,27 @@ const LojasPage = () => {
     },
   });
 
-  // Restore sheet when user comes back from a destination page (Produtos, Fornecedores, etc.)
+  // Restaura o sheet apenas se o usuário voltou explicitamente via BackToLojaButton
+  // (intent registrado) e dentro da TTL. Consome em uma única vez por mount.
+  const restoredOnceRef = useRef(false);
   useEffect(() => {
+    if (restoredOnceRef.current) return;
     if (lojas.length === 0) return;
-    const id = sessionStorage.getItem("voltar_loja_id");
+    const id = consumeVoltarLoja();
+    restoredOnceRef.current = true;
     if (id && lojas.some((l) => l.id === id)) {
       setSheetLojaId(id);
-      sessionStorage.removeItem("voltar_loja_id");
     }
   }, [lojas]);
+
+  // Garante limpeza ao sair da página de Lojas — qualquer estado pendente
+  // não deve sobreviver para futuras visitas a /lojas.
+  useEffect(() => {
+    return () => {
+      clearVoltarLoja();
+    };
+  }, []);
+
 
   // ===== Métricas em uma única bateria de queries (eficiente) =====
   const { data: metricsByLoja = {}, isLoading: loadingMetrics } = useQuery({
