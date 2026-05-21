@@ -677,6 +677,9 @@ export default function LandingPage() {
                   )}
                   <span className="text-3xl font-bold text-white">{plan.price}</span>
                   <span className="text-slate-500 text-sm">{plan.period}</span>
+                  {plan.subPrice && (
+                    <p className="text-xs text-slate-400 mt-1">{plan.subPrice}</p>
+                  )}
                 </div>
                 <ul className="space-y-2.5 mb-6 flex-1">
                   {plan.features.map((f) => (
