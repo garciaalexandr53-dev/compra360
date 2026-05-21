@@ -30,6 +30,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
+import BackToLojaButton from "@/components/shared/BackToLojaButton";
 
 type Fornecedor = Tables<"fornecedores">;
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
@@ -691,6 +692,9 @@ const CotacaoPage = () => {
   return (
     <TooltipProvider>
     <div className="flex flex-col h-[calc(100vh-3.5rem)]">
+      <div className="px-3 pt-2 empty:hidden">
+        <BackToLojaButton />
+      </div>
       {/* Back to dashboard banner */}
       {isFromDashboard && (
         <div className="px-3 py-2 bg-primary/5 border-b flex items-center gap-2">

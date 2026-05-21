@@ -54,39 +54,47 @@ export default function LojaSheet({
     if (!ativa) onActivate(loja.id);
   };
 
+  const navState = { fromLoja: true, lojaId: loja.id, lojaName: display };
+  const markReturn = () => sessionStorage.setItem("voltar_loja_id", loja.id);
+
   const goProdutos = () => {
     ensureActive();
+    markReturn();
     onOpenChange(false);
-    navigate("/produtos");
+    navigate("/produtos", { state: navState });
   };
   const goFornecedores = () => {
     ensureActive();
+    markReturn();
     onOpenChange(false);
-    navigate("/fornecedores");
+    navigate("/fornecedores", { state: navState });
   };
   const goHistorico = () => {
     ensureActive();
+    markReturn();
     onOpenChange(false);
-    navigate("/historico");
+    navigate("/historico", { state: navState });
   };
   const goUltimaCotacao = () => {
     ensureActive();
+    markReturn();
     onOpenChange(false);
     if (metrics?.ultimaCotacaoId) {
-      navigate(`/cotacao?id=${metrics.ultimaCotacaoId}`);
+      navigate(`/cotacao?id=${metrics.ultimaCotacaoId}`, { state: navState });
     } else {
       toast.info("Nenhuma cotação registrada ainda.");
-      navigate("/historico");
+      navigate("/historico", { state: navState });
     }
   };
   const goCotacaoAtiva = () => {
     ensureActive();
+    markReturn();
     onOpenChange(false);
     if (metrics?.cotacaoAtivaId) {
-      navigate(`/cotacao?id=${metrics.cotacaoAtivaId}`);
+      navigate(`/cotacao?id=${metrics.cotacaoAtivaId}`, { state: navState });
     } else {
       toast.info("Sem cotação ativa nesta loja.");
-      navigate("/dashboard");
+      navigate("/dashboard", { state: navState });
     }
   };
 

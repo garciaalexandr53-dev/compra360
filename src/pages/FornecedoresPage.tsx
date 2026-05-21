@@ -15,6 +15,7 @@ import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
+import BackToLojaButton from "@/components/shared/BackToLojaButton";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -230,6 +231,7 @@ const FornecedoresPage = () => {
 
   return (
     <div className="p-5">
+      <BackToLojaButton />
       {/* Toolbar */}
       <div className="space-y-2 mb-4">
         {/* Linha 1 — busca */}

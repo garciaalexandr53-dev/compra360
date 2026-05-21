@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
 import type { Tables } from "@/integrations/supabase/types";
+import BackToLojaButton from "@/components/shared/BackToLojaButton";
 
 
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
@@ -573,6 +574,7 @@ const ProdutosPage = () => {
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <div className="p-3 border-b bg-card/80 space-y-2">
+          <BackToLojaButton className="mb-0" />
           <div className="flex items-center justify-between">
             <h1 className="text-lg font-bold text-foreground">Banco de Produtos</h1>
             <div className="flex items-center gap-2">
