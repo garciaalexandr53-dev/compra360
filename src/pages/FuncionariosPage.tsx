@@ -443,7 +443,7 @@ const FuncionariosPage = () => {
   };
 
   const publicOrigin = import.meta.env.VITE_APP_PUBLIC_URL || "https://compra360app.com.br";
-  const baseUrl = `${publicOrigin.replace(/\/$/, "")}/app-funcionarios`;
+  const baseUrl = `${publicOrigin.replace(/\/$/, "")}/reposicao`;
   const appUrl = effectiveLinkLojaId
     ? `${baseUrl}?loja=${effectiveLinkLojaId}`
     : baseUrl;
