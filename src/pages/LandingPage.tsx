@@ -120,57 +120,78 @@ const testimonials = [
   },
 ];
 
-const plans = [
-  {
-    name: "Gratuito",
-    price: "R$0",
-    period: "/mês",
-    highlight: false,
-    badge: null,
-    oldPrice: null,
-    features: ["Sem cartão de crédito", "1 loja", "Até 3 fornecedores", "Até 50 produtos", "2 cotações por mês"],
-    cta: "Começar grátis",
-    note: null,
-  },
-  {
-    name: "Pro",
-    price: PLAN_PRICES.pro.display.replace("R$ ", ""),
-    period: PLAN_PRICES.pro.note,
-    highlight: true,
-    badge: "MAIS POPULAR",
-    oldPrice: null,
-    features: [
-      "Cotações ilimitadas",
-      "Fornecedores ilimitados",
-      "Até 500 produtos",
-      "IA completa (análise + sugestões)",
-      "Importação em massa (CSV/Excel)",
-      "Histórico completo",
-      "Suporte por WhatsApp",
-    ],
-    cta: "Começar 30 dias grátis",
-    note: "🔒 Se não gerar economia, não faz sentido usar. Cancele quando quiser.",
-  },
-  {
-    name: "Business",
-    price: PLAN_PRICES.business.display.replace("R$ ", ""),
-    period: PLAN_PRICES.business.note,
-    highlight: false,
-    badge: "PARA REDES",
-    oldPrice: PLAN_PRICES.business.originalDisplay?.replace("R$ ", ""),
-    features: [
-      "Tudo do Pro",
-      "Múltiplas lojas em rede",
-      "Produtos ilimitados",
-      "Conferência de notas fiscais",
-      "Distribuição inteligente por IA",
-      "Relatórios executivos",
-      "Suporte prioritário",
-    ],
-    cta: "Começar 30 dias grátis",
-    note: null,
-  },
-];
+type PeriodoLanding = "mensal" | "anual";
+
+function buildPlans(periodo: PeriodoLanding) {
+  const isAnual = periodo === "anual";
+  const proFeatures = [
+    "Cotações ilimitadas",
+    "Fornecedores ilimitados",
+    "Até 500 produtos",
+    "IA completa (análise + sugestões)",
+    "Importação em massa (CSV/Excel)",
+    "Histórico completo",
+    "Suporte por WhatsApp",
+  ];
+  const businessFeatures = [
+    "Tudo do Pro",
+    "Múltiplas lojas em rede",
+    "Produtos ilimitados",
+    "Conferência de notas fiscais",
+    "Distribuição inteligente por IA",
+    "Relatórios executivos",
+    "Suporte prioritário",
+  ];
+
+  return [
+    {
+      name: "Gratuito",
+      price: "R$0",
+      period: "/mês",
+      highlight: false,
+      badge: null as string | null,
+      oldPrice: null as string | null,
+      subPrice: null as string | null,
+      features: ["Sem cartão de crédito", "1 loja", "Até 3 fornecedores", "Até 50 produtos", "2 cotações por mês"],
+      cta: "Começar grátis",
+      note: null as string | null,
+    },
+    {
+      name: "Pro",
+      price: isAnual
+        ? PLAN_PRICES.pro.yearlyDisplay.replace("R$ ", "")
+        : PLAN_PRICES.pro.display.replace("R$ ", ""),
+      period: isAnual ? PLAN_PRICES.pro.yearlyNote : PLAN_PRICES.pro.note,
+      highlight: true,
+      badge: "MAIS POPULAR" as string | null,
+      oldPrice: null as string | null,
+      subPrice: isAnual
+        ? `≈ ${PLAN_PRICES.pro.yearlyMonthlyEquivalent} · ${PLAN_PRICES.pro.yearlySavingsDisplay}`
+        : null,
+      features: proFeatures,
+      cta: "Quero ganhar tempo",
+      note: "🔒 Se não gerar economia, não faz sentido usar. Cancele quando quiser." as string | null,
+    },
+    {
+      name: "Business",
+      price: isAnual
+        ? PLAN_PRICES.business.yearlyDisplay.replace("R$ ", "")
+        : PLAN_PRICES.business.display.replace("R$ ", ""),
+      period: isAnual ? PLAN_PRICES.business.yearlyNote : PLAN_PRICES.business.note,
+      highlight: false,
+      badge: isAnual ? "🔥 MELHOR VALOR" : "PARA REDES",
+      oldPrice: isAnual ? null : PLAN_PRICES.business.originalDisplay?.replace("R$ ", "") ?? null,
+      subPrice: isAnual
+        ? `≈ ${PLAN_PRICES.business.yearlyMonthlyEquivalent} · 🔥 ${PLAN_PRICES.business.yearlySavingsDisplay}`
+        : null,
+      features: businessFeatures,
+      cta: "Começar 30 dias grátis",
+      note: isAnual
+        ? "🔥 Economize quase R$300 por ano · 🎁 30 dias grátis"
+        : "🔒 Se não gerar economia, não faz sentido usar. Cancele quando quiser.",
+    },
+  ];
+}
 
 const faqItems = [
   { q: "Precisa instalar algum aplicativo?", a: "Não. Funciona direto no navegador do celular. Se quiser, pode salvar como app na tela inicial." },
