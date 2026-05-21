@@ -11,12 +11,22 @@ export const PLAN_PRICES = {
     monthly: 49.9,
     display: "R$ 49,90",
     note: "/mês",
+    yearly: 479,
+    yearlyDisplay: "R$ 479",
+    yearlyNote: "/ano",
+    yearlyMonthlyEquivalent: "R$ 39,90/mês",
+    yearlySavingsDisplay: "Economize R$ 120",
   },
   business: {
     monthly: 97,
     display: "R$ 97",
     note: "/mês",
     originalDisplay: "R$ 149", // preço promocional
+    yearly: 869,
+    yearlyDisplay: "R$ 869",
+    yearlyNote: "/ano",
+    yearlyMonthlyEquivalent: "R$ 72/mês",
+    yearlySavingsDisplay: "Economize R$ 295",
   },
 } as const;
 
