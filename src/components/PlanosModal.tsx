@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Crown, Loader2, ExternalLink, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { STRIPE_PRICES } from "@/lib/stripePrices";
+import { STRIPE_PRICES, getStripePriceId, type Periodo } from "@/lib/stripePrices";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import { PLAN_PRICES } from "@/lib/planPrices";
@@ -15,7 +15,7 @@ interface PlanosModalProps {
   onClose: () => void;
 }
 
-type Periodo = "mensal" | "anual";
+
 
 const plans = [
   {
@@ -58,13 +58,6 @@ const plans = [
   },
 ];
 
-function getPriceId(planKey: "pro" | "business", periodo: Periodo): string {
-  if (planKey === "pro") {
-    return periodo === "mensal" ? STRIPE_PRICES.pro_mensal : STRIPE_PRICES.pro_anual;
-  }
-  return periodo === "mensal" ? STRIPE_PRICES.business_mensal : STRIPE_PRICES.business_anual;
-}
-
 export default function PlanosModal({ open, onClose }: PlanosModalProps) {
   const { plan: currentPlan } = useSubscription();
   const [loading, setLoading] = useState<string | null>(null);
@@ -73,7 +66,7 @@ export default function PlanosModal({ open, onClose }: PlanosModalProps) {
   const handleCheckout = async (planKey: "pro" | "business") => {
     setLoading(planKey);
     try {
-      const priceId = getPriceId(planKey, periodo);
+      const priceId = getStripePriceId(planKey, periodo);
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { priceId },
       });

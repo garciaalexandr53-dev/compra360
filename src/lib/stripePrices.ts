@@ -7,3 +7,16 @@ export const STRIPE_PRICES = {
 } as const;
 
 export type StripePriceKey = keyof typeof STRIPE_PRICES;
+export type PlanoPago = "pro" | "business";
+export type Periodo = "mensal" | "anual";
+
+/**
+ * Retorna o priceId do Stripe correspondente ao plano + período escolhido
+ * no toggle Mensal/Anual.
+ */
+export function getStripePriceId(plano: PlanoPago, periodo: Periodo): string {
+  if (plano === "pro") {
+    return periodo === "mensal" ? STRIPE_PRICES.pro_mensal : STRIPE_PRICES.pro_anual;
+  }
+  return periodo === "mensal" ? STRIPE_PRICES.business_mensal : STRIPE_PRICES.business_anual;
+}
