@@ -36,14 +36,14 @@ Cada fornecedor recebe um **token único** usado para gerar o link de cotação.
   },
   {
     icon: UserCheck,
-    title: "3. App Funcionários",
+    title: "3. Reposição",
     color: "text-indigo-600",
     content: `Funcionalidade para **funcionários reportarem itens em falta** sem precisar acessar o sistema principal.
 
-- Acesse pelo link **/app-funcionarios** (pode ser enviado via WhatsApp)
+- Acesse pelo link **/reposicao** (pode ser enviado via WhatsApp)
 - O funcionário busca no banco de produtos existente ou adiciona manualmente
 - Informa **quantidade, embalagem e observações**
-- Na tela administrativa (menu "App Funcionários"), o comprador pode **importar os itens diretamente para a cotação ativa**`,
+- Na tela administrativa (menu "Reposição"), o comprador pode **importar os itens diretamente para a cotação ativa**`,
   },
   {
     icon: BarChart3,
@@ -150,7 +150,7 @@ const GuiaPage = () => {
         <ul className="text-sm text-amber-700 space-y-2">
           <li>• Sempre verifique preços com o indicador ⚠️ (abaixo do histórico) — podem ser erros de digitação ou unidade errada.</li>
           <li>• Preços com 🔴 (acima do histórico) indicam possibilidade de negociação.</li>
-          <li>• Envie o link do App Funcionários para toda a equipe — quanto mais itens reportados, melhor a cotação.</li>
+          <li>• Envie o link da Reposição para toda a equipe — quanto mais itens reportados, melhor a cotação.</li>
           <li>• Use o Histórico para comparar preços entre cotações e identificar tendências.</li>
         </ul>
       </div>
