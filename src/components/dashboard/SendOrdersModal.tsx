@@ -60,11 +60,28 @@ const SendOrdersModal = ({ open, onOpenChange, orders, onSendOrder, onConclude }
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(statuses)); } catch {}
   }, [statuses]);
 
+  const [pendingAdvance, setPendingAdvance] = useState(false);
+
   const handleSend = (o: SupplierOrder) => {
-    onSendOrder(o.fornecedor);
+    // Mark as sent immediately so the queue advances to the next supplier
     setStatuses(prev => ({ ...prev, [o.fornecedor.id]: "sent" }));
-    onOpenChange(false);
+    onSendOrder(o.fornecedor);
+    setPendingAdvance(true);
+    // Fallback: auto-advance after 1.5s even if visibilitychange doesn't fire
+    window.setTimeout(() => setPendingAdvance(false), 1500);
   };
+
+  // When user returns to the app after WhatsApp, just clear the pending flag.
+  // The next pending supplier is already shown because state was updated on send.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible" && pendingAdvance) {
+        setPendingAdvance(false);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [pendingAdvance]);
 
   const skip = (id: string) => {
     setStatuses(prev => ({ ...prev, [id]: "skipped" }));
