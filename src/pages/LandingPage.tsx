@@ -120,57 +120,78 @@ const testimonials = [
   },
 ];
 
-const plans = [
-  {
-    name: "Gratuito",
-    price: "R$0",
-    period: "/mês",
-    highlight: false,
-    badge: null,
-    oldPrice: null,
-    features: ["Sem cartão de crédito", "1 loja", "Até 3 fornecedores", "Até 50 produtos", "2 cotações por mês"],
-    cta: "Começar grátis",
-    note: null,
-  },
-  {
-    name: "Pro",
-    price: PLAN_PRICES.pro.display.replace("R$ ", ""),
-    period: PLAN_PRICES.pro.note,
-    highlight: true,
-    badge: "MAIS POPULAR",
-    oldPrice: null,
-    features: [
-      "Cotações ilimitadas",
-      "Fornecedores ilimitados",
-      "Até 500 produtos",
-      "IA completa (análise + sugestões)",
-      "Importação em massa (CSV/Excel)",
-      "Histórico completo",
-      "Suporte por WhatsApp",
-    ],
-    cta: "Começar 30 dias grátis",
-    note: "🔒 Se não gerar economia, não faz sentido usar. Cancele quando quiser.",
-  },
-  {
-    name: "Business",
-    price: PLAN_PRICES.business.display.replace("R$ ", ""),
-    period: PLAN_PRICES.business.note,
-    highlight: false,
-    badge: "PARA REDES",
-    oldPrice: PLAN_PRICES.business.originalDisplay?.replace("R$ ", ""),
-    features: [
-      "Tudo do Pro",
-      "Múltiplas lojas em rede",
-      "Produtos ilimitados",
-      "Conferência de notas fiscais",
-      "Distribuição inteligente por IA",
-      "Relatórios executivos",
-      "Suporte prioritário",
-    ],
-    cta: "Começar 30 dias grátis",
-    note: null,
-  },
-];
+type PeriodoLanding = "mensal" | "anual";
+
+function buildPlans(periodo: PeriodoLanding) {
+  const isAnual = periodo === "anual";
+  const proFeatures = [
+    "Cotações ilimitadas",
+    "Fornecedores ilimitados",
+    "Até 500 produtos",
+    "IA completa (análise + sugestões)",
+    "Importação em massa (CSV/Excel)",
+    "Histórico completo",
+    "Suporte por WhatsApp",
+  ];
+  const businessFeatures = [
+    "Tudo do Pro",
+    "Múltiplas lojas em rede",
+    "Produtos ilimitados",
+    "Conferência de notas fiscais",
+    "Distribuição inteligente por IA",
+    "Relatórios executivos",
+    "Suporte prioritário",
+  ];
+
+  return [
+    {
+      name: "Gratuito",
+      price: "R$0",
+      period: "/mês",
+      highlight: false,
+      badge: null as string | null,
+      oldPrice: null as string | null,
+      subPrice: null as string | null,
+      features: ["Sem cartão de crédito", "1 loja", "Até 3 fornecedores", "Até 50 produtos", "2 cotações por mês"],
+      cta: "Começar grátis",
+      note: null as string | null,
+    },
+    {
+      name: "Pro",
+      price: isAnual
+        ? PLAN_PRICES.pro.yearlyDisplay.replace("R$ ", "")
+        : PLAN_PRICES.pro.display.replace("R$ ", ""),
+      period: isAnual ? PLAN_PRICES.pro.yearlyNote : PLAN_PRICES.pro.note,
+      highlight: true,
+      badge: "MAIS POPULAR" as string | null,
+      oldPrice: null as string | null,
+      subPrice: isAnual
+        ? `≈ ${PLAN_PRICES.pro.yearlyMonthlyEquivalent} · ${PLAN_PRICES.pro.yearlySavingsDisplay}`
+        : null,
+      features: proFeatures,
+      cta: "Quero ganhar tempo",
+      note: "🔒 Se não gerar economia, não faz sentido usar. Cancele quando quiser." as string | null,
+    },
+    {
+      name: "Business",
+      price: isAnual
+        ? PLAN_PRICES.business.yearlyDisplay.replace("R$ ", "")
+        : PLAN_PRICES.business.display.replace("R$ ", ""),
+      period: isAnual ? PLAN_PRICES.business.yearlyNote : PLAN_PRICES.business.note,
+      highlight: false,
+      badge: isAnual ? "🔥 MELHOR VALOR" : "PARA REDES",
+      oldPrice: isAnual ? null : PLAN_PRICES.business.originalDisplay?.replace("R$ ", "") ?? null,
+      subPrice: isAnual
+        ? `≈ ${PLAN_PRICES.business.yearlyMonthlyEquivalent} · 🔥 ${PLAN_PRICES.business.yearlySavingsDisplay}`
+        : null,
+      features: businessFeatures,
+      cta: "Começar 30 dias grátis",
+      note: isAnual
+        ? "🔥 Economize quase R$300 por ano · 🎁 30 dias grátis"
+        : "🔒 Se não gerar economia, não faz sentido usar. Cancele quando quiser.",
+    },
+  ];
+}
 
 const faqItems = [
   { q: "Precisa instalar algum aplicativo?", a: "Não. Funciona direto no navegador do celular. Se quiser, pode salvar como app na tela inicial." },
@@ -362,6 +383,9 @@ export default function LandingPage() {
   const plansSection = useInView();
   const faqSection = useInView();
   const ctaSection = useInView();
+
+  const [periodoLanding, setPeriodoLanding] = useState<PeriodoLanding>("mensal");
+  const plans = useMemo(() => buildPlans(periodoLanding), [periodoLanding]);
 
   useEffect(() => {
     if (user) navigate("/dashboard", { replace: true });
@@ -596,9 +620,42 @@ export default function LandingPage() {
           <h2 className={`text-2xl sm:text-3xl font-bold text-white text-center mb-3 ${anim(plansSection.visible)}`}>
             Planos para todo tipo de negócio
           </h2>
-          <p className={`text-slate-400 text-center mb-12 ${anim(plansSection.visible)}`} style={{ transitionDelay: "100ms" }}>
-            Comece grátis. Pague só quando fizer sentido.
+          <p className={`text-slate-400 text-center mb-6 ${anim(plansSection.visible)}`} style={{ transitionDelay: "100ms" }}>
+            Teste grátis 30 dias no Business · Sem cartão
           </p>
+
+          {/* Toggle Mensal / Anual */}
+          <div className={`flex justify-center mb-10 ${anim(plansSection.visible)}`} style={{ transitionDelay: "150ms" }}>
+            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-slate-900 border border-white/10">
+              <button
+                type="button"
+                onClick={() => setPeriodoLanding("mensal")}
+                aria-pressed={periodoLanding === "mensal"}
+                className={
+                  periodoLanding === "mensal"
+                    ? "px-4 py-2 rounded-full bg-teal-500 text-white text-sm font-bold transition-colors"
+                    : "px-4 py-2 rounded-full text-slate-400 text-sm hover:text-white transition-colors"
+                }
+              >
+                Mensal
+              </button>
+              <button
+                type="button"
+                onClick={() => setPeriodoLanding("anual")}
+                aria-pressed={periodoLanding === "anual"}
+                className={
+                  periodoLanding === "anual"
+                    ? "px-4 py-2 rounded-full bg-teal-500 text-white text-sm font-bold transition-colors inline-flex items-center gap-1"
+                    : "px-4 py-2 rounded-full text-slate-400 text-sm hover:text-white transition-colors inline-flex items-center gap-1"
+                }
+              >
+                <span>Anual</span>
+                <span aria-hidden>🔥</span>
+                <span className="hidden sm:inline">Economize até 25%</span>
+              </button>
+            </div>
+          </div>
+
           <div className="grid sm:grid-cols-3 gap-5 max-w-4xl mx-auto">
             {plans.map((plan, i) => (
               <div
@@ -620,6 +677,9 @@ export default function LandingPage() {
                   )}
                   <span className="text-3xl font-bold text-white">{plan.price}</span>
                   <span className="text-slate-500 text-sm">{plan.period}</span>
+                  {plan.subPrice && (
+                    <p className="text-xs text-slate-400 mt-1">{plan.subPrice}</p>
+                  )}
                 </div>
                 <ul className="space-y-2.5 mb-6 flex-1">
                   {plan.features.map((f) => (
