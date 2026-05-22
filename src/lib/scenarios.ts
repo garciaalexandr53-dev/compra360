@@ -265,6 +265,10 @@ function scenarioEconomiaInteligente(
   let pullCount = 0;     // items effectively moved via Pull
   let discardCount = 0;  // suppliers discarded via Discard
 
+  const boostDetailMap: Record<string, BoostDetail> = {};
+  const pullDetails: PullDetail[] = [];
+  const discardDetails: DiscardDetail[] = [];
+
   while (iterations < 30) {
     iterations++;
     const totals = getSupplierTotals();
