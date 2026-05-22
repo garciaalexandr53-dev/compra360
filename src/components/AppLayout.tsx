@@ -13,6 +13,7 @@ import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import BottomNav from "@/components/BottomNav";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import BannerAviso from "@/components/BannerAviso";
+import ModalBoasVindas from "@/components/dashboard/ModalBoasVindas";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -117,6 +118,7 @@ export default function AppLayout() {
       </div>
       <BottomNav />
       <OnboardingWizard open={showOnboarding} onClose={() => setShowOnboarding(false)} />
+      <ModalBoasVindas />
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>

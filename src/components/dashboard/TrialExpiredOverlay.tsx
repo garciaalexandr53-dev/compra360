@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import PlanosModal from "@/components/PlanosModal";
 import { PLAN_PRICES } from "@/lib/planPrices";
 import { formatBRL } from "@/lib/format";
+import { useProfile } from "@/hooks/useProfile";
 
 interface Props {
   totalProdutos: number;
@@ -16,6 +17,7 @@ interface Props {
 export default function TrialExpiredOverlay({ totalProdutos, economiaTotal }: Props) {
   const { user } = useAuth();
   const { isFree, isLoading } = useSubscription();
+  const { primeiroNome } = useProfile();
   const [showPlanos, setShowPlanos] = useState(false);
 
   const { data: isAdmin = false } = useQuery({
@@ -65,7 +67,7 @@ export default function TrialExpiredOverlay({ totalProdutos, economiaTotal }: Pr
           <div className="w-full max-w-md sm:max-w-lg bg-card border rounded-xl shadow-lg p-5 sm:p-8 space-y-5 animate-fade-in">
             <div className="text-center">
               <h2 className="text-2xl font-bold text-foreground">
-                Seu período grátis terminou
+                Seu período grátis terminou{primeiroNome ? `, ${primeiroNome}` : ""}.
               </h2>
             </div>
 
@@ -79,7 +81,7 @@ export default function TrialExpiredOverlay({ totalProdutos, economiaTotal }: Pr
                 )}
                 {economiaTotal > 0 && (
                   <p className="text-sm">
-                    💰 Economizou{" "}
+                    💰 Durante o trial você economizou{" "}
                     <span className="font-bold text-green-600 dark:text-green-400">
                       {formatBRL(economiaTotal)}
                     </span>

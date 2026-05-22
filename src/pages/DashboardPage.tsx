@@ -30,6 +30,7 @@ import TrialUpsellCard from "@/components/dashboard/TrialUpsellCard";
 import TrialExpiredOverlay from "@/components/dashboard/TrialExpiredOverlay";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useProfile } from "@/hooks/useProfile";
 import PlanosModal from "@/components/PlanosModal";
 import PrazoCountdownBadge from "@/components/dashboard/PrazoCountdownBadge";
 import PrazoEditableBadge from "@/components/dashboard/PrazoEditableBadge";
@@ -44,6 +45,7 @@ const DashboardPage = () => {
   const queryClient = useQueryClient();
   const { checkPlan, showPlanos, setShowPlanos } = useFeatureCheck();
   const { isTrial } = useSubscription();
+  const { primeiroNome } = useProfile();
 
   // ── Economia histórica acumulada (todas as cotações finalizadas) ──
   const { data: economiaHistorica = { totalProdutos: 0, economiaTotal: 0 } } = useQuery({
@@ -944,7 +946,7 @@ const DashboardPage = () => {
                       className="mt-3 w-full gap-2 bg-gradient-to-r from-primary to-primary/80"
                       onClick={() => setShowPlanos(true)}
                     >
-                      <Flame className="h-4 w-4" /> Ativar Business — continue economizando
+                      <Flame className="h-4 w-4" /> {primeiroNome ? `${primeiroNome}, ative` : "Ative"} o Business e continue economizando
                     </Button>
                   )}
                 </CardContent>

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ interface Props {
 export default function TrialUpsellCard({ totalProdutos, economiaTotal }: Props) {
   const { user } = useAuth();
   const { isTrial, trialDaysLeft } = useSubscription();
+  const { primeiroNome } = useProfile();
   const [showPlanos, setShowPlanos] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
@@ -71,7 +73,7 @@ export default function TrialUpsellCard({ totalProdutos, economiaTotal }: Props)
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
               <p className="text-sm font-semibold text-destructive">
-                {trialDaysLeft} {trialDaysLeft === 1 ? "dia" : "dias"} para o trial acabar
+                ⚠️ {primeiroNome ? `${primeiroNome}, ` : ""}{trialDaysLeft} {trialDaysLeft === 1 ? "dia" : "dias"} para o trial acabar
               </p>
             </div>
             {economiaTotal > 0 && (
@@ -91,12 +93,12 @@ export default function TrialUpsellCard({ totalProdutos, economiaTotal }: Props)
             <div className="flex flex-wrap items-center gap-2">
               <Gift className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
               <p className="text-sm font-semibold">
-                🎁 Business grátis · {trialDaysLeft} {trialDaysLeft === 1 ? "dia" : "dias"}
+                🎁 {primeiroNome ? `Olá ${primeiroNome}! ` : ""}Business grátis · {trialDaysLeft} {trialDaysLeft === 1 ? "dia" : "dias"}
               </p>
             </div>
             {totalProdutos > 0 && (
               <p className="text-xs text-muted-foreground">
-                Você já comparou{" "}
+                {primeiroNome ? `${primeiroNome}, você` : "Você"} já comparou{" "}
                 <span className="font-bold text-foreground">{totalProdutos}</span> produtos
               </p>
             )}
@@ -125,8 +127,8 @@ export default function TrialUpsellCard({ totalProdutos, economiaTotal }: Props)
           <DialogHeader>
             <DialogTitle>
               {economiaTotal > 0
-                ? `Você já economizou ${formatBRL(economiaTotal)} 🎉`
-                : "Continue aproveitando o Compra360 🎉"}
+                ? `${primeiroNome ? primeiroNome + ", você" : "Você"} já economizou ${formatBRL(economiaTotal)} 🎉`
+                : `${primeiroNome ? primeiroNome + ", continue" : "Continue"} aproveitando o Compra360 🎉`}
             </DialogTitle>
             <DialogDescription>
               {economiaTotal > 0 ? "usando o Compra360. " : ""}Continue sem interrupções:
