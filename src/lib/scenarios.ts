@@ -53,12 +53,35 @@ export interface ScenarioSupplier {
   pedidoMinimo: number;
 }
 
+export interface BoostDetail {
+  fornecedorNome: string;
+  itens: {
+    produto: string;
+    qtdOriginal: number;
+    qtdNova: number;
+    qtdExtra: number;
+  }[];
+}
+
+export interface PullDetail {
+  produto: string;
+  fornecedorOrigem: string;
+  fornecedorDestino: string;
+}
+
+export interface DiscardDetail {
+  fornecedorNome: string;
+}
+
 export interface CascadeResult {
   fornecedoresIniciais: number;
   fornecedoresFinais: number;
   fornecedoresBoostados: number;
   itensPuxados: number;
   fornecedoresDescartados: number;
+  boostDetails: BoostDetail[];
+  pullDetails: PullDetail[];
+  discardDetails: DiscardDetail[];
 }
 
 export interface Scenario {
