@@ -9,7 +9,7 @@ vi.mock("@/hooks/useAuth", () => ({
 
 class IOStub {
   constructor(cb: IntersectionObserverCallback) {
-    cb([{ isIntersecting: true } as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+    setTimeout(() => cb([{ isIntersecting: true } as IntersectionObserverEntry], this as unknown as IntersectionObserver), 0);
   }
   observe() {}
   unobserve() {}
