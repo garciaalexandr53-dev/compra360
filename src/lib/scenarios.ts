@@ -316,6 +316,16 @@ function scenarioEconomiaInteligente(
         qtyOverrides[item.cpId] = currentQty + actualBoost;
         gap -= actualBoost * item.unitCost;
         madeChanges = true;
+        const fNome = fornecedorMap[targetFId]?.nome || "?";
+        if (!boostDetailMap[targetFId]) {
+          boostDetailMap[targetFId] = { fornecedorNome: fNome, itens: [] };
+        }
+        boostDetailMap[targetFId].itens.push({
+          produto: cp.produtoNome,
+          qtdOriginal: currentQty,
+          qtdNova: currentQty + actualBoost,
+          qtdExtra: actualBoost,
+        });
       }
     }
 
