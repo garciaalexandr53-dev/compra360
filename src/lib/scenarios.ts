@@ -384,6 +384,12 @@ function scenarioEconomiaInteligente(
       let pulledAny = false;
       for (const c of candidates) {
         if (gap <= 0) break;
+        const cpInfo = cotacaoProdutos.find(x => x.id === c.cpId);
+        pullDetails.push({
+          produto: cpInfo?.produtoNome || "?",
+          fornecedorOrigem: fornecedorMap[c.currentFId]?.nome || "?",
+          fornecedorDestino: fornecedorMap[targetFId]?.nome || "?",
+        });
         assignments[c.cpId] = { fornecedorId: targetFId, preco: c.targetPreco };
         gap -= c.itemTotal;
         pulledAny = true;
