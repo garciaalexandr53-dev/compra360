@@ -456,6 +456,9 @@ function scenarioEconomiaInteligente(
       fornecedoresBoostados: boostCount,
       itensPuxados: pullCount,
       fornecedoresDescartados: discardCount,
+      boostDetails: Object.values(boostDetailMap),
+      pullDetails,
+      discardDetails,
     },
   };
 }
