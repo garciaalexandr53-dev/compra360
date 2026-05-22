@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ interface Props {
 export default function TrialUpsellCard({ totalProdutos, economiaTotal }: Props) {
   const { user } = useAuth();
   const { isTrial, trialDaysLeft } = useSubscription();
+  const { primeiroNome } = useProfile();
   const [showPlanos, setShowPlanos] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
