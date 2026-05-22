@@ -19,6 +19,7 @@ import { generateScenarios, analyzeGaps, type Scenario, type GapAnalysis } from 
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
 import { Skeleton } from "@/components/ui/skeleton";
+import PainelMovimentacoes from "@/components/analise/PainelMovimentacoes";
 
 type Fornecedor = Tables<"fornecedores">;
 
