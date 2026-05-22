@@ -53,12 +53,35 @@ export interface ScenarioSupplier {
   pedidoMinimo: number;
 }
 
+export interface BoostDetail {
+  fornecedorNome: string;
+  itens: {
+    produto: string;
+    qtdOriginal: number;
+    qtdNova: number;
+    qtdExtra: number;
+  }[];
+}
+
+export interface PullDetail {
+  produto: string;
+  fornecedorOrigem: string;
+  fornecedorDestino: string;
+}
+
+export interface DiscardDetail {
+  fornecedorNome: string;
+}
+
 export interface CascadeResult {
   fornecedoresIniciais: number;
   fornecedoresFinais: number;
   fornecedoresBoostados: number;
   itensPuxados: number;
   fornecedoresDescartados: number;
+  boostDetails: BoostDetail[];
+  pullDetails: PullDetail[];
+  discardDetails: DiscardDetail[];
 }
 
 export interface Scenario {
@@ -242,6 +265,10 @@ function scenarioEconomiaInteligente(
   let pullCount = 0;     // items effectively moved via Pull
   let discardCount = 0;  // suppliers discarded via Discard
 
+  const boostDetailMap: Record<string, BoostDetail> = {};
+  const pullDetails: PullDetail[] = [];
+  const discardDetails: DiscardDetail[] = [];
+
   while (iterations < 30) {
     iterations++;
     const totals = getSupplierTotals();
@@ -289,6 +316,16 @@ function scenarioEconomiaInteligente(
         qtyOverrides[item.cpId] = currentQty + actualBoost;
         gap -= actualBoost * item.unitCost;
         madeChanges = true;
+        const fNome = fornecedorMap[targetFId]?.nome || "?";
+        if (!boostDetailMap[targetFId]) {
+          boostDetailMap[targetFId] = { fornecedorNome: fNome, itens: [] };
+        }
+        boostDetailMap[targetFId].itens.push({
+          produto: cp.produtoNome,
+          qtdOriginal: currentQty,
+          qtdNova: currentQty + actualBoost,
+          qtdExtra: actualBoost,
+        });
       }
     }
 
@@ -347,6 +384,12 @@ function scenarioEconomiaInteligente(
       let pulledAny = false;
       for (const c of candidates) {
         if (gap <= 0) break;
+        const cpInfo = cotacaoProdutos.find(x => x.id === c.cpId);
+        pullDetails.push({
+          produto: cpInfo?.produtoNome || "?",
+          fornecedorOrigem: fornecedorMap[c.currentFId]?.nome || "?",
+          fornecedorDestino: fornecedorMap[targetFId]?.nome || "?",
+        });
         assignments[c.cpId] = { fornecedorId: targetFId, preco: c.targetPreco };
         gap -= c.itemTotal;
         pulledAny = true;
@@ -373,6 +416,7 @@ function scenarioEconomiaInteligente(
     }
     if (discarded) {
       discardCount++;
+      discardDetails.push({ fornecedorNome: fornecedorMap[targetFId]?.nome || "?" });
     }
     if (!discarded) break;
   }
@@ -412,6 +456,9 @@ function scenarioEconomiaInteligente(
       fornecedoresBoostados: boostCount,
       itensPuxados: pullCount,
       fornecedoresDescartados: discardCount,
+      boostDetails: Object.values(boostDetailMap),
+      pullDetails,
+      discardDetails,
     },
   };
 }
