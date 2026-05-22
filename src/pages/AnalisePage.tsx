@@ -828,6 +828,12 @@ const AnalisePage = () => {
                   </div>
                 </button>
 
+                {scenario.id === "sem-minimo-abaixo" && scenario.cascadeResult && (
+                  <div className="px-4 pb-2">
+                    <PainelMovimentacoes cascadeResult={scenario.cascadeResult} />
+                  </div>
+                )}
+
                 {/* CAMADA B — "Por que essa estratégia?" */}
                 <div className="border-t bg-muted/20">
                   <button
