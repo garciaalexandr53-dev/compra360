@@ -416,6 +416,7 @@ function scenarioEconomiaInteligente(
     }
     if (discarded) {
       discardCount++;
+      discardDetails.push({ fornecedorNome: fornecedorMap[targetFId]?.nome || "?" });
     }
     if (!discarded) break;
   }
