@@ -329,9 +329,13 @@ const FuncionariosPage = () => {
               .map((p: any) => {
                 const obsFator = parseFatorFromObs(item.observacao);
                 const obsEmb = parseEmbFromObs(item.observacao);
-                // Prefer cadastrado fator/embalagem when available
-                const fator = p.fator_embalagem && p.fator_embalagem > 1 ? p.fator_embalagem : obsFator;
-                const emb = (p.embalagem && p.embalagem.trim()) ? p.embalagem.split("|")[0].trim() : obsEmb;
+                // Priorizar o que o funcionário informou; fallback para cadastro
+                const fator = obsFator > 1
+                  ? obsFator
+                  : (p.fator_embalagem && p.fator_embalagem > 0 ? p.fator_embalagem : 1);
+                const emb = (obsEmb && obsEmb !== "un")
+                  ? obsEmb
+                  : ((p.embalagem && p.embalagem.trim()) ? p.embalagem.split("|")[0].trim() : "UNI");
                 return {
                   cotacao_id: cot.id,
                   produto_id: p.id,
