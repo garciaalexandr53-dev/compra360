@@ -14,8 +14,7 @@ describe("LandingPage — Hero sem IntersectionObserver", () => {
     cleanup();
     originalIO = globalThis.IntersectionObserver;
     // Simula um ambiente sem suporte a IntersectionObserver.
-    // @ts-expect-error remoção intencional para teste
-    delete globalThis.IntersectionObserver;
+    (globalThis as { IntersectionObserver?: typeof IntersectionObserver }).IntersectionObserver = undefined;
   });
 
   afterEach(() => {
