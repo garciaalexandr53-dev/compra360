@@ -35,6 +35,12 @@ function useInView(threshold = 0.15) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // Fallback defensivo: se o ambiente não suporta IntersectionObserver
+    // (ex.: testes ou navegadores antigos), considera visível imediatamente.
+    if (typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      return;
+    }
     const obs = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
       { threshold }
