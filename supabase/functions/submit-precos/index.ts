@@ -69,13 +69,27 @@ Deno.serve(async (req) => {
 
     // Filter out items whose cotação prazo has expired
     const nowMs = Date.now();
+    const eligibleCps = (validCps || []).filter((cp: any) => {
+      const prazo = cp.cotacoes?.prazo_resposta;
+      if (!prazo) return true;
+      return new Date(prazo).getTime() > nowMs;
+    });
+
+    // Authorization: verify supplier is linked (cotacao_fornecedores) to each cotação.
+    const cotIds = Array.from(new Set(eligibleCps.map((cp: any) => cp.cotacao_id)));
+    let linkedCotIds = new Set<string>();
+    if (cotIds.length > 0) {
+      const { data: links } = await supabase
+        .from("cotacao_fornecedores")
+        .select("cotacao_id")
+        .eq("fornecedor_id", supplierId)
+        .in("cotacao_id", cotIds);
+      linkedCotIds = new Set((links || []).map((l: any) => l.cotacao_id));
+    }
+
     const validCpIds = new Set(
-      (validCps || [])
-        .filter((cp: any) => {
-          const prazo = cp.cotacoes?.prazo_resposta;
-          if (!prazo) return true;
-          return new Date(prazo).getTime() > nowMs;
-        })
+      eligibleCps
+        .filter((cp: any) => linkedCotIds.has(cp.cotacao_id))
         .map((cp: any) => cp.id)
     );
 
