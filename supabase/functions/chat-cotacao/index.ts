@@ -41,6 +41,14 @@ serve(async (req) => {
     let contextText = "Nenhuma cotação ativa encontrada.";
 
     if (cotacao_id) {
+      // Cross-tenant guard: verify caller owns this cotação.
+      const { data: ownCot } = await supabase
+        .from("cotacoes").select("id").eq("id", cotacao_id).eq("created_by", user.id).maybeSingle();
+      if (!ownCot) {
+        return new Response(JSON.stringify({ error: "Cotação não encontrada" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       // Fetch products with prices
       const { data: cotacaoProdutos } = await supabase
         .from("cotacao_produtos")
