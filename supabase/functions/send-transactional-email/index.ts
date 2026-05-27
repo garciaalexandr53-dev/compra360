@@ -35,6 +35,28 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  // Restrict to service_role only — prevents authenticated end-users from
+  // triggering arbitrary transactional emails to any recipient.
+  const authHeader = req.headers.get('Authorization') || ''
+  const token = authHeader.replace(/^Bearer\s+/i, '')
+  let isServiceRole = false
+  try {
+    const payloadB64 = token.split('.')[1]
+    if (payloadB64) {
+      const padded = payloadB64
+        .replace(/-/g, '+').replace(/_/g, '/')
+        .padEnd(payloadB64.length + ((4 - (payloadB64.length % 4)) % 4), '=')
+      const claims = JSON.parse(atob(padded))
+      isServiceRole = claims?.role === 'service_role'
+    }
+  } catch { /* ignore */ }
+  if (!isServiceRole) {
+    return new Response(JSON.stringify({ error: 'Forbidden: service_role required' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 

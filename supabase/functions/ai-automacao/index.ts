@@ -36,6 +36,38 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseKey);
 
+    // Cross-tenant guard: ensure caller owns the cotacao/loja/fornecedor it references.
+    const _cotId = (params as any)?.cotacao_id;
+    const _lojaId = (params as any)?.loja_id;
+    const _fornId = (params as any)?.fornecedor_id;
+    if (_cotId) {
+      const { data: ownCot } = await sb
+        .from("cotacoes").select("id").eq("id", _cotId).eq("created_by", user.id).maybeSingle();
+      if (!ownCot) {
+        return new Response(JSON.stringify({ error: "Cotação não encontrada" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+    if (_lojaId) {
+      const { data: ownLoja } = await sb
+        .from("lojas").select("id").eq("id", _lojaId).eq("user_id", user.id).maybeSingle();
+      if (!ownLoja) {
+        return new Response(JSON.stringify({ error: "Loja não encontrada" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+    if (_fornId) {
+      const { data: ownForn } = await sb
+        .from("fornecedores").select("id").eq("id", _fornId).eq("user_id", user.id).maybeSingle();
+      if (!ownForn) {
+        return new Response(JSON.stringify({ error: "Fornecedor não encontrado" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // Helper: call AI gateway
     const callAI = async (messages: any[], tools?: any[], tool_choice?: any) => {
       const body: any = { model: "google/gemini-3-flash-preview", messages, stream: false };

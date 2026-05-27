@@ -54,10 +54,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Optional: validate loja_id matches if provided
-    if (loja_id && pedido.loja_id && pedido.loja_id !== loja_id) {
+    // loja_id is now REQUIRED — must match the pedido's loja_id.
+    if (!loja_id || typeof loja_id !== "string") {
+      return new Response(JSON.stringify({ error: "loja_id é obrigatório" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!pedido.loja_id || pedido.loja_id !== loja_id) {
       return new Response(JSON.stringify({ error: "Pedido não pertence a esta loja" }), {
         status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // Verify loja exists (defense-in-depth against forged UUIDs).
+    const { data: lojaCheck } = await supabase
+      .from("lojas").select("id").eq("id", loja_id).maybeSingle();
+    if (!lojaCheck) {
+      return new Response(JSON.stringify({ error: "Loja inválida" }), {
+        status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
