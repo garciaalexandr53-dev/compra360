@@ -39,6 +39,20 @@ serve(async (req) => {
 
     if (!cotacao_id) throw new Error("cotacao_id is required");
 
+    // Cross-tenant guard: verify caller owns this cotação.
+    const { data: ownCot } = await supabase
+      .from("cotacoes").select("id, loja_id").eq("id", cotacao_id).eq("created_by", user.id).maybeSingle();
+    if (!ownCot) {
+      return new Response(JSON.stringify({ error: "Cotação não encontrada" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (loja_id && ownCot.loja_id && ownCot.loja_id !== loja_id) {
+      return new Response(JSON.stringify({ error: "Loja inválida" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Fetch products
     const { data: cotacaoProdutos } = await supabase
       .from("cotacao_produtos")
