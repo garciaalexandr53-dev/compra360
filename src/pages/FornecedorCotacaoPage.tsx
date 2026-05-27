@@ -46,19 +46,9 @@ const FornecedorCotacaoPage = () => {
     return () => clearInterval(i);
   }, [screen, prazoIso]);
 
-  // Realtime: comprador alterou prazo → atualiza
-  useEffect(() => {
-    if (!cotacaoId) return;
-    const ch = supabase
-      .channel(`cot-prazo-${cotacaoId}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "cotacoes", filter: `id=eq.${cotacaoId}` }, (payload: any) => {
-        const novo = payload.new?.prazo_resposta ?? null;
-        setPrazoIso(novo);
-        if (novo && new Date(novo).getTime() <= Date.now()) setScreen("expired");
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [cotacaoId]);
+  // Realtime on cotacoes is no longer available to anon clients after the
+  // anon SELECT policy was removed for security reasons. Prazo updates are
+  // detected via the per-minute tick above (loadData is also re-run on focus).
 
   useEffect(() => {
     if (!token) return;
