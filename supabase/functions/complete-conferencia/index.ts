@@ -76,9 +76,6 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     // Insert conferencia
     const { data: conf, error: confError } = await supabase
