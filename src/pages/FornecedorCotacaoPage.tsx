@@ -46,19 +46,9 @@ const FornecedorCotacaoPage = () => {
     return () => clearInterval(i);
   }, [screen, prazoIso]);
 
-  // Realtime: comprador alterou prazo → atualiza
-  useEffect(() => {
-    if (!cotacaoId) return;
-    const ch = supabase
-      .channel(`cot-prazo-${cotacaoId}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "cotacoes", filter: `id=eq.${cotacaoId}` }, (payload: any) => {
-        const novo = payload.new?.prazo_resposta ?? null;
-        setPrazoIso(novo);
-        if (novo && new Date(novo).getTime() <= Date.now()) setScreen("expired");
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [cotacaoId]);
+  // Realtime on cotacoes is no longer available to anon clients after the
+  // anon SELECT policy was removed for security reasons. Prazo updates are
+  // detected via the per-minute tick above (loadData is also re-run on focus).
 
   useEffect(() => {
     if (!token) return;
@@ -168,17 +158,16 @@ const FornecedorCotacaoPage = () => {
         .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
       setProdutos(items);
 
-      // 4. Load existing prices
+      // 4. Load existing prices via SECURITY DEFINER RPC (token-scoped)
       const cpIds = items.map((it) => it.cotacao_produto_id);
-      const { data: existingPrices } = await supabase
-        .from("precos")
-        .select("cotacao_produto_id, preco")
-        .eq("fornecedor_id", supplier.id)
-        .in("cotacao_produto_id", cpIds);
+      const { data: existingPrices } = await supabase.rpc("get_supplier_existing_prices", {
+        _token: token!,
+        _cp_ids: cpIds,
+      });
 
       if (existingPrices) {
         const p: Record<string, string> = {};
-        existingPrices.forEach((ep: any) => {
+        (existingPrices as any[]).forEach((ep: any) => {
           if (ep.preco !== null && ep.preco > 0) p[ep.cotacao_produto_id] = formatNumber(ep.preco);
         });
         setPrices(p);
