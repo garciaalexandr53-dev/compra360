@@ -106,14 +106,6 @@ const AppFuncionariosPublic = () => {
     }
   }, [activeTab]);
 
-  useEffect(() => {
-    if (activeTab === "enviados" && selectedLojaId) {
-      queryClient.invalidateQueries({
-        queryKey: ["itens-enviados", selectedLojaId],
-      });
-    }
-  }, [activeTab, selectedLojaId]);
-
   const urlLojaId = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("loja") || "";
