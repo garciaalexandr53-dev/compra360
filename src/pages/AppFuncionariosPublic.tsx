@@ -222,7 +222,7 @@ const AppFuncionariosPublic = () => {
   const ninetyDaysAgo = useMemo(() => subDays(new Date(), 90).toISOString(), []);
   const { data: enviadosRaw = [], isLoading: enviadosLoading } = useQuery({
     queryKey: ["itens-enviados", selectedLojaId],
-    enabled: !!selectedLojaId && activeTab === "enviados",
+    enabled: !!selectedLojaId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("itens_faltantes")
@@ -234,6 +234,14 @@ const AppFuncionariosPublic = () => {
       return data || [];
     },
   });
+
+  useEffect(() => {
+    if (activeTab === "enviados" && selectedLojaId) {
+      queryClient.invalidateQueries({
+        queryKey: ["itens-enviados", selectedLojaId],
+      });
+    }
+  }, [activeTab, selectedLojaId]);
 
   // Client-side filter by selected period
   const enviados = useMemo(() => {
