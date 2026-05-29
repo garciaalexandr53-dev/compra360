@@ -235,6 +235,17 @@ const AppFuncionariosPublic = () => {
     },
   });
 
+  useEffect(() => {
+    if (activeTab === "enviados" && selectedLojaId) {
+      queryClient.invalidateQueries({
+        queryKey: ["itens-enviados", selectedLojaId],
+      });
+    }
+  }, [activeTab, selectedLojaId]);
+
+  const _enviadosEffectAnchor = (() => {
+  });
+
   // Client-side filter by selected period
   const enviados = useMemo(() => {
     const cutoff = subDays(new Date(), Number(filtroEnviados)).getTime();
