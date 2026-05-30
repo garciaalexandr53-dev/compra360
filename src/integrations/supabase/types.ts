@@ -1072,6 +1072,16 @@ export type Database = {
           total_count: number
         }[]
       }
+      get_supplier_cotacao_produtos: {
+        Args: { _cotacao_id: string; _token: string }
+        Returns: {
+          fator_embalagem: number
+          id: string
+          produto_embalagem: string
+          produto_nome: string
+          quantidade: number
+        }[]
+      }
       get_supplier_existing_prices: {
         Args: { _cp_ids: string[]; _token: string }
         Returns: {
