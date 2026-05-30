@@ -121,13 +121,13 @@ const FornecedorCotacaoPage = () => {
           .then(({ error }) => { if (error) log("marcar_visualizada err", error); });
       }
 
-      // 3. Load products (anon RLS allows because status='ativa')
+      // 3. Load products via SECURITY DEFINER RPC (token-scoped, no anon table access).
       // Retry once on transient mobile network errors.
       const fetchProdutos = async () =>
-        await supabase
-          .from("cotacao_produtos")
-          .select("id, quantidade, fator_embalagem, produtos(nome, embalagem)")
-          .eq("cotacao_id", cotacaoId);
+        await supabase.rpc("get_supplier_cotacao_produtos", {
+          _token: token!,
+          _cotacao_id: cotacaoId,
+        });
 
       let { data: cpData, error: cpErr } = await fetchProdutos();
       if (cpErr || !cpData) {
