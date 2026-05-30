@@ -147,11 +147,11 @@ const FornecedorCotacaoPage = () => {
         return;
       }
 
-      const items = cpData
+      const items = (cpData as any[])
         .map((cp: any) => ({
           cotacao_produto_id: cp.id,
-          nome: cp.produtos?.nome || "?",
-          embalagem: cp.produtos?.embalagem || "un",
+          nome: cp.produto_nome || "?",
+          embalagem: cp.produto_embalagem || "un",
           quantidade: cp.quantidade || 1,
           fator: cp.fator_embalagem ?? 1,
         }))
