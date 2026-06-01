@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-const DISMISS_KEY = "boas-vindas-dispensado";
+const SESSION_DISMISS_KEY = "boas-vindas-dispensado-sessao";
 
 export default function ModalBoasVindas() {
   const { user } = useAuth();
@@ -33,15 +33,18 @@ export default function ModalBoasVindas() {
   });
 
   useEffect(() => {
-    if (!user || isAdmin || profileLoading || !precisaNome) return;
+    if (!user || isAdmin || profileLoading || !precisaNome) {
+      setOpen(false);
+      return;
+    }
     try {
-      if (localStorage.getItem(DISMISS_KEY)) return;
+      if (sessionStorage.getItem(SESSION_DISMISS_KEY)) return;
     } catch { /* ignore */ }
     setOpen(true);
   }, [user, isAdmin, profileLoading, precisaNome]);
 
   const handleDismiss = () => {
-    try { localStorage.setItem(DISMISS_KEY, "1"); } catch { /* ignore */ }
+    try { sessionStorage.setItem(SESSION_DISMISS_KEY, "1"); } catch { /* ignore */ }
     setOpen(false);
   };
 
@@ -56,6 +59,7 @@ export default function ModalBoasVindas() {
       if (error) throw error;
       const primeiro = trimmed.split(" ")[0];
       await queryClient.invalidateQueries({ queryKey: ["profile-nome"] });
+      await queryClient.refetchQueries({ queryKey: ["profile-nome"] });
       toast.success(`Olá, ${primeiro}! 👋`);
       setOpen(false);
     } catch (e: any) {
