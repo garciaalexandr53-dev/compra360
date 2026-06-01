@@ -12,7 +12,7 @@ const DISMISS_KEY = "boas-vindas-dispensado";
 
 export default function ModalBoasVindas() {
   const { user } = useAuth();
-  const { precisaNome } = useProfile();
+  const { precisaNome, isLoading: profileLoading } = useProfile();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [nome, setNome] = useState("");
@@ -33,12 +33,12 @@ export default function ModalBoasVindas() {
   });
 
   useEffect(() => {
-    if (!user || isAdmin || !precisaNome) return;
+    if (!user || isAdmin || profileLoading || !precisaNome) return;
     try {
       if (localStorage.getItem(DISMISS_KEY)) return;
     } catch { /* ignore */ }
     setOpen(true);
-  }, [user, isAdmin, precisaNome]);
+  }, [user, isAdmin, profileLoading, precisaNome]);
 
   const handleDismiss = () => {
     try { localStorage.setItem(DISMISS_KEY, "1"); } catch { /* ignore */ }
