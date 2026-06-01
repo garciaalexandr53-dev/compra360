@@ -42,6 +42,10 @@ export const resolveFator = (
   if (temObservacaoFator(observacao)) {
     return parseFatorFromObs(observacao ?? null);
   }
+  if (temObservacaoEmb(observacao)) {
+    const emb = parseEmbFromObs(observacao ?? null).trim().toLowerCase();
+    if (["un", "uni", "unid", "unidade"].includes(emb)) return 1;
+  }
   return produtoFator && produtoFator > 0 ? produtoFator : 1;
 };
 
