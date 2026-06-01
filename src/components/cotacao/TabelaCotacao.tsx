@@ -201,6 +201,7 @@ const TabelaCotacao = ({
             ) : filteredItems.map((cp, rowIndex) => {
               const info = analyzePrices(cp.id);
               const fator = cp.fator_embalagem || 1;
+              const embalagem = cp.tipo_embalagem || cp.produto?.embalagem || "un";
               const totalLine = info.minVal !== null ? info.minVal * (cp.quantidade || 1) * fator : null;
               const qtyValue = qtyDrafts[cp.id] ?? String(cp.quantidade || 1);
 
@@ -233,8 +234,8 @@ const TabelaCotacao = ({
                   <td className="px-1 py-1.5 border-b border-border/50 text-center">
                     <Input
                       className="h-8 text-[11px] text-center border-transparent hover:border-input focus:border-input bg-transparent w-14 mx-auto rounded-none shadow-none ring-0 focus-visible:ring-1 text-muted-foreground"
-                      defaultValue={cp.produto?.embalagem || "un"}
-                      onBlur={(e) => onFieldBlur(cp.id, "embalagem", e.target.value, cp.produto?.embalagem || "un")}
+                      defaultValue={embalagem}
+                      onBlur={(e) => onFieldBlur(cp.id, "embalagem", e.target.value, embalagem)}
                     />
                   </td>
                   <td className="px-1 py-1.5 border-b border-border/50 text-center">
