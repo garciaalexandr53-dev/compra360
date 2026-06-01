@@ -213,10 +213,10 @@ const FuncionariosPage = () => {
               const obsFator = parseFatorFromObs(item?.observacao);
               const obsEmb = parseEmbFromObs(item?.observacao);
               // Priorizar o que o funcionário informou; fallback para cadastro
-              const fator = obsFator > 1
+              const fator = temObservacaoFator(item?.observacao)
                 ? obsFator
                 : (p.fator_embalagem && p.fator_embalagem > 0 ? p.fator_embalagem : 1);
-              const emb = (obsEmb && obsEmb !== "un")
+              const emb = temObservacaoEmb(item?.observacao)
                 ? obsEmb
                 : ((p.embalagem && p.embalagem.trim()) ? p.embalagem.split("|")[0].trim() : "UNI");
               return {
