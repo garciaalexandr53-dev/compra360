@@ -246,21 +246,12 @@ const FuncionariosPage = () => {
             .filter((p) => !existingProdIds.has(p.id))
             .map((p: any) => {
               const item = itemsToImport.find((i: any) => i.nome.toLowerCase().trim() === p.nome.toLowerCase().trim());
-              const obsFator = parseFatorFromObs(item?.observacao);
-              const obsEmb = parseEmbFromObs(item?.observacao);
-              // Priorizar o que o funcionário informou; fallback para cadastro
-              const fator = temObservacaoFator(item?.observacao)
-                ? obsFator
-                : (p.fator_embalagem && p.fator_embalagem > 0 ? p.fator_embalagem : 1);
-              const emb = temObservacaoEmb(item?.observacao)
-                ? obsEmb
-                : ((p.embalagem && p.embalagem.trim()) ? p.embalagem.split("|")[0].trim() : "UNI");
               return {
                 cotacao_id: cotacaoId,
                 produto_id: p.id,
                 quantidade: item?.quantidade || 1,
-                fator_embalagem: fator,
-                tipo_embalagem: emb.toUpperCase(),
+                fator_embalagem: resolveFator(item?.observacao, p.fator_embalagem),
+                tipo_embalagem: resolveEmbalagem(item?.observacao, p.embalagem),
               };
             });
           if (cpInserts.length) {
