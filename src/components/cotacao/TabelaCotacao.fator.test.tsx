@@ -45,6 +45,18 @@ const baseProps = (cp: any, onFieldBlur: any) => ({
 });
 
 describe("TabelaCotacao - edição do FATOR persiste após reload", () => {
+  it("exibe a embalagem salva na cotação, não a embalagem do cadastro do produto", () => {
+    const onFieldBlur = vi.fn();
+    const cp = makeCp(1);
+    cp.tipo_embalagem = "UNI";
+    cp.produto.embalagem = "cx";
+
+    render(<TabelaCotacao {...baseProps(cp, onFieldBlur)} />);
+
+    expect(screen.getByDisplayValue("UNI")).toBeInTheDocument();
+    expect(screen.getByLabelText("Fator de embalagem")).toHaveValue(1);
+  });
+
   it("edita o fator, dispara onFieldBlur e o novo valor permanece após re-render simulando reload", () => {
     const onFieldBlur = vi.fn();
     let cp = makeCp(12);
