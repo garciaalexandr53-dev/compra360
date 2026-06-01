@@ -14,19 +14,55 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ConferenciaPedidos from "@/components/ConferenciaPedidos";
-const parseFatorFromObs = (obs: string | null): number => {
+export const parseFatorFromObs = (obs: string | null): number => {
   const match = obs?.match(/Fator:\s*(\d+)/);
   return match ? parseInt(match[1]) : 1;
 };
-const parseEmbFromObs = (obs: string | null): string => {
+export const parseEmbFromObs = (obs: string | null): string => {
   const match = obs?.match(/Embalagem:\s*(\S+)/);
   return match ? match[1] : "un";
 };
-const temObservacaoFator = (obs: string | null | undefined): boolean => {
+export const temObservacaoFator = (obs: string | null | undefined): boolean => {
   return !!obs && /Fator:\s*\d+/.test(obs);
 };
-const temObservacaoEmb = (obs: string | null | undefined): boolean => {
+export const temObservacaoEmb = (obs: string | null | undefined): boolean => {
   return !!obs && /Embalagem:\s*\S+/.test(obs);
+};
+
+/**
+ * Resolve o fator de embalagem com a prioridade:
+ * 1. Se o funcionário informou explicitamente na observação → usar valor da obs (mesmo que seja 1)
+ * 2. Caso contrário → cadastro do produto (se > 0)
+ * 3. Fallback final → 1
+ */
+export const resolveFator = (
+  observacao: string | null | undefined,
+  produtoFator: number | null | undefined,
+): number => {
+  if (temObservacaoFator(observacao)) {
+    return parseFatorFromObs(observacao ?? null);
+  }
+  return produtoFator && produtoFator > 0 ? produtoFator : 1;
+};
+
+/**
+ * Resolve a embalagem com a prioridade:
+ * 1. Se o funcionário informou explicitamente na observação → usar valor da obs (mesmo que seja "un")
+ * 2. Caso contrário → primeira opção do cadastro do produto
+ * 3. Fallback final → "UNI"
+ * Sempre retorna em UPPERCASE.
+ */
+export const resolveEmbalagem = (
+  observacao: string | null | undefined,
+  produtoEmbalagem: string | null | undefined,
+): string => {
+  if (temObservacaoEmb(observacao)) {
+    return parseEmbFromObs(observacao ?? null).toUpperCase();
+  }
+  const fromCadastro = produtoEmbalagem && produtoEmbalagem.trim()
+    ? produtoEmbalagem.split("|")[0].trim()
+    : "UNI";
+  return fromCadastro.toUpperCase();
 };
 
 const FuncionariosPage = () => {
