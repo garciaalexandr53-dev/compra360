@@ -22,6 +22,12 @@ const parseEmbFromObs = (obs: string | null): string => {
   const match = obs?.match(/Embalagem:\s*(\S+)/);
   return match ? match[1] : "un";
 };
+const temObservacaoFator = (obs: string | null | undefined): boolean => {
+  return !!obs && /Fator:\s*\d+/.test(obs);
+};
+const temObservacaoEmb = (obs: string | null | undefined): boolean => {
+  return !!obs && /Embalagem:\s*\S+/.test(obs);
+};
 
 const FuncionariosPage = () => {
   const queryClient = useQueryClient();
