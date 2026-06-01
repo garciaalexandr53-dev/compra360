@@ -22,6 +22,12 @@ const parseEmbFromObs = (obs: string | null): string => {
   const match = obs?.match(/Embalagem:\s*(\S+)/);
   return match ? match[1] : "un";
 };
+const temObservacaoFator = (obs: string | null | undefined): boolean => {
+  return !!obs && /Fator:\s*\d+/.test(obs);
+};
+const temObservacaoEmb = (obs: string | null | undefined): boolean => {
+  return !!obs && /Embalagem:\s*\S+/.test(obs);
+};
 
 const FuncionariosPage = () => {
   const queryClient = useQueryClient();
@@ -207,10 +213,10 @@ const FuncionariosPage = () => {
               const obsFator = parseFatorFromObs(item?.observacao);
               const obsEmb = parseEmbFromObs(item?.observacao);
               // Priorizar o que o funcionário informou; fallback para cadastro
-              const fator = obsFator > 1
+              const fator = temObservacaoFator(item?.observacao)
                 ? obsFator
                 : (p.fator_embalagem && p.fator_embalagem > 0 ? p.fator_embalagem : 1);
-              const emb = (obsEmb && obsEmb !== "un")
+              const emb = temObservacaoEmb(item?.observacao)
                 ? obsEmb
                 : ((p.embalagem && p.embalagem.trim()) ? p.embalagem.split("|")[0].trim() : "UNI");
               return {
@@ -330,10 +336,10 @@ const FuncionariosPage = () => {
                 const obsFator = parseFatorFromObs(item.observacao);
                 const obsEmb = parseEmbFromObs(item.observacao);
                 // Priorizar o que o funcionário informou; fallback para cadastro
-                const fator = obsFator > 1
+                const fator = temObservacaoFator(item.observacao)
                   ? obsFator
                   : (p.fator_embalagem && p.fator_embalagem > 0 ? p.fator_embalagem : 1);
-                const emb = (obsEmb && obsEmb !== "un")
+                const emb = temObservacaoEmb(item.observacao)
                   ? obsEmb
                   : ((p.embalagem && p.embalagem.trim()) ? p.embalagem.split("|")[0].trim() : "UNI");
                 return {
