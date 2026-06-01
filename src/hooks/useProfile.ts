@@ -2,9 +2,21 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
+export function deriveProfileState(data: { nome?: string | null; whatsapp?: string | null } | null | undefined, isLoading = false) {
+  const nome = data?.nome?.trim() || null;
+  const primeiroNome = nome ? nome.split(" ")[0] || null : null;
+
+  return {
+    nome,
+    primeiroNome,
+    whatsapp: data?.whatsapp ?? null,
+    precisaNome: !isLoading && !nome,
+  };
+}
+
 export function useProfile() {
   const { user } = useAuth();
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["profile-nome", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
@@ -17,14 +29,8 @@ export function useProfile() {
     },
   });
 
-  const primeiroNome = data?.nome
-    ? data.nome.trim().split(" ")[0] || null
-    : null;
-
   return {
-    nome: data?.nome ?? null,
-    primeiroNome,
-    whatsapp: data?.whatsapp ?? null,
-    precisaNome: !data?.nome,
+    ...deriveProfileState(data, isLoading),
+    isLoading,
   };
 }
