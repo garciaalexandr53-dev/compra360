@@ -328,9 +328,13 @@ const AppFuncionariosPublic = () => {
     }
 
     const embLabel = dialogEmbal.toLowerCase();
-    const obsParts: string[] = [];
-    if (embLabel !== "uni") obsParts.push(`Embalagem: ${dialogEmbal}`);
-    if (fator > 1) obsParts.push(`${fator}un por ${dialogEmbal}`);
+    // Sempre registrar Embalagem e Fator escolhidos pelo funcionário,
+    // mesmo quando forem "uni" / 1 — caso contrário a importação cai
+    // no fallback do cadastro do produto e ignora a escolha manual.
+    const obsParts: string[] = [
+      `Embalagem: ${dialogEmbal}`,
+      `Fator: ${fator}`,
+    ];
 
     setItems((prev) => [...prev, {
       nome: dialogProduct.nome,
@@ -393,9 +397,12 @@ const AppFuncionariosPublic = () => {
       const lojaLabel = selectedLojaName ? ` [${selectedLojaName}]` : "";
       const inserts = items.map((item) => {
         const fator = item.fator || 1;
-        const obsParts: string[] = [];
-        if (item.embalagem !== "un") obsParts.push(`Embalagem: ${item.embalagem}`);
-        if (fator > 1) obsParts.push(`Fator: ${fator}`);
+        // Sempre persistir Embalagem e Fator escolhidos pelo funcionário
+        // para que a importação preserve a escolha manual (inclusive un/1).
+        const obsParts: string[] = [
+          `Embalagem: ${item.embalagem}`,
+          `Fator: ${fator}`,
+        ];
         if (lojaLabel) obsParts.push(lojaLabel.trim());
         return {
           nome: item.nome,
