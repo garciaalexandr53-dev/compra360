@@ -54,6 +54,10 @@ describe("resolveFator", () => {
     expect(resolveFator(undefined, 24)).toBe(24);
     expect(resolveFator("texto qualquer", 8)).toBe(8);
   });
+  it('preserva fator 1 quando observação antiga contém apenas Embalagem: uni', () => {
+    expect(resolveFator("Embalagem: uni | [AÇOUGUE BRAND VAREJÃO]", 12)).toBe(1);
+    expect(resolveFator("Embalagem: un | [AÇOUGUE BRAND VAREJÃO]", 12)).toBe(1);
+  });
   it("retorna 1 como fallback quando não há observação nem cadastro válido", () => {
     expect(resolveFator(null, null)).toBe(1);
     expect(resolveFator(null, 0)).toBe(1);
