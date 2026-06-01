@@ -397,9 +397,12 @@ const AppFuncionariosPublic = () => {
       const lojaLabel = selectedLojaName ? ` [${selectedLojaName}]` : "";
       const inserts = items.map((item) => {
         const fator = item.fator || 1;
-        const obsParts: string[] = [];
-        if (item.embalagem !== "un") obsParts.push(`Embalagem: ${item.embalagem}`);
-        if (fator > 1) obsParts.push(`Fator: ${fator}`);
+        // Sempre persistir Embalagem e Fator escolhidos pelo funcionário
+        // para que a importação preserve a escolha manual (inclusive un/1).
+        const obsParts: string[] = [
+          `Embalagem: ${item.embalagem}`,
+          `Fator: ${fator}`,
+        ];
         if (lojaLabel) obsParts.push(lojaLabel.trim());
         return {
           nome: item.nome,
