@@ -385,9 +385,13 @@ const FuncionariosPage = () => {
         .eq("id", item.id);
       if (error) throw error;
 
-      return item.nome;
+      return {
+        nome: item.nome,
+        lojaId: item.loja_id || lojaAtiva?.id || null,
+        lojaNome: item.lojas?.nome || lojaAtiva?.nome || null,
+      };
     },
-    onSuccess: (nome) => {
+    onSuccess: ({ nome, lojaId, lojaNome }) => {
       queryClient.invalidateQueries({ queryKey: ["itens-faltantes"] });
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
@@ -396,7 +400,21 @@ const FuncionariosPage = () => {
       queryClient.invalidateQueries({ queryKey: ["cotacao-ativa-loja"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-precos-count"] });
       queryClient.invalidateQueries({ queryKey: ["precos"] });
-      toast.success(`✅ ${nome} importado para a cotação!`);
+      const isOutraLoja = lojaId && lojaId !== lojaAtiva?.id;
+      if (isOutraLoja && lojaNome) {
+        toast.success(`✅ ${nome} importado para a cotação de ${lojaNome}`, {
+          action: {
+            label: "Abrir cotação",
+            onClick: () => {
+              setLojaAtivaId(lojaId);
+              navigate("/dashboard");
+            },
+          },
+          duration: 6000,
+        });
+      } else {
+        toast.success(`✅ ${nome} importado para a cotação${lojaNome ? ` de ${lojaNome}` : ""}!`);
+      }
     },
     onError: (e: any) => toast.error(e.message),
   });
