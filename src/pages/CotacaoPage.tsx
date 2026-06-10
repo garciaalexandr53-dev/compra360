@@ -72,6 +72,8 @@ const CotacaoPage = () => {
   const [cancelCotacaoOpen, setCancelCotacaoOpen] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelOpt, setCancelOpt] = useState<"manter" | "excluir_tudo">("manter");
+  const [skipPendingOpen, setSkipPendingOpen] = useState(false);
+  const [skipPendingLoading, setSkipPendingLoading] = useState(false);
   const [fornSuggestOpen, setFornSuggestOpen] = useState(false);
   const [fornSuggestText, setFornSuggestText] = useState("");
   const [fornSuggestLoading, setFornSuggestLoading] = useState(false);
@@ -458,6 +460,16 @@ const CotacaoPage = () => {
   const allRespondedAndCanClose =
     !!cotacaoAtiva && supplierProgress.total > 0 && supplierProgress.responded === supplierProgress.total;
 
+  const pendingFornecedores = useMemo(
+    () => fornecedores.filter((f) => !supplierHasResponded(f.id)),
+    [fornecedores, precos]
+  );
+  const someRespondedAndCanSkip =
+    !!cotacaoAtiva &&
+    supplierProgress.total > 0 &&
+    supplierProgress.responded > 0 &&
+    supplierProgress.responded < supplierProgress.total;
+
   // ── Handlers ──
   const handlePriceChange = (cpId: string, fornecedorId: string, value: string) => { setLocalPrices((prev) => ({ ...prev, [cpId]: { ...prev[cpId], [fornecedorId]: value } })); };
   const handlePriceBlur = (cpId: string, fornecedorId: string) => { const rawVal = localPrices[cpId]?.[fornecedorId]?.replace(",", ".").replace(/[^0-9.]/g, ""); savePriceMutation.mutate({ cpId, fornecedorId, preco: rawVal ? parseFloat(rawVal) : null }); };
@@ -679,6 +691,42 @@ const CotacaoPage = () => {
     }
   };
 
+  const handleSkipPending = async () => {
+    if (!cotacaoAtiva?.id || pendingFornecedores.length === 0) return;
+    setSkipPendingLoading(true);
+    try {
+      const pendingIds = pendingFornecedores.map((f) => f.id);
+      // Remove preços vazios desses fornecedores nesta cotação
+      const cpIds = cotacaoProdutos.map((cp) => cp.id);
+      if (cpIds.length) {
+        await supabase
+          .from("precos")
+          .delete()
+          .in("cotacao_produto_id", cpIds)
+          .in("fornecedor_id", pendingIds);
+      }
+      // Remove os fornecedores pendentes da cotação
+      await supabase
+        .from("cotacao_fornecedores")
+        .delete()
+        .eq("cotacao_id", cotacaoAtiva.id)
+        .in("fornecedor_id", pendingIds);
+
+      await queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
+      await queryClient.invalidateQueries({ queryKey: ["precos"] });
+      toast.success(
+        `${pendingIds.length} fornecedor(es) removido(s) da cotação. Você já pode fechar.`
+      );
+      setSkipPendingOpen(false);
+      // Abre o modal de fechar/nova cotação
+      setNovaCotacaoOpen(true);
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao remover fornecedores pendentes");
+    } finally {
+      setSkipPendingLoading(false);
+    }
+  };
+
   // ── Empty state → redirect to Dashboard guided flow ──
   useEffect(() => {
     if (cotacaoFetched && !cotacaoAtiva) {
@@ -787,6 +835,26 @@ const CotacaoPage = () => {
             onClick={() => setNovaCotacaoOpen(true)}
           >
             Fechar agora
+          </Button>
+        </div>
+      )}
+
+      {/* Banner: alguns pendentes — seguir sem eles */}
+      {someRespondedAndCanSkip && !isReviewMode && (
+        <div className="px-4 py-2 border-b bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900 flex items-center gap-2 text-xs sm:text-sm text-amber-900 dark:text-amber-200">
+          <span className="text-base">⏳</span>
+          <span className="flex-1">
+            {pendingFornecedores.length === 1
+              ? <>Falta apenas <strong>{pendingFornecedores[0].nome}</strong> responder. Não quer esperar?</>
+              : <><strong>{pendingFornecedores.length}</strong> fornecedor(es) ainda não responderam. Não quer esperar?</>}
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs h-7 border-amber-500/40 text-amber-800 dark:text-amber-200 hover:bg-amber-500/10"
+            onClick={() => setSkipPendingOpen(true)}
+          >
+            Seguir sem {pendingFornecedores.length === 1 ? "ele" : "eles"}
           </Button>
         </div>
       )}
@@ -949,6 +1017,39 @@ const CotacaoPage = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {cancelLoading ? "Excluindo..." : "Confirmar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={skipPendingOpen} onOpenChange={setSkipPendingOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Seguir sem os fornecedores pendentes?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Os fornecedores abaixo serão <strong>removidos desta cotação</strong> e
+                  você poderá fechá-la imediatamente. Eles continuarão disponíveis para
+                  cotações futuras.
+                </p>
+                <ul className="max-h-48 overflow-y-auto space-y-1 rounded-lg border border-border bg-muted/30 p-2">
+                  {pendingFornecedores.map((f) => (
+                    <li key={f.id} className="text-sm text-foreground flex items-center gap-2">
+                      <span className="text-amber-600">•</span> {f.nome}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={skipPendingLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleSkipPending(); }}
+              disabled={skipPendingLoading}
+              className="bg-amber-600 text-white hover:bg-amber-700"
+            >
+              {skipPendingLoading ? "Removendo..." : "Remover e fechar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
