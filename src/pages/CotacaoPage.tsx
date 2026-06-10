@@ -691,6 +691,42 @@ const CotacaoPage = () => {
     }
   };
 
+  const handleSkipPending = async () => {
+    if (!cotacaoAtiva?.id || pendingFornecedores.length === 0) return;
+    setSkipPendingLoading(true);
+    try {
+      const pendingIds = pendingFornecedores.map((f) => f.id);
+      // Remove preços vazios desses fornecedores nesta cotação
+      const cpIds = cotacaoProdutos.map((cp) => cp.id);
+      if (cpIds.length) {
+        await supabase
+          .from("precos")
+          .delete()
+          .in("cotacao_produto_id", cpIds)
+          .in("fornecedor_id", pendingIds);
+      }
+      // Remove os fornecedores pendentes da cotação
+      await supabase
+        .from("cotacao_fornecedores")
+        .delete()
+        .eq("cotacao_id", cotacaoAtiva.id)
+        .in("fornecedor_id", pendingIds);
+
+      await queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
+      await queryClient.invalidateQueries({ queryKey: ["precos"] });
+      toast.success(
+        `${pendingIds.length} fornecedor(es) removido(s) da cotação. Você já pode fechar.`
+      );
+      setSkipPendingOpen(false);
+      // Abre o modal de fechar/nova cotação
+      setNovaCotacaoOpen(true);
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao remover fornecedores pendentes");
+    } finally {
+      setSkipPendingLoading(false);
+    }
+  };
+
   // ── Empty state → redirect to Dashboard guided flow ──
   useEffect(() => {
     if (cotacaoFetched && !cotacaoAtiva) {
