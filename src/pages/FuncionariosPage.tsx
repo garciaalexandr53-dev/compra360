@@ -293,7 +293,7 @@ const FuncionariosPage = () => {
   });
 
   // Import single item
-  const importarItemMutation = useMutation({
+  const importarItemMutation = useMutation<{ nome: string; lojaId: string | null; lojaNome: string | null }, any, any>({
     mutationFn: async (item: any) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
