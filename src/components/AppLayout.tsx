@@ -84,9 +84,8 @@ export default function AppLayout() {
                 <span className="text-lg font-bold text-primary tracking-tight">Lojas</span>
               ) : isFornecedores ? (
                 <span className="text-lg font-bold text-primary tracking-tight">Fornecedores</span>
-              ) : (
-                <LojaSelector />
-              )}
+              ) : null}
+              {!isLojas && <LojaSelector />}
             </div>
             <div className="flex items-center gap-1">
               {isAdmin && (
