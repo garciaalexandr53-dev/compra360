@@ -458,6 +458,16 @@ const CotacaoPage = () => {
   const allRespondedAndCanClose =
     !!cotacaoAtiva && supplierProgress.total > 0 && supplierProgress.responded === supplierProgress.total;
 
+  const pendingFornecedores = useMemo(
+    () => fornecedores.filter((f) => !supplierHasResponded(f.id)),
+    [fornecedores, precos]
+  );
+  const someRespondedAndCanSkip =
+    !!cotacaoAtiva &&
+    supplierProgress.total > 0 &&
+    supplierProgress.responded > 0 &&
+    supplierProgress.responded < supplierProgress.total;
+
   // ── Handlers ──
   const handlePriceChange = (cpId: string, fornecedorId: string, value: string) => { setLocalPrices((prev) => ({ ...prev, [cpId]: { ...prev[cpId], [fornecedorId]: value } })); };
   const handlePriceBlur = (cpId: string, fornecedorId: string) => { const rawVal = localPrices[cpId]?.[fornecedorId]?.replace(",", ".").replace(/[^0-9.]/g, ""); savePriceMutation.mutate({ cpId, fornecedorId, preco: rawVal ? parseFloat(rawVal) : null }); };
