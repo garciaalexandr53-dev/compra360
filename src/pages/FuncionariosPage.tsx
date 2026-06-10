@@ -71,7 +71,7 @@ export const resolveEmbalagem = (
 
 const FuncionariosPage = () => {
   const queryClient = useQueryClient();
-  const { lojaAtiva, lojas } = useLojaAtiva();
+  const { lojaAtiva, lojas, setLojaAtivaId } = useLojaAtiva();
   const navigate = useNavigate();
   const [linkLojaId, setLinkLojaId] = useState<string>("");
 
