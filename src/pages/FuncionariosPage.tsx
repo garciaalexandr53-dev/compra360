@@ -71,7 +71,7 @@ export const resolveEmbalagem = (
 
 const FuncionariosPage = () => {
   const queryClient = useQueryClient();
-  const { lojaAtiva, lojas } = useLojaAtiva();
+  const { lojaAtiva, lojas, setLojaAtivaId } = useLojaAtiva();
   const navigate = useNavigate();
   const [linkLojaId, setLinkLojaId] = useState<string>("");
 
@@ -293,7 +293,7 @@ const FuncionariosPage = () => {
   });
 
   // Import single item
-  const importarItemMutation = useMutation({
+  const importarItemMutation = useMutation<{ nome: string; lojaId: string | null; lojaNome: string | null }, any, any>({
     mutationFn: async (item: any) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
@@ -385,9 +385,13 @@ const FuncionariosPage = () => {
         .eq("id", item.id);
       if (error) throw error;
 
-      return item.nome;
+      return {
+        nome: item.nome,
+        lojaId: item.loja_id || lojaAtiva?.id || null,
+        lojaNome: item.lojas?.nome || lojaAtiva?.nome || null,
+      };
     },
-    onSuccess: (nome) => {
+    onSuccess: ({ nome, lojaId, lojaNome }) => {
       queryClient.invalidateQueries({ queryKey: ["itens-faltantes"] });
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
@@ -396,7 +400,21 @@ const FuncionariosPage = () => {
       queryClient.invalidateQueries({ queryKey: ["cotacao-ativa-loja"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-precos-count"] });
       queryClient.invalidateQueries({ queryKey: ["precos"] });
-      toast.success(`✅ ${nome} importado para a cotação!`);
+      const isOutraLoja = lojaId && lojaId !== lojaAtiva?.id;
+      if (isOutraLoja && lojaNome) {
+        toast.success(`✅ ${nome} importado para a cotação de ${lojaNome}`, {
+          action: {
+            label: "Abrir cotação",
+            onClick: () => {
+              setLojaAtivaId(lojaId);
+              navigate("/dashboard");
+            },
+          },
+          duration: 6000,
+        });
+      } else {
+        toast.success(`✅ ${nome} importado para a cotação${lojaNome ? ` de ${lojaNome}` : ""}!`);
+      }
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -621,13 +639,46 @@ const FuncionariosPage = () => {
             </div>
           </div>
         )}
-        {outrasLojas.length > 0 && (
-          <div className="m-3 mb-0 p-2 rounded-lg border border-muted bg-muted/30">
-            <p className="text-[11px] text-muted-foreground">
-              📋 {outrasLojas.length} ite{outrasLojas.length === 1 ? 'm' : 'ns'} de outras lojas (troque a loja ativa para visualizar)
-            </p>
-          </div>
-        )}
+        {outrasLojas.length > 0 && (() => {
+          const grupos = Array.from(
+            outrasLojas.reduce((map: Map<string, { nome: string; count: number }>, i: any) => {
+              const id = i.loja_id;
+              const nome = i.lojas?.nome || "Outra loja";
+              const cur = map.get(id) || { nome, count: 0 };
+              cur.count += 1;
+              map.set(id, cur);
+              return map;
+            }, new Map()).entries()
+          );
+          return (
+            <div className="m-3 mb-0 p-3 rounded-lg border border-primary/30 bg-primary/5 space-y-2">
+              <p className="text-[11px] font-semibold text-foreground">
+                📋 Itens pendentes em outras lojas
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {grupos.map(([id, info]) => (
+                  <Button
+                    key={id}
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs gap-1"
+                    onClick={() => {
+                      setLojaAtivaId(id);
+                      setLinkLojaId(id);
+                      toast.success(`Loja ativa alterada para ${info.nome}`);
+                    }}
+                  >
+                    <Store className="h-3 w-3" />
+                    {info.nome} ({info.count})
+                  </Button>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Toque em uma loja para abrir a cotação dela em paralelo — as cotações são independentes por loja.
+              </p>
+            </div>
+          );
+        })()}
         <div className="h-[calc(100vh-380px)] overflow-y-auto">
           {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
