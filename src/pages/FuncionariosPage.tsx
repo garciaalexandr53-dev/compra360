@@ -621,13 +621,46 @@ const FuncionariosPage = () => {
             </div>
           </div>
         )}
-        {outrasLojas.length > 0 && (
-          <div className="m-3 mb-0 p-2 rounded-lg border border-muted bg-muted/30">
-            <p className="text-[11px] text-muted-foreground">
-              📋 {outrasLojas.length} ite{outrasLojas.length === 1 ? 'm' : 'ns'} de outras lojas (troque a loja ativa para visualizar)
-            </p>
-          </div>
-        )}
+        {outrasLojas.length > 0 && (() => {
+          const grupos = Array.from(
+            outrasLojas.reduce((map: Map<string, { nome: string; count: number }>, i: any) => {
+              const id = i.loja_id;
+              const nome = i.lojas?.nome || "Outra loja";
+              const cur = map.get(id) || { nome, count: 0 };
+              cur.count += 1;
+              map.set(id, cur);
+              return map;
+            }, new Map()).entries()
+          );
+          return (
+            <div className="m-3 mb-0 p-3 rounded-lg border border-primary/30 bg-primary/5 space-y-2">
+              <p className="text-[11px] font-semibold text-foreground">
+                📋 Itens pendentes em outras lojas
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {grupos.map(([id, info]) => (
+                  <Button
+                    key={id}
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs gap-1"
+                    onClick={() => {
+                      setLojaAtivaId(id);
+                      setLinkLojaId(id);
+                      toast.success(`Loja ativa alterada para ${info.nome}`);
+                    }}
+                  >
+                    <Store className="h-3 w-3" />
+                    {info.nome} ({info.count})
+                  </Button>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Toque em uma loja para abrir a cotação dela em paralelo — as cotações são independentes por loja.
+              </p>
+            </div>
+          );
+        })()}
         <div className="h-[calc(100vh-380px)] overflow-y-auto">
           {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
