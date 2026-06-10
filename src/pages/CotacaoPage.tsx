@@ -1021,6 +1021,39 @@ const CotacaoPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <AlertDialog open={skipPendingOpen} onOpenChange={setSkipPendingOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Seguir sem os fornecedores pendentes?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Os fornecedores abaixo serão <strong>removidos desta cotação</strong> e
+                  você poderá fechá-la imediatamente. Eles continuarão disponíveis para
+                  cotações futuras.
+                </p>
+                <ul className="max-h-48 overflow-y-auto space-y-1 rounded-lg border border-border bg-muted/30 p-2">
+                  {pendingFornecedores.map((f) => (
+                    <li key={f.id} className="text-sm text-foreground flex items-center gap-2">
+                      <span className="text-amber-600">•</span> {f.nome}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={skipPendingLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleSkipPending(); }}
+              disabled={skipPendingLoading}
+              className="bg-amber-600 text-white hover:bg-amber-700"
+            >
+              {skipPendingLoading ? "Removendo..." : "Remover e fechar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
     </TooltipProvider>
