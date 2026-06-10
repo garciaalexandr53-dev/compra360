@@ -839,6 +839,26 @@ const CotacaoPage = () => {
         </div>
       )}
 
+      {/* Banner: alguns pendentes — seguir sem eles */}
+      {someRespondedAndCanSkip && !isReviewMode && (
+        <div className="px-4 py-2 border-b bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900 flex items-center gap-2 text-xs sm:text-sm text-amber-900 dark:text-amber-200">
+          <span className="text-base">⏳</span>
+          <span className="flex-1">
+            {pendingFornecedores.length === 1
+              ? <>Falta apenas <strong>{pendingFornecedores[0].nome}</strong> responder. Não quer esperar?</>
+              : <><strong>{pendingFornecedores.length}</strong> fornecedor(es) ainda não responderam. Não quer esperar?</>}
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs h-7 border-amber-500/40 text-amber-800 dark:text-amber-200 hover:bg-amber-500/10"
+            onClick={() => setSkipPendingOpen(true)}
+          >
+            Seguir sem {pendingFornecedores.length === 1 ? "ele" : "eles"}
+          </Button>
+        </div>
+      )}
+
       {/* Supplier chips — hidden in review mode */}
       {!isReviewMode && fornecedores.length > 0 && (
         <div className="px-4 py-2 border-b bg-card/50 flex items-center gap-2 overflow-x-auto scrollbar-thin">
