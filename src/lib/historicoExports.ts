@@ -24,6 +24,7 @@ export interface ExportPedidoForn {
 export interface ExportCotacaoMeta {
   nome: string;
   created_at: string;
+  finalizada_at?: string | null;
   status: string;
   loja_nome?: string | null;
   total_pedido: number;
