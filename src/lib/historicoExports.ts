@@ -317,7 +317,7 @@ export function printCotacao(
   </header>
   <h1 style="font-size:15px;margin:0">${escapeHtml(meta.nome)}</h1>
   <div class="meta">
-    Data: ${formatDateTime(meta.created_at)} · Status: ${escapeHtml(meta.status)}
+    Criada em: ${formatDateTime(meta.created_at)}${meta.finalizada_at ? ` · Finalizada em: ${formatDateTime(meta.finalizada_at)}` : ""} · Status: ${escapeHtml(meta.status)}
     ${meta.loja_nome ? ` · Unidade: ${escapeHtml(meta.loja_nome)}` : ""}
     · Produtos: ${meta.produtos_count} · Fornecedores: ${meta.fornecedores_count}
     · <b>Total: ${formatBRL(meta.total_pedido)}</b>
