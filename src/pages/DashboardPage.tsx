@@ -424,7 +424,8 @@ const DashboardPage = () => {
     setNovaCotacaoLoading(true);
     try {
       // Finalize current
-      await supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: new Date().toISOString() }).eq("id", cotacaoAtiva.id);
+      const _nowFin = new Date();
+      await supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: _nowFin.toISOString(), nome: `Cotação ${_nowFin.toLocaleDateString("pt-BR")}` }).eq("id", cotacaoAtiva.id);
       
       // Create new
       const nome = `Cotação ${format(new Date(), "dd/MM/yyyy HH:mm")}`;
