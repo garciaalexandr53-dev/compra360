@@ -533,7 +533,7 @@ const CotacaoPage = () => {
     try {
       const suspiciousRows = buildSuspiciousReport();
       if (suspiciousRows.length > 0) { const ws = XLSX.utils.json_to_sheet(suspiciousRows); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Preços Suspeitos"); XLSX.writeFile(wb, `precos-suspeitos-${cotacaoAtiva.nome.replace(/\s+/g, "-")}.xlsx`); toast.info(`${suspiciousRows.length} preço(s) suspeito(s) exportado(s) automaticamente.`); }
-      await supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: new Date().toISOString() }).eq("id", cotacaoAtiva.id);
+      { const _now = new Date(); await supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: _now.toISOString(), nome: `Cotação ${_now.toLocaleDateString("pt-BR")}` }).eq("id", cotacaoAtiva.id); }
       const { data: newCot, error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa", loja_id: lojaAtiva?.id || null, created_by: user?.id, prazo_resposta: prazoIso } as any).select().single();
       if (error) throw error;
       if ((novaCotacaoOpt === "manter" || novaCotacaoOpt === "manter_precos") && newCot) {

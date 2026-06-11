@@ -392,7 +392,8 @@ const DashboardPage = () => {
     if (allPedidosSent && cotacaoAtiva?.id) {
       // Auto-finalize the cotação when all orders are sent
       if (cotacaoAtiva.status === "ativa") {
-        supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: new Date().toISOString() }).eq("id", cotacaoAtiva.id).then(() => {
+        const _now = new Date();
+        supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: _now.toISOString(), nome: `Cotação ${_now.toLocaleDateString("pt-BR")}` }).eq("id", cotacaoAtiva.id).then(() => {
           queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
           queryClient.invalidateQueries({ queryKey: ["last-cotacao"] });
         });
@@ -423,7 +424,8 @@ const DashboardPage = () => {
     setNovaCotacaoLoading(true);
     try {
       // Finalize current
-      await supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: new Date().toISOString() }).eq("id", cotacaoAtiva.id);
+      const _nowFin = new Date();
+      await supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: _nowFin.toISOString(), nome: `Cotação ${_nowFin.toLocaleDateString("pt-BR")}` }).eq("id", cotacaoAtiva.id);
       
       // Create new
       const nome = `Cotação ${format(new Date(), "dd/MM/yyyy HH:mm")}`;
