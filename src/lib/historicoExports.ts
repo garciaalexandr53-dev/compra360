@@ -162,7 +162,8 @@ export async function exportCotacaoToPdf(
   doc.setFont("helvetica", "normal");
   doc.setTextColor(90);
   const lineA = [
-    `Data: ${formatDateTime(meta.created_at)}`,
+    `Criada em: ${formatDateTime(meta.created_at)}`,
+    meta.finalizada_at ? `Finalizada em: ${formatDateTime(meta.finalizada_at)}` : null,
     `Status: ${meta.status}`,
     meta.loja_nome ? `Unidade: ${meta.loja_nome}` : null,
   ].filter(Boolean).join("  ·  ");
