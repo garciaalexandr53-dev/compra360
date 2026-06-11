@@ -1147,7 +1147,8 @@ const AnalisePage = () => {
 
       <SendOrdersModal open={sendQueueOpen} onOpenChange={setSendQueueOpen} orders={fornecedoresComPedido.map(o => ({ fornecedor: o.fornecedor, items: o.items, total: o.total }))} onSendOrder={(f) => sendWhatsApp(f)} onConclude={async () => {
         if (cotacaoAtiva?.id) {
-          await supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: new Date().toISOString() }).eq("id", cotacaoAtiva.id);
+          const _now = new Date();
+          await supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: _now.toISOString(), nome: `Cotação ${_now.toLocaleDateString("pt-BR")}` }).eq("id", cotacaoAtiva.id);
           queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
         }
         navigate("/dashboard");
