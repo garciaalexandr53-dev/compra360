@@ -1507,7 +1507,7 @@ const HistoricoPage = () => {
                                 className="h-8 gap-1.5 text-xs"
                                 onClick={() => {
                                   const meta = {
-                                    nome: c.nome, created_at: c.created_at, status: c.status,
+                                    nome: c.nome, created_at: c.created_at, finalizada_at: c.finalizada_at, status: c.status,
                                     loja_nome: c.loja_nome, total_pedido: c.total_pedido,
                                     produtos_count: c.produtos_count, fornecedores_count: c.fornecedores_count,
                                   };
@@ -1522,7 +1522,7 @@ const HistoricoPage = () => {
                                 className="h-8 gap-1.5 text-xs"
                                 onClick={async () => {
                                   const meta = {
-                                    nome: c.nome, created_at: c.created_at, status: c.status,
+                                    nome: c.nome, created_at: c.created_at, finalizada_at: c.finalizada_at, status: c.status,
                                     loja_nome: c.loja_nome, total_pedido: c.total_pedido,
                                     produtos_count: c.produtos_count, fornecedores_count: c.fornecedores_count,
                                   };
@@ -1541,7 +1541,7 @@ const HistoricoPage = () => {
                                 className="h-8 gap-1.5 text-xs"
                                 onClick={() => {
                                   const meta = {
-                                    nome: c.nome, created_at: c.created_at, status: c.status,
+                                    nome: c.nome, created_at: c.created_at, finalizada_at: c.finalizada_at, status: c.status,
                                     loja_nome: c.loja_nome, total_pedido: c.total_pedido,
                                     produtos_count: c.produtos_count, fornecedores_count: c.fornecedores_count,
                                   };
