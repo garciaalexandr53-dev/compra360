@@ -15,7 +15,7 @@ const WhatsAppRequiredModal = () => {
   const [whatsapp, setWhatsapp] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading, isFetched } = useQuery({
     queryKey: ["profile", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
@@ -29,7 +29,9 @@ const WhatsAppRequiredModal = () => {
     },
   });
 
-  const needsWhats = !!user && !isLoading && !profile?.whatsapp;
+  // Só abre o modal depois que a query terminou de carregar — evita o flash
+  // pedindo WhatsApp enquanto o perfil ainda está sendo buscado.
+  const needsWhats = !!user && !isLoading && isFetched && !profile?.whatsapp;
 
   useEffect(() => {
     if (profile?.whatsapp) setWhatsapp(profile.whatsapp);
