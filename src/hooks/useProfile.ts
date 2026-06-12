@@ -2,7 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-export function deriveProfileState(data: { nome?: string | null; whatsapp?: string | null } | null | undefined, isLoading = false) {
+export function deriveProfileState(
+  data: { nome?: string | null; whatsapp?: string | null } | null | undefined,
+  isLoading = false,
+  hasLoaded = false,
+) {
   const nome = data?.nome?.trim() || null;
   const primeiroNome = nome ? nome.split(" ")[0] || null : null;
 
@@ -10,13 +14,15 @@ export function deriveProfileState(data: { nome?: string | null; whatsapp?: stri
     nome,
     primeiroNome,
     whatsapp: data?.whatsapp ?? null,
-    precisaNome: !isLoading && !nome,
+    // Só considera que falta nome depois que a query realmente terminou
+    // (evita flash do modal enquanto o perfil ainda está carregando).
+    precisaNome: !isLoading && hasLoaded && !nome,
   };
 }
 
 export function useProfile() {
   const { user } = useAuth();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetched } = useQuery({
     queryKey: ["profile-nome", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
@@ -30,7 +36,7 @@ export function useProfile() {
   });
 
   return {
-    ...deriveProfileState(data, isLoading),
+    ...deriveProfileState(data, isLoading, isFetched && !!user?.id),
     isLoading,
   };
 }
