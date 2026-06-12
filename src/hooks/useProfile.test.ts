@@ -36,18 +36,22 @@ describe("useProfile - primeiroNome", () => {
 
 describe("deriveProfileState", () => {
   it("não solicita nome enquanto o profile ainda está carregando", () => {
-    expect(deriveProfileState(undefined, true).precisaNome).toBe(false);
+    expect(deriveProfileState(undefined, true, false).precisaNome).toBe(false);
+  });
+
+  it("não solicita nome antes da query terminar (evita flash do modal)", () => {
+    expect(deriveProfileState(undefined, false, false).precisaNome).toBe(false);
   });
 
   it("não solicita nome quando o profile já possui nome salvo", () => {
-    const state = deriveProfileState({ nome: "  João Silva  ", whatsapp: null }, false);
+    const state = deriveProfileState({ nome: "  João Silva  ", whatsapp: null }, false, true);
     expect(state.nome).toBe("João Silva");
     expect(state.primeiroNome).toBe("João");
     expect(state.precisaNome).toBe(false);
   });
 
   it("solicita nome apenas após carregar e confirmar que está vazio", () => {
-    expect(deriveProfileState({ nome: "   ", whatsapp: null }, false).precisaNome).toBe(true);
-    expect(deriveProfileState(null, false).precisaNome).toBe(true);
+    expect(deriveProfileState({ nome: "   ", whatsapp: null }, false, true).precisaNome).toBe(true);
+    expect(deriveProfileState(null, false, true).precisaNome).toBe(true);
   });
 });
