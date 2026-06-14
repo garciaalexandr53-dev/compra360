@@ -211,22 +211,31 @@ export type Database = {
         Row: {
           cotacao_id: string
           created_at: string
+          enviado_em: string | null
           fornecedor_id: string
           id: string
+          status_envio: Database["public"]["Enums"]["envio_status"]
+          ultima_atualizacao_status: string | null
           visualizado_em: string | null
         }
         Insert: {
           cotacao_id: string
           created_at?: string
+          enviado_em?: string | null
           fornecedor_id: string
           id?: string
+          status_envio?: Database["public"]["Enums"]["envio_status"]
+          ultima_atualizacao_status?: string | null
           visualizado_em?: string | null
         }
         Update: {
           cotacao_id?: string
           created_at?: string
+          enviado_em?: string | null
           fornecedor_id?: string
           id?: string
+          status_envio?: Database["public"]["Enums"]["envio_status"]
+          ultima_atualizacao_status?: string | null
           visualizado_em?: string | null
         }
         Relationships: [
@@ -496,6 +505,57 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      historico_envios: {
+        Row: {
+          acao: Database["public"]["Enums"]["envio_acao"]
+          cotacao_id: string
+          created_at: string
+          executado_por: string | null
+          fornecedor_id: string
+          id: string
+          metadata: Json | null
+          origem: Database["public"]["Enums"]["envio_origem"]
+          status: Database["public"]["Enums"]["envio_status"]
+        }
+        Insert: {
+          acao: Database["public"]["Enums"]["envio_acao"]
+          cotacao_id: string
+          created_at?: string
+          executado_por?: string | null
+          fornecedor_id: string
+          id?: string
+          metadata?: Json | null
+          origem?: Database["public"]["Enums"]["envio_origem"]
+          status: Database["public"]["Enums"]["envio_status"]
+        }
+        Update: {
+          acao?: Database["public"]["Enums"]["envio_acao"]
+          cotacao_id?: string
+          created_at?: string
+          executado_por?: string | null
+          fornecedor_id?: string
+          id?: string
+          metadata?: Json | null
+          origem?: Database["public"]["Enums"]["envio_origem"]
+          status?: Database["public"]["Enums"]["envio_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_envios_cotacao_id_fkey"
+            columns: ["cotacao_id"]
+            isOneToOne: false
+            referencedRelation: "cotacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historico_envios_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       itens_faltantes: {
         Row: {
@@ -1135,10 +1195,24 @@ export type Database = {
           read_ct: number
         }[]
       }
+      registrar_envio_fornecedor: {
+        Args: {
+          _acao: Database["public"]["Enums"]["envio_acao"]
+          _cotacao_id: string
+          _fornecedor_id: string
+          _metadata?: Json
+          _origem?: Database["public"]["Enums"]["envio_origem"]
+          _status: Database["public"]["Enums"]["envio_status"]
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "user"
       cotacao_status: "ativa" | "finalizada" | "cancelada"
+      envio_acao: "envio_inicial" | "reenvio" | "atualizacao_status"
+      envio_origem: "manual" | "automatica"
+      envio_status: "pendente" | "enviado" | "entregue" | "falhou"
       pedido_status: "rascunho" | "enviado" | "confirmado" | "recebido"
       subscription_status: "active" | "past_due" | "canceled" | "trialing"
     }
@@ -1270,6 +1344,9 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "user"],
       cotacao_status: ["ativa", "finalizada", "cancelada"],
+      envio_acao: ["envio_inicial", "reenvio", "atualizacao_status"],
+      envio_origem: ["manual", "automatica"],
+      envio_status: ["pendente", "enviado", "entregue", "falhou"],
       pedido_status: ["rascunho", "enviado", "confirmado", "recebido"],
       subscription_status: ["active", "past_due", "canceled", "trialing"],
     },
