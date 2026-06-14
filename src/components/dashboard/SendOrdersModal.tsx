@@ -227,7 +227,7 @@ const SendOrdersModal = ({
                         <Button
                           size="sm"
                           className="bg-green-600 hover:bg-green-700 text-white"
-                          onClick={() => handleSend(o, false)}
+                          onClick={() => handleSend(o)}
                         >
                           <Smartphone className="h-3.5 w-3.5 mr-1" /> Enviar
                         </Button>
@@ -238,7 +238,7 @@ const SendOrdersModal = ({
                           variant="outline"
                           onClick={() => {
                             if (isSkipped) unskip(o.fornecedor.id);
-                            handleSend(o, true);
+                            handleSend(o);
                           }}
                         >
                           <RefreshCw className="h-3.5 w-3.5 mr-1" />
