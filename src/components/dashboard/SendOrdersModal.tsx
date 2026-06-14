@@ -45,7 +45,8 @@ interface Props {
   onConclude?: () => void;
 }
 
-const SKIP_KEY = "send-orders-skipped";
+const skipKey = (cotacaoId: string | null) =>
+  cotacaoId ? `send-orders-skipped-${cotacaoId}` : null;
 
 /**
  * Sequential WhatsApp queue with persistent per-supplier status.
