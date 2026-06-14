@@ -79,7 +79,9 @@ const SendOrdersModal = ({
 
   const [skipped, setSkipped] = useState<Record<string, true>>(() => {
     try {
-      const raw = localStorage.getItem(SKIP_KEY);
+      const k = skipKey(cotacaoId);
+      if (!k) return {};
+      const raw = localStorage.getItem(k);
       return raw ? JSON.parse(raw) : {};
     } catch {
       return {};
@@ -87,9 +89,11 @@ const SendOrdersModal = ({
   });
   useEffect(() => {
     try {
-      localStorage.setItem(SKIP_KEY, JSON.stringify(skipped));
+      const k = skipKey(cotacaoId);
+      if (!k) return;
+      localStorage.setItem(k, JSON.stringify(skipped));
     } catch {}
-  }, [skipped]);
+  }, [skipped, cotacaoId]);
 
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyFornecedor, setHistoryFornecedor] = useState<Fornecedor | null>(null);
