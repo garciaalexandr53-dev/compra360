@@ -45,7 +45,8 @@ interface Props {
   onConclude?: () => void;
 }
 
-const SKIP_KEY = "send-orders-skipped";
+const skipKey = (cotacaoId: string | null) =>
+  cotacaoId ? `send-orders-skipped-${cotacaoId}` : null;
 
 /**
  * Sequential WhatsApp queue with persistent per-supplier status.
@@ -78,7 +79,9 @@ const SendOrdersModal = ({
 
   const [skipped, setSkipped] = useState<Record<string, true>>(() => {
     try {
-      const raw = localStorage.getItem(SKIP_KEY);
+      const k = skipKey(cotacaoId);
+      if (!k) return {};
+      const raw = localStorage.getItem(k);
       return raw ? JSON.parse(raw) : {};
     } catch {
       return {};
@@ -86,9 +89,11 @@ const SendOrdersModal = ({
   });
   useEffect(() => {
     try {
-      localStorage.setItem(SKIP_KEY, JSON.stringify(skipped));
+      const k = skipKey(cotacaoId);
+      if (!k) return;
+      localStorage.setItem(k, JSON.stringify(skipped));
     } catch {}
-  }, [skipped]);
+  }, [skipped, cotacaoId]);
 
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyFornecedor, setHistoryFornecedor] = useState<Fornecedor | null>(null);
@@ -105,12 +110,10 @@ const SendOrdersModal = ({
   const nextPending = pendingOrders[0];
   const allHandled = total > 0 && pendingOrders.length === 0;
 
-  const handleSend = async (o: SupplierOrder, isReenvio: boolean) => {
+  const handleSend = async (o: SupplierOrder) => {
     onSendOrder(o.fornecedor); // open WhatsApp first (don't block UX)
     if (!cotacaoId) return;
-    const acao = isReenvio
-      ? acaoParaEnvio(statusMap[o.fornecedor.id])
-      : acaoParaEnvio(statusMap[o.fornecedor.id]);
+    const acao = acaoParaEnvio(statusMap[o.fornecedor.id]);
     try {
       await registrarEnvio({
         cotacaoId,
@@ -136,12 +139,14 @@ const SendOrdersModal = ({
 
   const handleConclude = () => {
     try {
-      localStorage.removeItem(SKIP_KEY);
+      const k = skipKey(cotacaoId);
+      if (k) localStorage.removeItem(k);
     } catch {}
     setSkipped({});
     onOpenChange(false);
     onConclude?.();
   };
+
 
   const openHistory = (f: Fornecedor) => {
     setHistoryFornecedor(f);
@@ -222,7 +227,7 @@ const SendOrdersModal = ({
                         <Button
                           size="sm"
                           className="bg-green-600 hover:bg-green-700 text-white"
-                          onClick={() => handleSend(o, false)}
+                          onClick={() => handleSend(o)}
                         >
                           <Smartphone className="h-3.5 w-3.5 mr-1" /> Enviar
                         </Button>
@@ -233,7 +238,7 @@ const SendOrdersModal = ({
                           variant="outline"
                           onClick={() => {
                             if (isSkipped) unskip(o.fornecedor.id);
-                            handleSend(o, true);
+                            handleSend(o);
                           }}
                         >
                           <RefreshCw className="h-3.5 w-3.5 mr-1" />
