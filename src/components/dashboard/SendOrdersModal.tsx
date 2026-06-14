@@ -110,12 +110,10 @@ const SendOrdersModal = ({
   const nextPending = pendingOrders[0];
   const allHandled = total > 0 && pendingOrders.length === 0;
 
-  const handleSend = async (o: SupplierOrder, isReenvio: boolean) => {
+  const handleSend = async (o: SupplierOrder) => {
     onSendOrder(o.fornecedor); // open WhatsApp first (don't block UX)
     if (!cotacaoId) return;
-    const acao = isReenvio
-      ? acaoParaEnvio(statusMap[o.fornecedor.id])
-      : acaoParaEnvio(statusMap[o.fornecedor.id]);
+    const acao = acaoParaEnvio(statusMap[o.fornecedor.id]);
     try {
       await registrarEnvio({
         cotacaoId,
@@ -141,12 +139,14 @@ const SendOrdersModal = ({
 
   const handleConclude = () => {
     try {
-      localStorage.removeItem(SKIP_KEY);
+      const k = skipKey(cotacaoId);
+      if (k) localStorage.removeItem(k);
     } catch {}
     setSkipped({});
     onOpenChange(false);
     onConclude?.();
   };
+
 
   const openHistory = (f: Fornecedor) => {
     setHistoryFornecedor(f);
