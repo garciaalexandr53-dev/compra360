@@ -139,6 +139,7 @@ export default function PerfilPage() {
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["perfil-profile"] }),
+        queryClient.invalidateQueries({ queryKey: ["profile-nome"] }),
         queryClient.invalidateQueries({ queryKey: ["perfil-loja"] }),
         queryClient.invalidateQueries({ queryKey: ["lojas"] }),
       ]);
