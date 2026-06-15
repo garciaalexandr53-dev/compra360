@@ -135,7 +135,7 @@ const CotacaoPage = () => {
   const { data: cotacaoFornecedores = [] } = useQuery({
     queryKey: ["cotacao-fornecedores", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
-    queryFn: async () => { const { data, error } = await supabase.from("cotacao_fornecedores").select("fornecedor_id, visualizado_em").eq("cotacao_id", cotacaoAtiva!.id); if (error) throw error; return data || []; },
+    queryFn: async () => { const { data, error } = await supabase.from("cotacao_fornecedores").select("fornecedor_id, visualizado_em, status_envio").eq("cotacao_id", cotacaoAtiva!.id); if (error) throw error; return data || []; },
   });
 
   const visualizadoMap = useMemo(() => {
@@ -495,12 +495,47 @@ const CotacaoPage = () => {
 
   const saveSupplierSelection = async () => {
     if (!cotacaoAtiva?.id) return;
-    const selectedIds = Object.entries(selectedSuppliers).filter(([, v]) => v).map(([id]) => id);
-    await supabase.from("cotacao_fornecedores").delete().eq("cotacao_id", cotacaoAtiva.id);
-    if (selectedIds.length) await supabase.from("cotacao_fornecedores").insert(selectedIds.map((fid) => ({ cotacao_id: cotacaoAtiva.id, fornecedor_id: fid })));
+    const selectedIds = new Set(
+      Object.entries(selectedSuppliers).filter(([, v]) => v).map(([id]) => id),
+    );
+    const existing = cotacaoFornecedores as Array<{ fornecedor_id: string; status_envio?: string | null }>;
+    const existingIds = new Set(existing.map((cf) => cf.fornecedor_id));
+
+    // Fornecedores que perderam a seleção
+    const removidos = existing.filter((cf) => !selectedIds.has(cf.fornecedor_id));
+    // Só remove quem ainda está pendente — preserva histórico/status de quem já recebeu pedido
+    const removiveis = removidos.filter((cf) => !cf.status_envio || cf.status_envio === "pendente");
+    const protegidos = removidos.filter((cf) => cf.status_envio && cf.status_envio !== "pendente");
+
+    if (removiveis.length) {
+      await supabase
+        .from("cotacao_fornecedores")
+        .delete()
+        .eq("cotacao_id", cotacaoAtiva.id)
+        .in("fornecedor_id", removiveis.map((r) => r.fornecedor_id));
+    }
+
+    // Inserir apenas os novos — upsert com ignoreDuplicates preserva status_envio/enviado_em de quem já existe
+    const novos = Array.from(selectedIds).filter((id) => !existingIds.has(id));
+    if (novos.length) {
+      await supabase
+        .from("cotacao_fornecedores")
+        .upsert(
+          novos.map((fid) => ({ cotacao_id: cotacaoAtiva.id, fornecedor_id: fid })),
+          { onConflict: "cotacao_id,fornecedor_id", ignoreDuplicates: true },
+        );
+    }
+
     queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
     setSupplierModalOpen(false);
-    toast.success("Seleção de fornecedores salva!");
+
+    if (protegidos.length) {
+      toast.warning(
+        `${protegidos.length} fornecedor(es) já contatado(s) foram mantidos para preservar o histórico de envio.`,
+      );
+    } else {
+      toast.success("Seleção de fornecedores salva!");
+    }
   };
 
   const buildSuspiciousReport = () => {
