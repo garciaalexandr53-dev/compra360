@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { deriveProfileState } from "./useProfile";
+import { deriveMetadataNome, deriveProfileState } from "./useProfile";
 
 // Pure helper mirroring useProfile's primeiroNome derivation,
 // kept inline to avoid mocking supabase/react-query in this unit test.
@@ -53,5 +53,24 @@ describe("deriveProfileState", () => {
   it("solicita nome apenas após carregar e confirmar que está vazio", () => {
     expect(deriveProfileState({ nome: "   ", whatsapp: null }, false, true).precisaNome).toBe(true);
     expect(deriveProfileState(null, false, true).precisaNome).toBe(true);
+  });
+
+  it("usa o nome do login como fallback para não pedir novamente", () => {
+    const state = deriveProfileState({ nome: "   ", whatsapp: null }, false, true, "Maria Login");
+    expect(state.nome).toBe("Maria Login");
+    expect(state.primeiroNome).toBe("Maria");
+    expect(state.precisaNome).toBe(false);
+  });
+});
+
+describe("deriveMetadataNome", () => {
+  it("lê nomes vindos dos metadados do provedor de login", () => {
+    expect(deriveMetadataNome({ full_name: " Ana Souza " })).toBe("Ana Souza");
+    expect(deriveMetadataNome({ name: "Carlos Lima" })).toBe("Carlos Lima");
+    expect(deriveMetadataNome({ display_name: "Mercado Admin" })).toBe("Mercado Admin");
+  });
+
+  it("prioriza o nome informado no app", () => {
+    expect(deriveMetadataNome({ nome: "João App", full_name: "João Google" })).toBe("João App");
   });
 });

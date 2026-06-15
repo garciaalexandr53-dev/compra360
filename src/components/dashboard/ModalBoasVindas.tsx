@@ -60,6 +60,7 @@ export default function ModalBoasVindas() {
       const primeiro = trimmed.split(" ")[0];
       await queryClient.invalidateQueries({ queryKey: ["profile-nome"] });
       await queryClient.refetchQueries({ queryKey: ["profile-nome"] });
+      await queryClient.invalidateQueries({ queryKey: ["perfil-profile"] });
       toast.success(`Olá, ${primeiro}! 👋`);
       setOpen(false);
     } catch (e: any) {

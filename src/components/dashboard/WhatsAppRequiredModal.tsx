@@ -53,7 +53,11 @@ const WhatsAppRequiredModal = () => {
       return;
     }
     toast.success("WhatsApp salvo!");
-    queryClient.invalidateQueries({ queryKey: ["profile", user!.id] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["profile", user!.id] }),
+      queryClient.invalidateQueries({ queryKey: ["profile-nome"] }),
+      queryClient.invalidateQueries({ queryKey: ["perfil-profile"] }),
+    ]);
   };
 
   return (
