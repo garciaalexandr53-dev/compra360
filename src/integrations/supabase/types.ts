@@ -257,26 +257,35 @@ export type Database = {
       }
       cotacao_produtos: {
         Row: {
+          catalogo_mestre_id: string | null
           cotacao_id: string
+          ean: string | null
           fator_embalagem: number
           id: string
-          produto_id: string
+          nome: string | null
+          produto_id: string | null
           quantidade: number | null
           tipo_embalagem: string | null
         }
         Insert: {
+          catalogo_mestre_id?: string | null
           cotacao_id: string
+          ean?: string | null
           fator_embalagem?: number
           id?: string
-          produto_id: string
+          nome?: string | null
+          produto_id?: string | null
           quantidade?: number | null
           tipo_embalagem?: string | null
         }
         Update: {
+          catalogo_mestre_id?: string | null
           cotacao_id?: string
+          ean?: string | null
           fator_embalagem?: number
           id?: string
-          produto_id?: string
+          nome?: string | null
+          produto_id?: string | null
           quantidade?: number | null
           tipo_embalagem?: string | null
         }
