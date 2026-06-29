@@ -20,6 +20,8 @@ interface ItemEntry {
   quantidade: number;
   embalagem: string;
   fator: number;
+  ean?: string | null;
+  fonte?: "catalogo" | "local";
 }
 
 interface ProdutoPublico {
@@ -29,6 +31,11 @@ interface ProdutoPublico {
   categorias: {
     nome: string;
   } | null;
+  /** Origem da linha — "catalogo" quando vem de catalogo_mestre. */
+  fonte?: "catalogo" | "local";
+  ean?: string | null;
+  /** Quando true, embalagem/fator não podem ser editados. */
+  locked?: boolean;
 }
 
 type AppTab = "lista" | "conferencia" | "enviados";
@@ -36,7 +43,8 @@ type AppTab = "lista" | "conferencia" | "enviados";
 const PRODUCT_PAGE_SIZE = 80;
 const SEARCH_DEBOUNCE_MS = 250;
 
-const getProductKey = (product: ProdutoPublico) => `${product.nome}::${product.embalagem || "un"}`;
+const getProductKey = (product: ProdutoPublico) =>
+  `${product.fonte ?? "local"}::${product.nome}::${product.embalagem || "un"}`;
 
 const AppFuncionariosPublic = () => {
   const [activeTab, setActiveTab] = useState<AppTab>("lista");
@@ -213,10 +221,51 @@ const AppFuncionariosPublic = () => {
     getNextPageParam: (lastPage) => lastPage.nextPage,
   });
 
-  const filteredProducts = useMemo(
-    () => produtosData?.pages.flatMap((page) => page.products) ?? [],
-    [produtosData]
-  );
+  // Busca paralela no catalogo_mestre via RPC pública (SECURITY DEFINER que
+  // valida _loja_id). Dedup com preferência do catálogo é aplicado abaixo.
+  const { data: catalogoMatches = [] } = useQuery({
+    queryKey: ["catalogo-search-funcionario", selectedLojaId, debouncedProductSearch],
+    enabled: !!selectedLojaId && debouncedProductSearch.length >= 2,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("search_produtos_funcionario", {
+        _loja_id: selectedLojaId,
+        _termo: debouncedProductSearch,
+        _limit: 30,
+      });
+      if (error) throw error;
+      return ((data || []) as any[])
+        .filter((r) => r.fonte === "catalogo")
+        .map<ProdutoPublico>((r) => ({
+          nome: r.nome,
+          embalagem: r.embalagem ?? null,
+          fator_embalagem: r.fator_embalagem ?? 1,
+          categorias: null,
+          fonte: "catalogo",
+          ean: r.ean ?? null,
+          locked: true,
+        }));
+    },
+  });
+
+  const filteredProducts = useMemo(() => {
+    const locais = produtosData?.pages.flatMap((page) => page.products) ?? [];
+    const seen = new Set<string>();
+    const out: ProdutoPublico[] = [];
+    // Catálogo primeiro
+    for (const p of catalogoMatches) {
+      const k = p.nome.trim().toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(p);
+    }
+    for (const p of locais) {
+      const k = p.nome.trim().toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push({ ...p, fonte: "local", locked: false });
+    }
+    return out;
+  }, [produtosData, catalogoMatches]);
 
   // Query for sent items history (last 90 days)
   const ninetyDaysAgo = useMemo(() => subDays(new Date(), 90).toISOString(), []);
@@ -341,6 +390,8 @@ const AppFuncionariosPublic = () => {
       quantidade: qty,
       embalagem: embLabel,
       fator,
+      ean: dialogProduct.ean ?? null,
+      fonte: dialogProduct.fonte ?? "local",
     }]);
 
     setProductSearch("");
@@ -403,6 +454,8 @@ const AppFuncionariosPublic = () => {
           `Embalagem: ${item.embalagem}`,
           `Fator: ${fator}`,
         ];
+        if (item.fonte === "catalogo") obsParts.push("Fonte: catalogo");
+        if (item.ean) obsParts.push(`EAN: ${item.ean}`);
         if (lojaLabel) obsParts.push(lojaLabel.trim());
         return {
           nome: item.nome,
@@ -783,9 +836,14 @@ const AppFuncionariosPublic = () => {
                     >
                       {/* Product info */}
                       <div className="flex-1 min-w-0" onClick={() => openProductDialog(product)}>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           {isAdded && <Check className="h-3.5 w-3.5 text-green-600 shrink-0" />}
                           <span className="text-sm font-medium leading-snug">{product.nome}</span>
+                          {product.fonte === "catalogo" && (
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                              Catálogo
+                            </span>
+                          )}
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
                           {(product.embalagem || "un").toUpperCase()}
@@ -918,13 +976,22 @@ const AppFuncionariosPublic = () => {
               }
             : null
         }
+        locked={dialogProduct?.locked ?? false}
+        badge={dialogProduct?.fonte === "catalogo" ? "Catálogo" : undefined}
         onCancelar={() => setDialogProduct(null)}
         onConfirmar={(qty, emb, fator) => {
           if (!dialogProduct) return;
           const productKey = getProductKey(dialogProduct);
           setItems((prev) => [
             ...prev,
-            { nome: dialogProduct.nome, quantidade: qty, embalagem: emb.toLowerCase(), fator },
+            {
+              nome: dialogProduct.nome,
+              quantidade: qty,
+              embalagem: emb.toLowerCase(),
+              fator,
+              ean: dialogProduct.ean ?? null,
+              fonte: dialogProduct.fonte ?? "local",
+            },
           ]);
           setProductSearch("");
           setTimeout(() => searchInputRef.current?.focus(), 100);
@@ -944,6 +1011,7 @@ const AppFuncionariosPublic = () => {
           setDialogProduct(null);
         }}
       />
+
     </div>
   );
 };

@@ -25,6 +25,14 @@ interface AdicionarItemDialogProps {
   onCancelar: () => void;
   /** Quantidade inicial — padrão 1 */
   quantidadeInicial?: number;
+  /**
+   * Quando true, embalagem e fator viram somente leitura.
+   * Usado para produtos vindos do `catalogo_mestre` (Pilar 3:
+   * nem cliente nem funcionário editam embalagem/fator do catálogo).
+   */
+  locked?: boolean;
+  /** Badge opcional ao lado do título (ex.: "Catálogo"). */
+  badge?: string | null;
 }
 
 /**
@@ -37,6 +45,8 @@ export const AdicionarItemDialog = ({
   onConfirmar,
   onCancelar,
   quantidadeInicial = 1,
+  locked = false,
+  badge = null,
 }: AdicionarItemDialogProps) => {
   const open = !!produto;
   const [embalagem, setEmbalagem] = useState<string>("UNI");
@@ -81,11 +91,21 @@ export const AdicionarItemDialog = ({
         className="w-[calc(100vw-32px)] max-w-md rounded-2xl p-4 sm:p-6 gap-4"
       >
         <DialogHeader>
-          <DialogTitle className="text-base font-semibold leading-snug pr-6">
-            {produto?.nome}
+          <DialogTitle className="text-base font-semibold leading-snug pr-6 flex items-center gap-2 flex-wrap">
+            <span>{produto?.nome}</span>
+            {badge && (
+              <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                {badge}
+              </span>
+            )}
           </DialogTitle>
           {produto?.subtitulo && (
             <p className="text-xs text-muted-foreground">{produto.subtitulo}</p>
+          )}
+          {locked && (
+            <p className="text-[11px] text-muted-foreground">
+              Embalagem e fator definidos pelo catálogo (somente leitura).
+            </p>
           )}
         </DialogHeader>
 
@@ -97,12 +117,13 @@ export const AdicionarItemDialog = ({
               <button
                 key={emb}
                 type="button"
-                onClick={() => handleEmbalagemChange(emb)}
+                disabled={locked}
+                onClick={() => { if (!locked) handleEmbalagemChange(emb); }}
                 className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
                   embalagem === emb
                     ? "bg-primary text-primary-foreground border-primary"
                     : "border-border text-muted-foreground hover:border-primary/50"
-                }`}
+                } ${locked ? "opacity-60 cursor-not-allowed" : ""}`}
               >
                 {emb}
               </button>
@@ -118,23 +139,27 @@ export const AdicionarItemDialog = ({
             inputMode="numeric"
             min={1}
             value={fator}
-            onFocus={(e) => e.target.select()}
-            onChange={(e) => setFator(e.target.value.replace(/\D/g, ""))}
+            readOnly={locked}
+            disabled={locked}
+            onFocus={(e) => { if (!locked) e.target.select(); }}
+            onChange={(e) => { if (!locked) setFator(e.target.value.replace(/\D/g, "")); }}
             onBlur={() => {
+              if (locked) return;
               const val = fator.trim();
               if (!val || val === "0") {
                 setFator(String(fatorPadraoDe(embalagem)));
               }
             }}
-            className="h-10 text-center text-base"
+            className={`h-10 text-center text-base ${locked ? "opacity-60 cursor-not-allowed" : ""}`}
             aria-invalid={fatorInvalido}
           />
-          {fatorInvalido && (
+          {fatorInvalido && !locked && (
             <p role="alert" className="text-xs text-destructive">
               Informe um fator válido (maior que zero)
             </p>
           )}
         </div>
+
 
         {/* 4. Quantidade */}
         <div className="space-y-2">

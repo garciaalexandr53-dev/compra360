@@ -1,5 +1,9 @@
 import React, { useState, useRef, useMemo, useCallback } from "react";
 import { FATOR_PADRAO } from "@/lib/embalagemFatores";
+import {
+  buildSnapshotInsert,
+  type ProdutoHibrido,
+} from "@/lib/buscaProdutos";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,10 +26,14 @@ interface LocalItem {
   embalagem: string;
   fator: number;
   produtoId?: string;
+  catalogoMestreId?: string;
+  ean?: string | null;
+  locked?: boolean;
 }
 
 let localIdCounter = 0;
 const genId = () => `local-${++localIdCounter}`;
+
 
 const AddProdutosCotacaoPage = () => {
   const navigate = useNavigate();
@@ -40,7 +48,13 @@ const AddProdutosCotacaoPage = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Dialog states
-  const [dialogItem, setDialogItem] = useState<{ nome: string; produtoId?: string } | null>(null);
+  const [dialogItem, setDialogItem] = useState<{
+    nome: string;
+    produtoId?: string;
+    catalogoMestreId?: string;
+    ean?: string | null;
+    locked?: boolean;
+  } | null>(null);
   const [dialogQtd, setDialogQtd] = useState("");
   const [dialogEmb, setDialogEmb] = useState("UNI");
   const [dialogFator, setDialogFator] = useState("1");
@@ -90,18 +104,25 @@ const AddProdutosCotacaoPage = () => {
   );
   const totalProdutos = allProdutosData?.pages[0]?.totalCount ?? 0;
 
-  const { data: existingProdutos = [] } = useQuery({
-    queryKey: ["produtos-search", debouncedSearch],
+  // Busca híbrida: catalogo_mestre global + produtos locais do usuário.
+  // Dedup com preferência do catálogo é feito no banco (RPC).
+  const { data: existingProdutos = [] } = useQuery<ProdutoHibrido[]>({
+    queryKey: ["produtos-hibrido-search", debouncedSearch],
     queryFn: async () => {
       if (debouncedSearch.length < 2) return [];
-      const { data } = await supabase
-        .from("produtos")
-        .select("id, nome, embalagem, fator_embalagem")
-        .eq("ativo", true)
-        .ilike("nome", `%${debouncedSearch}%`)
-        .order("nome")
-        .limit(50);
-      return data || [];
+      const { data, error } = await supabase.rpc("search_produtos_hibrido", {
+        _termo: debouncedSearch,
+        _limit: 50,
+      });
+      if (error) throw error;
+      return ((data || []) as any[]).map((r) => ({
+        fonte: r.fonte as "catalogo" | "local",
+        id: r.id,
+        nome: r.nome,
+        ean: r.ean ?? null,
+        embalagem: r.embalagem ?? null,
+        fator_embalagem: r.fator_embalagem ?? null,
+      }));
     },
     enabled: debouncedSearch.length >= 2,
   });
@@ -123,7 +144,7 @@ const AddProdutosCotacaoPage = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("cotacao_produtos")
-        .select("produto_id, quantidade")
+        .select("produto_id, catalogo_mestre_id, quantidade")
         .eq("cotacao_id", cotacaoAtiva!.id);
       return data || [];
     },
@@ -135,7 +156,8 @@ const AddProdutosCotacaoPage = () => {
   const hasAnyProduct = totalItems > 0;
 
   // Dialog handlers
-  const handlePickSuggestion = (produto: { id: string; nome: string; embalagem?: string | null; fator_embalagem?: number | null }) => {
+  const handlePickSuggestion = (produto: ProdutoHibrido | { id: string; nome: string; embalagem?: string | null; fator_embalagem?: number | null; fonte?: "catalogo" | "local"; ean?: string | null }) => {
+    const fonte: "catalogo" | "local" = (produto as ProdutoHibrido).fonte ?? "local";
     const embRaw = (produto.embalagem || "UNI").split("|")[0]?.trim().toUpperCase() || "UNI";
     const tipos = ["UNI", "CX", "DZ", "½DZ", "DP", "FD", "KG", "PCT"];
     const matched = tipos.find((t) => embRaw.startsWith(t)) || "UNI";
@@ -143,7 +165,13 @@ const AddProdutosCotacaoPage = () => {
       produto.fator_embalagem && produto.fator_embalagem > 0
         ? produto.fator_embalagem
         : (FATOR_PADRAO[matched] ?? 1);
-    setDialogItem({ nome: produto.nome, produtoId: produto.id });
+    setDialogItem({
+      nome: produto.nome,
+      produtoId: fonte === "local" ? produto.id : undefined,
+      catalogoMestreId: fonte === "catalogo" ? produto.id : undefined,
+      ean: (produto as ProdutoHibrido).ean ?? null,
+      locked: fonte === "catalogo",
+    });
     setDialogQtd("");
     setDialogEmb(matched);
     setDialogFator(String(fatorCadastrado));
@@ -178,6 +206,9 @@ const AddProdutosCotacaoPage = () => {
       embalagem: dialogEmb,
       fator: parseInt(dialogFator) || 1,
       produtoId: dialogItem.produtoId,
+      catalogoMestreId: dialogItem.catalogoMestreId,
+      ean: dialogItem.ean ?? null,
+      locked: dialogItem.locked,
     }]);
     setDialogItem(null);
     setNome("");
@@ -221,11 +252,33 @@ const AddProdutosCotacaoPage = () => {
         cotacaoId = newCot.id;
       }
 
-      const toInsert: { cotacao_id: string; produto_id: string; quantidade: number; fator_embalagem: number; tipo_embalagem: string }[] = [];
+      const toInsert: ReturnType<typeof buildSnapshotInsert>[] = [];
 
       for (const item of items) {
-        let produtoId = item.produtoId;
+        if (item.catalogoMestreId) {
+          // Item do catálogo global — snapshot direto, sem produto local.
+          const alreadyExists = alreadyInCotacao.some(
+            (a: any) => a.catalogo_mestre_id === item.catalogoMestreId,
+          );
+          if (alreadyExists) continue;
+          toInsert.push(
+            buildSnapshotInsert({
+              cotacaoId: cotacaoId!,
+              produto: {
+                fonte: "catalogo",
+                id: item.catalogoMestreId,
+                nome: item.nome,
+                ean: item.ean ?? null,
+                embalagem: item.embalagem,
+                fator_embalagem: item.fator,
+              },
+              quantidade: item.quantidade,
+            }),
+          );
+          continue;
+        }
 
+        let produtoId = item.produtoId;
         if (!produtoId) {
           const { data: newProd, error } = await supabase.from("produtos").insert({
             nome: item.nome,
@@ -238,22 +291,31 @@ const AddProdutosCotacaoPage = () => {
           produtoId = newProd.id;
         }
 
-        const alreadyExists = alreadyInCotacao.some(a => a.produto_id === produtoId);
-        if (!alreadyExists) {
-          toInsert.push({
-            cotacao_id: cotacaoId!,
-            produto_id: produtoId!,
+        const alreadyExists = alreadyInCotacao.some((a: any) => a.produto_id === produtoId);
+        if (alreadyExists) continue;
+        toInsert.push(
+          buildSnapshotInsert({
+            cotacaoId: cotacaoId!,
+            produto: {
+              fonte: "local",
+              id: produtoId!,
+              nome: item.nome,
+              ean: null,
+              embalagem: item.embalagem,
+              fator_embalagem: item.fator,
+            },
             quantidade: item.quantidade,
-            fator_embalagem: item.fator,
-            tipo_embalagem: item.embalagem,
-          });
-        }
+            embalagem: item.embalagem,
+            fator: item.fator,
+          }),
+        );
       }
 
       if (toInsert.length > 0) {
-        const { error } = await supabase.from("cotacao_produtos").insert(toInsert);
+        const { error } = await supabase.from("cotacao_produtos").insert(toInsert as any);
         if (error) throw error;
       }
+
 
       queryClient.invalidateQueries();
       toast.success(`${toInsert.length} produto(s) adicionado(s) à cotação!`);
@@ -318,13 +380,21 @@ const AddProdutosCotacaoPage = () => {
         {/* Autocomplete suggestions */}
         {suggestions.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            {suggestions.map(s => (
+            {suggestions.map((s) => (
               <button
-                key={s.id}
+                key={`${s.fonte}-${s.id}`}
                 onClick={() => handlePickSuggestion(s)}
-                className="text-xs px-2.5 py-1 rounded-full bg-muted hover:bg-primary/20 text-foreground transition-colors border border-border"
+                className={`text-xs px-2.5 py-1 rounded-full transition-colors border inline-flex items-center gap-1 ${
+                  s.fonte === "catalogo"
+                    ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
+                    : "bg-muted text-foreground border-border hover:bg-primary/20"
+                }`}
+                title={s.fonte === "catalogo" ? "Catálogo global (EAN)" : "Seu cadastro"}
               >
-                + {s.nome}
+                <span>+ {s.nome}</span>
+                {s.fonte === "catalogo" && (
+                  <span className="text-[9px] uppercase font-bold tracking-wider">Catálogo</span>
+                )}
               </button>
             ))}
           </div>
@@ -388,12 +458,21 @@ const AddProdutosCotacaoPage = () => {
       <Dialog open={!!dialogItem} onOpenChange={(open) => { if (!open) setDialogItem(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-base font-semibold truncate">
-              {dialogItem?.nome}
+            <DialogTitle className="text-base font-semibold truncate flex items-center gap-2 flex-wrap">
+              <span>{dialogItem?.nome}</span>
+              {dialogItem?.locked && (
+                <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  Catálogo
+                </span>
+              )}
             </DialogTitle>
-            {dialogItem?.produtoId && (
+            {dialogItem?.locked ? (
+              <p className="text-xs text-muted-foreground">
+                Embalagem e fator definidos pelo catálogo (somente leitura).
+              </p>
+            ) : dialogItem?.produtoId ? (
               <p className="text-xs text-muted-foreground">Produto existente no banco</p>
-            )}
+            ) : null}
           </DialogHeader>
 
           <div className="space-y-2">
@@ -420,7 +499,9 @@ const AddProdutosCotacaoPage = () => {
               {["UNI", "CX", "DZ", "½DZ", "DP", "FD", "KG", "PCT"].map(emb => (
                 <button
                   key={emb}
+                  disabled={dialogItem?.locked}
                   onClick={() => {
+                    if (dialogItem?.locked) return;
                     setDialogEmb(emb);
                     setDialogFator(String(FATOR_PADRAO[emb] ?? 1));
                   }}
@@ -428,7 +509,7 @@ const AddProdutosCotacaoPage = () => {
                     dialogEmb === emb
                       ? "bg-primary text-primary-foreground border-primary"
                       : "border-border text-muted-foreground hover:border-primary/50"
-                  }`}
+                  } ${dialogItem?.locked ? "opacity-60 cursor-not-allowed" : ""}`}
                 >
                   {emb}
                 </button>
@@ -443,10 +524,12 @@ const AddProdutosCotacaoPage = () => {
               inputMode="numeric"
               min={1}
               value={dialogFator}
-              onFocus={(e) => e.target.select()}
-              onChange={(e) => setDialogFator(e.target.value.replace(/\D/g, ""))}
-              onBlur={() => setDialogFator(prev => prev === "" || prev === "0" ? "1" : prev)}
-              className="h-10 text-center text-base"
+              readOnly={dialogItem?.locked}
+              disabled={dialogItem?.locked}
+              onFocus={(e) => { if (!dialogItem?.locked) e.target.select(); }}
+              onChange={(e) => { if (!dialogItem?.locked) setDialogFator(e.target.value.replace(/\D/g, "")); }}
+              onBlur={() => { if (!dialogItem?.locked) setDialogFator(prev => prev === "" || prev === "0" ? "1" : prev); }}
+              className={`h-10 text-center text-base ${dialogItem?.locked ? "opacity-60 cursor-not-allowed" : ""}`}
             />
             <p className="text-[10px] text-muted-foreground text-center">
               {parseInt(dialogFator) > 1
@@ -454,6 +537,7 @@ const AddProdutosCotacaoPage = () => {
                 : "Preço por unidade"}
             </p>
           </div>
+
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setDialogItem(null)}>
