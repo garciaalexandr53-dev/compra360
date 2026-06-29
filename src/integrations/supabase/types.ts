@@ -1215,6 +1215,28 @@ export type Database = {
         }
         Returns: string
       }
+      search_produtos_funcionario: {
+        Args: { _limit?: number; _loja_id: string; _termo: string }
+        Returns: {
+          ean: string
+          embalagem: string
+          fator_embalagem: number
+          fonte: string
+          id: string
+          nome: string
+        }[]
+      }
+      search_produtos_hibrido: {
+        Args: { _limit?: number; _termo: string }
+        Returns: {
+          ean: string
+          embalagem: string
+          fator_embalagem: number
+          fonte: string
+          id: string
+          nome: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"
