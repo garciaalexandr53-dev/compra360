@@ -369,26 +369,60 @@ const AddProdutosCotacaoPage = () => {
           className="h-12 w-full"
         />
 
-        {/* Autocomplete suggestions */}
-        {suggestions.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {suggestions.map((s) => (
-              <button
-                key={`${s.fonte}-${s.id}`}
-                onClick={() => handlePickSuggestion(s)}
-                className={`text-xs px-2.5 py-1 rounded-full transition-colors border inline-flex items-center gap-1 ${
-                  s.fonte === "catalogo"
-                    ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
-                    : "bg-muted text-foreground border-border hover:bg-primary/20"
-                }`}
-                title={s.fonte === "catalogo" ? "Catálogo global (EAN)" : "Seu cadastro"}
-              >
-                <span>+ {s.nome}</span>
-                {s.fonte === "catalogo" && (
-                  <span className="text-[9px] uppercase font-bold tracking-wider">Catálogo</span>
-                )}
-              </button>
-            ))}
+        {/* Sugestões agrupadas — catálogo (travado) primeiro, locais (editáveis) depois */}
+        {temSugestoes && (
+          <div className="space-y-3">
+            {catalogoSugestoes.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-primary/80 flex items-center gap-1.5">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+                  Catálogo global · embalagem e fator travados
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                  {catalogoSugestoes.map((s) => (
+                    <button
+                      key={`cat-${s.id}`}
+                      onClick={() => handlePickSuggestion(s)}
+                      className="group flex items-start justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-left text-xs text-foreground transition-colors hover:bg-primary/10"
+                      title={s.ean ? `EAN ${s.ean}` : "Catálogo global"}
+                    >
+                      <span className="flex-1 min-w-0">
+                        <span className="block truncate font-medium">{s.nome}</span>
+                        <span className="block text-[10px] text-muted-foreground">
+                          {s.embalagem || "UNI"}
+                          {s.fator_embalagem && s.fator_embalagem > 1 ? ` · ${s.fator_embalagem} un` : ""}
+                          {s.ean ? ` · EAN ${s.ean}` : ""}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider text-primary border border-primary/40 rounded-full px-1.5 py-0.5">
+                        Catálogo
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {locaisSugestoes.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-muted-foreground/60" />
+                  Seus produtos
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {locaisSugestoes.map((s) => (
+                    <button
+                      key={`loc-${s.id}`}
+                      onClick={() => handlePickSuggestion(s)}
+                      className="text-xs px-2.5 py-1 rounded-full border bg-muted text-foreground border-border hover:bg-primary/20 transition-colors"
+                      title="Seu cadastro"
+                    >
+                      + {s.nome}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
