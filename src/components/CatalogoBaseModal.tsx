@@ -306,8 +306,9 @@ const ProductRow = ({ item, selected, onToggle }: { item: CatalogoItem; selected
     <Checkbox checked={selected} className="h-3.5 w-3.5 flex-shrink-0" />
     <div className="flex-1 min-w-0">
       <div className="text-sm truncate">{item.nome}</div>
-      <div className="text-[10px] text-muted-foreground">
+      <div className="text-[10px] text-muted-foreground truncate">
         {item.embalagem} · fator {item.fator_embalagem}
+        {item.ean ? ` · EAN ${item.ean}` : ""}
       </div>
     </div>
   </button>
