@@ -568,7 +568,9 @@ export type Database = {
       }
       itens_faltantes: {
         Row: {
+          catalogo_mestre_id: string | null
           created_at: string
+          ean: string | null
           id: string
           importado: boolean
           loja_id: string | null
@@ -578,7 +580,9 @@ export type Database = {
           registrado_por: string | null
         }
         Insert: {
+          catalogo_mestre_id?: string | null
           created_at?: string
+          ean?: string | null
           id?: string
           importado?: boolean
           loja_id?: string | null
@@ -588,7 +592,9 @@ export type Database = {
           registrado_por?: string | null
         }
         Update: {
+          catalogo_mestre_id?: string | null
           created_at?: string
+          ean?: string | null
           id?: string
           importado?: boolean
           loja_id?: string | null
