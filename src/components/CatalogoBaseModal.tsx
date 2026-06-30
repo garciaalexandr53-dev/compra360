@@ -23,6 +23,7 @@ interface CatalogoItem {
   categoria: string;
   embalagem: string;
   fator_embalagem: number;
+  ean: string | null;
 }
 
 const CatalogoBaseModal = ({ open, onOpenChange }: Props) => {
@@ -34,16 +35,16 @@ const CatalogoBaseModal = ({ open, onOpenChange }: Props) => {
   const [importing, setImporting] = useState(false);
 
   const { data: catalogo = [], isLoading } = useQuery({
-    queryKey: ["catalogo-base"],
+    queryKey: ["catalogo-mestre"],
     queryFn: async () => {
       const items: CatalogoItem[] = [];
       let from = 0;
       const pageSize = 1000;
       while (true) {
         const { data, error } = await supabase
-          .from("catalogo_base")
-          .select("id, nome, categoria, embalagem, fator_embalagem")
-          .eq("segmento", "supermercado")
+          .from("catalogo_mestre")
+          .select("id, nome, categoria, embalagem, fator_embalagem, ean")
+          .eq("ativo", true)
           .order("categoria")
           .order("nome")
           .range(from, from + pageSize - 1);
