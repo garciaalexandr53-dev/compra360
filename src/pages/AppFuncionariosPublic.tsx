@@ -246,6 +246,7 @@ const AppFuncionariosPublic = () => {
           categorias: null,
           fonte: "catalogo",
           ean: r.ean ?? null,
+          catalogoMestreId: r.id ?? null,
           locked: true,
         }));
     },
