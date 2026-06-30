@@ -22,6 +22,8 @@ interface ItemEntry {
   fator: number;
   ean?: string | null;
   fonte?: "catalogo" | "local";
+  /** id do catalogo_mestre — só para itens vindos do catálogo global. */
+  catalogoMestreId?: string | null;
 }
 
 interface ProdutoPublico {
@@ -34,6 +36,8 @@ interface ProdutoPublico {
   /** Origem da linha — "catalogo" quando vem de catalogo_mestre. */
   fonte?: "catalogo" | "local";
   ean?: string | null;
+  /** id do catalogo_mestre quando fonte = "catalogo". */
+  catalogoMestreId?: string | null;
   /** Quando true, embalagem/fator não podem ser editados. */
   locked?: boolean;
 }
