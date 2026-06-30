@@ -67,9 +67,12 @@ const CatalogoBaseModal = ({ open, onOpenChange }: Props) => {
   const filtered = useMemo(() => {
     let items = catalogo;
     if (selectedCat !== "Todos") items = items.filter((p) => p.categoria === selectedCat);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      items = items.filter((p) => p.nome.toLowerCase().includes(q));
+    const q = search.trim().toLowerCase();
+    if (q) {
+      const isNumeric = /^\d+$/.test(q);
+      items = items.filter((p) =>
+        p.nome.toLowerCase().includes(q) || (isNumeric && p.ean && p.ean.includes(q))
+      );
     }
     return items;
   }, [catalogo, selectedCat, search]);
