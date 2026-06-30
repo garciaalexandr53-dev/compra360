@@ -382,13 +382,6 @@ const AppFuncionariosPublic = () => {
     }
 
     const embLabel = dialogEmbal.toLowerCase();
-    // Sempre registrar Embalagem e Fator escolhidos pelo funcionário,
-    // mesmo quando forem "uni" / 1 — caso contrário a importação cai
-    // no fallback do cadastro do produto e ignora a escolha manual.
-    const obsParts: string[] = [
-      `Embalagem: ${dialogEmbal}`,
-      `Fator: ${fator}`,
-    ];
 
     setItems((prev) => [...prev, {
       nome: dialogProduct.nome,
@@ -397,6 +390,7 @@ const AppFuncionariosPublic = () => {
       fator,
       ean: dialogProduct.ean ?? null,
       fonte: dialogProduct.fonte ?? "local",
+      catalogoMestreId: dialogProduct.catalogoMestreId ?? null,
     }]);
 
     setProductSearch("");
