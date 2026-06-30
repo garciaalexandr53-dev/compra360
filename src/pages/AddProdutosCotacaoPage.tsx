@@ -310,14 +310,23 @@ const AddProdutosCotacaoPage = () => {
     }
   };
 
-  const suggestions = useMemo(() => {
-    if (nome.trim().length < 2) return [];
-    const term = nome.toLowerCase();
-    const localNames = new Set(items.map(i => i.nome.toLowerCase()));
-    return existingProdutos
-      .filter(p => p.nome.toLowerCase().includes(term) && !localNames.has(p.nome.toLowerCase()))
-      .slice(0, 30);
-  }, [nome, existingProdutos, items]);
+  const filterDispo = useCallback(
+    (lista: ProdutoHibrido[]) => {
+      const localNames = new Set(items.map((i) => i.nome.toLowerCase()));
+      return lista.filter((p) => !localNames.has(p.nome.toLowerCase()));
+    },
+    [items],
+  );
+
+  const catalogoSugestoes = useMemo(
+    () => filterDispo(catalogoMatches).slice(0, 30),
+    [catalogoMatches, filterDispo],
+  );
+  const locaisSugestoes = useMemo(
+    () => filterDispo(locaisMatches).slice(0, 30),
+    [locaisMatches, filterDispo],
+  );
+  const temSugestoes = catalogoSugestoes.length + locaisSugestoes.length > 0;
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
