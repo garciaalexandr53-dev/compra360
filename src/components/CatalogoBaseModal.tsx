@@ -177,19 +177,20 @@ const CatalogoBaseModal = ({ open, onOpenChange }: Props) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5 text-primary" />
-            Catálogo Supermercado
+            Catálogo Mestre
           </DialogTitle>
           <p className="text-xs text-muted-foreground">
-            {catalogo.length} produtos pré-cadastrados · Selecione os que deseja importar
+            {catalogo.length} produtos disponíveis · Busque por nome ou EAN
           </p>
         </DialogHeader>
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar produto..."
+            placeholder="Buscar por nome ou EAN..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            inputMode="text"
             className="pl-9"
           />
         </div>
