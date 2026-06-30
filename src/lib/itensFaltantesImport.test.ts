@@ -75,7 +75,7 @@ describe("buildCotacaoProdutoInsertFromItem — local", () => {
     expect(cp).toMatchObject({
       catalogo_mestre_id: null,
       produto_id: "p-1",
-      tipo_embalagem: "UN",
+      tipo_embalagem: "UNI",
       fator_embalagem: 1,
       ean: null,
     });
@@ -94,7 +94,7 @@ describe("buildCotacaoProdutoInsertFromItem — local", () => {
       legacyResolveEmb: () => "FD",
     });
     expect(cp?.fator_embalagem).toBe(1);
-    expect(cp?.tipo_embalagem).toBe("UN");
+    expect(cp?.tipo_embalagem).toBe("UNI");
   });
 
   it("cai para resolver legacy quando colunas estruturadas estão vazias", () => {
@@ -106,7 +106,7 @@ describe("buildCotacaoProdutoInsertFromItem — local", () => {
       legacyResolveEmb: (obs) => (obs?.includes("un") ? "UN" : "CX"),
     });
     expect(cp?.fator_embalagem).toBe(1);
-    expect(cp?.tipo_embalagem).toBe("UN");
+    expect(cp?.tipo_embalagem).toBe("UNI");
   });
 
   it("sem produtoLocal retorna null (item local precisa de match)", () => {
