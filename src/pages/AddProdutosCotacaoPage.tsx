@@ -106,27 +106,9 @@ const AddProdutosCotacaoPage = () => {
   const totalProdutos = allProdutosData?.pages[0]?.totalCount ?? 0;
 
   // Busca híbrida: catalogo_mestre global + produtos locais do usuário.
-  // Dedup com preferência do catálogo é feito no banco (RPC).
-  const { data: existingProdutos = [] } = useQuery<ProdutoHibrido[]>({
-    queryKey: ["produtos-hibrido-search", debouncedSearch],
-    queryFn: async () => {
-      if (debouncedSearch.length < 2) return [];
-      const { data, error } = await supabase.rpc("search_produtos_hibrido", {
-        _termo: debouncedSearch,
-        _limit: 50,
-      });
-      if (error) throw error;
-      return ((data || []) as any[]).map((r) => ({
-        fonte: r.fonte as "catalogo" | "local",
-        id: r.id,
-        nome: r.nome,
-        ean: r.ean ?? null,
-        embalagem: r.embalagem ?? null,
-        fator_embalagem: r.fator_embalagem ?? null,
-      }));
-    },
-    enabled: debouncedSearch.length >= 2,
-  });
+  // Fonte ÚNICA: hook `useProdutosHibrido` (consome a RPC com a sessão autenticada).
+  const { data: existingProdutos, catalogo: catalogoMatches, locais: locaisMatches } =
+    useProdutosHibrido({ termo: debouncedSearch, limit: 50 });
 
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
