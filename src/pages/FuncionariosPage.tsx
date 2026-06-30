@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ConferenciaPedidos from "@/components/ConferenciaPedidos";
+import { buildCotacaoProdutoInsertFromItem } from "@/lib/itensFaltantesImport";
 export const parseFatorFromObs = (obs: string | null): number => {
   const match = obs?.match(/Fator:\s*(\d+)/);
   return match ? parseInt(match[1]) : 1;
@@ -200,6 +201,11 @@ const FuncionariosPage = () => {
         createdNewCotacao = true;
       }
 
+      // Separar itens vindos do catálogo global (já trazem catalogo_mestre_id)
+      // dos itens locais, que precisam virar produto local.
+      const catalogItems = itemsToImport.filter((i: any) => !!i.catalogo_mestre_id);
+      const localItemsToImport = itemsToImport.filter((i: any) => !i.catalogo_mestre_id);
+
       // Buscar TODOS os produtos com paginação (evitar limite de 1000)
       let allExisting: { nome: string }[] = [];
       const batchSize = 1000;
@@ -213,14 +219,22 @@ const FuncionariosPage = () => {
       }
       const existingNames = new Set(allExisting.map((p) => p.nome.toLowerCase().trim()));
 
-      const newItems = itemsToImport.filter((i: any) => !existingNames.has(i.nome.toLowerCase().trim()));
-      const dupCount = itemsToImport.length - newItems.length;
+      const newItems = localItemsToImport.filter((i: any) => !existingNames.has(i.nome.toLowerCase().trim()));
+      const dupCount = localItemsToImport.length - newItems.length;
 
-
+      // Inserir apenas locais novos no catálogo do cliente — embalagem/fator
+      // saem das COLUNAS estruturadas (legacy fallback à observação).
       const inserts = newItems.map((item: any) => ({
         nome: item.nome,
-        embalagem: parseEmbFromObs(item.observacao),
-        fator_embalagem: parseFatorFromObs(item.observacao),
+        embalagem:
+          item.embalagem?.trim() ||
+          (temObservacaoEmb(item.observacao) ? parseEmbFromObs(item.observacao) : "un"),
+        fator_embalagem:
+          item.fator_embalagem && item.fator_embalagem > 0
+            ? item.fator_embalagem
+            : temObservacaoFator(item.observacao)
+              ? parseFatorFromObs(item.observacao)
+              : 1,
         ativo: true,
         user_id: user.id,
       }));
@@ -233,34 +247,53 @@ const FuncionariosPage = () => {
       // Link products to the active store's cotação
       const cotacaoId = cot?.id;
       if (cotacaoId) {
-        const allNames = itemsToImport.map((i: any) => i.nome);
-        const { data: matchedProds } = await supabase
-          .from("produtos")
-          .select("id, nome, embalagem, fator_embalagem")
-          .in("nome", allNames);
+        const allLocalNames = localItemsToImport.map((i: any) => i.nome);
+        const { data: matchedProds } = allLocalNames.length
+          ? await supabase
+              .from("produtos")
+              .select("id, nome, embalagem, fator_embalagem")
+              .in("nome", allLocalNames)
+          : { data: [] as any[] };
 
-        if (matchedProds?.length) {
-          const { data: existingCp } = await supabase
-            .from("cotacao_produtos")
-            .select("produto_id")
-            .eq("cotacao_id", cotacaoId);
-          const existingProdIds = new Set((existingCp || []).map((cp) => cp.produto_id));
+        const { data: existingCp } = await supabase
+          .from("cotacao_produtos")
+          .select("produto_id, catalogo_mestre_id")
+          .eq("cotacao_id", cotacaoId);
+        const existingProdIds = new Set(
+          (existingCp || []).map((cp: any) => cp.produto_id).filter(Boolean),
+        );
+        const existingCatIds = new Set(
+          (existingCp || []).map((cp: any) => cp.catalogo_mestre_id).filter(Boolean),
+        );
 
-          const cpInserts = matchedProds
-            .filter((p) => !existingProdIds.has(p.id))
-            .map((p: any) => {
-              const item = itemsToImport.find((i: any) => i.nome.toLowerCase().trim() === p.nome.toLowerCase().trim());
-              return {
-                cotacao_id: cotacaoId,
-                produto_id: p.id,
-                quantidade: item?.quantidade || 1,
-                fator_embalagem: resolveFator(item?.observacao, p.fator_embalagem),
-                tipo_embalagem: resolveEmbalagem(item?.observacao, p.embalagem),
-              };
-            });
-          if (cpInserts.length) {
-            await supabase.from("cotacao_produtos").insert(cpInserts);
-          }
+        const cpInserts: any[] = [];
+
+        // Locais
+        for (const p of matchedProds || []) {
+          if (existingProdIds.has(p.id)) continue;
+          const item = localItemsToImport.find(
+            (i: any) => i.nome.toLowerCase().trim() === p.nome.toLowerCase().trim(),
+          );
+          if (!item) continue;
+          const cp = buildCotacaoProdutoInsertFromItem({
+            cotacaoId,
+            item,
+            produtoLocal: p,
+            legacyResolveEmb: resolveEmbalagem,
+            legacyResolveFator: resolveFator,
+          });
+          if (cp) cpInserts.push(cp);
+        }
+
+        // Catálogo: snapshot direto, sem produto local
+        for (const item of catalogItems) {
+          if (existingCatIds.has(item.catalogo_mestre_id)) continue;
+          const cp = buildCotacaoProdutoInsertFromItem({ cotacaoId, item });
+          if (cp) cpInserts.push(cp);
+        }
+
+        if (cpInserts.length) {
+          await supabase.from("cotacao_produtos").insert(cpInserts);
         }
       }
 
@@ -298,29 +331,40 @@ const FuncionariosPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Buscar TODOS os produtos com paginação
-      let allExisting: { nome: string }[] = [];
-      let fromIdx = 0;
-      while (true) {
-        const { data } = await supabase.from("produtos").select("nome").range(fromIdx, fromIdx + 999);
-        if (!data || data.length === 0) break;
-        allExisting = allExisting.concat(data);
-        if (data.length < 1000) break;
-        fromIdx += 1000;
-      }
-      const existingNames = new Set(allExisting.map((p) => p.nome.toLowerCase().trim()));
+      const isCatalogo = !!item.catalogo_mestre_id;
 
-      if (!existingNames.has(item.nome.toLowerCase().trim())) {
-        const singleFator = parseFatorFromObs(item.observacao);
-        const singleEmb = parseEmbFromObs(item.observacao);
-        const { error: prodErr } = await supabase.from("produtos").insert({
-          nome: item.nome,
-          embalagem: singleEmb,
-          fator_embalagem: singleFator,
-          ativo: true,
-          user_id: user.id,
-        });
-        if (prodErr) throw prodErr;
+      // Para itens locais: garantir produto no catálogo do cliente
+      if (!isCatalogo) {
+        let allExisting: { nome: string }[] = [];
+        let fromIdx = 0;
+        while (true) {
+          const { data } = await supabase.from("produtos").select("nome").range(fromIdx, fromIdx + 999);
+          if (!data || data.length === 0) break;
+          allExisting = allExisting.concat(data);
+          if (data.length < 1000) break;
+          fromIdx += 1000;
+        }
+        const existingNames = new Set(allExisting.map((p) => p.nome.toLowerCase().trim()));
+
+        if (!existingNames.has(item.nome.toLowerCase().trim())) {
+          const singleEmb =
+            item.embalagem?.trim() ||
+            (temObservacaoEmb(item.observacao) ? parseEmbFromObs(item.observacao) : "un");
+          const singleFator =
+            item.fator_embalagem && item.fator_embalagem > 0
+              ? item.fator_embalagem
+              : temObservacaoFator(item.observacao)
+                ? parseFatorFromObs(item.observacao)
+                : 1;
+          const { error: prodErr } = await supabase.from("produtos").insert({
+            nome: item.nome,
+            embalagem: singleEmb,
+            fator_embalagem: singleFator,
+            ativo: true,
+            user_id: user.id,
+          });
+          if (prodErr) throw prodErr;
+        }
       }
 
       const lid = item.loja_id || lojaAtiva?.id;
@@ -349,32 +393,45 @@ const FuncionariosPage = () => {
         }
 
         if (cot?.id) {
-          const { data: matchedProds } = await supabase
-            .from("produtos")
-            .select("id, nome, embalagem, fator_embalagem")
-            .ilike("nome", item.nome.trim());
+          const { data: existingCp } = await supabase
+            .from("cotacao_produtos")
+            .select("produto_id, catalogo_mestre_id")
+            .eq("cotacao_id", cot.id);
+          const existingProdIds = new Set(
+            (existingCp || []).map((cp: any) => cp.produto_id).filter(Boolean),
+          );
+          const existingCatIds = new Set(
+            (existingCp || []).map((cp: any) => cp.catalogo_mestre_id).filter(Boolean),
+          );
 
-          if (matchedProds?.length) {
-            const { data: existingCp } = await supabase
-              .from("cotacao_produtos")
-              .select("produto_id")
-              .eq("cotacao_id", cot.id);
-            const existingProdIds = new Set((existingCp || []).map((cp) => cp.produto_id));
+          const cpInserts: any[] = [];
 
-            const cpInserts = matchedProds
-              .filter((p) => !existingProdIds.has(p.id))
-              .map((p: any) => {
-                return {
-                  cotacao_id: cot.id,
-                  produto_id: p.id,
-                  quantidade: item.quantidade || 1,
-                  fator_embalagem: resolveFator(item.observacao, p.fator_embalagem),
-                  tipo_embalagem: resolveEmbalagem(item.observacao, p.embalagem),
-                };
-              });
-            if (cpInserts.length) {
-              await supabase.from("cotacao_produtos").insert(cpInserts);
+          if (isCatalogo) {
+            if (!existingCatIds.has(item.catalogo_mestre_id)) {
+              const cp = buildCotacaoProdutoInsertFromItem({ cotacaoId: cot.id, item });
+              if (cp) cpInserts.push(cp);
             }
+          } else {
+            const { data: matchedProds } = await supabase
+              .from("produtos")
+              .select("id, nome, embalagem, fator_embalagem")
+              .ilike("nome", item.nome.trim());
+
+            for (const p of matchedProds || []) {
+              if (existingProdIds.has(p.id)) continue;
+              const cp = buildCotacaoProdutoInsertFromItem({
+                cotacaoId: cot.id,
+                item,
+                produtoLocal: p,
+                legacyResolveEmb: resolveEmbalagem,
+                legacyResolveFator: resolveFator,
+              });
+              if (cp) cpInserts.push(cp);
+            }
+          }
+
+          if (cpInserts.length) {
+            await supabase.from("cotacao_produtos").insert(cpInserts);
           }
         }
       }
