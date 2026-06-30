@@ -447,19 +447,16 @@ const AppFuncionariosPublic = () => {
       const lojaLabel = selectedLojaName ? ` [${selectedLojaName}]` : "";
       const inserts = items.map((item) => {
         const fator = item.fator || 1;
-        // Sempre persistir Embalagem e Fator escolhidos pelo funcionário
-        // para que a importação preserve a escolha manual (inclusive un/1).
-        const obsParts: string[] = [
-          `Embalagem: ${item.embalagem}`,
-          `Fator: ${fator}`,
-        ];
-        if (item.fonte === "catalogo") obsParts.push("Fonte: catalogo");
-        if (item.ean) obsParts.push(`EAN: ${item.ean}`);
-        if (lojaLabel) obsParts.push(lojaLabel.trim());
         return {
           nome: item.nome,
           quantidade: item.quantidade,
-          observacao: obsParts.length ? obsParts.join(" | ") : null,
+          // observacao volta a ser apenas nota humana livre — fonte/ean/embalagem
+          // vão para as colunas estruturadas abaixo.
+          observacao: null,
+          embalagem: item.embalagem,
+          fator_embalagem: fator,
+          ean: item.ean ?? null,
+          catalogo_mestre_id: item.catalogoMestreId ?? null,
           registrado_por: "Funcionário" + lojaLabel,
           loja_id: selectedLojaId || (lojas.length === 1 ? lojas[0].id : null),
         };
