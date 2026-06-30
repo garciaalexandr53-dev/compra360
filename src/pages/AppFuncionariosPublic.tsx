@@ -990,6 +990,7 @@ const AppFuncionariosPublic = () => {
               fator,
               ean: dialogProduct.ean ?? null,
               fonte: dialogProduct.fonte ?? "local",
+              catalogoMestreId: dialogProduct.catalogoMestreId ?? null,
             },
           ]);
           setProductSearch("");
