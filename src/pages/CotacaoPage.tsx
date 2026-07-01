@@ -20,6 +20,7 @@ import ModalAiAnalise from "@/components/cotacao/ModalAiAnalise";
 import ModalQtySugestao from "@/components/cotacao/ModalQtySugestao";
 import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugestao";
 import TabelaCotacao from "@/components/cotacao/TabelaCotacao";
+import { getCotacaoNome } from "@/lib/buscaProdutos";
 import ReviewHeader from "@/components/cotacao/ReviewHeader";
 import ReviewFooter from "@/components/cotacao/ReviewFooter";
 
