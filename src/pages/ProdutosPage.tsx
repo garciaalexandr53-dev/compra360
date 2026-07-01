@@ -736,52 +736,132 @@ const ProdutosPage = () => {
         <div ref={scrollRef} onScroll={handleScroll} className={`flex-1 overflow-y-auto ${cotacaoItemCount > 0 ? "pb-24" : ""}`}>
           {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
-          ) : filtered.length === 0 ? (
-            <div className="p-10 text-center text-muted-foreground">Nenhum produto encontrado.</div>
+          ) : filtered.length === 0 && catalogoHibrido.length === 0 ? (
+            <div className="p-10 text-center text-muted-foreground">
+              {catalogoLoading ? "Buscando..." : "Nenhum produto encontrado."}
+            </div>
           ) : (
             <>
-              {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([cat, prods]) => (
-                <div key={cat}>
-                  {selectedCat === "Todos" && (
-                    <div className="px-4 py-1.5 bg-muted text-[10px] font-bold uppercase tracking-wider text-muted-foreground sticky top-0 z-10 border-b">
-                      {cat}
+              {filtered.length > 0 && (
+                <>
+                  {search.trim().length >= 2 && (
+                    <div className="px-4 py-1.5 bg-primary/5 text-[10px] font-bold uppercase tracking-wider text-primary sticky top-0 z-10 border-b">
+                      Seus produtos
                     </div>
                   )}
-                  {prods.map((p) => {
-                    const inCotacao = itensNaCotacao.has(cotacaoKey("local", p.id));
+                  {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([cat, prods]) => (
+                    <div key={cat}>
+                      {selectedCat === "Todos" && (
+                        <div className="px-4 py-1.5 bg-muted text-[10px] font-bold uppercase tracking-wider text-muted-foreground sticky top-0 z-10 border-b">
+                          {cat}
+                        </div>
+                      )}
+                      {prods.map((p) => {
+                        const inCotacao = itensNaCotacao.has(cotacaoKey("local", p.id));
+                        return (
+                          <div
+                            key={p.id}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Abrir opções de ${p.nome}`}
+                            onClick={() => setSheetProduto(p)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                setSheetProduto(p);
+                              }
+                            }}
+                            className={`flex items-center gap-2 px-3 py-2.5 border-b hover:bg-muted/30 transition-all cursor-pointer focus:outline-none focus:bg-muted/40 ${
+                              inCotacao ? "border-l-2 border-l-primary bg-primary/5" : ""
+                            }`}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-foreground truncate">{p.nome}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {p.categorias?.nome || "Sem Categoria"} · {p.embalagem || "un"}
+                              </div>
+                            </div>
+                            <div
+                              className="flex items-center gap-1 flex-shrink-0"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {inCotacao ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-xs px-2 transition-all bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
+                                  onClick={() => toggleCotacaoMutation.mutate({ produto: produtoToHibrido(p), adding: false })}
+                                >
+                                  ✓
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  className="h-7 text-xs px-2 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"
+                                  onClick={() => setDialogState({ produto: produtoToHibrido(p), subtitulo: p.categorias?.nome ?? null })}
+                                  aria-label={`Adicionar ${p.nome} à cotação`}
+                                >
+                                  +
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                  {isFetchingNextPage && (
+                    <div className="p-4 text-center text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin inline mr-2" />Carregando mais...
+                    </div>
+                  )}
+                  {!hasNextPage && produtos.length > 0 && (
+                    <div className="p-3 text-center text-xs text-muted-foreground">
+                      {produtos.length} de {totalCount} produtos carregados
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Catálogo global — só quando há termo de busca (>=2 chars). Sem termo, mantemos apenas locais. */}
+              {search.trim().length >= 2 && catalogoHibrido.length > 0 && (
+                <div>
+                  <div className="px-4 py-1.5 bg-primary/10 text-[10px] font-bold uppercase tracking-wider text-primary sticky top-0 z-10 border-b flex items-center justify-between">
+                    <span>Catálogo global</span>
+                    <span className="normal-case tracking-normal text-muted-foreground">
+                      {catalogoHibrido.length} resultado{catalogoHibrido.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  {catalogoHibrido.map((c) => {
+                    const inCotacao = itensNaCotacao.has(cotacaoKey("catalogo", c.id));
+                    const emb = matchEmbalagem(c.embalagem);
+                    const fator = c.fator_embalagem && c.fator_embalagem > 0 ? c.fator_embalagem : (FATOR_PADRAO[emb] ?? 1);
                     return (
                       <div
-                        key={p.id}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`Abrir opções de ${p.nome}`}
-                        onClick={() => setSheetProduto(p)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            setSheetProduto(p);
-                          }
-                        }}
-                        className={`flex items-center gap-2 px-3 py-2.5 border-b hover:bg-muted/30 transition-all cursor-pointer focus:outline-none focus:bg-muted/40 ${
-                          inCotacao ? "border-l-2 border-l-primary bg-primary/5" : ""
+                        key={`cat-${c.id}`}
+                        className={`flex items-center gap-2 px-3 py-2.5 border-b transition-all ${
+                          inCotacao ? "border-l-2 border-l-primary bg-primary/5" : "hover:bg-muted/30"
                         }`}
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-foreground truncate">{p.nome}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {p.categorias?.nome || "Sem Categoria"} · {p.embalagem || "un"}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-sm font-medium text-foreground truncate">{c.nome}</span>
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/30 text-primary shrink-0">
+                              Catálogo
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {emb} · fator {fator}
+                            {c.ean ? ` · EAN ${c.ean}` : ""}
                           </div>
                         </div>
-                        <div
-                          className="flex items-center gap-1 flex-shrink-0"
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           {inCotacao ? (
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-7 text-xs px-2 transition-all bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
-                              onClick={() => toggleCotacaoMutation.mutate({ produto: produtoToHibrido(p), adding: false })}
+                              className="h-7 text-xs px-2 bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
+                              onClick={() => toggleCotacaoMutation.mutate({ produto: c, adding: false })}
                             >
                               ✓
                             </Button>
@@ -789,8 +869,8 @@ const ProdutosPage = () => {
                             <Button
                               size="sm"
                               className="h-7 text-xs px-2 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"
-                              onClick={() => setDialogState({ produto: produtoToHibrido(p), subtitulo: p.categorias?.nome ?? null })}
-                              aria-label={`Adicionar ${p.nome} à cotação`}
+                              onClick={() => setDialogState({ produto: c, subtitulo: c.ean ? `EAN ${c.ean}` : "Catálogo global" })}
+                              aria-label={`Adicionar ${c.nome} do catálogo à cotação`}
                             >
                               +
                             </Button>
@@ -799,22 +879,12 @@ const ProdutosPage = () => {
                       </div>
                     );
                   })}
-
-                </div>
-              ))}
-              {isFetchingNextPage && (
-                <div className="p-4 text-center text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin inline mr-2" />Carregando mais...
-                </div>
-              )}
-              {!hasNextPage && produtos.length > 0 && (
-                <div className="p-3 text-center text-xs text-muted-foreground">
-                  {produtos.length} de {totalCount} produtos carregados
                 </div>
               )}
             </>
           )}
         </div>
+
 
         {/* Fixed footer — next step */}
         {cotacaoItemCount > 0 && (
