@@ -24,16 +24,32 @@ import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
 import type { Tables } from "@/integrations/supabase/types";
 import BackToLojaButton from "@/components/shared/BackToLojaButton";
+import { useProdutosHibrido } from "@/hooks/useProdutosHibrido";
+import { buildSnapshotInsert, type ProdutoHibrido } from "@/lib/buscaProdutos";
 
 
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 type Categoria = Tables<"categorias">;
 
 import { EMBALAGEM_SIGLAS } from "@/lib/embalagem";
-import { FATOR_PADRAO } from "@/lib/embalagemFatores";
+import { FATOR_PADRAO, matchEmbalagem } from "@/lib/embalagemFatores";
 import { autoSuggestFator } from "@/lib/autoFator";
 import AdicionarItemDialog from "@/components/shared/AdicionarItemDialog";
 const EMBALAGEM_OPTIONS = EMBALAGEM_SIGLAS;
+
+/** Chave única no Set itensNaCotacao — distingue local vs catálogo. */
+const cotacaoKey = (fonte: "local" | "catalogo", id: string) =>
+  `${fonte === "catalogo" ? "cat" : "local"}:${id}`;
+
+/** Converte um Produto local no formato ProdutoHibrido para reaproveitar buildSnapshotInsert. */
+const produtoToHibrido = (p: Produto): ProdutoHibrido => ({
+  fonte: "local",
+  id: p.id,
+  nome: p.nome,
+  ean: null,
+  embalagem: p.embalagem ?? null,
+  fator_embalagem: (p as any).fator_embalagem ?? null,
+});
 const emptyForm = { nome: "", categoria_id: "", embalagem: "UNI", quantidade: 1, fator_embalagem: 1 };
 const PAGE_SIZE = 80;
 
