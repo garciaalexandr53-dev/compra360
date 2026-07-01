@@ -1217,28 +1217,31 @@ const ProdutosPage = () => {
 
       <AdicionarItemDialog
         produto={
-          dialogProduto
+          dialogState
             ? {
-                nome: dialogProduto.nome,
-                embalagem: dialogProduto.embalagem,
-                fator: (dialogProduto as any).fator_embalagem,
-                subtitulo: dialogProduto.categorias?.nome ?? null,
+                nome: dialogState.produto.nome,
+                embalagem: dialogState.produto.embalagem,
+                fator: dialogState.produto.fator_embalagem,
+                subtitulo: dialogState.subtitulo ?? null,
               }
             : null
         }
-        onCancelar={() => setDialogProduto(null)}
+        locked={dialogState?.produto.fonte === "catalogo"}
+        badge={dialogState?.produto.fonte === "catalogo" ? "Catálogo" : null}
+        onCancelar={() => setDialogState(null)}
         onConfirmar={(qtd, emb, fator) => {
-          if (!dialogProduto) return;
+          if (!dialogState) return;
           toggleCotacaoMutation.mutate({
-            produtoId: dialogProduto.id,
+            produto: dialogState.produto,
             adding: true,
             quantidade: qtd,
             tipoEmbalagem: emb,
             fatorEmbalagem: fator,
           });
-          setDialogProduto(null);
+          setDialogState(null);
         }}
       />
+
     </div>
   );
 };
