@@ -303,7 +303,19 @@ const ProdutosPage = () => {
   });
 
   const toggleCotacaoMutation = useMutation({
-    mutationFn: async ({ produtoId, adding, quantidade = 1, tipoEmbalagem = "UNI", fatorEmbalagem = 1 }: { produtoId: string; adding: boolean; quantidade?: number; tipoEmbalagem?: string; fatorEmbalagem?: number }) => {
+    mutationFn: async ({
+      produto,
+      adding,
+      quantidade = 1,
+      tipoEmbalagem,
+      fatorEmbalagem,
+    }: {
+      produto: ProdutoHibrido;
+      adding: boolean;
+      quantidade?: number;
+      tipoEmbalagem?: string;
+      fatorEmbalagem?: number;
+    }) => {
       if (adding) {
         // Auto-create an active cotação if none exists
         let cotacaoId = cotacaoAtiva?.id;
@@ -322,22 +334,28 @@ const ProdutosPage = () => {
           if (cotErr) throw cotErr;
           cotacaoId = newCot.id;
         }
-        const { error } = await supabase.from("cotacao_produtos").insert({
-          cotacao_id: cotacaoId,
-          produto_id: produtoId,
+        // Fonte única do snapshot (nome/ean/embalagem/fator) — src/lib/buscaProdutos.ts
+        const snap = buildSnapshotInsert({
+          cotacaoId,
+          produto,
           quantidade,
-          tipo_embalagem: tipoEmbalagem,
-          fator_embalagem: fatorEmbalagem,
-        } as any);
+          embalagem: tipoEmbalagem,
+          fator: fatorEmbalagem,
+        });
+        const { error } = await supabase.from("cotacao_produtos").insert(snap as any);
         if (error) throw error;
       } else if (!adding && cotacaoAtiva) {
-        const { error } = await supabase.from("cotacao_produtos")
-          .delete()
-          .eq("cotacao_id", cotacaoAtiva.id)
-          .eq("produto_id", produtoId);
+        let del = supabase.from("cotacao_produtos").delete().eq("cotacao_id", cotacaoAtiva.id);
+        if (produto.fonte === "catalogo") {
+          del = del.eq("catalogo_mestre_id", produto.id);
+        } else {
+          del = del.eq("produto_id", produto.id);
+        }
+        const { error } = await del;
         if (error) throw error;
       }
     },
+
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
