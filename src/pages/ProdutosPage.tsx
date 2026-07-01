@@ -107,8 +107,9 @@ const ProdutosPage = () => {
   const [classifyError, setClassifyError] = useState("");
   const [classifyMode, setClassifyMode] = useState<"classify" | "fator">("classify");
 
-  // Diálogo unificado de adicionar à cotação
-  const [dialogProduto, setDialogProduto] = useState<Produto | null>(null);
+  // Diálogo unificado — carrega ProdutoHibrido (local ou catálogo) + metadados de exibição
+  const [dialogState, setDialogState] = useState<{ produto: ProdutoHibrido; subtitulo?: string | null } | null>(null);
+
 
   // Sheet de opções do produto (editar / excluir)
   const [sheetProduto, setSheetProduto] = useState<Produto | null>(null);
