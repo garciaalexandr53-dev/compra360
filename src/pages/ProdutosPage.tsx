@@ -742,7 +742,7 @@ const ProdutosPage = () => {
                     </div>
                   )}
                   {prods.map((p) => {
-                    const inCotacao = itensNaCotacao.has(p.id);
+                    const inCotacao = itensNaCotacao.has(cotacaoKey("local", p.id));
                     return (
                       <div
                         key={p.id}
@@ -775,7 +775,7 @@ const ProdutosPage = () => {
                               size="sm"
                               variant="outline"
                               className="h-7 text-xs px-2 transition-all bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
-                              onClick={() => toggleCotacaoMutation.mutate({ produtoId: p.id, adding: false })}
+                              onClick={() => toggleCotacaoMutation.mutate({ produto: produtoToHibrido(p), adding: false })}
                             >
                               ✓
                             </Button>
@@ -783,7 +783,7 @@ const ProdutosPage = () => {
                             <Button
                               size="sm"
                               className="h-7 text-xs px-2 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"
-                              onClick={() => setDialogProduto(p)}
+                              onClick={() => setDialogState({ produto: produtoToHibrido(p), subtitulo: p.categorias?.nome ?? null })}
                               aria-label={`Adicionar ${p.nome} à cotação`}
                             >
                               +
@@ -793,6 +793,7 @@ const ProdutosPage = () => {
                       </div>
                     );
                   })}
+
                 </div>
               ))}
               {isFetchingNextPage && (
