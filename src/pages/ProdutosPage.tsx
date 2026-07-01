@@ -159,6 +159,12 @@ const ProdutosPage = () => {
     getNextPageParam: (lastPage) => lastPage.nextPage,
     initialPageParam: 0,
   });
+  // Busca híbrida: catálogo global (search_produtos_hibrido). Sem termo → hook devolve [].
+  const { catalogo: catalogoHibrido, isLoading: catalogoLoading } = useProdutosHibrido({
+    termo: search,
+    minLength: 2,
+  });
+
 
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
