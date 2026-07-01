@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Trash2, Phone, Mail } from "lucide-react";
 import { formatBRL, formatNumber } from "@/lib/format";
+import { getCotacaoNome } from "@/lib/buscaProdutos";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -13,12 +14,16 @@ type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 
 interface CotacaoProduto {
   id: string;
-  produto_id: string;
+  produto_id: string | null;
+  catalogo_mestre_id?: string | null;
   cotacao_id: string;
   quantidade: number | null;
   fator_embalagem: number;
   tipo_embalagem: string | null;
+  nome?: string | null;
+  ean?: string | null;
   produto?: Produto;
+  produtos?: Produto | null;
 }
 
 interface Preco {
