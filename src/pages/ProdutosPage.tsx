@@ -24,16 +24,32 @@ import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
 import type { Tables } from "@/integrations/supabase/types";
 import BackToLojaButton from "@/components/shared/BackToLojaButton";
+import { useProdutosHibrido } from "@/hooks/useProdutosHibrido";
+import { buildSnapshotInsert, type ProdutoHibrido } from "@/lib/buscaProdutos";
 
 
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 type Categoria = Tables<"categorias">;
 
 import { EMBALAGEM_SIGLAS } from "@/lib/embalagem";
-import { FATOR_PADRAO } from "@/lib/embalagemFatores";
+import { FATOR_PADRAO, matchEmbalagem } from "@/lib/embalagemFatores";
 import { autoSuggestFator } from "@/lib/autoFator";
 import AdicionarItemDialog from "@/components/shared/AdicionarItemDialog";
 const EMBALAGEM_OPTIONS = EMBALAGEM_SIGLAS;
+
+/** Chave única no Set itensNaCotacao — distingue local vs catálogo. */
+const cotacaoKey = (fonte: "local" | "catalogo", id: string) =>
+  `${fonte === "catalogo" ? "cat" : "local"}:${id}`;
+
+/** Converte um Produto local no formato ProdutoHibrido para reaproveitar buildSnapshotInsert. */
+const produtoToHibrido = (p: Produto): ProdutoHibrido => ({
+  fonte: "local",
+  id: p.id,
+  nome: p.nome,
+  ean: null,
+  embalagem: p.embalagem ?? null,
+  fator_embalagem: (p as any).fator_embalagem ?? null,
+});
 const emptyForm = { nome: "", categoria_id: "", embalagem: "UNI", quantidade: 1, fator_embalagem: 1 };
 const PAGE_SIZE = 80;
 
@@ -91,8 +107,9 @@ const ProdutosPage = () => {
   const [classifyError, setClassifyError] = useState("");
   const [classifyMode, setClassifyMode] = useState<"classify" | "fator">("classify");
 
-  // Diálogo unificado de adicionar à cotação
-  const [dialogProduto, setDialogProduto] = useState<Produto | null>(null);
+  // Diálogo unificado — carrega ProdutoHibrido (local ou catálogo) + metadados de exibição
+  const [dialogState, setDialogState] = useState<{ produto: ProdutoHibrido; subtitulo?: string | null } | null>(null);
+
 
   // Sheet de opções do produto (editar / excluir)
   const [sheetProduto, setSheetProduto] = useState<Produto | null>(null);
@@ -142,6 +159,12 @@ const ProdutosPage = () => {
     getNextPageParam: (lastPage) => lastPage.nextPage,
     initialPageParam: 0,
   });
+  // Busca híbrida: catálogo global (search_produtos_hibrido). Sem termo → hook devolve [].
+  const { catalogo: catalogoHibrido, isLoading: catalogoLoading } = useProdutosHibrido({
+    termo: search,
+    minLength: 2,
+  });
+
 
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
@@ -161,14 +184,22 @@ const ProdutosPage = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("cotacao_produtos")
-        .select("produto_id")
+        .select("produto_id, catalogo_mestre_id")
         .eq("cotacao_id", cotacaoAtiva!.id);
-      return data ?? [];
+      return (data ?? []) as { produto_id: string | null; catalogo_mestre_id: string | null }[];
     },
   });
 
-  const itensNaCotacao = useMemo(() => new Set(cotacaoItens.map(i => i.produto_id)), [cotacaoItens]);
+  const itensNaCotacao = useMemo(() => {
+    const s = new Set<string>();
+    for (const i of cotacaoItens) {
+      if (i.produto_id) s.add(cotacaoKey("local", i.produto_id));
+      if (i.catalogo_mestre_id) s.add(cotacaoKey("catalogo", i.catalogo_mestre_id));
+    }
+    return s;
+  }, [cotacaoItens]);
   const cotacaoItemCount = itensNaCotacao.size;
+
 
   useEffect(() => {
     if (cotacaoItemCount > 0 && !showFooter) {
@@ -278,7 +309,19 @@ const ProdutosPage = () => {
   });
 
   const toggleCotacaoMutation = useMutation({
-    mutationFn: async ({ produtoId, adding, quantidade = 1, tipoEmbalagem = "UNI", fatorEmbalagem = 1 }: { produtoId: string; adding: boolean; quantidade?: number; tipoEmbalagem?: string; fatorEmbalagem?: number }) => {
+    mutationFn: async ({
+      produto,
+      adding,
+      quantidade = 1,
+      tipoEmbalagem,
+      fatorEmbalagem,
+    }: {
+      produto: ProdutoHibrido;
+      adding: boolean;
+      quantidade?: number;
+      tipoEmbalagem?: string;
+      fatorEmbalagem?: number;
+    }) => {
       if (adding) {
         // Auto-create an active cotação if none exists
         let cotacaoId = cotacaoAtiva?.id;
@@ -297,22 +340,28 @@ const ProdutosPage = () => {
           if (cotErr) throw cotErr;
           cotacaoId = newCot.id;
         }
-        const { error } = await supabase.from("cotacao_produtos").insert({
-          cotacao_id: cotacaoId,
-          produto_id: produtoId,
+        // Fonte única do snapshot (nome/ean/embalagem/fator) — src/lib/buscaProdutos.ts
+        const snap = buildSnapshotInsert({
+          cotacaoId,
+          produto,
           quantidade,
-          tipo_embalagem: tipoEmbalagem,
-          fator_embalagem: fatorEmbalagem,
-        } as any);
+          embalagem: tipoEmbalagem,
+          fator: fatorEmbalagem,
+        });
+        const { error } = await supabase.from("cotacao_produtos").insert(snap as any);
         if (error) throw error;
       } else if (!adding && cotacaoAtiva) {
-        const { error } = await supabase.from("cotacao_produtos")
-          .delete()
-          .eq("cotacao_id", cotacaoAtiva.id)
-          .eq("produto_id", produtoId);
+        let del = supabase.from("cotacao_produtos").delete().eq("cotacao_id", cotacaoAtiva.id);
+        if (produto.fonte === "catalogo") {
+          del = del.eq("catalogo_mestre_id", produto.id);
+        } else {
+          del = del.eq("produto_id", produto.id);
+        }
+        const { error } = await del;
         if (error) throw error;
       }
     },
+
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
@@ -687,52 +736,132 @@ const ProdutosPage = () => {
         <div ref={scrollRef} onScroll={handleScroll} className={`flex-1 overflow-y-auto ${cotacaoItemCount > 0 ? "pb-24" : ""}`}>
           {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
-          ) : filtered.length === 0 ? (
-            <div className="p-10 text-center text-muted-foreground">Nenhum produto encontrado.</div>
+          ) : filtered.length === 0 && catalogoHibrido.length === 0 ? (
+            <div className="p-10 text-center text-muted-foreground">
+              {catalogoLoading ? "Buscando..." : "Nenhum produto encontrado."}
+            </div>
           ) : (
             <>
-              {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([cat, prods]) => (
-                <div key={cat}>
-                  {selectedCat === "Todos" && (
-                    <div className="px-4 py-1.5 bg-muted text-[10px] font-bold uppercase tracking-wider text-muted-foreground sticky top-0 z-10 border-b">
-                      {cat}
+              {filtered.length > 0 && (
+                <>
+                  {search.trim().length >= 2 && (
+                    <div className="px-4 py-1.5 bg-primary/5 text-[10px] font-bold uppercase tracking-wider text-primary sticky top-0 z-10 border-b">
+                      Seus produtos
                     </div>
                   )}
-                  {prods.map((p) => {
-                    const inCotacao = itensNaCotacao.has(p.id);
+                  {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([cat, prods]) => (
+                    <div key={cat}>
+                      {selectedCat === "Todos" && (
+                        <div className="px-4 py-1.5 bg-muted text-[10px] font-bold uppercase tracking-wider text-muted-foreground sticky top-0 z-10 border-b">
+                          {cat}
+                        </div>
+                      )}
+                      {prods.map((p) => {
+                        const inCotacao = itensNaCotacao.has(cotacaoKey("local", p.id));
+                        return (
+                          <div
+                            key={p.id}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Abrir opções de ${p.nome}`}
+                            onClick={() => setSheetProduto(p)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                setSheetProduto(p);
+                              }
+                            }}
+                            className={`flex items-center gap-2 px-3 py-2.5 border-b hover:bg-muted/30 transition-all cursor-pointer focus:outline-none focus:bg-muted/40 ${
+                              inCotacao ? "border-l-2 border-l-primary bg-primary/5" : ""
+                            }`}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-foreground truncate">{p.nome}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {p.categorias?.nome || "Sem Categoria"} · {p.embalagem || "un"}
+                              </div>
+                            </div>
+                            <div
+                              className="flex items-center gap-1 flex-shrink-0"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {inCotacao ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-xs px-2 transition-all bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
+                                  onClick={() => toggleCotacaoMutation.mutate({ produto: produtoToHibrido(p), adding: false })}
+                                >
+                                  ✓
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  className="h-7 text-xs px-2 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"
+                                  onClick={() => setDialogState({ produto: produtoToHibrido(p), subtitulo: p.categorias?.nome ?? null })}
+                                  aria-label={`Adicionar ${p.nome} à cotação`}
+                                >
+                                  +
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                  {isFetchingNextPage && (
+                    <div className="p-4 text-center text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin inline mr-2" />Carregando mais...
+                    </div>
+                  )}
+                  {!hasNextPage && produtos.length > 0 && (
+                    <div className="p-3 text-center text-xs text-muted-foreground">
+                      {produtos.length} de {totalCount} produtos carregados
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Catálogo global — só quando há termo de busca (>=2 chars). Sem termo, mantemos apenas locais. */}
+              {search.trim().length >= 2 && catalogoHibrido.length > 0 && (
+                <div>
+                  <div className="px-4 py-1.5 bg-primary/10 text-[10px] font-bold uppercase tracking-wider text-primary sticky top-0 z-10 border-b flex items-center justify-between">
+                    <span>Catálogo global</span>
+                    <span className="normal-case tracking-normal text-muted-foreground">
+                      {catalogoHibrido.length} resultado{catalogoHibrido.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  {catalogoHibrido.map((c) => {
+                    const inCotacao = itensNaCotacao.has(cotacaoKey("catalogo", c.id));
+                    const emb = matchEmbalagem(c.embalagem);
+                    const fator = c.fator_embalagem && c.fator_embalagem > 0 ? c.fator_embalagem : (FATOR_PADRAO[emb] ?? 1);
                     return (
                       <div
-                        key={p.id}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`Abrir opções de ${p.nome}`}
-                        onClick={() => setSheetProduto(p)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            setSheetProduto(p);
-                          }
-                        }}
-                        className={`flex items-center gap-2 px-3 py-2.5 border-b hover:bg-muted/30 transition-all cursor-pointer focus:outline-none focus:bg-muted/40 ${
-                          inCotacao ? "border-l-2 border-l-primary bg-primary/5" : ""
+                        key={`cat-${c.id}`}
+                        className={`flex items-center gap-2 px-3 py-2.5 border-b transition-all ${
+                          inCotacao ? "border-l-2 border-l-primary bg-primary/5" : "hover:bg-muted/30"
                         }`}
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-foreground truncate">{p.nome}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {p.categorias?.nome || "Sem Categoria"} · {p.embalagem || "un"}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-sm font-medium text-foreground truncate">{c.nome}</span>
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/30 text-primary shrink-0">
+                              Catálogo
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {emb} · fator {fator}
+                            {c.ean ? ` · EAN ${c.ean}` : ""}
                           </div>
                         </div>
-                        <div
-                          className="flex items-center gap-1 flex-shrink-0"
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           {inCotacao ? (
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-7 text-xs px-2 transition-all bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
-                              onClick={() => toggleCotacaoMutation.mutate({ produtoId: p.id, adding: false })}
+                              className="h-7 text-xs px-2 bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
+                              onClick={() => toggleCotacaoMutation.mutate({ produto: c, adding: false })}
                             >
                               ✓
                             </Button>
@@ -740,8 +869,8 @@ const ProdutosPage = () => {
                             <Button
                               size="sm"
                               className="h-7 text-xs px-2 bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] text-white"
-                              onClick={() => setDialogProduto(p)}
-                              aria-label={`Adicionar ${p.nome} à cotação`}
+                              onClick={() => setDialogState({ produto: c, subtitulo: c.ean ? `EAN ${c.ean}` : "Catálogo global" })}
+                              aria-label={`Adicionar ${c.nome} do catálogo à cotação`}
                             >
                               +
                             </Button>
@@ -751,20 +880,11 @@ const ProdutosPage = () => {
                     );
                   })}
                 </div>
-              ))}
-              {isFetchingNextPage && (
-                <div className="p-4 text-center text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin inline mr-2" />Carregando mais...
-                </div>
-              )}
-              {!hasNextPage && produtos.length > 0 && (
-                <div className="p-3 text-center text-xs text-muted-foreground">
-                  {produtos.length} de {totalCount} produtos carregados
-                </div>
               )}
             </>
           )}
         </div>
+
 
         {/* Fixed footer — next step */}
         {cotacaoItemCount > 0 && (
@@ -1173,28 +1293,31 @@ const ProdutosPage = () => {
 
       <AdicionarItemDialog
         produto={
-          dialogProduto
+          dialogState
             ? {
-                nome: dialogProduto.nome,
-                embalagem: dialogProduto.embalagem,
-                fator: (dialogProduto as any).fator_embalagem,
-                subtitulo: dialogProduto.categorias?.nome ?? null,
+                nome: dialogState.produto.nome,
+                embalagem: dialogState.produto.embalagem,
+                fator: dialogState.produto.fator_embalagem,
+                subtitulo: dialogState.subtitulo ?? null,
               }
             : null
         }
-        onCancelar={() => setDialogProduto(null)}
+        locked={dialogState?.produto.fonte === "catalogo"}
+        badge={dialogState?.produto.fonte === "catalogo" ? "Catálogo" : null}
+        onCancelar={() => setDialogState(null)}
         onConfirmar={(qtd, emb, fator) => {
-          if (!dialogProduto) return;
+          if (!dialogState) return;
           toggleCotacaoMutation.mutate({
-            produtoId: dialogProduto.id,
+            produto: dialogState.produto,
             adding: true,
             quantidade: qtd,
             tipoEmbalagem: emb,
             fatorEmbalagem: fator,
           });
-          setDialogProduto(null);
+          setDialogState(null);
         }}
       />
+
     </div>
   );
 };
