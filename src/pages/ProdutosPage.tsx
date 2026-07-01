@@ -178,14 +178,22 @@ const ProdutosPage = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("cotacao_produtos")
-        .select("produto_id")
+        .select("produto_id, catalogo_mestre_id")
         .eq("cotacao_id", cotacaoAtiva!.id);
-      return data ?? [];
+      return (data ?? []) as { produto_id: string | null; catalogo_mestre_id: string | null }[];
     },
   });
 
-  const itensNaCotacao = useMemo(() => new Set(cotacaoItens.map(i => i.produto_id)), [cotacaoItens]);
+  const itensNaCotacao = useMemo(() => {
+    const s = new Set<string>();
+    for (const i of cotacaoItens) {
+      if (i.produto_id) s.add(cotacaoKey("local", i.produto_id));
+      if (i.catalogo_mestre_id) s.add(cotacaoKey("catalogo", i.catalogo_mestre_id));
+    }
+    return s;
+  }, [cotacaoItens]);
   const cotacaoItemCount = itensNaCotacao.size;
+
 
   useEffect(() => {
     if (cotacaoItemCount > 0 && !showFooter) {
