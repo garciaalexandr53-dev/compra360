@@ -174,7 +174,7 @@ const CotacaoPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase.from("cotacao_produtos").select("*, produtos(*, categorias(nome))").eq("cotacao_id", cotacaoAtiva!.id);
       if (error) throw error;
-      return (data || []).map((cp: any) => ({ id: cp.id, produto_id: cp.produto_id, cotacao_id: cp.cotacao_id, quantidade: cp.quantidade, fator_embalagem: cp.fator_embalagem ?? 1, tipo_embalagem: cp.tipo_embalagem ?? null, produto: cp.produtos })) as CotacaoProduto[];
+      return (data || []).map((cp: any) => ({ id: cp.id, produto_id: cp.produto_id, catalogo_mestre_id: cp.catalogo_mestre_id ?? null, cotacao_id: cp.cotacao_id, quantidade: cp.quantidade, fator_embalagem: cp.fator_embalagem ?? 1, tipo_embalagem: cp.tipo_embalagem ?? null, nome: cp.nome ?? null, ean: cp.ean ?? null, produto: cp.produtos })) as CotacaoProduto[];
     },
   });
 
