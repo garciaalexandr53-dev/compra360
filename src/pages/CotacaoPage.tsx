@@ -432,10 +432,10 @@ const CotacaoPage = () => {
 
   const filteredItems = useMemo(() => {
     let items = [...cotacaoProdutos];
-    if (search) items = items.filter((cp) => cp.produto?.nome.toLowerCase().includes(search.toLowerCase()));
+    if (search) items = items.filter((cp) => getCotacaoNome(cp as any).toLowerCase().includes(search.toLowerCase()));
     if (filterAnomalies) items = items.filter((cp) => hasAnomaly(cp.id));
     if (filterSemPreco) items = items.filter((cp) => hasNoPrice(cp.id));
-    items.sort((a, b) => (a.produto?.nome || "").localeCompare(b.produto?.nome || "", "pt-BR"));
+    items.sort((a, b) => getCotacaoNome(a as any).localeCompare(getCotacaoNome(b as any), "pt-BR"));
     return items;
   }, [cotacaoProdutos, search, filterAnomalies, filterSemPreco, localPrices, fornecedores]);
 
