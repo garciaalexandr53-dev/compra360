@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Trash2, Phone, Mail } from "lucide-react";
 import { formatBRL, formatNumber } from "@/lib/format";
+import { getCotacaoNome } from "@/lib/buscaProdutos";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -13,12 +14,16 @@ type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 
 interface CotacaoProduto {
   id: string;
-  produto_id: string;
+  produto_id: string | null;
+  catalogo_mestre_id?: string | null;
   cotacao_id: string;
   quantidade: number | null;
   fator_embalagem: number;
   tipo_embalagem: string | null;
+  nome?: string | null;
+  ean?: string | null;
   produto?: Produto;
+  produtos?: Produto | null;
 }
 
 interface Preco {
@@ -215,16 +220,16 @@ const TabelaCotacao = ({
                     <div className="flex items-center gap-1 min-w-[175px] sm:min-w-[200px]">
                       <button
                         className="h-auto min-h-[32px] text-xs font-medium text-left flex-1 px-2 rounded hover:bg-muted/50 active:bg-muted/70 transition-colors cursor-default select-none whitespace-normal break-words leading-tight py-1"
-                        onTouchStart={() => handleLongPressStart(cp.id, cp.produto?.nome || "produto")}
+                        onTouchStart={() => handleLongPressStart(cp.id, getCotacaoNome(cp))}
                         onTouchEnd={handleLongPressEnd}
                         onTouchCancel={handleLongPressEnd}
                         onContextMenu={(e) => e.preventDefault()}
                       >
-                        {cp.produto?.nome || "Produto"}
+                        {getCotacaoNome(cp)}
                       </button>
                       <button
                         className="hidden md:flex opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center h-6 w-6 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex-shrink-0"
-                        onClick={() => handleDeleteClick(cp.id, cp.produto?.nome || "produto")}
+                        onClick={() => handleDeleteClick(cp.id, getCotacaoNome(cp))}
                         title="Excluir item"
                       >
                         <Trash2 className="h-3.5 w-3.5" />

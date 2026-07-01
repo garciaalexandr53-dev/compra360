@@ -20,6 +20,7 @@ import ModalAiAnalise from "@/components/cotacao/ModalAiAnalise";
 import ModalQtySugestao from "@/components/cotacao/ModalQtySugestao";
 import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugestao";
 import TabelaCotacao from "@/components/cotacao/TabelaCotacao";
+import { getCotacaoNome } from "@/lib/buscaProdutos";
 import ReviewHeader from "@/components/cotacao/ReviewHeader";
 import ReviewFooter from "@/components/cotacao/ReviewFooter";
 
@@ -35,7 +36,7 @@ import BackToLojaButton from "@/components/shared/BackToLojaButton";
 type Fornecedor = Tables<"fornecedores">;
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
 
-interface CotacaoProduto { id: string; produto_id: string; cotacao_id: string; quantidade: number | null; fator_embalagem: number; tipo_embalagem: string | null; produto?: Produto; }
+interface CotacaoProduto { id: string; produto_id: string | null; catalogo_mestre_id?: string | null; cotacao_id: string; quantidade: number | null; fator_embalagem: number; tipo_embalagem: string | null; nome?: string | null; ean?: string | null; produto?: Produto; }
 interface Preco { id: string; cotacao_produto_id: string; fornecedor_id: string; preco: number | null; }
 
 const HIST_HIGH_THRESHOLD = 0.40; // 40% acima da média histórica
@@ -174,7 +175,7 @@ const CotacaoPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase.from("cotacao_produtos").select("*, produtos(*, categorias(nome))").eq("cotacao_id", cotacaoAtiva!.id);
       if (error) throw error;
-      return (data || []).map((cp: any) => ({ id: cp.id, produto_id: cp.produto_id, cotacao_id: cp.cotacao_id, quantidade: cp.quantidade, fator_embalagem: cp.fator_embalagem ?? 1, tipo_embalagem: cp.tipo_embalagem ?? null, produto: cp.produtos })) as CotacaoProduto[];
+      return (data || []).map((cp: any) => ({ id: cp.id, produto_id: cp.produto_id, catalogo_mestre_id: cp.catalogo_mestre_id ?? null, cotacao_id: cp.cotacao_id, quantidade: cp.quantidade, fator_embalagem: cp.fator_embalagem ?? 1, tipo_embalagem: cp.tipo_embalagem ?? null, nome: cp.nome ?? null, ean: cp.ean ?? null, produto: cp.produtos })) as CotacaoProduto[];
     },
   });
 
@@ -432,10 +433,10 @@ const CotacaoPage = () => {
 
   const filteredItems = useMemo(() => {
     let items = [...cotacaoProdutos];
-    if (search) items = items.filter((cp) => cp.produto?.nome.toLowerCase().includes(search.toLowerCase()));
+    if (search) items = items.filter((cp) => getCotacaoNome(cp as any).toLowerCase().includes(search.toLowerCase()));
     if (filterAnomalies) items = items.filter((cp) => hasAnomaly(cp.id));
     if (filterSemPreco) items = items.filter((cp) => hasNoPrice(cp.id));
-    items.sort((a, b) => (a.produto?.nome || "").localeCompare(b.produto?.nome || "", "pt-BR"));
+    items.sort((a, b) => getCotacaoNome(a as any).localeCompare(getCotacaoNome(b as any), "pt-BR"));
     return items;
   }, [cotacaoProdutos, search, filterAnomalies, filterSemPreco, localPrices, fornecedores]);
 
