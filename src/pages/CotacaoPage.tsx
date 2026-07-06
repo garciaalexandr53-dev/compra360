@@ -584,7 +584,7 @@ const CotacaoPage = () => {
         // Auto-transfer items that had no price from any supplier
         const semPrecoItems = cotacaoProdutos.filter((cp) => hasNoPrice(cp.id));
         if (semPrecoItems.length > 0) {
-          await supabase.from("cotacao_produtos").insert(semPrecoItems.map((cp) => ({ cotacao_id: newCot.id, produto_id: cp.produto_id, quantidade: cp.quantidade })));
+          await supabase.from("cotacao_produtos").insert(semPrecoItems.map((cp: any) => ({ cotacao_id: newCot.id, produto_id: cp.produto_id, catalogo_mestre_id: cp.catalogo_mestre_id ?? null, nome: getCotacaoNome(cp), ean: cp.ean ?? null, quantidade: cp.quantidade })) as any);
           toast.success(`Cotação zerada — ${semPrecoItems.length} item(ns) sem preço transferido(s) automaticamente!`);
         } else {
           toast.success("Cotação reiniciada — lista zerada!");
