@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
@@ -19,6 +19,8 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+const PriceNotificationListener = lazy(() => import("@/components/PriceNotificationListener"));
 
 export default function AppLayout() {
   const { user, loading, signOut } = useAuth();
@@ -116,6 +118,9 @@ export default function AppLayout() {
         </div>
       </div>
       <BottomNav />
+      <Suspense fallback={null}>
+        <PriceNotificationListener />
+      </Suspense>
       <OnboardingWizard open={showOnboarding} onClose={() => setShowOnboarding(false)} />
       <ModalBoasVindas />
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>

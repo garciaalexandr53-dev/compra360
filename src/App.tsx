@@ -38,7 +38,6 @@ const AdminPage = lazy(() => retryImport(() => import("./pages/AdminPage")));
 const PerfilPage = lazy(() => retryImport(() => import("./pages/PerfilPage")));
 const NotFound = lazy(() => retryImport(() => import("./pages/NotFound")));
 const UnsubscribePage = lazy(() => retryImport(() => import("./pages/UnsubscribePage")));
-const PriceNotificationListener = lazy(() => retryImport(() => import("./components/PriceNotificationListener")));
 
 const queryClient = new QueryClient();
 
@@ -50,9 +49,6 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <Suspense fallback={null}>
-              <PriceNotificationListener />
-            </Suspense>
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Suspense fallback={<LandingSkeleton />}><LandingPage /></Suspense>} />
