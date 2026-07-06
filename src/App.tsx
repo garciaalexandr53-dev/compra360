@@ -50,9 +50,6 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <Suspense fallback={null}>
-              <PriceNotificationListener />
-            </Suspense>
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Suspense fallback={<LandingSkeleton />}><LandingPage /></Suspense>} />
