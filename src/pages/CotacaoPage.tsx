@@ -348,7 +348,7 @@ const CotacaoPage = () => {
               produto_id: saved.produto_id,
               cotacao_id: saved.cotacao_id,
               quantidade: saved.quantidade,
-            });
+            } as any);
             if (cpErr) { toast.error("Erro ao desfazer"); return; }
             if (saved.precos.length) {
               await supabase.from("precos").insert(
