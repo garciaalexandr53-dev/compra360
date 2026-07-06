@@ -20,6 +20,8 @@ import {
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+const PriceNotificationListener = lazy(() => import("@/components/PriceNotificationListener"));
+
 export default function AppLayout() {
   const { user, loading, signOut } = useAuth();
   const { theme, toggle } = useTheme();
