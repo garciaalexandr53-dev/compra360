@@ -118,6 +118,9 @@ export default function AppLayout() {
         </div>
       </div>
       <BottomNav />
+      <Suspense fallback={null}>
+        <PriceNotificationListener />
+      </Suspense>
       <OnboardingWizard open={showOnboarding} onClose={() => setShowOnboarding(false)} />
       <ModalBoasVindas />
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
