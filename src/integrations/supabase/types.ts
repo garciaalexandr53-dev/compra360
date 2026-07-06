@@ -262,7 +262,7 @@ export type Database = {
           ean: string | null
           fator_embalagem: number
           id: string
-          nome: string | null
+          nome: string
           produto_id: string | null
           quantidade: number | null
           tipo_embalagem: string | null
@@ -273,7 +273,7 @@ export type Database = {
           ean?: string | null
           fator_embalagem?: number
           id?: string
-          nome?: string | null
+          nome: string
           produto_id?: string | null
           quantidade?: number | null
           tipo_embalagem?: string | null
@@ -284,7 +284,7 @@ export type Database = {
           ean?: string | null
           fator_embalagem?: number
           id?: string
-          nome?: string | null
+          nome?: string
           produto_id?: string | null
           quantidade?: number | null
           tipo_embalagem?: string | null
