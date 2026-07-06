@@ -573,7 +573,7 @@ const CotacaoPage = () => {
       const { data: newCot, error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa", loja_id: lojaAtiva?.id || null, created_by: user?.id, prazo_resposta: prazoIso } as any).select().single();
       if (error) throw error;
       if ((novaCotacaoOpt === "manter" || novaCotacaoOpt === "manter_precos") && newCot) {
-        const { data: newCps } = await supabase.from("cotacao_produtos").insert(cotacaoProdutos.map((cp) => ({ cotacao_id: newCot.id, produto_id: cp.produto_id, quantidade: cp.quantidade }))).select();
+        const { data: newCps } = await supabase.from("cotacao_produtos").insert(cotacaoProdutos.map((cp: any) => ({ cotacao_id: newCot.id, produto_id: cp.produto_id, catalogo_mestre_id: cp.catalogo_mestre_id ?? null, nome: getCotacaoNome(cp), ean: cp.ean ?? null, quantidade: cp.quantidade })) as any).select();
         if (novaCotacaoOpt === "manter_precos" && newCps?.length) {
           const priceInserts: { cotacao_produto_id: string; fornecedor_id: string; preco: number }[] = [];
           for (const newCp of newCps) { const oldCp = cotacaoProdutos.find((cp) => cp.produto_id === newCp.produto_id); if (!oldCp) continue; const oldPrices = precos.filter((p) => p.cotacao_produto_id === oldCp.id && p.preco !== null); for (const op of oldPrices) priceInserts.push({ cotacao_produto_id: newCp.id, fornecedor_id: op.fornecedor_id, preco: op.preco! }); }
