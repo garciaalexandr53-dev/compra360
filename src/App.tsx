@@ -38,7 +38,6 @@ const AdminPage = lazy(() => retryImport(() => import("./pages/AdminPage")));
 const PerfilPage = lazy(() => retryImport(() => import("./pages/PerfilPage")));
 const NotFound = lazy(() => retryImport(() => import("./pages/NotFound")));
 const UnsubscribePage = lazy(() => retryImport(() => import("./pages/UnsubscribePage")));
-const PriceNotificationListener = lazy(() => retryImport(() => import("./components/PriceNotificationListener")));
 
 const queryClient = new QueryClient();
 
