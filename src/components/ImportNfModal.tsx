@@ -152,11 +152,12 @@ const ImportNfModal = ({ open, onOpenChange, onImported }: ImportNfModalProps) =
           .map(m => ({
             cotacao_id: cotacao.id,
             produto_id: m.productId,
+            nome: (m as any).item?.nome ?? (m as any).nome ?? "",
             quantidade: m.item.quantidade || 1,
           }));
 
         if (toInsert.length) {
-          await supabase.from("cotacao_produtos").insert(toInsert);
+          await supabase.from("cotacao_produtos").insert(toInsert as any);
         }
       }
 

@@ -434,8 +434,8 @@ const DashboardPage = () => {
       if (newCot && novaCotacaoOpt !== "zerar") {
         const { data: oldCps } = await supabase.from("cotacao_produtos").select("*").eq("cotacao_id", cotacaoAtiva.id);
         if (oldCps?.length) {
-          const newCps = oldCps.map(cp => ({ cotacao_id: newCot.id, produto_id: cp.produto_id, quantidade: cp.quantidade }));
-          const { data: insertedCps } = await supabase.from("cotacao_produtos").insert(newCps).select();
+          const newCps = oldCps.map((cp: any) => ({ cotacao_id: newCot.id, produto_id: cp.produto_id, catalogo_mestre_id: cp.catalogo_mestre_id ?? null, nome: cp.nome ?? "", ean: cp.ean ?? null, quantidade: cp.quantidade, tipo_embalagem: cp.tipo_embalagem ?? undefined, fator_embalagem: cp.fator_embalagem ?? undefined }));
+          const { data: insertedCps } = await supabase.from("cotacao_produtos").insert(newCps as any).select();
           
           if (novaCotacaoOpt === "manter_precos" && insertedCps?.length) {
             const oldIds = oldCps.map(cp => cp.id);

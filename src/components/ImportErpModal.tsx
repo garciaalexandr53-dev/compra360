@@ -151,15 +151,16 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
           toInsert.push({
             cotacao_id: cotacaoId,
             produto_id: prod.id,
+            nome: (prod as any).nome ?? item.nome,
             quantidade: item.quantidade,
             fator_embalagem: fator,
             tipo_embalagem: tipoEmb,
-          });
+          } as any);
         }
       }
 
       if (toInsert.length) {
-        await supabase.from("cotacao_produtos").insert(toInsert);
+        await supabase.from("cotacao_produtos").insert(toInsert as any);
       }
       for (const u of toUpdate) {
         await supabase.from("cotacao_produtos").update({ quantidade: u.quantidade }).eq("id", u.id);

@@ -348,7 +348,7 @@ const CotacaoPage = () => {
               produto_id: saved.produto_id,
               cotacao_id: saved.cotacao_id,
               quantidade: saved.quantidade,
-            });
+            } as any);
             if (cpErr) { toast.error("Erro ao desfazer"); return; }
             if (saved.precos.length) {
               await supabase.from("precos").insert(
@@ -573,7 +573,7 @@ const CotacaoPage = () => {
       const { data: newCot, error } = await supabase.from("cotacoes").insert({ nome: `Cotação ${new Date().toLocaleDateString("pt-BR")}`, status: "ativa", loja_id: lojaAtiva?.id || null, created_by: user?.id, prazo_resposta: prazoIso } as any).select().single();
       if (error) throw error;
       if ((novaCotacaoOpt === "manter" || novaCotacaoOpt === "manter_precos") && newCot) {
-        const { data: newCps } = await supabase.from("cotacao_produtos").insert(cotacaoProdutos.map((cp) => ({ cotacao_id: newCot.id, produto_id: cp.produto_id, quantidade: cp.quantidade }))).select();
+        const { data: newCps } = await supabase.from("cotacao_produtos").insert(cotacaoProdutos.map((cp: any) => ({ cotacao_id: newCot.id, produto_id: cp.produto_id, catalogo_mestre_id: cp.catalogo_mestre_id ?? null, nome: getCotacaoNome(cp), ean: cp.ean ?? null, quantidade: cp.quantidade })) as any).select();
         if (novaCotacaoOpt === "manter_precos" && newCps?.length) {
           const priceInserts: { cotacao_produto_id: string; fornecedor_id: string; preco: number }[] = [];
           for (const newCp of newCps) { const oldCp = cotacaoProdutos.find((cp) => cp.produto_id === newCp.produto_id); if (!oldCp) continue; const oldPrices = precos.filter((p) => p.cotacao_produto_id === oldCp.id && p.preco !== null); for (const op of oldPrices) priceInserts.push({ cotacao_produto_id: newCp.id, fornecedor_id: op.fornecedor_id, preco: op.preco! }); }
@@ -584,7 +584,7 @@ const CotacaoPage = () => {
         // Auto-transfer items that had no price from any supplier
         const semPrecoItems = cotacaoProdutos.filter((cp) => hasNoPrice(cp.id));
         if (semPrecoItems.length > 0) {
-          await supabase.from("cotacao_produtos").insert(semPrecoItems.map((cp) => ({ cotacao_id: newCot.id, produto_id: cp.produto_id, quantidade: cp.quantidade })));
+          await supabase.from("cotacao_produtos").insert(semPrecoItems.map((cp: any) => ({ cotacao_id: newCot.id, produto_id: cp.produto_id, catalogo_mestre_id: cp.catalogo_mestre_id ?? null, nome: getCotacaoNome(cp), ean: cp.ean ?? null, quantidade: cp.quantidade })) as any);
           toast.success(`Cotação zerada — ${semPrecoItems.length} item(ns) sem preço transferido(s) automaticamente!`);
         } else {
           toast.success("Cotação reiniciada — lista zerada!");
@@ -700,7 +700,7 @@ const CotacaoPage = () => {
         if (newCotError) throw newCotError;
         if (newCot) {
           await supabase.from("cotacao_produtos").insert(
-            savedProducts.map((p) => ({ cotacao_id: newCot.id, produto_id: p.produto_id, quantidade: p.quantidade }))
+            savedProducts.map((p: any) => ({ cotacao_id: newCot.id, produto_id: p.produto_id, catalogo_mestre_id: p.catalogo_mestre_id ?? null, nome: p.nome ?? getCotacaoNome(p), ean: p.ean ?? null, quantidade: p.quantidade })) as any
           );
         }
         toast.success(`Cotação excluída. Nova cotação criada com ${savedProducts.length} produto(s)!`);
