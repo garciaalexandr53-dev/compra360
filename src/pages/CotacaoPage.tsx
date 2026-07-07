@@ -679,7 +679,15 @@ const CotacaoPage = () => {
       // Snapshot products before deleting if user wants to keep them
       const keepItems = cancelOpt === "manter";
       const savedProducts = keepItems
-        ? cotacaoProdutos.map((cp) => ({ produto_id: cp.produto_id, quantidade: cp.quantidade }))
+        ? cotacaoProdutos.map((cp) => ({
+            produto_id: cp.produto_id,
+            catalogo_mestre_id: cp.catalogo_mestre_id,
+            nome: cp.nome,
+            ean: cp.ean,
+            quantidade: cp.quantidade,
+            tipo_embalagem: cp.tipo_embalagem,
+            fator_embalagem: cp.fator_embalagem,
+          }))
         : [];
 
       // Garantir que não existam outras cotações ativas para a mesma loja
