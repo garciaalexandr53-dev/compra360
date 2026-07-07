@@ -1,37 +1,61 @@
-## Fix: "Desfazer exclusão" reinsere item sem `nome` (viola NOT NULL)
+## Objetivo
+Descobrir e corrigir a causa real do "Erro ao desfazer" que ocorre APENAS para itens do Catálogo Mestre (itens locais já voltam corretos).
 
-### Problema
-Em `src/pages/CotacaoPage.tsx`, o `deleteCpMutation` guarda apenas `{ cpId, produto_id, cotacao_id, quantidade, precos }` em `lastDeletedRef` (linhas 317, 325‑331). No "Desfazer" (linha 346), reinsere só esses campos. Como `cotacao_produtos.nome` é NOT NULL — e o item pode ser do catálogo (`catalogo_mestre_id`, sem `produto_id`) — o insert falha e o toast mostra "Erro ao desfazer".
+## Diagnóstico até aqui
 
-### Correção
+O que já foi verificado:
 
-**1. `src/pages/CotacaoPage.tsx`**
-- Expandir o tipo de `lastDeletedRef` para preservar o snapshot completo:
-  `{ cpId, cotacao_id, produto_id, catalogo_mestre_id, nome, ean, tipo_embalagem, fator_embalagem, quantidade, precos }`.
-- No `mutationFn`, ao encontrar `cp`, copiar todos esses campos do `cotacaoProdutos` original (já vêm do `select` da query).
-- No handler "Desfazer", montar o payload de insert reaproveitando o snapshot salvo via `buildUndoInsert` (nova função pura) — mantendo `id: saved.cpId`, `nome` copiado diretamente do snapshot (SEM fallback), `ean`, `catalogo_mestre_id` OU `produto_id`, `tipo_embalagem`, `fator_embalagem`, `quantidade`, `cotacao_id`.
-- **Sem fallback para `nome`**: se o snapshot vier sem nome, o insert vai falhar contra o NOT NULL e o toast de erro aparece — comportamento desejado, erro visível ao invés de dado mascarado.
-- Não alterar nenhum outro insert em `cotacao_produtos`. Não usar `buildSnapshotInsert` porque foi desenhado para `ProdutoHibrido` da busca — aqui reaproveitar o snapshot original é mais fiel.
+- **Snapshot está correto**: a query `cotacao_produtos.select("*, produtos(...)")` retorna todos os campos, incluindo `catalogo_mestre_id`, `nome`, `ean`, `fator_embalagem` etc. — confirmado no network log (`{"id":"f220621a…","catalogo_mestre_id":"0a0ee81b…","nome":"Abacaxi em Calda…"}`).
+- **`buildUndoInsert`** copia o snapshot fielmente, sem fallback.
+- **Constraints da tabela** `cotacao_produtos`:
+  - `CHECK (produto_id IS NOT NULL OR catalogo_mestre_id IS NOT NULL)` — atendido (catalogo_mestre_id preenchido).
+  - `UNIQUE (cotacao_id, produto_id)` — NULLs são distintos por padrão no Postgres, então não conflita.
+  - `nome NOT NULL`, `fator_embalagem NOT NULL` — ambos preenchidos no snapshot.
+- **RLS** `Users manage own cotacao_produtos` — valida via `cotacoes.created_by = auth.uid()`, condição satisfeita.
+- O erro `400 invalid input syntax for type uuid: "null"` visto no log **NÃO é** do undo — é de uma consulta separada de reposição (`cotacao_produtos?produto_id=in.(...,null)`), sem relação com este bug.
 
-**2. Nova função pura — `src/lib/undoCotacaoProduto.ts`**
-- Export `buildUndoInsert(saved)` que recebe o snapshot salvo e retorna o objeto pronto para `supabase.from("cotacao_produtos").insert(...)`. Sem lógica de fallback. Copia `nome` diretamente.
+Ou seja: o payload aparenta estar 100% válido, mas o insert ainda falha em runtime. O código atual joga fora a mensagem real do erro (`toast.error("Erro ao desfazer")` sem `cpErr.message`), o que impede o diagnóstico final.
 
-**3. Teste — `src/lib/undoCotacaoProduto.test.ts`**
-- Caso 1 (item de catálogo): snapshot com `nome`, `ean`, `catalogo_mestre_id`, `produto_id: null` → payload preserva `nome` real, `catalogo_mestre_id` presente, `produto_id: null`.
-- Caso 2 (item local): snapshot com `produto_id`, `catalogo_mestre_id: null`, `nome` real → payload preserva `nome` real, `produto_id` presente, `catalogo_mestre_id: null`.
-- Ambos os testes assertam `expect(payload.nome).toBe(<nome exato do snapshot>)`.
-- **Sem teste de fallback "—"** — esse caminho não existe.
+## Passo 1 — Expor a mensagem real (chave para o diagnóstico)
 
-### Fora de escopo
-- Não mexer nos outros 9 inserts auditados em `cotacao_produtos`.
-- Sem mudança de UI/responsivo.
-- Sem migração de banco.
+Em `src/pages/CotacaoPage.tsx` (linha ~361), trocar:
 
-### Arquivos
-```
-src/pages/CotacaoPage.tsx                 (expandir ref + usar buildUndoInsert)
-src/lib/undoCotacaoProduto.ts             (nova função pura)
-src/lib/undoCotacaoProduto.test.ts        (2 casos: catálogo e local)
+```ts
+if (cpErr) { toast.error("Erro ao desfazer"); return; }
 ```
 
-Posso executar?
+por:
+
+```ts
+if (cpErr) {
+  console.error("[undo cotacao_produto] insert falhou", { payload, cpErr });
+  toast.error(`Erro ao desfazer: ${cpErr.message}`);
+  return;
+}
+```
+
+Isso mostra no toast a mensagem do Postgres (`code`, `details`, `hint`) e imprime o payload no console. Com isso conseguimos ver qual constraint / policy / coluna está reclamando.
+
+## Passo 2 — Reproduzir e ler a mensagem
+
+O usuário adiciona um item do Catálogo Mestre → exclui → clica em **Desfazer**. O toast agora exibe a mensagem real (ex.: `duplicate key value violates unique constraint …`, `null value in column …`, `new row violates row-level security`, etc.).
+
+## Passo 3 — Aplicar o fix específico
+
+Com a mensagem em mãos, o fix é direto. As hipóteses mais prováveis, com o remédio de cada uma:
+
+- **`duplicate key … cotacao_produtos_pkey`** → outro insert (realtime/optimistic) reinseriu o id antes de nós; solução: no undo, gerar novo id em vez de reaproveitar (`id: crypto.randomUUID()`) e ajustar `saved.precos` para apontar para o novo id.
+- **`null value in column "fator_embalagem"`** → snapshot vindo com null; garantir `fator_embalagem: cp.fator_embalagem ?? 1` na captura (mantendo `nome` sem fallback, conforme sua regra).
+- **`new row violates row-level security`** → cotação já foi encerrada/movida entre a exclusão e o clique; tratar com mensagem clara ("Cotação não está mais ativa").
+- **Outro** → fix pontual conforme a mensagem.
+
+Sem inventar solução às cegas: o passo 1 é o que destrava a decisão.
+
+## Escopo
+
+- Único arquivo alterado no passo 1: `src/pages/CotacaoPage.tsx` (uma linha).
+- Passo 3 pode alterar `src/pages/CotacaoPage.tsx` e/ou `src/lib/undoCotacaoProduto.ts` conforme o erro. Sem migração. Sem mexer em outros inserts. Sem mudança de UI além da mensagem do toast.
+
+## Fora de escopo
+
+- O 400 de `produto_id=in.(...,null)` é outro bug (consulta de reposição). Pode ser tratado depois em ticket separado.

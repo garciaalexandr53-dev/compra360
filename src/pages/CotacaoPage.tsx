@@ -358,7 +358,11 @@ const CotacaoPage = () => {
             if (!saved) return;
             const payload = buildUndoInsert(saved.snapshot);
             const { error: cpErr } = await supabase.from("cotacao_produtos").insert(payload as any);
-            if (cpErr) { toast.error("Erro ao desfazer"); return; }
+            if (cpErr) {
+              console.error("[undo cotacao_produto] insert falhou", { payload, cpErr });
+              toast.error(`Erro ao desfazer: ${cpErr.message}`);
+              return;
+            }
             if (saved.precos.length) {
               await supabase.from("precos").insert(
                 saved.precos.map((p) => ({ cotacao_produto_id: saved.snapshot.cpId, fornecedor_id: p.fornecedor_id, preco: p.preco }))
