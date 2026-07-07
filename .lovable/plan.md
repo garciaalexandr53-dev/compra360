@@ -1,72 +1,37 @@
-## Busca híbrida de produtos (catálogo global + local) com snapshot na cotação
+## Fix: "Desfazer exclusão" reinsere item sem `nome` (viola NOT NULL)
 
-Visão geral: introduzir busca unificada nas duas telas onde produtos viram itens de cotação — `AddProdutosCotacaoPage` (cliente) e `AppFuncionariosPublic` (funcionário público). A busca consulta `catalogo_mestre` (global, com EAN) E `produtos` (local). A inserção em `cotacao_produtos` grava um snapshot imutável de `nome`, `ean`, `tipo_embalagem`, `fator_embalagem`.
+### Problema
+Em `src/pages/CotacaoPage.tsx`, o `deleteCpMutation` guarda apenas `{ cpId, produto_id, cotacao_id, quantidade, precos }` em `lastDeletedRef` (linhas 317, 325‑331). No "Desfazer" (linha 346), reinsere só esses campos. Como `cotacao_produtos.nome` é NOT NULL — e o item pode ser do catálogo (`catalogo_mestre_id`, sem `produto_id`) — o insert falha e o toast mostra "Erro ao desfazer".
 
-Boa notícia: `cotacao_produtos` já tem as colunas `catalogo_mestre_id`, `nome`, `ean`, `tipo_embalagem`, `fator_embalagem` — então **nenhuma migração de schema é necessária**.
+### Correção
 
-### 1. Backend (RPCs SECURITY DEFINER)
+**1. `src/pages/CotacaoPage.tsx`**
+- Expandir o tipo de `lastDeletedRef` para preservar o snapshot completo:
+  `{ cpId, cotacao_id, produto_id, catalogo_mestre_id, nome, ean, tipo_embalagem, fator_embalagem, quantidade, precos }`.
+- No `mutationFn`, ao encontrar `cp`, copiar todos esses campos do `cotacaoProdutos` original (já vêm do `select` da query).
+- No handler "Desfazer", montar o payload de insert reaproveitando o snapshot salvo via `buildUndoInsert` (nova função pura) — mantendo `id: saved.cpId`, `nome` copiado diretamente do snapshot (SEM fallback), `ean`, `catalogo_mestre_id` OU `produto_id`, `tipo_embalagem`, `fator_embalagem`, `quantidade`, `cotacao_id`.
+- **Sem fallback para `nome`**: se o snapshot vier sem nome, o insert vai falhar contra o NOT NULL e o toast de erro aparece — comportamento desejado, erro visível ao invés de dado mascarado.
+- Não alterar nenhum outro insert em `cotacao_produtos`. Não usar `buildSnapshotInsert` porque foi desenhado para `ProdutoHibrido` da busca — aqui reaproveitar o snapshot original é mais fiel.
 
-Criar duas RPCs novas em uma migração:
+**2. Nova função pura — `src/lib/undoCotacaoProduto.ts`**
+- Export `buildUndoInsert(saved)` que recebe o snapshot salvo e retorna o objeto pronto para `supabase.from("cotacao_produtos").insert(...)`. Sem lógica de fallback. Copia `nome` diretamente.
 
-- `search_produtos_hibrido(_termo text, _limit int default 30)` — para usuário autenticado:
-  - Busca em `catalogo_mestre` (ativo=true) por `nome ILIKE %termo%` OU `ean LIKE termo%` (quando numérico).
-  - Busca em `produtos` (ativo=true, user_id=auth.uid()) por `nome ILIKE %termo%`.
-  - Dedupe na fonte: exclui locais cujo `lower(nome)` já apareceu no global.
-  - Retorna lista unificada: `fonte` (`'catalogo' | 'local'`), `id`, `nome`, `ean`, `embalagem`, `fator_embalagem`. Globais primeiro.
+**3. Teste — `src/lib/undoCotacaoProduto.test.ts`**
+- Caso 1 (item de catálogo): snapshot com `nome`, `ean`, `catalogo_mestre_id`, `produto_id: null` → payload preserva `nome` real, `catalogo_mestre_id` presente, `produto_id: null`.
+- Caso 2 (item local): snapshot com `produto_id`, `catalogo_mestre_id: null`, `nome` real → payload preserva `nome` real, `produto_id` presente, `catalogo_mestre_id: null`.
+- Ambos os testes assertam `expect(payload.nome).toBe(<nome exato do snapshot>)`.
+- **Sem teste de fallback "—"** — esse caminho não existe.
 
-- `search_produtos_funcionario(_loja_id uuid, _termo text, _limit int default 30)` — anônima:
-  - Mesma lógica, mas `produtos` filtra por `user_id = owner da loja` (via `get_loja_owner`). Globais primeiro.
+### Fora de escopo
+- Não mexer nos outros 9 inserts auditados em `cotacao_produtos`.
+- Sem mudança de UI/responsivo.
+- Sem migração de banco.
 
-Sem novas tabelas → sem novas GRANTs além das chamadas (RPCs SECURITY DEFINER).
-
-### 2. Lib compartilhada
-
-Novo `src/lib/buscaProdutos.ts`:
-- Tipos `FonteProduto = 'catalogo' | 'local'` e `ProdutoBusca`.
-- `montarSnapshotCotacao(item: ProdutoBusca, quantidade, embOverride?, fatorOverride?) → InsertCotacaoProduto` — única função que monta o payload de insert respeitando as regras:
-  - global → `catalogo_mestre_id=id`, `produto_id=null`, snapshot nome/ean/emb/fator do catálogo, **ignora overrides** de emb/fator.
-  - local → `produto_id=id`, `catalogo_mestre_id=null`, `ean=null`, snapshot nome, emb/fator do local (sem override).
-- `formatarLabelFonte` para badge.
-- Testes unitários: `src/lib/buscaProdutos.test.ts` cobrindo dedup logic (mockando RPC) e snapshot.
-
-### 3. Frontend — `AddProdutosCotacaoPage`
-
-- Substituir `produtos-search` por `useQuery` que chama `search_produtos_hibrido`.
-- A listagem inicial (sem termo) continua mostrando produtos locais (mantém comportamento atual de "Seus produtos").
-- No diálogo de quantidade: se `fonte==='catalogo'`, badge "Catálogo" + campos embalagem e fator com `disabled`/somente leitura e tooltip "Travado pelo catálogo". Se local, editável como hoje.
-- "Cadastrar como novo produto" só aparece quando a busca híbrida retornou 0 resultados.
-- `handleContinue`: usar `montarSnapshotCotacao` para cada item; remover lógica que cria novo produto para itens vindos do catálogo.
-
-### 4. Frontend — `AppFuncionariosPublic`
-
-- Adicionar busca via `search_produtos_funcionario` no diálogo de adicionar item.
-- Itens locais já existem na listagem atual (RPC `get_produtos_for_loja`) — manter, mas mesclar com sugestões do catálogo quando o funcionário digita.
-- Embalagem/fator sempre travados (já é o comportamento).
-- Ao salvar item em `itens_faltantes`, persistir `catalogo_mestre_id` na observação ou (preferido) extender `itens_faltantes` apenas se necessário. Para escopo mínimo: persistir EAN/nome do catálogo na observação já existente e usar snapshot quando o cliente importa em `FuncionariosPage`. Mantém o ciclo atual sem mudanças disruptivas em `itens_faltantes`.
-
-### 5. Exibição (histórico e cotação)
-
-- `TabelaCotacao.tsx`, `CotacaoPage.tsx`, `HistoricoPage.tsx`, `historicoExports.ts`: trocar leitura do nome para `cp.nome ?? cp.produtos?.nome` priorizando snapshot. Mostrar EAN quando presente. Badge "Catálogo" quando `catalogo_mestre_id` existir.
-- Edição inline do nome: bloquear quando item é do catálogo.
-
-### 6. Testes
-
-- `buscaProdutos.test.ts`: dedup, ordenação global-primeiro, montagem de snapshot com ambas as fontes, override só vale para local.
-- Estender `publicPagesNoDirectTableAccess.test.ts` para incluir `catalogo_mestre` na blacklist de páginas públicas.
-- Smoke test responsivo via Playwright após implementação (360px e 1280px) para confirmar layout do badge "Catálogo" e diálogo travado.
-
-### 7. Estrutura técnica
+### Arquivos
 ```
-supabase/migrations/<ts>_busca_hibrida.sql   (2 RPCs)
-src/lib/buscaProdutos.ts                     (lógica compartilhada)
-src/lib/buscaProdutos.test.ts                (unit tests)
-src/pages/AddProdutosCotacaoPage.tsx         (refactor busca + snapshot)
-src/pages/AppFuncionariosPublic.tsx          (refactor busca)
-src/components/cotacao/TabelaCotacao.tsx     (snapshot + badge)
-src/pages/CotacaoPage.tsx                    (edit guard + display)
-src/pages/HistoricoPage.tsx                  (display via snapshot)
-src/lib/historicoExports.ts                  (export usa snapshot)
-src/pages/publicPagesNoDirectTableAccess.test.ts (catalogo_mestre na lista)
+src/pages/CotacaoPage.tsx                 (expandir ref + usar buildUndoInsert)
+src/lib/undoCotacaoProduto.ts             (nova função pura)
+src/lib/undoCotacaoProduto.test.ts        (2 casos: catálogo e local)
 ```
 
-Quer que eu execute?
+Posso executar?
