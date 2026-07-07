@@ -679,7 +679,15 @@ const CotacaoPage = () => {
       // Snapshot products before deleting if user wants to keep them
       const keepItems = cancelOpt === "manter";
       const savedProducts = keepItems
-        ? cotacaoProdutos.map((cp) => ({ produto_id: cp.produto_id, quantidade: cp.quantidade }))
+        ? cotacaoProdutos.map((cp) => ({
+            produto_id: cp.produto_id,
+            catalogo_mestre_id: cp.catalogo_mestre_id,
+            nome: cp.nome,
+            ean: cp.ean,
+            quantidade: cp.quantidade,
+            tipo_embalagem: cp.tipo_embalagem,
+            fator_embalagem: cp.fator_embalagem,
+          }))
         : [];
 
       // Garantir que não existam outras cotações ativas para a mesma loja
@@ -713,7 +721,16 @@ const CotacaoPage = () => {
         if (newCotError) throw newCotError;
         if (newCot) {
           await supabase.from("cotacao_produtos").insert(
-            savedProducts.map((p: any) => ({ cotacao_id: newCot.id, produto_id: p.produto_id, catalogo_mestre_id: p.catalogo_mestre_id ?? null, nome: p.nome ?? getCotacaoNome(p), ean: p.ean ?? null, quantidade: p.quantidade })) as any
+            savedProducts.map((p: any) => ({
+              cotacao_id: newCot.id,
+              produto_id: p.produto_id,
+              catalogo_mestre_id: p.catalogo_mestre_id ?? null,
+              nome: p.nome,
+              ean: p.ean ?? null,
+              quantidade: p.quantidade,
+              tipo_embalagem: p.tipo_embalagem,
+              fator_embalagem: p.fator_embalagem,
+            })) as any
           );
         }
         toast.success(`Cotação excluída. Nova cotação criada com ${savedProducts.length} produto(s)!`);
