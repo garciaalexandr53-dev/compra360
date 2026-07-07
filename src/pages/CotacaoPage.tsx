@@ -21,6 +21,7 @@ import ModalQtySugestao from "@/components/cotacao/ModalQtySugestao";
 import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugestao";
 import TabelaCotacao from "@/components/cotacao/TabelaCotacao";
 import { getCotacaoNome } from "@/lib/buscaProdutos";
+import { buildUndoInsert } from "@/lib/undoCotacaoProduto";
 import ReviewHeader from "@/components/cotacao/ReviewHeader";
 import ReviewFooter from "@/components/cotacao/ReviewFooter";
 
