@@ -334,7 +334,7 @@ const CotacaoPage = () => {
             cotacao_id: cp.cotacao_id,
             produto_id: cp.produto_id ?? null,
             catalogo_mestre_id: cp.catalogo_mestre_id ?? null,
-            nome: cp.nome ?? cp.produtos?.nome ?? "",
+            nome: cp.nome ?? (cp as any).produto?.nome ?? (cp as any).produtos?.nome ?? "",
             ean: cp.ean ?? null,
             tipo_embalagem: cp.tipo_embalagem ?? null,
             fator_embalagem: cp.fator_embalagem ?? null,
