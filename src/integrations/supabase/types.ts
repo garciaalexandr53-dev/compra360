@@ -44,36 +44,6 @@ export type Database = {
         }
         Relationships: []
       }
-      catalogo_base: {
-        Row: {
-          categoria: string
-          created_at: string
-          embalagem: string
-          fator_embalagem: number
-          id: string
-          nome: string
-          segmento: string
-        }
-        Insert: {
-          categoria?: string
-          created_at?: string
-          embalagem?: string
-          fator_embalagem?: number
-          id?: string
-          nome: string
-          segmento?: string
-        }
-        Update: {
-          categoria?: string
-          created_at?: string
-          embalagem?: string
-          fator_embalagem?: number
-          id?: string
-          nome?: string
-          segmento?: string
-        }
-        Relationships: []
-      }
       catalogo_mestre: {
         Row: {
           ativo: boolean
@@ -990,6 +960,36 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      zz_catalogo_base_drop_20260713: {
+        Row: {
+          categoria: string
+          created_at: string
+          embalagem: string
+          fator_embalagem: number
+          id: string
+          nome: string
+          segmento: string
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string
+          embalagem?: string
+          fator_embalagem?: number
+          id?: string
+          nome: string
+          segmento?: string
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          embalagem?: string
+          fator_embalagem?: number
+          id?: string
+          nome?: string
+          segmento?: string
         }
         Relationships: []
       }
