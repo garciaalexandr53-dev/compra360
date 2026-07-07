@@ -314,19 +314,31 @@ const CotacaoPage = () => {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] }); queryClient.invalidateQueries({ queryKey: ["produtos"] }); },
   });
 
-  const lastDeletedRef = useRef<{ cpId: string; produto_id: string; cotacao_id: string; quantidade: number | null; precos: { cotacao_produto_id: string; fornecedor_id: string; preco: number | null }[] } | null>(null);
+  const lastDeletedRef = useRef<{
+    snapshot: import("@/lib/undoCotacaoProduto").UndoCotacaoProdutoSnapshot;
+    precos: { cotacao_produto_id: string; fornecedor_id: string; preco: number | null }[];
+  } | null>(null);
 
   const deleteCpMutation = useMutation({
     mutationFn: async (cpId: string) => {
-      // Save data for undo
+      // Save FULL snapshot for undo — nome/ean/catalogo_mestre_id/embalagem/fator
+      // devem ser preservados porque cotacao_produtos.nome é NOT NULL e o item
+      // pode vir do catálogo global (sem produto_id).
       const cp = cotacaoProdutos?.find((c: any) => c.id === cpId);
       const cpPrecos = precos?.filter((p: any) => p.cotacao_produto_id === cpId) || [];
       if (cp) {
         lastDeletedRef.current = {
-          cpId: cp.id,
-          produto_id: cp.produto_id,
-          cotacao_id: cp.cotacao_id,
-          quantidade: cp.quantidade,
+          snapshot: {
+            cpId: cp.id,
+            cotacao_id: cp.cotacao_id,
+            produto_id: cp.produto_id ?? null,
+            catalogo_mestre_id: cp.catalogo_mestre_id ?? null,
+            nome: cp.nome ?? cp.produtos?.nome ?? "",
+            ean: cp.ean ?? null,
+            tipo_embalagem: cp.tipo_embalagem ?? null,
+            fator_embalagem: cp.fator_embalagem ?? null,
+            quantidade: cp.quantidade ?? null,
+          },
           precos: cpPrecos.map((p: any) => ({ cotacao_produto_id: p.cotacao_produto_id, fornecedor_id: p.fornecedor_id, preco: p.preco })),
         };
       }
@@ -343,16 +355,12 @@ const CotacaoPage = () => {
           onClick: async () => {
             const saved = lastDeletedRef.current;
             if (!saved) return;
-            const { error: cpErr } = await supabase.from("cotacao_produtos").insert({
-              id: saved.cpId,
-              produto_id: saved.produto_id,
-              cotacao_id: saved.cotacao_id,
-              quantidade: saved.quantidade,
-            } as any);
+            const payload = buildUndoInsert(saved.snapshot);
+            const { error: cpErr } = await supabase.from("cotacao_produtos").insert(payload as any);
             if (cpErr) { toast.error("Erro ao desfazer"); return; }
             if (saved.precos.length) {
               await supabase.from("precos").insert(
-                saved.precos.map((p) => ({ cotacao_produto_id: saved.cpId, fornecedor_id: p.fornecedor_id, preco: p.preco }))
+                saved.precos.map((p) => ({ cotacao_produto_id: saved.snapshot.cpId, fornecedor_id: p.fornecedor_id, preco: p.preco }))
               );
             }
             lastDeletedRef.current = null;
