@@ -51,8 +51,16 @@ serve(async (req) => {
     // Fetch products with prices
     const { data: cotacaoProdutos } = await supabase
       .from("cotacao_produtos")
-      .select("id, quantidade, fator_embalagem, produto_id, produtos(nome, embalagem, categorias(nome))")
+      .select("id, quantidade, fator_embalagem, produto_id, nome, tipo_embalagem, produtos(nome, embalagem, categorias(nome))")
       .eq("cotacao_id", cotacao_id);
+
+    console.log("[analyze-precos] itens da cotação:", (cotacaoProdutos || []).map((cp: any) => ({
+      id: cp.id,
+      cp_nome: cp.nome,
+      produto_nome: cp.produtos?.nome,
+      produto_id: cp.produto_id,
+      resolved: cp.nome ?? cp.produtos?.nome ?? "?",
+    })));
 
     // Fetch selected suppliers
     const { data: cotacaoFornecedores } = await supabase
