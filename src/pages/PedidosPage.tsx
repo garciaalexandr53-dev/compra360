@@ -129,8 +129,8 @@ const PedidosPage = () => {
       const fator = cp.fator_embalagem || 1;
       const total = best.preco * qt * fator;
       result[best.fornecedor_id]?.push({
-        produto: cp.produtos?.nome || "?",
-        embalagem: cp.produtos?.embalagem || "un",
+        produto: cp.nome || cp.produtos?.nome || "?",
+        embalagem: cp.tipo_embalagem || cp.produtos?.embalagem || "un",
         quantidade: qt,
         preco: best.preco,
         total,

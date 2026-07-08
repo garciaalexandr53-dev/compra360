@@ -174,8 +174,8 @@ const AnalisePage = () => {
       const qt = cp.quantidade || 1;
       const fator = cp.fator_embalagem || 1;
       result[best.fornecedor_id]?.push({
-        produto: cp.produtos?.nome || "?",
-        embalagem: cp.produtos?.embalagem || "un",
+        produto: cp.nome || cp.produtos?.nome || "?",
+        embalagem: cp.tipo_embalagem || cp.produtos?.embalagem || "un",
         quantidade: qt,
         fator,
         preco: best.preco ?? 0,
