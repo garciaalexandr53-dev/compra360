@@ -112,10 +112,11 @@ serve(async (req) => {
         const minPrice = Math.min(...cpPrecos.map((p: any) => p.preco));
         const winners = cpPrecos.filter((p: any) => p.preco === minPrice);
 
+        const cpNome = cp.nome ?? cp.produtos?.nome ?? "?";
         // Detect ties
         if (winners.length > 1) {
           tiedItems.push({
-            produto: cp.produtos?.nome || "?",
+            produto: cpNome,
             fornecedores: winners.map((w: any) => fornecedorMap[w.fornecedor_id] || "?"),
             preco: minPrice,
           });
@@ -126,7 +127,7 @@ serve(async (req) => {
           if (!supplierWins[winner.fornecedor_id]) supplierWins[winner.fornecedor_id] = { wins: 0, total: 0, items: [] };
           supplierWins[winner.fornecedor_id].wins++;
           supplierWins[winner.fornecedor_id].total += minPrice * (cp.quantidade || 1);
-          supplierWins[winner.fornecedor_id].items.push(cp.produtos?.nome || "?");
+          supplierWins[winner.fornecedor_id].items.push(cpNome);
         }
         // Track total per supplier for ALL items they quoted
         cpPrecos.forEach((p: any) => {
