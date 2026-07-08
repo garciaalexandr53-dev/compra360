@@ -87,13 +87,15 @@ serve(async (req) => {
       lines.push("Produtos e preços:");
       (cotacaoProdutos || []).forEach((cp: any) => {
         const prod = cp.produtos;
+        const nome = cp.nome ?? prod?.nome ?? "?";
+        const embalagem = cp.tipo_embalagem ?? prod?.embalagem ?? "un";
         const cat = prod?.categorias?.nome || "Sem categoria";
         const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco > 0);
         const precosStr = cpPrecos
           .map((p: any) => `${fornecedorMap[p.fornecedor_id] || "?"}: R$${Number(p.preco).toFixed(2)}`)
           .join(", ");
         lines.push(
-          `- ${prod?.nome} [${cat}] (emb: ${prod?.embalagem || "-"}, qtd: ${cp.quantidade || 1}) → ${precosStr || "sem preço"}`
+          `- ${nome} [${cat}] (emb: ${embalagem}, qtd: ${cp.quantidade || 1}) → ${precosStr || "sem preço"}`
         );
       });
 
