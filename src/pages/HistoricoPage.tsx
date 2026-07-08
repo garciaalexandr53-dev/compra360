@@ -722,7 +722,7 @@ const HistoricoPage = () => {
     queryFn: async () => {
       const { data: cps } = await supabase
         .from("cotacao_produtos")
-        .select("id, cotacao_id, produto_id, tipo_embalagem, fator_embalagem, quantidade, produtos(nome, embalagem)")
+        .select("id, cotacao_id, produto_id, tipo_embalagem, fator_embalagem, quantidade, nome, produtos(nome, embalagem)")
         .in("cotacao_id", batchIds);
       const cpList = cps || [];
       const cpIds = cpList.map((cp: any) => cp.id);
