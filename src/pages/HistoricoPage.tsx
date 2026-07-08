@@ -7,6 +7,7 @@ import { Info } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL, formatDateTime, formatNumber } from "@/lib/format";
+import { getCotacaoNome, getCotacaoEmbalagem } from "@/lib/buscaProdutos";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -666,8 +667,8 @@ const HistoricoPage = () => {
       const total = precoUnit != null ? precoUnit * qtd * fator : null;
       return {
         id: cp.id,
-        nome: cp.produtos?.nome || "—",
-        embalagem: cp.tipo_embalagem || cp.produtos?.embalagem || "un",
+        nome: getCotacaoNome(cp),
+        embalagem: getCotacaoEmbalagem(cp),
         fator,
         qtd,
         fornecedor: winner?.fornecedores?.nome || "—",
@@ -721,7 +722,7 @@ const HistoricoPage = () => {
     queryFn: async () => {
       const { data: cps } = await supabase
         .from("cotacao_produtos")
-        .select("id, cotacao_id, produto_id, tipo_embalagem, fator_embalagem, quantidade, produtos(nome, embalagem)")
+        .select("id, cotacao_id, produto_id, tipo_embalagem, fator_embalagem, quantidade, nome, produtos(nome, embalagem)")
         .in("cotacao_id", batchIds);
       const cpList = cps || [];
       const cpIds = cpList.map((cp: any) => cp.id);
@@ -774,8 +775,8 @@ const HistoricoPage = () => {
         const precoUnit = winner ? Number(winner.preco) : null;
         const total = precoUnit != null ? precoUnit * qtd * fator : null;
         const fornecedor = winner?.fornecedores?.nome || "—";
-        const nome = cp.produtos?.nome || "—";
-        const embalagem = cp.tipo_embalagem || cp.produtos?.embalagem || "un";
+        const nome = getCotacaoNome(cp);
+        const embalagem = getCotacaoEmbalagem(cp);
         if (winner) {
           insightRows.push({
             cotacaoId: cot.id,
@@ -1948,8 +1949,8 @@ const HistoricoPage = () => {
               // Group by product name
               const grouped: Record<string, { nome: string; embalagem: string; entries: any[] }> = {};
               itemSearchResults.forEach((item: any) => {
-                const key = item.produtos?.nome || "?";
-                if (!grouped[key]) grouped[key] = { nome: key, embalagem: item.produtos?.embalagem || "un", entries: [] };
+                const key = getCotacaoNome(item);
+                if (!grouped[key]) grouped[key] = { nome: key, embalagem: getCotacaoEmbalagem(item), entries: [] };
                 grouped[key].entries.push(item);
               });
 

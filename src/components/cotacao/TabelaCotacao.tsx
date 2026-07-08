@@ -301,7 +301,7 @@ const TabelaCotacao = ({
                     if (histAlert === "low" && !toastedRef.current.has(cellKey)) {
                       toastedRef.current.add(cellKey);
                       setTimeout(() => {
-                        toast.warning(`⚠️ Preço de ${cp.produto?.nome || "produto"} parece muito baixo — confirme com o fornecedor`, { duration: 6000 });
+                        toast.warning(`⚠️ Preço de ${getCotacaoNome(cp)} parece muito baixo — confirme com o fornecedor`, { duration: 6000 });
                       }, 100);
                     }
 

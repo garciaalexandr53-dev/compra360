@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Check, CheckCheck, AlertTriangle, ChevronRight, Minus, Plus, ArrowLeft, Package, Camera, Loader2, XCircle, AlertCircle, Filter } from "lucide-react";
 import { formatBRL } from "@/lib/format";
+import { getCotacaoNome, getCotacaoEmbalagem } from "@/lib/buscaProdutos";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ConferenciaItem {
@@ -241,7 +242,7 @@ const ConferenciaPedidos = () => {
 
     const { data: cotacaoProdutos } = await supabase
       .from("cotacao_produtos")
-      .select("id, quantidade, fator_embalagem, tipo_embalagem, produto_id, produtos(nome, embalagem)")
+      .select("id, quantidade, fator_embalagem, tipo_embalagem, nome, produto_id, produtos(nome, embalagem)")
       .eq("cotacao_id", pedidoFull.cotacao_id);
 
     const { data: precos } = await supabase
@@ -254,8 +255,8 @@ const ConferenciaPedidos = () => {
     const orderItems: ConferenciaItem[] = (cotacaoProdutos || [])
       .filter((cp: any) => precosMap.has(cp.id) && precosMap.get(cp.id) != null)
       .map((cp: any) => ({
-        produto_nome: cp.produtos?.nome || "Produto",
-        embalagem: cp.tipo_embalagem || cp.produtos?.embalagem || "un",
+        produto_nome: getCotacaoNome(cp),
+        embalagem: getCotacaoEmbalagem(cp),
         fator: cp.fator_embalagem || 1,
         quantidade_pedida: cp.quantidade || 1,
         quantidade_recebida: cp.quantidade || 1,
