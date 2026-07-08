@@ -276,7 +276,7 @@ ${productNames}`,
     if (type === "suggest-quantities") {
       const { cotacao_id, loja_id } = params;
 
-      const { data: cps } = await sb.from("cotacao_produtos").select("id, produto_id, quantidade, produtos(nome, embalagem)").eq("cotacao_id", cotacao_id);
+      const { data: cps } = await sb.from("cotacao_produtos").select("id, produto_id, quantidade, nome, tipo_embalagem, produtos(nome, embalagem)").eq("cotacao_id", cotacao_id);
 
       // Get store name for context
       let lojaName = "";
@@ -296,7 +296,7 @@ ${productNames}`,
         const sorted = [...pastCps].sort((a: any, b: any) => cotOrder.indexOf(a.cotacao_id) - cotOrder.indexOf(b.cotacao_id));
         const tempMap: Record<string, number[]> = {};
         sorted.forEach((cp: any) => {
-          const name = cp.produtos?.nome || cp.produto_id;
+          const name = cp.nome ?? cp.produtos?.nome ?? cp.produto_id;
           if (!tempMap[name]) tempMap[name] = [];
           if (cp.quantidade) tempMap[name].push(Number(cp.quantidade));
         });
@@ -323,7 +323,7 @@ ${productNames}`,
 
       if (pastCots?.length) {
         const pastIds = pastCots.map(c => c.id);
-        const { data: pastCps } = await sb.from("cotacao_produtos").select("cotacao_id, produto_id, quantidade, produtos(nome)").in("cotacao_id", pastIds);
+        const { data: pastCps } = await sb.from("cotacao_produtos").select("cotacao_id, produto_id, quantidade, nome, tipo_embalagem, produtos(nome)").in("cotacao_id", pastIds);
         const cotOrder = pastCots.map(c => c.id).reverse();
         const tempMap = buildHistory(pastCps || [], cotOrder);
 
@@ -362,7 +362,7 @@ ${productNames}`,
 
             const storeLines: string[] = [];
             for (const [sId, cotIds] of Object.entries(byStore)) {
-              const { data: sCps } = await sb.from("cotacao_produtos").select("cotacao_id, produto_id, quantidade, produtos(nome)").in("cotacao_id", cotIds);
+              const { data: sCps } = await sb.from("cotacao_produtos").select("cotacao_id, produto_id, quantidade, nome, tipo_embalagem, produtos(nome)").in("cotacao_id", cotIds);
               const tempMap = buildHistory(sCps || [], cotIds.reverse());
               const productLines = Object.entries(tempMap).map(([name, qtds]) => {
                 const avg = qtds.reduce((a, b) => a + b, 0) / qtds.length;
@@ -378,7 +378,7 @@ ${productNames}`,
       }
 
       const currentItems = (cps || []).map((cp: any) =>
-        `- ${cp.produtos?.nome || "?"} (${cp.produtos?.embalagem || "un"}) — qtd atual: ${cp.quantidade || 1}`
+        `- ${cp.nome ?? cp.produtos?.nome ?? "?"} (${cp.tipo_embalagem ?? cp.produtos?.embalagem ?? "un"}) — qtd atual: ${cp.quantidade || 1}`
       ).join("\n");
 
       const multiStoreInstruction = hasMultipleStores ? `
@@ -448,7 +448,7 @@ REGRAS:
       const mapped = suggestions.map((s: any) => {
         const sName = (s.nome || "").toLowerCase().trim();
         const match = (cps || []).find((cp: any) => {
-          const cpName = (cp.produtos?.nome || "").toLowerCase().trim();
+          const cpName = ((cp.nome ?? cp.produtos?.nome) || "").toLowerCase().trim();
           return cpName === sName || cpName.includes(sName) || sName.includes(cpName) || cp.produto_id === s.produto_id;
         });
         return { ...s, cotacao_produto_id: match?.id || null };
@@ -462,7 +462,7 @@ REGRAS:
       const { cotacao_id, loja_id } = params;
 
       // Get current products
-      const { data: cps } = await sb.from("cotacao_produtos").select("id, produto_id, produtos(nome)").eq("cotacao_id", cotacao_id);
+      const { data: cps } = await sb.from("cotacao_produtos").select("id, produto_id, nome, tipo_embalagem, produtos(nome)").eq("cotacao_id", cotacao_id);
       if (!cps?.length) return new Response(JSON.stringify({ text: "Nenhum produto na cotação.", has_history: false }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
       // Get last 5 finalized quotes
@@ -478,7 +478,7 @@ REGRAS:
       const produtoIds = cps.map(cp => cp.produto_id);
 
       // Get past cotacao_produtos for these products
-      const { data: pastCps } = await sb.from("cotacao_produtos").select("id, produto_id, cotacao_id, produtos(nome)").in("cotacao_id", pastIds).in("produto_id", produtoIds);
+      const { data: pastCps } = await sb.from("cotacao_produtos").select("id, produto_id, cotacao_id, nome, tipo_embalagem, produtos(nome)").in("cotacao_id", pastIds).in("produto_id", produtoIds);
       if (!pastCps?.length) {
         return new Response(JSON.stringify({ text: "", has_history: false }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
@@ -501,7 +501,7 @@ REGRAS:
       const productStats: Record<string, { name: string; suppliers: Record<string, { wins: number; prices: number[]; name: string }> }> = {};
 
       for (const cp of cps) {
-        const pName = (cp as any).produtos?.nome || "?";
+        const pName = (cp as any).nome ?? (cp as any).produtos?.nome ?? "?";
         productStats[cp.produto_id] = { name: pName, suppliers: {} };
 
         // Group past CPs by cotacao for this product
@@ -685,7 +685,7 @@ Retorne via tool call.` }
         const winner = cpPrecos.find((p: any) => p.preco === minPrice);
 
         comparisons.push({
-          produto: (cp.produtos as any)?.nome || "?",
+          produto: (cp as any).nome ?? (cp.produtos as any)?.nome ?? "?",
           categoria: (cp.produtos as any)?.categorias?.nome || null,
           preco_fornecedor: myPrice.preco,
           melhor_preco: minPrice,
@@ -717,7 +717,7 @@ Retorne via tool call.` }
               const pastCp = pastCps.find((cp: any) => cp.id === pp.cotacao_produto_id);
               if (!pastCp) continue;
               const currentCp = cps.find((cp: any) => (cp.produtos as any)?.id === pastCp.produto_id || cp.produto_id === pastCp.produto_id);
-              const nome = currentCp ? (currentCp.produtos as any)?.nome : null;
+              const nome = currentCp ? ((currentCp as any).nome ?? (currentCp.produtos as any)?.nome) : null;
               if (!nome) continue;
               if (!pastPricesByProduct[nome]) pastPricesByProduct[nome] = [];
               pastPricesByProduct[nome].push(pp.preco);

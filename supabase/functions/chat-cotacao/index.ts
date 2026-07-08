@@ -52,7 +52,7 @@ serve(async (req) => {
       // Fetch products with prices
       const { data: cotacaoProdutos } = await supabase
         .from("cotacao_produtos")
-        .select("id, quantidade, produtos(nome, embalagem, categorias(nome))")
+        .select("id, quantidade, nome, tipo_embalagem, produtos(nome, embalagem, categorias(nome))")
         .eq("cotacao_id", cotacao_id);
 
       // Fetch selected suppliers
@@ -87,13 +87,15 @@ serve(async (req) => {
       lines.push("Produtos e preços:");
       (cotacaoProdutos || []).forEach((cp: any) => {
         const prod = cp.produtos;
+        const nome = cp.nome ?? prod?.nome ?? "?";
+        const embalagem = cp.tipo_embalagem ?? prod?.embalagem ?? "un";
         const cat = prod?.categorias?.nome || "Sem categoria";
         const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco > 0);
         const precosStr = cpPrecos
           .map((p: any) => `${fornecedorMap[p.fornecedor_id] || "?"}: R$${Number(p.preco).toFixed(2)}`)
           .join(", ");
         lines.push(
-          `- ${prod?.nome} [${cat}] (emb: ${prod?.embalagem || "-"}, qtd: ${cp.quantidade || 1}) → ${precosStr || "sem preço"}`
+          `- ${nome} [${cat}] (emb: ${embalagem}, qtd: ${cp.quantidade || 1}) → ${precosStr || "sem preço"}`
         );
       });
 
@@ -110,10 +112,11 @@ serve(async (req) => {
         const minPrice = Math.min(...cpPrecos.map((p: any) => p.preco));
         const winners = cpPrecos.filter((p: any) => p.preco === minPrice);
 
+        const cpNome = cp.nome ?? cp.produtos?.nome ?? "?";
         // Detect ties
         if (winners.length > 1) {
           tiedItems.push({
-            produto: cp.produtos?.nome || "?",
+            produto: cpNome,
             fornecedores: winners.map((w: any) => fornecedorMap[w.fornecedor_id] || "?"),
             preco: minPrice,
           });
@@ -124,7 +127,7 @@ serve(async (req) => {
           if (!supplierWins[winner.fornecedor_id]) supplierWins[winner.fornecedor_id] = { wins: 0, total: 0, items: [] };
           supplierWins[winner.fornecedor_id].wins++;
           supplierWins[winner.fornecedor_id].total += minPrice * (cp.quantidade || 1);
-          supplierWins[winner.fornecedor_id].items.push(cp.produtos?.nome || "?");
+          supplierWins[winner.fornecedor_id].items.push(cpNome);
         }
         // Track total per supplier for ALL items they quoted
         cpPrecos.forEach((p: any) => {
@@ -167,11 +170,12 @@ serve(async (req) => {
             const cotadoItems: string[] = [];
             (cotacaoProdutos || []).forEach((cp: any) => {
               const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.fornecedor_id === cf.fornecedor_id && p.preco > 0);
-              if (cpPrecos.length > 0 && (!winsData?.items.includes(cp.produtos?.nome))) {
+              const cpNome = cp.nome ?? cp.produtos?.nome ?? "?";
+              if (cpPrecos.length > 0 && (!winsData?.items.includes(cpNome))) {
                 const p = cpPrecos[0];
                 const minP = Math.min(...precos.filter((pr: any) => pr.cotacao_produto_id === cp.id && pr.preco > 0).map((pr: any) => pr.preco));
                 const diff = p.preco - minP;
-                cotadoItems.push(`${cp.produtos?.nome}: R$${p.preco.toFixed(2)} (melhor: R$${minP.toFixed(2)}, diff: +R$${diff.toFixed(2)})`);
+                cotadoItems.push(`${cpNome}: R$${p.preco.toFixed(2)} (melhor: R$${minP.toFixed(2)}, diff: +R$${diff.toFixed(2)})`);
               }
             });
             fornecedoresAbaixoMinimo.push({ nome: f?.nome || "?", faltam: minimo - totalVencedor, totalAtual: totalVencedor, minimo, itensCotados: cotadoItems });
@@ -202,7 +206,7 @@ serve(async (req) => {
       if (semPreco.length > 0) {
         lines.push("");
         lines.push(`⚠️ ${semPreco.length} produto(s) SEM NENHUM PREÇO cotado:`);
-        semPreco.forEach((cp: any) => lines.push(`- ${cp.produtos?.nome || "?"}`));
+        semPreco.forEach((cp: any) => lines.push(`- ${cp.nome ?? cp.produtos?.nome ?? "?"}`));
       }
 
       contextText = lines.join("\n");
