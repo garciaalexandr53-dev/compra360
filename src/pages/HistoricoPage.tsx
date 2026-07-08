@@ -1949,8 +1949,8 @@ const HistoricoPage = () => {
               // Group by product name
               const grouped: Record<string, { nome: string; embalagem: string; entries: any[] }> = {};
               itemSearchResults.forEach((item: any) => {
-                const key = item.produtos?.nome || "?";
-                if (!grouped[key]) grouped[key] = { nome: key, embalagem: item.produtos?.embalagem || "un", entries: [] };
+                const key = getCotacaoNome(item);
+                if (!grouped[key]) grouped[key] = { nome: key, embalagem: getCotacaoEmbalagem(item), entries: [] };
                 grouped[key].entries.push(item);
               });
 
