@@ -170,11 +170,12 @@ serve(async (req) => {
             const cotadoItems: string[] = [];
             (cotacaoProdutos || []).forEach((cp: any) => {
               const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.fornecedor_id === cf.fornecedor_id && p.preco > 0);
-              if (cpPrecos.length > 0 && (!winsData?.items.includes(cp.produtos?.nome))) {
+              const cpNome = cp.nome ?? cp.produtos?.nome ?? "?";
+              if (cpPrecos.length > 0 && (!winsData?.items.includes(cpNome))) {
                 const p = cpPrecos[0];
                 const minP = Math.min(...precos.filter((pr: any) => pr.cotacao_produto_id === cp.id && pr.preco > 0).map((pr: any) => pr.preco));
                 const diff = p.preco - minP;
-                cotadoItems.push(`${cp.produtos?.nome}: R$${p.preco.toFixed(2)} (melhor: R$${minP.toFixed(2)}, diff: +R$${diff.toFixed(2)})`);
+                cotadoItems.push(`${cpNome}: R$${p.preco.toFixed(2)} (melhor: R$${minP.toFixed(2)}, diff: +R$${diff.toFixed(2)})`);
               }
             });
             fornecedoresAbaixoMinimo.push({ nome: f?.nome || "?", faltam: minimo - totalVencedor, totalAtual: totalVencedor, minimo, itensCotados: cotadoItems });
