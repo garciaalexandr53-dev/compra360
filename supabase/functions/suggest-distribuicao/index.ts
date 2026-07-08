@@ -148,11 +148,12 @@ serve(async (req) => {
           supplierWins[winner.fornecedor_id].total += minPrice * qty;
         }
 
-        lines.push(`- ${prod?.nome} [${cat}] (emb: ${prod?.embalagem || "-"}, qtd: ${qty})`);
+        lines.push(`- ${cp.nome ?? prod?.nome ?? "?"} [${cat}] (emb: ${cp.tipo_embalagem ?? prod?.embalagem ?? "un"}, qtd: ${qty})`);
         lines.push(`  Preços: ${precosStr} → Melhor: ${winnerName} R$${minPrice.toFixed(2)}`);
       } else {
-        lines.push(`- ${prod?.nome} [${cat}] → sem preço informado`);
+        lines.push(`- ${cp.nome ?? prod?.nome ?? "?"} [${cat}] → sem preço informado`);
       }
+
     });
 
     lines.push(`\nDISTRIBUIÇÃO ATUAL (menor preço por item):`);
