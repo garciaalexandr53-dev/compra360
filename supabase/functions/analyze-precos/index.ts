@@ -173,6 +173,8 @@ serve(async (req) => {
     lines.push("PRODUTOS E PREÇOS ATUAIS:");
     (cotacaoProdutos || []).forEach((cp: any) => {
       const prod = cp.produtos;
+      const nome = cp.nome ?? prod?.nome ?? "?";
+      const embalagem = cp.tipo_embalagem ?? prod?.embalagem ?? "un";
       const cat = prod?.categorias?.nome || "Sem categoria";
       const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco > 0);
       const precosStr = cpPrecos
@@ -185,7 +187,7 @@ serve(async (req) => {
         const min = Math.min(...vals);
         const max = Math.max(...vals);
         const spread = avg > 0 ? (((max - min) / avg) * 100).toFixed(1) : "0";
-        lines.push(`- ${prod?.nome} [${cat}] (emb: ${prod?.embalagem || "-"}, qtd: ${cp.quantidade || 1})`);
+        lines.push(`- ${nome} [${cat}] (emb: ${embalagem}, qtd: ${cp.quantidade || 1})`);
         lines.push(`  Preços: ${precosStr}`);
         lines.push(`  Média: R$${avg.toFixed(2)} | Min: R$${min.toFixed(2)} | Max: R$${max.toFixed(2)} | Spread: ${spread}%`);
 
@@ -210,7 +212,7 @@ serve(async (req) => {
             const variacaoPct = (preco - hist.avg) / hist.avg * 100;
             if (ratio < 0.35) {
               alertasDigitacao.push({
-                produto: prod?.nome || "?",
+                produto: nome,
                 fornecedor: fornecedorMap[p.fornecedor_id] || "?",
                 precoDigitado: preco,
                 mediaHistorica: hist.avg,
@@ -219,7 +221,7 @@ serve(async (req) => {
               });
             } else if (ratio > 1.4) {
               alertasDigitacao.push({
-                produto: prod?.nome || "?",
+                produto: nome,
                 fornecedor: fornecedorMap[p.fornecedor_id] || "?",
                 precoDigitado: preco,
                 mediaHistorica: hist.avg,
@@ -230,8 +232,8 @@ serve(async (req) => {
           }
         }
       } else {
-        lines.push(`- ${prod?.nome} [${cat}] → sem preço informado`);
-        semPreco.push(prod?.nome || "?");
+        lines.push(`- ${nome} [${cat}] → sem preço informado`);
+        semPreco.push(nome);
       }
     });
 
