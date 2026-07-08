@@ -462,7 +462,7 @@ REGRAS:
       const { cotacao_id, loja_id } = params;
 
       // Get current products
-      const { data: cps } = await sb.from("cotacao_produtos").select("id, produto_id, produtos(nome)").eq("cotacao_id", cotacao_id);
+      const { data: cps } = await sb.from("cotacao_produtos").select("id, produto_id, nome, tipo_embalagem, produtos(nome)").eq("cotacao_id", cotacao_id);
       if (!cps?.length) return new Response(JSON.stringify({ text: "Nenhum produto na cotação.", has_history: false }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
       // Get last 5 finalized quotes
