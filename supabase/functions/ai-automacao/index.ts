@@ -362,7 +362,7 @@ ${productNames}`,
 
             const storeLines: string[] = [];
             for (const [sId, cotIds] of Object.entries(byStore)) {
-              const { data: sCps } = await sb.from("cotacao_produtos").select("cotacao_id, produto_id, quantidade, produtos(nome)").in("cotacao_id", cotIds);
+              const { data: sCps } = await sb.from("cotacao_produtos").select("cotacao_id, produto_id, quantidade, nome, tipo_embalagem, produtos(nome)").in("cotacao_id", cotIds);
               const tempMap = buildHistory(sCps || [], cotIds.reverse());
               const productLines = Object.entries(tempMap).map(([name, qtds]) => {
                 const avg = qtds.reduce((a, b) => a + b, 0) / qtds.length;
