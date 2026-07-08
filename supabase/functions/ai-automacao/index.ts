@@ -685,7 +685,7 @@ Retorne via tool call.` }
         const winner = cpPrecos.find((p: any) => p.preco === minPrice);
 
         comparisons.push({
-          produto: (cp.produtos as any)?.nome || "?",
+          produto: (cp as any).nome ?? (cp.produtos as any)?.nome ?? "?",
           categoria: (cp.produtos as any)?.categorias?.nome || null,
           preco_fornecedor: myPrice.preco,
           melhor_preco: minPrice,
