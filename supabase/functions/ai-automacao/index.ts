@@ -378,7 +378,7 @@ ${productNames}`,
       }
 
       const currentItems = (cps || []).map((cp: any) =>
-        `- ${cp.produtos?.nome || "?"} (${cp.produtos?.embalagem || "un"}) — qtd atual: ${cp.quantidade || 1}`
+        `- ${cp.nome ?? cp.produtos?.nome ?? "?"} (${cp.tipo_embalagem ?? cp.produtos?.embalagem ?? "un"}) — qtd atual: ${cp.quantidade || 1}`
       ).join("\n");
 
       const multiStoreInstruction = hasMultipleStores ? `
