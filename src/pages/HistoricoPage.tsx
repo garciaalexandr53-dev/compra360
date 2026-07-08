@@ -775,8 +775,8 @@ const HistoricoPage = () => {
         const precoUnit = winner ? Number(winner.preco) : null;
         const total = precoUnit != null ? precoUnit * qtd * fator : null;
         const fornecedor = winner?.fornecedores?.nome || "—";
-        const nome = cp.produtos?.nome || "—";
-        const embalagem = cp.tipo_embalagem || cp.produtos?.embalagem || "un";
+        const nome = getCotacaoNome(cp);
+        const embalagem = getCotacaoEmbalagem(cp);
         if (winner) {
           insightRows.push({
             cotacaoId: cot.id,
