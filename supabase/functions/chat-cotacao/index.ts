@@ -52,7 +52,7 @@ serve(async (req) => {
       // Fetch products with prices
       const { data: cotacaoProdutos } = await supabase
         .from("cotacao_produtos")
-        .select("id, quantidade, produtos(nome, embalagem, categorias(nome))")
+        .select("id, quantidade, nome, tipo_embalagem, produtos(nome, embalagem, categorias(nome))")
         .eq("cotacao_id", cotacao_id);
 
       // Fetch selected suppliers
