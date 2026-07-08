@@ -717,7 +717,7 @@ Retorne via tool call.` }
               const pastCp = pastCps.find((cp: any) => cp.id === pp.cotacao_produto_id);
               if (!pastCp) continue;
               const currentCp = cps.find((cp: any) => (cp.produtos as any)?.id === pastCp.produto_id || cp.produto_id === pastCp.produto_id);
-              const nome = currentCp ? (currentCp.produtos as any)?.nome : null;
+              const nome = currentCp ? ((currentCp as any).nome ?? (currentCp.produtos as any)?.nome) : null;
               if (!nome) continue;
               if (!pastPricesByProduct[nome]) pastPricesByProduct[nome] = [];
               pastPricesByProduct[nome].push(pp.preco);
