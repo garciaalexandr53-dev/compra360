@@ -276,7 +276,7 @@ ${productNames}`,
     if (type === "suggest-quantities") {
       const { cotacao_id, loja_id } = params;
 
-      const { data: cps } = await sb.from("cotacao_produtos").select("id, produto_id, quantidade, produtos(nome, embalagem)").eq("cotacao_id", cotacao_id);
+      const { data: cps } = await sb.from("cotacao_produtos").select("id, produto_id, quantidade, nome, tipo_embalagem, produtos(nome, embalagem)").eq("cotacao_id", cotacao_id);
 
       // Get store name for context
       let lojaName = "";
