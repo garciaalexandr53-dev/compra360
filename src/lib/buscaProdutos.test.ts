@@ -141,6 +141,11 @@ describe("buscaProdutos — getters preferem snapshot", () => {
     expect(getCotacaoNome({ nome: null, produtos: { nome: "fallback" } })).toBe("fallback");
   });
 
+  it("faz fallback para relação singular produto.nome (CotacaoPage)", () => {
+    expect(getCotacaoNome({ nome: null, produto: { nome: "singular" } } as any)).toBe("singular");
+    expect(getCotacaoEmbalagem({ tipo_embalagem: null, produto: { embalagem: "PCT" } } as any)).toBe("PCT");
+  });
+
   it("embalagem/fator do snapshot têm prioridade", () => {
     const cp = {
       tipo_embalagem: "FD",
