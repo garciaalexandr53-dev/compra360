@@ -501,7 +501,7 @@ REGRAS:
       const productStats: Record<string, { name: string; suppliers: Record<string, { wins: number; prices: number[]; name: string }> }> = {};
 
       for (const cp of cps) {
-        const pName = (cp as any).produtos?.nome || "?";
+        const pName = (cp as any).nome ?? (cp as any).produtos?.nome ?? "?";
         productStats[cp.produto_id] = { name: pName, suppliers: {} };
 
         // Group past CPs by cotacao for this product
