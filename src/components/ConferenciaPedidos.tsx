@@ -255,8 +255,8 @@ const ConferenciaPedidos = () => {
     const orderItems: ConferenciaItem[] = (cotacaoProdutos || [])
       .filter((cp: any) => precosMap.has(cp.id) && precosMap.get(cp.id) != null)
       .map((cp: any) => ({
-        produto_nome: cp.produtos?.nome || "Produto",
-        embalagem: cp.tipo_embalagem || cp.produtos?.embalagem || "un",
+        produto_nome: getCotacaoNome(cp),
+        embalagem: getCotacaoEmbalagem(cp),
         fator: cp.fator_embalagem || 1,
         quantidade_pedida: cp.quantidade || 1,
         quantidade_recebida: cp.quantidade || 1,
