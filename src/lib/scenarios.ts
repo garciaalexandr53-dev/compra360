@@ -587,11 +587,12 @@ export function analyzeGaps(
 
   const cpInfos: CpInfo[] = cotacaoProdutos.map((cp) => ({
     id: cp.id,
-    produtoNome: (cp as any).produtos?.nome || "?",
-    embalagem: (cp as any).produtos?.embalagem || "",
+    produtoNome: (cp as any).nome || (cp as any).produtos?.nome || "?",
+    embalagem: (cp as any).tipo_embalagem || (cp as any).produtos?.embalagem || "",
     quantidade: cp.quantidade || 1,
     fator: (cp as any).fator_embalagem || 1,
   }));
+
 
   const priceMap = buildPriceMap(cpInfos, precos);
   const fornecedorMap: Record<string, (typeof fornecedores)[0]> = {};
