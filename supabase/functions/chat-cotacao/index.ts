@@ -206,7 +206,7 @@ serve(async (req) => {
       if (semPreco.length > 0) {
         lines.push("");
         lines.push(`⚠️ ${semPreco.length} produto(s) SEM NENHUM PREÇO cotado:`);
-        semPreco.forEach((cp: any) => lines.push(`- ${cp.produtos?.nome || "?"}`));
+        semPreco.forEach((cp: any) => lines.push(`- ${cp.nome ?? cp.produtos?.nome ?? "?"}`));
       }
 
       contextText = lines.join("\n");
