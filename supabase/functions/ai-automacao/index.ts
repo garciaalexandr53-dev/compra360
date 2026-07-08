@@ -478,7 +478,7 @@ REGRAS:
       const produtoIds = cps.map(cp => cp.produto_id);
 
       // Get past cotacao_produtos for these products
-      const { data: pastCps } = await sb.from("cotacao_produtos").select("id, produto_id, cotacao_id, produtos(nome)").in("cotacao_id", pastIds).in("produto_id", produtoIds);
+      const { data: pastCps } = await sb.from("cotacao_produtos").select("id, produto_id, cotacao_id, nome, tipo_embalagem, produtos(nome)").in("cotacao_id", pastIds).in("produto_id", produtoIds);
       if (!pastCps?.length) {
         return new Response(JSON.stringify({ text: "", has_history: false }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
