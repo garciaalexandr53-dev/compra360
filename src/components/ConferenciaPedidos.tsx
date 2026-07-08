@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Check, CheckCheck, AlertTriangle, ChevronRight, Minus, Plus, ArrowLeft, Package, Camera, Loader2, XCircle, AlertCircle, Filter } from "lucide-react";
 import { formatBRL } from "@/lib/format";
+import { getCotacaoNome, getCotacaoEmbalagem } from "@/lib/buscaProdutos";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ConferenciaItem {
