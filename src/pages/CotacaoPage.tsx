@@ -563,7 +563,7 @@ const CotacaoPage = () => {
         const alert = getHistAlert(cp.produto_id, num);
         if (!alert) return;
         const diff = ((num - hist.avg) / hist.avg * 100).toFixed(1);
-        rows.push({ Produto: cp.produto?.nome || "", Embalagem: cp.produto?.embalagem || "un", Fornecedor: f.nome, Preço: num, "Média Histórica": formatNumber(hist.avg), "Desvio Histórico": `${Number(diff) > 0 ? "+" : ""}${diff}%`, Tipo: alert === "high" ? "🔴 Acima do histórico" : "⚠️ Abaixo do histórico", "Cotações base": hist.count });
+        rows.push({ Produto: getCotacaoNome(cp), Embalagem: getCotacaoEmbalagem(cp), Fornecedor: f.nome, Preço: num, "Média Histórica": formatNumber(hist.avg), "Desvio Histórico": `${Number(diff) > 0 ? "+" : ""}${diff}%`, Tipo: alert === "high" ? "🔴 Acima do histórico" : "⚠️ Abaixo do histórico", "Cotações base": hist.count });
       });
     });
     return rows;
