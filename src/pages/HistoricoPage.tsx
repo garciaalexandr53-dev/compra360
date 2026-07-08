@@ -667,8 +667,8 @@ const HistoricoPage = () => {
       const total = precoUnit != null ? precoUnit * qtd * fator : null;
       return {
         id: cp.id,
-        nome: cp.produtos?.nome || "—",
-        embalagem: cp.tipo_embalagem || cp.produtos?.embalagem || "un",
+        nome: getCotacaoNome(cp),
+        embalagem: getCotacaoEmbalagem(cp),
         fator,
         qtd,
         fornecedor: winner?.fornecedores?.nome || "—",
