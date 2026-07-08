@@ -448,7 +448,7 @@ REGRAS:
       const mapped = suggestions.map((s: any) => {
         const sName = (s.nome || "").toLowerCase().trim();
         const match = (cps || []).find((cp: any) => {
-          const cpName = (cp.produtos?.nome || "").toLowerCase().trim();
+          const cpName = ((cp.nome ?? cp.produtos?.nome) || "").toLowerCase().trim();
           return cpName === sName || cpName.includes(sName) || sName.includes(cpName) || cp.produto_id === s.produto_id;
         });
         return { ...s, cotacao_produto_id: match?.id || null };
