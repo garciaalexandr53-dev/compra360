@@ -323,7 +323,7 @@ ${productNames}`,
 
       if (pastCots?.length) {
         const pastIds = pastCots.map(c => c.id);
-        const { data: pastCps } = await sb.from("cotacao_produtos").select("cotacao_id, produto_id, quantidade, produtos(nome)").in("cotacao_id", pastIds);
+        const { data: pastCps } = await sb.from("cotacao_produtos").select("cotacao_id, produto_id, quantidade, nome, tipo_embalagem, produtos(nome)").in("cotacao_id", pastIds);
         const cotOrder = pastCots.map(c => c.id).reverse();
         const tempMap = buildHistory(pastCps || [], cotOrder);
 
