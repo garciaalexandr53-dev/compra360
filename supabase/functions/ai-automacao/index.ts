@@ -296,7 +296,7 @@ ${productNames}`,
         const sorted = [...pastCps].sort((a: any, b: any) => cotOrder.indexOf(a.cotacao_id) - cotOrder.indexOf(b.cotacao_id));
         const tempMap: Record<string, number[]> = {};
         sorted.forEach((cp: any) => {
-          const name = cp.produtos?.nome || cp.produto_id;
+          const name = cp.nome ?? cp.produtos?.nome ?? cp.produto_id;
           if (!tempMap[name]) tempMap[name] = [];
           if (cp.quantidade) tempMap[name].push(Number(cp.quantidade));
         });
