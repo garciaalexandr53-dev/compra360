@@ -56,8 +56,17 @@ serve(async (req) => {
     // Fetch products
     const { data: cotacaoProdutos } = await supabase
       .from("cotacao_produtos")
-      .select("id, quantidade, produto_id, produtos(nome, embalagem, categorias(nome))")
+      .select("id, quantidade, produto_id, nome, tipo_embalagem, produtos(nome, embalagem, categorias(nome))")
       .eq("cotacao_id", cotacao_id);
+
+    console.log("[suggest-distribuicao] nomes resolvidos:", (cotacaoProdutos || []).map((cp: any) => ({
+      id: cp.id,
+      cp_nome: cp.nome,
+      produto_nome: cp.produtos?.nome,
+      produto_id: cp.produto_id,
+      resolved: cp.nome ?? cp.produtos?.nome ?? "?",
+    })));
+
 
     // Fetch selected suppliers
     const { data: cotacaoFornecedores } = await supabase
@@ -139,11 +148,12 @@ serve(async (req) => {
           supplierWins[winner.fornecedor_id].total += minPrice * qty;
         }
 
-        lines.push(`- ${prod?.nome} [${cat}] (emb: ${prod?.embalagem || "-"}, qtd: ${qty})`);
+        lines.push(`- ${cp.nome ?? prod?.nome ?? "?"} [${cat}] (emb: ${cp.tipo_embalagem ?? prod?.embalagem ?? "un"}, qtd: ${qty})`);
         lines.push(`  Preços: ${precosStr} → Melhor: ${winnerName} R$${minPrice.toFixed(2)}`);
       } else {
-        lines.push(`- ${prod?.nome} [${cat}] → sem preço informado`);
+        lines.push(`- ${cp.nome ?? prod?.nome ?? "?"} [${cat}] → sem preço informado`);
       }
+
     });
 
     lines.push(`\nDISTRIBUIÇÃO ATUAL (menor preço por item):`);
