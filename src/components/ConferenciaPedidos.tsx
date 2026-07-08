@@ -242,7 +242,7 @@ const ConferenciaPedidos = () => {
 
     const { data: cotacaoProdutos } = await supabase
       .from("cotacao_produtos")
-      .select("id, quantidade, fator_embalagem, tipo_embalagem, produto_id, produtos(nome, embalagem)")
+      .select("id, quantidade, fator_embalagem, tipo_embalagem, nome, produto_id, produtos(nome, embalagem)")
       .eq("cotacao_id", pedidoFull.cotacao_id);
 
     const { data: precos } = await supabase
