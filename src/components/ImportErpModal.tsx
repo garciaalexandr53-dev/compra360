@@ -45,7 +45,10 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
     const embIdx = lower.findIndex((h) =>
       ["embalagem", "unidade", "un", "unit", "emb", "und", "uom"].includes(h)
     );
-    return { nomeIdx: nomeIdx >= 0 ? nomeIdx : 0, qtdIdx, embIdx };
+    const eanIdx = lower.findIndex((h) =>
+      ["ean", "ean13", "gtin", "codigo de barras", "código de barras", "cod barras", "codbarras", "barcode", "codigo", "código"].includes(h)
+    );
+    return { nomeIdx: nomeIdx >= 0 ? nomeIdx : 0, qtdIdx, embIdx, eanIdx };
   };
 
   const processFile = (file: File) => {
