@@ -12,7 +12,14 @@ interface ParsedItem {
   nome: string;
   quantidade: number;
   embalagem: string;
+  ean: string | null;
 }
+
+export const extractEan = (raw: unknown): string | null => {
+  if (raw === null || raw === undefined) return null;
+  const digits = String(raw).replace(/\D/g, "");
+  return digits.length > 0 ? digits : null;
+};
 
 interface Props {
   open: boolean;
@@ -38,7 +45,10 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
     const embIdx = lower.findIndex((h) =>
       ["embalagem", "unidade", "un", "unit", "emb", "und", "uom"].includes(h)
     );
-    return { nomeIdx: nomeIdx >= 0 ? nomeIdx : 0, qtdIdx, embIdx };
+    const eanIdx = lower.findIndex((h) =>
+      ["ean", "ean13", "gtin", "codigo de barras", "código de barras", "cod barras", "codbarras", "barcode", "codigo", "código"].includes(h)
+    );
+    return { nomeIdx: nomeIdx >= 0 ? nomeIdx : 0, qtdIdx, embIdx, eanIdx };
   };
 
   const processFile = (file: File) => {
@@ -54,7 +64,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
 
         const sep = lines[0].includes(";") ? ";" : ",";
         const headers = lines[0].split(sep).map((h) => h.replace(/"/g, "").trim());
-        const { nomeIdx, qtdIdx, embIdx } = detectColumns(headers);
+        const { nomeIdx, qtdIdx, embIdx, eanIdx } = detectColumns(headers);
 
         const parsed: ParsedItem[] = [];
         for (let i = 1; i < lines.length; i++) {
@@ -65,6 +75,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
             nome,
             quantidade: qtdIdx >= 0 ? parseFloat(cols[qtdIdx]?.replace(",", ".")) || 1 : 1,
             embalagem: embIdx >= 0 ? cols[embIdx] || "un" : "un",
+            ean: eanIdx >= 0 ? extractEan(cols[eanIdx]) : null,
           });
         }
         setItems(parsed);
@@ -81,7 +92,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
         if (rows.length < 2) { toast.error("Planilha vazia"); return; }
 
         const headers = rows[0].map((h: any) => String(h || ""));
-        const { nomeIdx, qtdIdx, embIdx } = detectColumns(headers);
+        const { nomeIdx, qtdIdx, embIdx, eanIdx } = detectColumns(headers);
 
         const parsed: ParsedItem[] = [];
         for (let i = 1; i < rows.length; i++) {
@@ -92,6 +103,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
             nome,
             quantidade: qtdIdx >= 0 ? parseFloat(String(row[qtdIdx] || "1").replace(",", ".")) || 1 : 1,
             embalagem: embIdx >= 0 ? String(row[embIdx] || "un").trim() : "un",
+            ean: eanIdx >= 0 ? extractEan(row[eanIdx]) : null,
           });
         }
         setItems(parsed);
@@ -243,7 +255,12 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
               {items.map((item, i) => (
                 <div key={i} className="flex items-center gap-2 px-3 py-2 border-b text-sm hover:bg-muted/30">
                   <span className="text-xs text-muted-foreground w-6">{i + 1}.</span>
-                  <span className="flex-1 truncate font-medium">{item.nome}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="truncate font-medium">{item.nome}</div>
+                    {item.ean && (
+                      <div className="text-[10px] font-mono text-muted-foreground truncate">EAN: {item.ean}</div>
+                    )}
+                  </div>
                   <span className="text-xs text-muted-foreground">{item.embalagem}</span>
                   <span className="text-xs font-mono font-bold w-10 text-right">{item.quantidade}</span>
                   <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeItem(i)}>
