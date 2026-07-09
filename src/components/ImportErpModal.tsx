@@ -12,7 +12,14 @@ interface ParsedItem {
   nome: string;
   quantidade: number;
   embalagem: string;
+  ean: string | null;
 }
+
+export const extractEan = (raw: unknown): string | null => {
+  if (raw === null || raw === undefined) return null;
+  const digits = String(raw).replace(/\D/g, "");
+  return digits.length > 0 ? digits : null;
+};
 
 interface Props {
   open: boolean;
