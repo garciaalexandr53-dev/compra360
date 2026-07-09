@@ -92,7 +92,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
         if (rows.length < 2) { toast.error("Planilha vazia"); return; }
 
         const headers = rows[0].map((h: any) => String(h || ""));
-        const { nomeIdx, qtdIdx, embIdx } = detectColumns(headers);
+        const { nomeIdx, qtdIdx, embIdx, eanIdx } = detectColumns(headers);
 
         const parsed: ParsedItem[] = [];
         for (let i = 1; i < rows.length; i++) {
@@ -103,6 +103,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
             nome,
             quantidade: qtdIdx >= 0 ? parseFloat(String(row[qtdIdx] || "1").replace(",", ".")) || 1 : 1,
             embalagem: embIdx >= 0 ? String(row[embIdx] || "un").trim() : "un",
+            ean: eanIdx >= 0 ? extractEan(row[eanIdx]) : null,
           });
         }
         setItems(parsed);
