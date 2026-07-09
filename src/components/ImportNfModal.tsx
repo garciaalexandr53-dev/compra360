@@ -149,12 +149,21 @@ const ImportNfModal = ({ open, onOpenChange, onImported }: ImportNfModalProps) =
 
         const toInsert = matchedIds
           .filter(m => !existingCpSet.has(m.productId))
-          .map(m => ({
-            cotacao_id: cotacao.id,
-            produto_id: m.productId,
-            nome: (m as any).item?.nome ?? (m as any).nome ?? "",
-            quantidade: m.item.quantidade || 1,
-          }));
+          .map(m => {
+            const nome = m.item.produto?.trim() || "";
+            const embalagemRaw = (m.item.embalagem || "").trim().toUpperCase();
+            const tipo_embalagem = embalagemRaw || "UNI";
+            return {
+              cotacao_id: cotacao.id,
+              produto_id: m.productId,
+              nome,
+              tipo_embalagem,
+              fator_embalagem: 1,
+              quantidade: m.item.quantidade || 1,
+            };
+          })
+          .filter(row => row.nome.length > 0);
+
 
         if (toInsert.length) {
           await supabase.from("cotacao_produtos").insert(toInsert as any);
