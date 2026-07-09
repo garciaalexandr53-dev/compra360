@@ -255,7 +255,12 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
               {items.map((item, i) => (
                 <div key={i} className="flex items-center gap-2 px-3 py-2 border-b text-sm hover:bg-muted/30">
                   <span className="text-xs text-muted-foreground w-6">{i + 1}.</span>
-                  <span className="flex-1 truncate font-medium">{item.nome}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="truncate font-medium">{item.nome}</div>
+                    {item.ean && (
+                      <div className="text-[10px] font-mono text-muted-foreground truncate">EAN: {item.ean}</div>
+                    )}
+                  </div>
                   <span className="text-xs text-muted-foreground">{item.embalagem}</span>
                   <span className="text-xs font-mono font-bold w-10 text-right">{item.quantidade}</span>
                   <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeItem(i)}>
