@@ -1,3 +1,4 @@
+// build: erp-import-v2
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -120,6 +121,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
     if (!items.length) return;
     setImporting(true);
     try {
+      console.log("[ImportErp v2] iniciando import", { total: items.length, comEan: items.filter(i => i.ean).length });
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
       if (!uid) {
@@ -143,6 +145,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
         if (catErr) throw catErr;
         (catRows || []).forEach((r) => { if (r.ean) catalogByEan.set(r.ean, r as any); });
       }
+      console.log("[ImportErp v2] catálogo casado por EAN:", catalogByEan.size, "de", eans.length);
 
       // 2. Carregar produtos locais existentes (por nome)
       const existingMap = await fetchAllProductsMap();
@@ -167,6 +170,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
           toCreateLocal.push(item);
         }
       }
+      console.log("[ImportErp v2] buckets iniciais:", { catalogo: buckets.filter(b => b.kind === "catalogo").length, local: buckets.filter(b => b.kind === "local").length, aCriar: toCreateLocal.length });
 
       // 4. Criar produtos locais faltantes com user_id — checando erro
       const newProductInserts: { id: string; nome: string; embalagem: string; fator_embalagem: number }[] = [];
@@ -180,7 +184,13 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
             user_id: uid,
           })) as any)
           .select("id, nome, embalagem, fator_embalagem");
-        if (insErr) throw insErr;
+        if (insErr) {
+          console.error("[ImportErp v2] erro criando produtos locais:", insErr);
+          if (insErr.code === "42501") {
+            throw new Error("Sessão expirada ou sem permissão para cadastrar produtos. Recarregue a página (Ctrl+Shift+R) e tente novamente.");
+          }
+          throw insErr;
+        }
         (inserted || []).forEach((p, idx) => {
           const src = toCreateLocal[idx];
           existingMap.set(p.nome.toLowerCase().trim(), p as any);
@@ -193,6 +203,13 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
           });
         });
       }
+
+      if (buckets.length === 0) {
+        toast.error("Nenhum item foi processado — verifique se o arquivo tem colunas Produto/EAN válidas.");
+        setImporting(false);
+        return;
+      }
+
 
       // 5. Descobrir o que já está na cotação (produto_id ou catalogo_mestre_id)
       const { data: existingCps, error: cpsErr } = await supabase
@@ -252,9 +269,13 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
         }
       }
 
+      console.log("[ImportErp v2] plano final:", { toInsert: toInsert.length, toUpdate: toUpdate.length });
       if (toInsert.length) {
         const { error: insertErr } = await supabase.from("cotacao_produtos").insert(toInsert);
-        if (insertErr) throw insertErr;
+        if (insertErr) {
+          console.error("[ImportErp v2] erro inserindo cotacao_produtos:", insertErr);
+          throw insertErr;
+        }
       }
       for (const u of toUpdate) {
         const { error: updErr } = await supabase.from("cotacao_produtos").update({ quantidade: u.quantidade }).eq("id", u.id);
