@@ -163,15 +163,20 @@ const AppFuncionariosPublic = () => {
   }, [productSearch]);
 
   const { data: lojas = [] } = useQuery({
-    queryKey: ["lojas-public", selectedLojaId],
+    queryKey: ["lojas-public", lojaFromUrl ? selectedLojaId : "all"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_lojas_public", {
-        _loja_id: selectedLojaId || undefined,
+        _loja_id: lojaFromUrl ? selectedLojaId || undefined : undefined,
       });
       if (error) throw error;
       return (data || []) as { id: string; nome: string }[];
     },
   });
+
+  useEffect(() => {
+    if (urlLojaId || selectedLojaId || lojas.length !== 1) return;
+    setSelectedLojaId(lojas[0].id);
+  }, [lojas, selectedLojaId, urlLojaId]);
 
   const {
     data: produtosData,
@@ -438,6 +443,29 @@ const AppFuncionariosPublic = () => {
   const selectedLojaName = lojas.find((loja) => loja.id === selectedLojaId)?.nome || "";
   const isSearchingProducts = productSearch.trim() !== debouncedProductSearch;
 
+  const lojaSelector = !lojaFromUrl && lojas.length > 1 ? (
+    <div className="px-4 pt-3">
+      <div className="rounded-xl border bg-card p-3 space-y-2">
+        <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+          <Store className="h-3.5 w-3.5" />
+          Loja
+        </label>
+        <Select value={selectedLojaId || undefined} onValueChange={setSelectedLojaId}>
+          <SelectTrigger className="h-11">
+            <SelectValue placeholder="Selecione a loja" />
+          </SelectTrigger>
+          <SelectContent>
+            {lojas.map((loja) => (
+              <SelectItem key={loja.id} value={loja.id}>
+                {loja.nome}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  ) : null;
+
   const enviar = async () => {
     if (!items.length) {
       toast.error("Adicione pelo menos um item!");
@@ -602,11 +630,14 @@ const AppFuncionariosPublic = () => {
       )}
 
       {activeTab === "conferencia" ? (
-        <div className="p-4 flex-1">
+        <div className="p-4 flex-1 space-y-3">
+          {lojaSelector}
           <ConferenciaPedidos />
         </div>
       ) : activeTab === "enviados" ? (
         <div className="flex-1 overflow-y-auto p-4">
+          {lojaSelector}
+
           {/* Period filter toggle */}
           <div className="flex items-center gap-1 mb-3 p-1 rounded-lg bg-muted/40 border w-fit">
             {(["7", "30", "90"] as const).map((p) => (
@@ -624,7 +655,12 @@ const AppFuncionariosPublic = () => {
             ))}
           </div>
 
-          {enviadosLoading ? (
+          {!selectedLojaId ? (
+            <div className="p-8 text-center">
+              <Store className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+              <p className="text-muted-foreground text-sm">Selecione uma loja para ver os itens enviados</p>
+            </div>
+          ) : enviadosLoading ? (
             <div className="p-8 text-center text-muted-foreground text-sm">Carregando...</div>
           ) : enviadosRaw.length === 0 ? (
             <div className="p-8 text-center">
@@ -744,6 +780,8 @@ const AppFuncionariosPublic = () => {
 
       ) : (
         <div className="flex flex-col flex-1">
+          {lojaSelector}
+
           {/* Loja indicator (fixed label only) */}
           {selectedLojaName && (
             <div className="px-4 pt-3">
