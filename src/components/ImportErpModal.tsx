@@ -145,6 +145,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
         if (catErr) throw catErr;
         (catRows || []).forEach((r) => { if (r.ean) catalogByEan.set(r.ean, r as any); });
       }
+      console.log("[ImportErp v2] catálogo casado por EAN:", catalogByEan.size, "de", eans.length);
 
       // 2. Carregar produtos locais existentes (por nome)
       const existingMap = await fetchAllProductsMap();
