@@ -1131,6 +1131,18 @@ export type Database = {
           status: string
         }[]
       }
+      get_itens_enviados_publico: {
+        Args: { _loja_id: string; _since: string }
+        Returns: {
+          created_at: string
+          id: string
+          importado: boolean
+          nome: string
+          observacao: string
+          quantidade: number
+          registrado_por: string
+        }[]
+      }
       get_loja_owner: { Args: { _loja_id: string }; Returns: string }
       get_lojas_public: {
         Args: { _loja_id?: string }
