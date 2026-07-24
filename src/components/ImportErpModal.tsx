@@ -269,9 +269,13 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
         }
       }
 
+      console.log("[ImportErp v2] plano final:", { toInsert: toInsert.length, toUpdate: toUpdate.length });
       if (toInsert.length) {
         const { error: insertErr } = await supabase.from("cotacao_produtos").insert(toInsert);
-        if (insertErr) throw insertErr;
+        if (insertErr) {
+          console.error("[ImportErp v2] erro inserindo cotacao_produtos:", insertErr);
+          throw insertErr;
+        }
       }
       for (const u of toUpdate) {
         const { error: updErr } = await supabase.from("cotacao_produtos").update({ quantidade: u.quantidade }).eq("id", u.id);
