@@ -115,6 +115,7 @@ const DashboardPage = () => {
   const [cotacaoRevisada, setCotacaoRevisada] = useState(false);
   const [sendCompleted, setSendCompleted] = useState(false);
   const [novaCotacaoOpen, setNovaCotacaoOpen] = useState(false);
+  const [erpStarting, setErpStarting] = useState(false);
   const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "manter_precos" | "zerar" | null>(null);
   const [novaCotacaoLoading, setNovaCotacaoLoading] = useState(false);
   const [removeSupplier, setRemoveSupplier] = useState<Fornecedor | null>(null);
