@@ -120,62 +120,145 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
     if (!items.length) return;
     setImporting(true);
     try {
-      // 1. Ensure products exist in banco de produtos (paginated, no 1000-row limit)
-      const { fetchAllProductsMap } = await import("@/lib/supabaseHelpers");
-      const existingMap = await fetchAllProductsMap();
-      const newProducts = items.filter((i) => !existingMap.has(i.nome.toLowerCase().trim()));
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) {
+        toast.error("Sessão expirada. Faça login novamente.");
+        setImporting(false);
+        return;
+      }
 
+      const { buildSnapshotInsert } = await import("@/lib/buscaProdutos");
+      const { fetchAllProductsMap } = await import("@/lib/supabaseHelpers");
+
+      // 1. Casar por EAN no catálogo mestre
+      const eans = Array.from(new Set(items.map((i) => i.ean).filter((e): e is string => !!e)));
+      const catalogByEan = new Map<string, { id: string; nome: string; ean: string; embalagem: string | null; fator_embalagem: number | null }>();
+      if (eans.length) {
+        const { data: catRows, error: catErr } = await supabase
+          .from("catalogo_mestre")
+          .select("id, nome, ean, embalagem, fator_embalagem")
+          .eq("ativo", true)
+          .in("ean", eans);
+        if (catErr) throw catErr;
+        (catRows || []).forEach((r) => { if (r.ean) catalogByEan.set(r.ean, r as any); });
+      }
+
+      // 2. Carregar produtos locais existentes (por nome)
+      const existingMap = await fetchAllProductsMap();
+
+      // 3. Determinar quais itens caem em cada bucket
+      type Bucket =
+        | { kind: "catalogo"; item: ParsedItem; cat: { id: string; nome: string; ean: string; embalagem: string | null; fator_embalagem: number | null } }
+        | { kind: "local"; item: ParsedItem; prod: { id: string; nome: string; embalagem: string | null; fator_embalagem: number } };
+      const buckets: Bucket[] = [];
+      const toCreateLocal: ParsedItem[] = [];
+
+      for (const item of items) {
+        const catHit = item.ean ? catalogByEan.get(item.ean) : undefined;
+        if (catHit) {
+          buckets.push({ kind: "catalogo", item, cat: catHit });
+          continue;
+        }
+        const existing = existingMap.get(item.nome.toLowerCase().trim());
+        if (existing) {
+          buckets.push({ kind: "local", item, prod: existing });
+        } else {
+          toCreateLocal.push(item);
+        }
+      }
+
+      // 4. Criar produtos locais faltantes com user_id — checando erro
       const newProductInserts: { id: string; nome: string; embalagem: string; fator_embalagem: number }[] = [];
-      if (newProducts.length) {
-        const { data: inserted } = await supabase
+      if (toCreateLocal.length) {
+        const { data: inserted, error: insErr } = await supabase
           .from("produtos")
-          .insert(newProducts.map((p) => ({ nome: p.nome, embalagem: p.embalagem, ativo: true })))
+          .insert(toCreateLocal.map((p) => ({
+            nome: p.nome,
+            embalagem: p.embalagem,
+            ativo: true,
+            user_id: uid,
+          })) as any)
           .select("id, nome, embalagem, fator_embalagem");
-        (inserted || []).forEach((p) => {
-          existingMap.set(p.nome.toLowerCase().trim(), p);
-          newProductInserts.push({ id: p.id, nome: p.nome, embalagem: p.embalagem || "UNI", fator_embalagem: p.fator_embalagem || 1 });
+        if (insErr) throw insErr;
+        (inserted || []).forEach((p, idx) => {
+          const src = toCreateLocal[idx];
+          existingMap.set(p.nome.toLowerCase().trim(), p as any);
+          buckets.push({ kind: "local", item: src, prod: p as any });
+          newProductInserts.push({
+            id: p.id,
+            nome: p.nome,
+            embalagem: p.embalagem || "UNI",
+            fator_embalagem: p.fator_embalagem || 1,
+          });
         });
       }
 
-      // 2. Check which products are already in the cotação
-      const { data: existingCps } = await supabase
+      // 5. Descobrir o que já está na cotação (produto_id ou catalogo_mestre_id)
+      const { data: existingCps, error: cpsErr } = await supabase
         .from("cotacao_produtos")
-        .select("produto_id, id")
+        .select("id, produto_id, catalogo_mestre_id")
         .eq("cotacao_id", cotacaoId);
-      const existingProdIds = new Set((existingCps || []).map((cp) => cp.produto_id));
+      if (cpsErr) throw cpsErr;
+      const cpsByProd = new Map<string, string>();
+      const cpsByCat = new Map<string, string>();
+      (existingCps || []).forEach((cp: any) => {
+        if (cp.produto_id) cpsByProd.set(cp.produto_id, cp.id);
+        if (cp.catalogo_mestre_id) cpsByCat.set(cp.catalogo_mestre_id, cp.id);
+      });
 
-      // 3. Insert new cotacao_produtos
-      const toInsert: { cotacao_id: string; produto_id: string; quantidade: number; fator_embalagem: number; tipo_embalagem: string }[] = [];
+      // 6. Montar inserts e updates via buildSnapshotInsert
+      const toInsert: any[] = [];
       const toUpdate: { id: string; quantidade: number }[] = [];
 
-      for (const item of items) {
-        const prod = existingMap.get(item.nome.toLowerCase().trim());
-        if (!prod) continue;
-
-        if (existingProdIds.has(prod.id)) {
-          const cp = (existingCps || []).find((c) => c.produto_id === prod.id);
-          if (cp) toUpdate.push({ id: cp.id, quantidade: item.quantidade });
+      for (const b of buckets) {
+        if (b.kind === "catalogo") {
+          const existingId = cpsByCat.get(b.cat.id);
+          if (existingId) {
+            toUpdate.push({ id: existingId, quantidade: b.item.quantidade });
+          } else {
+            toInsert.push(buildSnapshotInsert({
+              cotacaoId,
+              quantidade: b.item.quantidade,
+              produto: {
+                fonte: "catalogo",
+                id: b.cat.id,
+                nome: b.cat.nome,
+                ean: b.cat.ean,
+                embalagem: b.cat.embalagem,
+                fator_embalagem: b.cat.fator_embalagem,
+              },
+            }));
+          }
         } else {
-          const embRaw = (prod.embalagem || item.embalagem || "UNI").split("|")[0]?.trim().toUpperCase() || "UNI";
-          const tipos = ["UNI", "CX", "DZ", "½DZ", "FD", "KG", "PCT"];
-          const tipoEmb = tipos.find((t) => embRaw.startsWith(t)) || "UNI";
-          const fator = prod.fator_embalagem && prod.fator_embalagem > 0 ? prod.fator_embalagem : 1;
-          toInsert.push({
-            cotacao_id: cotacaoId,
-            produto_id: prod.id,
-            nome: (prod as any).nome ?? item.nome,
-            quantidade: item.quantidade,
-            fator_embalagem: fator,
-            tipo_embalagem: tipoEmb,
-          } as any);
+          const existingId = cpsByProd.get(b.prod.id);
+          if (existingId) {
+            toUpdate.push({ id: existingId, quantidade: b.item.quantidade });
+          } else {
+            toInsert.push(buildSnapshotInsert({
+              cotacaoId,
+              quantidade: b.item.quantidade,
+              produto: {
+                fonte: "local",
+                id: b.prod.id,
+                nome: b.prod.nome,
+                ean: null,
+                embalagem: b.prod.embalagem,
+                fator_embalagem: b.prod.fator_embalagem,
+              },
+              embalagem: b.item.embalagem,
+            }));
+          }
         }
       }
 
       if (toInsert.length) {
-        await supabase.from("cotacao_produtos").insert(toInsert as any);
+        const { error: insertErr } = await supabase.from("cotacao_produtos").insert(toInsert);
+        if (insertErr) throw insertErr;
       }
       for (const u of toUpdate) {
-        await supabase.from("cotacao_produtos").update({ quantidade: u.quantidade }).eq("id", u.id);
+        const { error: updErr } = await supabase.from("cotacao_produtos").update({ quantidade: u.quantidade }).eq("id", u.id);
+        if (updErr) throw updErr;
       }
 
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
