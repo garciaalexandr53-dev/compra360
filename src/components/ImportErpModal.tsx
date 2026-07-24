@@ -170,6 +170,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
           toCreateLocal.push(item);
         }
       }
+      console.log("[ImportErp v2] buckets iniciais:", { catalogo: buckets.filter(b => b.kind === "catalogo").length, local: buckets.filter(b => b.kind === "local").length, aCriar: toCreateLocal.length });
 
       // 4. Criar produtos locais faltantes com user_id — checando erro
       const newProductInserts: { id: string; nome: string; embalagem: string; fator_embalagem: number }[] = [];
@@ -183,7 +184,13 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
             user_id: uid,
           })) as any)
           .select("id, nome, embalagem, fator_embalagem");
-        if (insErr) throw insErr;
+        if (insErr) {
+          console.error("[ImportErp v2] erro criando produtos locais:", insErr);
+          if (insErr.code === "42501") {
+            throw new Error("Sessão expirada ou sem permissão para cadastrar produtos. Recarregue a página (Ctrl+Shift+R) e tente novamente.");
+          }
+          throw insErr;
+        }
         (inserted || []).forEach((p, idx) => {
           const src = toCreateLocal[idx];
           existingMap.set(p.nome.toLowerCase().trim(), p as any);
@@ -196,6 +203,13 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
           });
         });
       }
+
+      if (buckets.length === 0) {
+        toast.error("Nenhum item foi processado — verifique se o arquivo tem colunas Produto/EAN válidas.");
+        setImporting(false);
+        return;
+      }
+
 
       // 5. Descobrir o que já está na cotação (produto_id ou catalogo_mestre_id)
       const { data: existingCps, error: cpsErr } = await supabase
