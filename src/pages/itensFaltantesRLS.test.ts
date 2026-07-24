@@ -45,13 +45,16 @@ async function fetchLojaId(): Promise<string | null> {
 }
 
 async function insertItem(lojaId: string, nome: string) {
+  // NOTE: do NOT use `Prefer: return=representation` — anon does not have a
+  // SELECT policy on itens_faltantes, and the post-insert read would fail even
+  // though the INSERT itself is allowed. This mirrors the exact call shape
+  // used by AppFuncionariosPublic.tsx.
   return fetch(`${SUPABASE_URL}/rest/v1/itens_faltantes`, {
     method: "POST",
     headers: {
       apikey: ANON_KEY,
       Authorization: `Bearer ${ANON_KEY}`,
       "Content-Type": "application/json",
-      Prefer: "return=representation",
     },
     body: JSON.stringify({ nome, loja_id: lojaId }),
   });
