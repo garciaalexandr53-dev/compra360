@@ -592,7 +592,8 @@ const DashboardPage = () => {
             },
           });
           if (!res.ok) {
-            if (res.reason === "no-loja") toast.info("Selecione uma loja antes de importar.");
+            const reason = (res as { ok: false; reason: string }).reason;
+            if (reason === "no-loja") toast.info("Selecione uma loja antes de importar.");
             else toast.error("Não foi possível iniciar a cotação");
             return;
           }
