@@ -585,7 +585,14 @@ const DashboardPage = () => {
             cotacaoAtivaId: cotacaoAtiva?.id ?? null,
             lojaAtivaId: lojaAtiva?.id ?? null,
             insertCotacao: async (payload) => {
-              const { data, error } = await supabase.from("cotacoes").insert(payload).select("*").single();
+              const { data: userData } = await supabase.auth.getUser();
+              const uid = userData.user?.id;
+              if (!uid) return null;
+              const { data, error } = await supabase
+                .from("cotacoes")
+                .insert({ ...payload, created_by: uid } as any)
+                .select("*")
+                .single();
               if (error) throw error;
               if (data) queryClient.setQueryData(["cotacao-ativa", payload.loja_id], data);
               return data ? { id: data.id } : null;

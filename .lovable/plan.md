@@ -1,34 +1,18 @@
 ## Problema
 
-No Dashboard, o botão **"Importar do ERP"** exige uma cotação ativa. Quando não há nenhuma, ele só mostra um toast e manda o usuário para a aba Cotação — mas lá também não existe um botão claro para "iniciar cotação vazia", então o fluxo trava.
+Ao clicar em "Importar do ERP" no Dashboard, o insert em `cotacoes` falha com:
+`new row violates row-level security policy for table "cotacoes"`
 
-O botão **"Montar manualmente"** não tem esse problema porque `/add-produtos` já cria a cotação automaticamente no primeiro item adicionado. Vamos aplicar o mesmo padrão ao ERP.
+Causa: em `src/pages/DashboardPage.tsx` (linha ~588), o `insertCotacao` passado ao helper `startErpImport` insere apenas `{ loja_id, status, nome }`. A política de RLS de `cotacoes` exige `created_by = auth.uid()` (o insert manual da mesma página, na linha 433, já preenche esse campo corretamente).
 
-## Solução
+## Correção
 
-Fazer o **"Importar do ERP"** iniciar a cotação sozinho quando não houver uma ativa — o usuário começa a cotação pela própria importação, sem precisar passar por outra tela.
+1. `src/pages/DashboardPage.tsx` — no callback `insertCotacao`, obter o usuário autenticado (`supabase.auth.getUser()`) e incluir `created_by: user.id` no payload enviado ao `.insert(...)`. Manter o contrato do helper: `startErpImport` continua chamando `insertCotacao(payload)` com `{loja_id, status, nome}` e a page enriquece com `created_by` antes de bater no banco. Se `getUser()` não retornar usuário, retornar `null` para o helper sinalizar `insert-failed`.
 
-### Mudanças (somente `src/pages/DashboardPage.tsx`)
+2. `src/lib/startErpImport.test.ts` — nenhum ajuste necessário: o teste injeta `insertCotacao` como mock, então o contrato do helper permanece.
 
-1. No `onClick` do botão "Importar do ERP" (linha ~578):
-   - Se `cotacaoAtiva?.id` existir → abre o modal como hoje.
-   - Se não existir:
-     - Validar que há `lojaAtiva?.id` (se não, toast pedindo para selecionar loja).
-     - `INSERT` em `cotacoes` com `loja_id = lojaAtiva.id`, `status = "ativa"`, `nome = "Cotação " + data atual` (mesmo padrão usado em `handleNovaCotacao` e no manual).
-     - Invalidar a query `["cotacao-ativa", ...]` para o `cotacaoAtiva` atualizar.
-     - Abrir o `ImportErpModal` já com o novo `cotacao_id`.
-   - Mostrar loading (`toast.loading` / desabilitar botão) durante a criação para não permitir clique duplo.
+3. Verificação: rodar os testes existentes (`startErpImport.test.ts`) e validar manualmente que "Importar do ERP" cria a cotação e abre o modal.
 
-2. Ajustar a renderização do `ImportErpModal` (linha ~1008): passar o id recém-criado quando existir, para o modal abrir imediatamente após o insert (usar estado local `pendingCotacaoId` ou o próprio `cotacaoAtiva` já invalidado).
+## Fora de escopo
 
-### Não muda
-
-- Nenhuma mudança em `ImportErpModal.tsx` — ele continua recebendo `cotacaoId` como hoje.
-- Fluxos "Importar itens faltantes" e "Montar manualmente" ficam iguais.
-- Nenhum ajuste de backend / RLS / migrations.
-
-### Verificação
-
-- Sem cotação ativa: clicar em "Importar do ERP" cria a cotação e abre o modal na sequência; após importar, o Dashboard mostra a cotação com os itens.
-- Com cotação ativa: comportamento atual preservado (abre modal direto).
-- Sem loja ativa: toast pedindo para selecionar loja, sem criar cotação.
+Não mexer em políticas RLS, migrations ou no helper `startErpImport` (que é puro e não deve conhecer `auth`).
