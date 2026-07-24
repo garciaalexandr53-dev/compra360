@@ -578,19 +578,26 @@ const DashboardPage = () => {
       )}
       <Button variant="outline" className="w-full justify-start gap-3 h-12" disabled={erpStarting} onClick={async () => {
         if (!checkPlan("pro", "Importação do ERP")) return;
-        if (cotacaoAtiva?.id) { setErpImportOpen(true); return; }
-        if (!lojaAtiva?.id) { toast.info("Selecione uma loja antes de importar."); return; }
         setErpStarting(true);
         try {
-          const now = new Date();
-          const { data: newCot, error } = await supabase.from("cotacoes").insert({
-            loja_id: lojaAtiva.id,
-            status: "ativa",
-            nome: `Cotação ${now.toLocaleDateString("pt-BR")}`,
-          }).select("*").single();
-          if (error || !newCot) throw error || new Error("Falha ao criar cotação");
-          queryClient.setQueryData(["cotacao-ativa", lojaAtiva.id], newCot);
-          await queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
+          const { startErpImport } = await import("@/lib/startErpImport");
+          const res = await startErpImport({
+            cotacaoAtivaId: cotacaoAtiva?.id ?? null,
+            lojaAtivaId: lojaAtiva?.id ?? null,
+            insertCotacao: async (payload) => {
+              const { data, error } = await supabase.from("cotacoes").insert(payload).select("*").single();
+              if (error) throw error;
+              if (data) queryClient.setQueryData(["cotacao-ativa", payload.loja_id], data);
+              return data ? { id: data.id } : null;
+            },
+          });
+          if (!res.ok) {
+            const reason = (res as { ok: false; reason: string }).reason;
+            if (reason === "no-loja") toast.info("Selecione uma loja antes de importar.");
+            else toast.error("Não foi possível iniciar a cotação");
+            return;
+          }
+          if (res.created) await queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
           setErpImportOpen(true);
         } catch (e: any) {
           toast.error(e?.message || "Não foi possível iniciar a cotação");
