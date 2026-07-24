@@ -575,10 +575,27 @@ const DashboardPage = () => {
           <div className="text-left"><div className="text-sm font-semibold">Importar itens faltantes</div><div className="text-xs text-muted-foreground">{itensFaltantes} item(ns) pendente(s)</div></div>
         </Button>
       )}
-      <Button variant="outline" className="w-full justify-start gap-3 h-12" onClick={() => {
+      <Button variant="outline" className="w-full justify-start gap-3 h-12" disabled={erpStarting} onClick={async () => {
         if (!checkPlan("pro", "Importação do ERP")) return;
-        if (cotacaoAtiva?.id) setErpImportOpen(true);
-        else { toast.info("Crie uma cotação primeiro na aba Cotação"); navigate("/cotacao"); }
+        if (cotacaoAtiva?.id) { setErpImportOpen(true); return; }
+        if (!lojaAtiva?.id) { toast.info("Selecione uma loja antes de importar."); return; }
+        setErpStarting(true);
+        try {
+          const now = new Date();
+          const { data: newCot, error } = await supabase.from("cotacoes").insert({
+            loja_id: lojaAtiva.id,
+            status: "ativa",
+            nome: `Cotação ${now.toLocaleDateString("pt-BR")}`,
+          }).select("*").single();
+          if (error || !newCot) throw error || new Error("Falha ao criar cotação");
+          queryClient.setQueryData(["cotacao-ativa", lojaAtiva.id], newCot);
+          await queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
+          setErpImportOpen(true);
+        } catch (e: any) {
+          toast.error(e?.message || "Não foi possível iniciar a cotação");
+        } finally {
+          setErpStarting(false);
+        }
       }}>
         <FileSpreadsheet className="h-5 w-5 text-primary" />
         <div className="text-left"><div className="text-sm font-semibold">Importar do ERP</div><div className="text-xs text-muted-foreground">Planilha Excel/CSV</div></div>
