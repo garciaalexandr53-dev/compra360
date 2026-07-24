@@ -163,10 +163,10 @@ const AppFuncionariosPublic = () => {
   }, [productSearch]);
 
   const { data: lojas = [] } = useQuery({
-    queryKey: ["lojas-public", selectedLojaId],
+    queryKey: ["lojas-public", lojaFromUrl ? selectedLojaId : "all"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_lojas_public", {
-        _loja_id: selectedLojaId || undefined,
+        _loja_id: lojaFromUrl ? selectedLojaId || undefined : undefined,
       });
       if (error) throw error;
       return (data || []) as { id: string; nome: string }[];
