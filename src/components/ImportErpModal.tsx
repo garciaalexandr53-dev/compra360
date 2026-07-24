@@ -121,6 +121,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
     if (!items.length) return;
     setImporting(true);
     try {
+      console.log("[ImportErp v2] iniciando import", { total: items.length, comEan: items.filter(i => i.ean).length });
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
       if (!uid) {
