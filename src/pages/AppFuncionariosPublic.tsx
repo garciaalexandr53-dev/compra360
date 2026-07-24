@@ -278,14 +278,20 @@ const AppFuncionariosPublic = () => {
     queryKey: ["itens-enviados", selectedLojaId],
     enabled: !!selectedLojaId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("itens_faltantes")
-        .select("id, nome, quantidade, observacao, registrado_por, created_at, importado")
-        .eq("loja_id", selectedLojaId)
-        .gte("created_at", ninetyDaysAgo)
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc(
+        "get_itens_enviados_publico" as never,
+        { _loja_id: selectedLojaId, _since: ninetyDaysAgo } as never,
+      );
       if (error) throw error;
-      return data || [];
+      return (data || []) as Array<{
+        id: string;
+        nome: string;
+        quantidade: number;
+        observacao: string | null;
+        registrado_por: string | null;
+        created_at: string;
+        importado: boolean;
+      }>;
     },
   });
 
