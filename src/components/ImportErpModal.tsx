@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { Upload, FileSpreadsheet, Trash2, Loader2 } from "lucide-react";
 import * as XLSX from "xlsx";
 
-interface ParsedItem {
+export interface ParsedItem {
   nome: string;
   quantidade: number;
   embalagem: string;
@@ -21,6 +21,35 @@ export const extractEan = (raw: unknown): string | null => {
   const digits = String(raw).replace(/\D/g, "");
   return digits.length > 0 ? digits : null;
 };
+
+/** Mapa de embalagem da planilha → sigla canônica (apenas itens LOCAIS). */
+const EMBALAGEM_MAP: Record<string, string> = {
+  cx: "CX",
+  fd: "FD",
+  kg: "KG",
+  sc: "PCT",
+  unid: "UNI",
+  uni: "UNI",
+  un: "UNI",
+  dz: "DZ",
+  pct: "PCT",
+  pc: "PCT",
+};
+
+export const normalizeEmbalagem = (raw: unknown): string => {
+  const key = String(raw ?? "").trim().toLowerCase();
+  return EMBALAGEM_MAP[key] ?? "UNI";
+};
+
+export type DestinoItem = "catalogo" | "local";
+
+/** Caso 1: tem EAN e existe no mestre → catálogo. Casos 2/3 → local. */
+export const classificarDestino = (
+  item: Pick<ParsedItem, "ean">,
+  catalogByEan: Map<string, unknown>,
+): DestinoItem =>
+  item.ean && catalogByEan.has(String(item.ean)) ? "catalogo" : "local";
+
 
 interface Props {
   open: boolean;
