@@ -63,6 +63,25 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
   const [items, setItems] = useState<ParsedItem[]>([]);
   const [importing, setImporting] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [catalogByEan, setCatalogByEan] = useState<Map<string, CatRow>>(new Map());
+
+  /** Uma única query: todos os EANs da planilha, comparados como TEXT. */
+  const loadCatalogHits = async (parsed: ParsedItem[]) => {
+    const map = await fetchCatalogByEan(parsed);
+    setCatalogByEan(map);
+  };
+
+  const applyParsed = (parsed: ParsedItem[]) => {
+    setItems(parsed);
+    setCatalogByEan(new Map());
+    if (parsed.length) {
+      toast.success(`${parsed.length} itens detectados`);
+      loadCatalogHits(parsed);
+    } else {
+      toast.error("Nenhum item encontrado no arquivo");
+    }
+  };
+
 
   const detectColumns = (headers: string[]) => {
     const lower = headers.map((h) => (h || "").toString().toLowerCase().trim());
