@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { Upload, FileSpreadsheet, Trash2, Loader2 } from "lucide-react";
 import * as XLSX from "xlsx";
 
-interface ParsedItem {
+export interface ParsedItem {
   nome: string;
   quantidade: number;
   embalagem: string;
@@ -21,6 +21,66 @@ export const extractEan = (raw: unknown): string | null => {
   const digits = String(raw).replace(/\D/g, "");
   return digits.length > 0 ? digits : null;
 };
+
+/** Mapa de embalagem da planilha → sigla canônica (apenas itens LOCAIS). */
+const EMBALAGEM_MAP: Record<string, string> = {
+  cx: "CX",
+  fd: "FD",
+  kg: "KG",
+  sc: "PCT",
+  unid: "UNI",
+  uni: "UNI",
+  un: "UNI",
+  dz: "DZ",
+  pct: "PCT",
+  pc: "PCT",
+};
+
+export const normalizeEmbalagem = (raw: unknown): string => {
+  const key = String(raw ?? "").trim().toLowerCase();
+  return EMBALAGEM_MAP[key] ?? "UNI";
+};
+
+export type DestinoItem = "catalogo" | "local";
+
+/** Caso 1: tem EAN e existe no mestre → catálogo. Casos 2/3 → local. */
+export const classificarDestino = (
+  item: Pick<ParsedItem, "ean">,
+  catalogByEan: Map<string, unknown>,
+): DestinoItem =>
+  item.ean && catalogByEan.has(String(item.ean)) ? "catalogo" : "local";
+
+export interface CatRow {
+  id: string;
+  nome: string;
+  ean: string;
+  embalagem: string | null;
+  fator_embalagem: number | null;
+}
+
+/** Busca TODOS os EANs da planilha em UMA query (ean como TEXT). */
+export const fetchCatalogByEan = async (
+  parsed: Pick<ParsedItem, "ean">[],
+): Promise<Map<string, CatRow>> => {
+  const map = new Map<string, CatRow>();
+  const eans = Array.from(
+    new Set(parsed.map((i) => i.ean).filter((e): e is string => !!e)),
+  );
+  if (!eans.length) return map;
+  const { data, error } = await supabase
+    .from("catalogo_mestre")
+    .select("id, nome, ean, embalagem, fator_embalagem")
+    .eq("ativo", true)
+    .in("ean", eans);
+  if (error) throw error;
+  (data || []).forEach((r: any) => {
+    if (r.ean) map.set(String(r.ean), r as CatRow);
+  });
+  return map;
+};
+
+
+
 
 interface Props {
   open: boolean;
@@ -34,6 +94,25 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
   const [items, setItems] = useState<ParsedItem[]>([]);
   const [importing, setImporting] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [catalogByEan, setCatalogByEan] = useState<Map<string, CatRow>>(new Map());
+
+  /** Uma única query: todos os EANs da planilha, comparados como TEXT. */
+  const loadCatalogHits = async (parsed: ParsedItem[]) => {
+    const map = await fetchCatalogByEan(parsed);
+    setCatalogByEan(map);
+  };
+
+  const applyParsed = (parsed: ParsedItem[]) => {
+    setItems(parsed);
+    setCatalogByEan(new Map());
+    if (parsed.length) {
+      toast.success(`${parsed.length} itens detectados`);
+      loadCatalogHits(parsed);
+    } else {
+      toast.error("Nenhum item encontrado no arquivo");
+    }
+  };
+
 
   const detectColumns = (headers: string[]) => {
     const lower = headers.map((h) => (h || "").toString().toLowerCase().trim());
@@ -79,9 +158,8 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
             ean: eanIdx >= 0 ? extractEan(cols[eanIdx]) : null,
           });
         }
-        setItems(parsed);
-        if (parsed.length) toast.success(`${parsed.length} itens detectados`);
-        else toast.error("Nenhum item encontrado no arquivo");
+        applyParsed(parsed);
+
       };
       reader.readAsText(file);
     } else {
@@ -107,9 +185,8 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
             ean: eanIdx >= 0 ? extractEan(row[eanIdx]) : null,
           });
         }
-        setItems(parsed);
-        if (parsed.length) toast.success(`${parsed.length} itens detectados`);
-        else toast.error("Nenhum item encontrado na planilha");
+        applyParsed(parsed);
+
       };
       reader.readAsArrayBuffer(file);
     }
@@ -133,32 +210,23 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
       const { buildSnapshotInsert } = await import("@/lib/buscaProdutos");
       const { fetchAllProductsMap } = await import("@/lib/supabaseHelpers");
 
-      // 1. Casar por EAN no catálogo mestre
-      const eans = Array.from(new Set(items.map((i) => i.ean).filter((e): e is string => !!e)));
-      const catalogByEan = new Map<string, { id: string; nome: string; ean: string; embalagem: string | null; fator_embalagem: number | null }>();
-      if (eans.length) {
-        const { data: catRows, error: catErr } = await supabase
-          .from("catalogo_mestre")
-          .select("id, nome, ean, embalagem, fator_embalagem")
-          .eq("ativo", true)
-          .in("ean", eans);
-        if (catErr) throw catErr;
-        (catRows || []).forEach((r) => { if (r.ean) catalogByEan.set(r.ean, r as any); });
-      }
-      console.log("[ImportErp v2] catálogo casado por EAN:", catalogByEan.size, "de", eans.length);
+      // 1. Casar por EAN no catálogo mestre (reaproveita o lookup do preview)
+      const catMap = catalogByEan.size ? catalogByEan : await fetchCatalogByEan(items);
+      console.log("[ImportErp v2] catálogo casado por EAN:", catMap.size);
 
       // 2. Carregar produtos locais existentes (por nome)
       const existingMap = await fetchAllProductsMap();
 
       // 3. Determinar quais itens caem em cada bucket
       type Bucket =
-        | { kind: "catalogo"; item: ParsedItem; cat: { id: string; nome: string; ean: string; embalagem: string | null; fator_embalagem: number | null } }
+        | { kind: "catalogo"; item: ParsedItem; cat: CatRow }
         | { kind: "local"; item: ParsedItem; prod: { id: string; nome: string; embalagem: string | null; fator_embalagem: number } };
       const buckets: Bucket[] = [];
       const toCreateLocal: ParsedItem[] = [];
 
       for (const item of items) {
-        const catHit = item.ean ? catalogByEan.get(item.ean) : undefined;
+        const catHit = item.ean ? catMap.get(String(item.ean)) : undefined;
+
         if (catHit) {
           buckets.push({ kind: "catalogo", item, cat: catHit });
           continue;
@@ -179,7 +247,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
           .from("produtos")
           .insert(toCreateLocal.map((p) => ({
             nome: p.nome,
-            embalagem: p.embalagem,
+            embalagem: normalizeEmbalagem(p.embalagem),
             ativo: true,
             user_id: uid,
           })) as any)
@@ -263,7 +331,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
                 embalagem: b.prod.embalagem,
                 fator_embalagem: b.prod.fator_embalagem,
               },
-              embalagem: b.item.embalagem,
+              embalagem: normalizeEmbalagem(b.item.embalagem),
             }));
           }
         }
@@ -356,22 +424,39 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
               </Button>
             </div>
             <ScrollArea className="max-h-[250px]">
-              {items.map((item, i) => (
+              {items.map((item, i) => {
+                const destino = classificarDestino(item, catalogByEan);
+                return (
                 <div key={i} className="flex items-center gap-2 px-3 py-2 border-b text-sm hover:bg-muted/30">
-                  <span className="text-xs text-muted-foreground w-6">{i + 1}.</span>
+                  <span className="text-xs text-muted-foreground w-6 shrink-0">{i + 1}.</span>
                   <div className="flex-1 min-w-0">
                     <div className="truncate font-medium">{item.nome}</div>
-                    {item.ean && (
-                      <div className="text-[10px] font-mono text-muted-foreground truncate">EAN: {item.ean}</div>
-                    )}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+                          destino === "catalogo"
+                            ? "bg-primary/10 text-primary"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {destino === "catalogo" ? "Catálogo" : "Local"}
+                      </span>
+                      {item.ean && (
+                        <span className="text-[10px] font-mono text-muted-foreground truncate">EAN: {item.ean}</span>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-xs text-muted-foreground">{item.embalagem}</span>
-                  <span className="text-xs font-mono font-bold w-10 text-right">{item.quantidade}</span>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeItem(i)}>
+                  <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">
+                    {destino === "catalogo" ? "—" : normalizeEmbalagem(item.embalagem)}
+                  </span>
+                  <span className="text-xs font-mono font-bold w-10 text-right shrink-0">{item.quantidade}</span>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive shrink-0" onClick={() => removeItem(i)}>
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
-              ))}
+                );
+              })}
+
             </ScrollArea>
           </div>
         )}
