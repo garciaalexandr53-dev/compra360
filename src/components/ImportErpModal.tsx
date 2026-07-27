@@ -214,20 +214,19 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
       const catMap = catalogByEan.size ? catalogByEan : await fetchCatalogByEan(items);
       console.log("[ImportErp v2] catálogo casado por EAN:", catMap.size);
 
-      console.log("[ImportErp v2] catálogo casado por EAN:", catalogByEan.size, "de", eans.length);
-
       // 2. Carregar produtos locais existentes (por nome)
       const existingMap = await fetchAllProductsMap();
 
       // 3. Determinar quais itens caem em cada bucket
       type Bucket =
-        | { kind: "catalogo"; item: ParsedItem; cat: { id: string; nome: string; ean: string; embalagem: string | null; fator_embalagem: number | null } }
+        | { kind: "catalogo"; item: ParsedItem; cat: CatRow }
         | { kind: "local"; item: ParsedItem; prod: { id: string; nome: string; embalagem: string | null; fator_embalagem: number } };
       const buckets: Bucket[] = [];
       const toCreateLocal: ParsedItem[] = [];
 
       for (const item of items) {
-        const catHit = item.ean ? catalogByEan.get(item.ean) : undefined;
+        const catHit = item.ean ? catMap.get(String(item.ean)) : undefined;
+
         if (catHit) {
           buckets.push({ kind: "catalogo", item, cat: catHit });
           continue;
