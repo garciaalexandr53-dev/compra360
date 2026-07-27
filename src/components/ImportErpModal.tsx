@@ -210,18 +210,10 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
       const { buildSnapshotInsert } = await import("@/lib/buscaProdutos");
       const { fetchAllProductsMap } = await import("@/lib/supabaseHelpers");
 
-      // 1. Casar por EAN no catálogo mestre
-      const eans = Array.from(new Set(items.map((i) => i.ean).filter((e): e is string => !!e)));
-      const catalogByEan = new Map<string, { id: string; nome: string; ean: string; embalagem: string | null; fator_embalagem: number | null }>();
-      if (eans.length) {
-        const { data: catRows, error: catErr } = await supabase
-          .from("catalogo_mestre")
-          .select("id, nome, ean, embalagem, fator_embalagem")
-          .eq("ativo", true)
-          .in("ean", eans);
-        if (catErr) throw catErr;
-        (catRows || []).forEach((r) => { if (r.ean) catalogByEan.set(r.ean, r as any); });
-      }
+      // 1. Casar por EAN no catálogo mestre (reaproveita o lookup do preview)
+      const catMap = catalogByEan.size ? catalogByEan : await fetchCatalogByEan(items);
+      console.log("[ImportErp v2] catálogo casado por EAN:", catMap.size);
+
       console.log("[ImportErp v2] catálogo casado por EAN:", catalogByEan.size, "de", eans.length);
 
       // 2. Carregar produtos locais existentes (por nome)
