@@ -247,7 +247,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
           .from("produtos")
           .insert(toCreateLocal.map((p) => ({
             nome: p.nome,
-            embalagem: p.embalagem,
+            embalagem: normalizeEmbalagem(p.embalagem),
             ativo: true,
             user_id: uid,
           })) as any)
