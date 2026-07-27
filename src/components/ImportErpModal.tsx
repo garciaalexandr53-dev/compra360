@@ -158,9 +158,8 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
             ean: eanIdx >= 0 ? extractEan(cols[eanIdx]) : null,
           });
         }
-        setItems(parsed);
-        if (parsed.length) toast.success(`${parsed.length} itens detectados`);
-        else toast.error("Nenhum item encontrado no arquivo");
+        applyParsed(parsed);
+
       };
       reader.readAsText(file);
     } else {
