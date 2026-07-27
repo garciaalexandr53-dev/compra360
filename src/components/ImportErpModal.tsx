@@ -331,7 +331,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
                 embalagem: b.prod.embalagem,
                 fator_embalagem: b.prod.fator_embalagem,
               },
-              embalagem: b.item.embalagem,
+              embalagem: normalizeEmbalagem(b.item.embalagem),
             }));
           }
         }
