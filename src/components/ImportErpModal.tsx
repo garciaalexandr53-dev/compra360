@@ -424,22 +424,39 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
               </Button>
             </div>
             <ScrollArea className="max-h-[250px]">
-              {items.map((item, i) => (
+              {items.map((item, i) => {
+                const destino = classificarDestino(item, catalogByEan);
+                return (
                 <div key={i} className="flex items-center gap-2 px-3 py-2 border-b text-sm hover:bg-muted/30">
-                  <span className="text-xs text-muted-foreground w-6">{i + 1}.</span>
+                  <span className="text-xs text-muted-foreground w-6 shrink-0">{i + 1}.</span>
                   <div className="flex-1 min-w-0">
                     <div className="truncate font-medium">{item.nome}</div>
-                    {item.ean && (
-                      <div className="text-[10px] font-mono text-muted-foreground truncate">EAN: {item.ean}</div>
-                    )}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+                          destino === "catalogo"
+                            ? "bg-primary/10 text-primary"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {destino === "catalogo" ? "Catálogo" : "Local"}
+                      </span>
+                      {item.ean && (
+                        <span className="text-[10px] font-mono text-muted-foreground truncate">EAN: {item.ean}</span>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-xs text-muted-foreground">{item.embalagem}</span>
-                  <span className="text-xs font-mono font-bold w-10 text-right">{item.quantidade}</span>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeItem(i)}>
+                  <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">
+                    {destino === "catalogo" ? "—" : normalizeEmbalagem(item.embalagem)}
+                  </span>
+                  <span className="text-xs font-mono font-bold w-10 text-right shrink-0">{item.quantidade}</span>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive shrink-0" onClick={() => removeItem(i)}>
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
-              ))}
+                );
+              })}
+
             </ScrollArea>
           </div>
         )}
