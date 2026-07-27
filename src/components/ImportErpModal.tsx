@@ -50,6 +50,37 @@ export const classificarDestino = (
 ): DestinoItem =>
   item.ean && catalogByEan.has(String(item.ean)) ? "catalogo" : "local";
 
+export interface CatRow {
+  id: string;
+  nome: string;
+  ean: string;
+  embalagem: string | null;
+  fator_embalagem: number | null;
+}
+
+/** Busca TODOS os EANs da planilha em UMA query (ean como TEXT). */
+export const fetchCatalogByEan = async (
+  parsed: Pick<ParsedItem, "ean">[],
+): Promise<Map<string, CatRow>> => {
+  const map = new Map<string, CatRow>();
+  const eans = Array.from(
+    new Set(parsed.map((i) => i.ean).filter((e): e is string => !!e)),
+  );
+  if (!eans.length) return map;
+  const { data, error } = await supabase
+    .from("catalogo_mestre")
+    .select("id, nome, ean, embalagem, fator_embalagem")
+    .eq("ativo", true)
+    .in("ean", eans);
+  if (error) throw error;
+  (data || []).forEach((r: any) => {
+    if (r.ean) map.set(String(r.ean), r as CatRow);
+  });
+  return map;
+};
+
+
+
 
 interface Props {
   open: boolean;
