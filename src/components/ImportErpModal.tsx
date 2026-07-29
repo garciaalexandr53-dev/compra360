@@ -79,6 +79,60 @@ export const fetchCatalogByEan = async (
   return map;
 };
 
+/** Chave canônica de nome para match EXATO (nunca ILIKE/contains). */
+export const nomeKey = (nome: string): string => nome.toLowerCase().trim();
+
+export interface LocalProd {
+  id: string;
+  nome: string;
+  embalagem: string | null;
+  fator_embalagem: number;
+}
+
+/** Match EXATO por nome. Nome parecido NÃO casa — retorna null (cria novo). */
+export const findLocalExato = (
+  nome: string,
+  existingMap: Map<string, LocalProd>,
+): LocalProd | null => existingMap.get(nomeKey(nome)) ?? null;
+
+export interface PlanoLinha {
+  destino: DestinoItem;
+  /** chave de dedup: catalogo:<id> | local:<nome> */
+  key: string;
+  item: ParsedItem;
+  cat?: CatRow;
+  prod?: LocalProd | null;
+  embalagem: string;
+}
+
+/**
+ * Plano por linha da planilha, já deduplicado (mesmo item 2x = 1 linha).
+ * Não faz IO — testável.
+ */
+export const planejarLinhas = (
+  items: ParsedItem[],
+  catMap: Map<string, CatRow>,
+  existingMap: Map<string, LocalProd>,
+): PlanoLinha[] => {
+  const byKey = new Map<string, PlanoLinha>();
+  for (const item of items) {
+    const cat = item.ean ? catMap.get(String(item.ean)) : undefined;
+    const linha: PlanoLinha = cat
+      ? { destino: "catalogo", key: `catalogo:${cat.id}`, item, cat, embalagem: "" }
+      : {
+          destino: "local",
+          key: `local:${nomeKey(item.nome)}`,
+          item,
+          prod: findLocalExato(item.nome, existingMap),
+          embalagem: normalizeEmbalagem(item.embalagem),
+        };
+    byKey.set(linha.key, linha); // última quantidade vence
+  }
+  return Array.from(byKey.values());
+};
+
+
+
 
 
 
@@ -217,37 +271,24 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
       // 2. Carregar produtos locais existentes (por nome)
       const existingMap = await fetchAllProductsMap();
 
-      // 3. Determinar quais itens caem em cada bucket
-      type Bucket =
-        | { kind: "catalogo"; item: ParsedItem; cat: CatRow }
-        | { kind: "local"; item: ParsedItem; prod: { id: string; nome: string; embalagem: string | null; fator_embalagem: number } };
-      const buckets: Bucket[] = [];
-      const toCreateLocal: ParsedItem[] = [];
-
-      for (const item of items) {
-        const catHit = item.ean ? catMap.get(String(item.ean)) : undefined;
-
-        if (catHit) {
-          buckets.push({ kind: "catalogo", item, cat: catHit });
-          continue;
-        }
-        const existing = existingMap.get(item.nome.toLowerCase().trim());
-        if (existing) {
-          buckets.push({ kind: "local", item, prod: existing });
-        } else {
-          toCreateLocal.push(item);
-        }
-      }
-      console.log("[ImportErp v2] buckets iniciais:", { catalogo: buckets.filter(b => b.kind === "catalogo").length, local: buckets.filter(b => b.kind === "local").length, aCriar: toCreateLocal.length });
+      // 3. Plano por linha (match EXATO de nome + dedup de linhas repetidas)
+      const plano = planejarLinhas(items, catMap, existingMap as Map<string, LocalProd>);
+      const aCriar = plano.filter((l) => l.destino === "local" && !l.prod);
+      console.log("[ImportErp v2] plano linhas:", {
+        total: plano.length,
+        catalogo: plano.filter((l) => l.destino === "catalogo").length,
+        local: plano.filter((l) => l.destino === "local").length,
+        aCriar: aCriar.length,
+      });
 
       // 4. Criar produtos locais faltantes com user_id — checando erro
       const newProductInserts: { id: string; nome: string; embalagem: string; fator_embalagem: number }[] = [];
-      if (toCreateLocal.length) {
+      if (aCriar.length) {
         const { data: inserted, error: insErr } = await supabase
           .from("produtos")
-          .insert(toCreateLocal.map((p) => ({
-            nome: p.nome,
-            embalagem: normalizeEmbalagem(p.embalagem),
+          .insert(aCriar.map((l) => ({
+            nome: l.item.nome,
+            embalagem: l.embalagem,
             ativo: true,
             user_id: uid,
           })) as any)
@@ -260,9 +301,9 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
           throw insErr;
         }
         (inserted || []).forEach((p, idx) => {
-          const src = toCreateLocal[idx];
-          existingMap.set(p.nome.toLowerCase().trim(), p as any);
-          buckets.push({ kind: "local", item: src, prod: p as any });
+          const linha = aCriar[idx];
+          existingMap.set(nomeKey(p.nome), p as any);
+          linha.prod = p as any;
           newProductInserts.push({
             id: p.id,
             nome: p.nome,
@@ -272,7 +313,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
         });
       }
 
-      if (buckets.length === 0) {
+      if (plano.length === 0) {
         toast.error("Nenhum item foi processado — verifique se o arquivo tem colunas Produto/EAN válidas.");
         setImporting(false);
         return;
@@ -292,50 +333,60 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
         if (cp.catalogo_mestre_id) cpsByCat.set(cp.catalogo_mestre_id, cp.id);
       });
 
-      // 6. Montar inserts e updates via buildSnapshotInsert
+      // 6. Montar inserts e updates via buildSnapshotInsert (sem duplicar na cotação)
+      const { getFatorPadrao } = await import("@/lib/embalagemFatores");
       const toInsert: any[] = [];
       const toUpdate: { id: string; quantidade: number }[] = [];
+      const jaPlanejado = new Set<string>();
 
-      for (const b of buckets) {
-        if (b.kind === "catalogo") {
-          const existingId = cpsByCat.get(b.cat.id);
+      for (const l of plano) {
+        if (l.destino === "catalogo" && l.cat) {
+          const existingId = cpsByCat.get(l.cat.id);
           if (existingId) {
-            toUpdate.push({ id: existingId, quantidade: b.item.quantidade });
-          } else {
-            toInsert.push(buildSnapshotInsert({
-              cotacaoId,
-              quantidade: b.item.quantidade,
-              produto: {
-                fonte: "catalogo",
-                id: b.cat.id,
-                nome: b.cat.nome,
-                ean: b.cat.ean,
-                embalagem: b.cat.embalagem,
-                fator_embalagem: b.cat.fator_embalagem,
-              },
-            }));
+            toUpdate.push({ id: existingId, quantidade: l.item.quantidade });
+            continue;
           }
-        } else {
-          const existingId = cpsByProd.get(b.prod.id);
+          if (jaPlanejado.has(l.key)) continue;
+          jaPlanejado.add(l.key);
+          toInsert.push(buildSnapshotInsert({
+            cotacaoId,
+            quantidade: l.item.quantidade,
+            produto: {
+              fonte: "catalogo",
+              id: l.cat.id,
+              nome: l.cat.nome,
+              ean: l.cat.ean,
+              embalagem: l.cat.embalagem,
+              fator_embalagem: l.cat.fator_embalagem,
+            },
+          }));
+        } else if (l.prod) {
+          const existingId = cpsByProd.get(l.prod.id);
           if (existingId) {
-            toUpdate.push({ id: existingId, quantidade: b.item.quantidade });
-          } else {
-            toInsert.push(buildSnapshotInsert({
-              cotacaoId,
-              quantidade: b.item.quantidade,
-              produto: {
-                fonte: "local",
-                id: b.prod.id,
-                nome: b.prod.nome,
-                ean: null,
-                embalagem: b.prod.embalagem,
-                fator_embalagem: b.prod.fator_embalagem,
-              },
-              embalagem: normalizeEmbalagem(b.item.embalagem),
-            }));
+            toUpdate.push({ id: existingId, quantidade: l.item.quantidade });
+            continue;
           }
+          const key = `local:${l.prod.id}`;
+          if (jaPlanejado.has(key)) continue;
+          jaPlanejado.add(key);
+          const fatorProd = l.prod.fator_embalagem;
+          toInsert.push(buildSnapshotInsert({
+            cotacaoId,
+            quantidade: l.item.quantidade,
+            produto: {
+              fonte: "local",
+              id: l.prod.id,
+              nome: l.prod.nome,
+              ean: null,
+              embalagem: l.embalagem,
+              fator_embalagem: null,
+            },
+            embalagem: l.embalagem,
+            fator: fatorProd && fatorProd > 1 ? fatorProd : getFatorPadrao(l.embalagem),
+          }));
         }
       }
+
 
       console.log("[ImportErp v2] plano final:", { toInsert: toInsert.length, toUpdate: toUpdate.length });
       if (toInsert.length) {
