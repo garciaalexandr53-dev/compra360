@@ -79,6 +79,60 @@ export const fetchCatalogByEan = async (
   return map;
 };
 
+/** Chave canônica de nome para match EXATO (nunca ILIKE/contains). */
+export const nomeKey = (nome: string): string => nome.toLowerCase().trim();
+
+export interface LocalProd {
+  id: string;
+  nome: string;
+  embalagem: string | null;
+  fator_embalagem: number;
+}
+
+/** Match EXATO por nome. Nome parecido NÃO casa — retorna null (cria novo). */
+export const findLocalExato = (
+  nome: string,
+  existingMap: Map<string, LocalProd>,
+): LocalProd | null => existingMap.get(nomeKey(nome)) ?? null;
+
+export interface PlanoLinha {
+  destino: DestinoItem;
+  /** chave de dedup: catalogo:<id> | local:<nome> */
+  key: string;
+  item: ParsedItem;
+  cat?: CatRow;
+  prod?: LocalProd | null;
+  embalagem: string;
+}
+
+/**
+ * Plano por linha da planilha, já deduplicado (mesmo item 2x = 1 linha).
+ * Não faz IO — testável.
+ */
+export const planejarLinhas = (
+  items: ParsedItem[],
+  catMap: Map<string, CatRow>,
+  existingMap: Map<string, LocalProd>,
+): PlanoLinha[] => {
+  const byKey = new Map<string, PlanoLinha>();
+  for (const item of items) {
+    const cat = item.ean ? catMap.get(String(item.ean)) : undefined;
+    const linha: PlanoLinha = cat
+      ? { destino: "catalogo", key: `catalogo:${cat.id}`, item, cat, embalagem: "" }
+      : {
+          destino: "local",
+          key: `local:${nomeKey(item.nome)}`,
+          item,
+          prod: findLocalExato(item.nome, existingMap),
+          embalagem: normalizeEmbalagem(item.embalagem),
+        };
+    byKey.set(linha.key, linha); // última quantidade vence
+  }
+  return Array.from(byKey.values());
+};
+
+
+
 
 
 
