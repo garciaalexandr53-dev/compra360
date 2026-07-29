@@ -385,9 +385,8 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
             fator: fatorProd && fatorProd > 1 ? fatorProd : getFatorPadrao(l.embalagem),
           }));
         }
-
-        }
       }
+
 
       console.log("[ImportErp v2] plano final:", { toInsert: toInsert.length, toUpdate: toUpdate.length });
       if (toInsert.length) {
