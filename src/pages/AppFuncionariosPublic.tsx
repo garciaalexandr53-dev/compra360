@@ -872,7 +872,18 @@ const AppFuncionariosPublic = () => {
               <div className="p-8 text-center text-muted-foreground text-sm">Carregando...</div>
             ) : filteredProducts.length === 0 ? (
               <div className="p-8 text-center">
-                <p className="text-muted-foreground text-sm mb-3">Nenhum produto encontrado</p>
+                {termoEhEan ? (
+                  <>
+                    <p className="text-muted-foreground text-sm mb-1">
+                      Código de barras não encontrado no catálogo.
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-3 break-all">
+                      Código: {productSearch.trim()}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-muted-foreground text-sm mb-3">Nenhum produto encontrado</p>
+                )}
                 {productSearch.trim() && !showNewProduct && (
                   <Button
                     variant="outline"
@@ -880,12 +891,18 @@ const AppFuncionariosPublic = () => {
                     className="h-11 gap-2 w-full max-w-sm mx-auto border-2 border-green-500/60 text-green-600 hover:bg-green-500/5 font-semibold"
 
                     onClick={() => {
-                      setCurrent(productSearch.trim());
+                      if (termoEhEan) {
+                        setCurrent("");
+                        setPendingEan(productSearch.trim());
+                      } else {
+                        setCurrent(productSearch.trim());
+                        setPendingEan(null);
+                      }
                       setShowNewProduct(true);
                     }}
                   >
                     <Plus className="h-4 w-4" />
-                    Adicionar "{productSearch.trim()}"
+                    {termoEhEan ? "Cadastrar produto" : `Adicionar "${productSearch.trim()}"`}
                   </Button>
                 )}
               </div>
