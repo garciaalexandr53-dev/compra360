@@ -363,6 +363,9 @@ const AppFuncionariosPublic = () => {
     }
   }, [filteredProducts.length, hasNextPage, isFetchingNextPage, fetchNextPage, produtosLoading]);
 
+  /** Termo é um código de barras (só dígitos, 8+). */
+  const termoEhEan = /^\d{8,}$/.test(productSearch.trim());
+
   const addItem = () => {
     const trimmed = current.trim();
     if (!trimmed) return;
