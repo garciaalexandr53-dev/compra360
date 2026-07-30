@@ -822,19 +822,6 @@ const AppFuncionariosPublic = () => {
                 Digite o nome do produto ou escaneie/digite o código de barras (EAN)
               </p>
             )}
-            {!showNewProduct && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full h-10 gap-2 border-green-500/50 text-green-600 hover:bg-green-500/5 font-medium"
-                onClick={() => {
-                  setCurrent(productSearch.trim());
-                  setShowNewProduct(true);
-                }}
-              >
-                <Plus className="h-4 w-4" /> Produto não listado
-              </Button>
-            )}
           </div>
 
           {/* Product list */}
