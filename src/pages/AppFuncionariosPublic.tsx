@@ -1014,6 +1014,9 @@ const AppFuncionariosPublic = () => {
                 className="h-11"
                 autoFocus
               />
+              {pendingEan && (
+                <p className="text-xs text-muted-foreground break-all">Código: {pendingEan}</p>
+              )}
               <div className="flex gap-2">
                 <Input
                   type="number"
