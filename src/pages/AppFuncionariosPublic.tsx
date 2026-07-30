@@ -840,7 +840,8 @@ const AppFuncionariosPublic = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-10 gap-2"
+                    className="h-11 gap-2 w-full max-w-sm mx-auto border-2 border-green-500/60 text-green-600 hover:bg-green-500/5 font-semibold"
+
                     onClick={() => {
                       setCurrent(productSearch.trim());
                       setShowNewProduct(true);
