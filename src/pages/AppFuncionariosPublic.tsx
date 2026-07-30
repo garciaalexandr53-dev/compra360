@@ -10,10 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Search, ClipboardList, Package, Store, MapPin, Plus, Minus, Send } from "lucide-react";
+import { Search, ClipboardList, Package, Store, MapPin, Plus, Minus, Send, ScanBarcode } from "lucide-react";
 import ConferenciaPedidos from "@/components/ConferenciaPedidos";
 import { FATOR_PADRAO } from "@/lib/embalagemFatores";
 import AdicionarItemDialog from "@/components/shared/AdicionarItemDialog";
+import BarcodeScannerModal from "@/components/shared/BarcodeScannerModal";
 
 interface ItemEntry {
   nome: string;
