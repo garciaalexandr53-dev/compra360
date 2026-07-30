@@ -799,7 +799,7 @@ const AppFuncionariosPublic = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 ref={searchInputRef}
-                placeholder="Buscar produto..."
+                placeholder="Buscar por nome ou código de barras"
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
                 className="pl-9 pr-9 h-12 text-base rounded-xl border-2 focus-visible:ring-primary"
@@ -817,6 +817,11 @@ const AppFuncionariosPublic = () => {
                 </button>
               )}
             </div>
+            {productSearch.length === 0 && (
+              <p className="px-1 text-xs leading-snug text-muted-foreground">
+                Digite o nome do produto ou escaneie/digite o código de barras (EAN)
+              </p>
+            )}
             {!showNewProduct && (
               <Button
                 variant="outline"
