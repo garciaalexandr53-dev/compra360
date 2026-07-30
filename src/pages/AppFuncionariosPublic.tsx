@@ -64,6 +64,8 @@ const AppFuncionariosPublic = () => {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [justAdded, setJustAdded] = useState<Set<string>>(new Set());
   const [showNewProduct, setShowNewProduct] = useState(false);
+  /** EAN escaneado/digitado sem match no catálogo — vira coluna `ean` do item novo. */
+  const [pendingEan, setPendingEan] = useState<string | null>(null);
   const [dialogProduct, setDialogProduct] = useState<ProdutoPublico | null>(null);
   const [dialogQtd, setDialogQtd] = useState("1");
   const [dialogEmbal, setDialogEmbal] = useState("UNI");
