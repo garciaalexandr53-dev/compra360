@@ -817,6 +817,11 @@ const AppFuncionariosPublic = () => {
                 </button>
               )}
             </div>
+            {productSearch.length === 0 && (
+              <p className="px-1 text-xs leading-snug text-muted-foreground">
+                Digite o nome do produto ou escaneie/digite o código de barras (EAN)
+              </p>
+            )}
             {!showNewProduct && (
               <Button
                 variant="outline"
