@@ -996,10 +996,18 @@ const AppFuncionariosPublic = () => {
             <div className="px-4 py-3 bg-card border-t space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Produto novo</span>
-                <button onClick={() => setShowNewProduct(false)} className="text-xs text-muted-foreground">✕</button>
+                <button
+                  onClick={() => {
+                    setShowNewProduct(false);
+                    setPendingEan(null);
+                  }}
+                  className="text-xs text-muted-foreground"
+                >
+                  ✕
+                </button>
               </div>
               <Input
-                placeholder="Nome do produto"
+                placeholder="Digite o nome do produto"
                 value={current}
                 onChange={(e) => setCurrent(e.target.value)}
                 onKeyDown={handleKeyDown}
