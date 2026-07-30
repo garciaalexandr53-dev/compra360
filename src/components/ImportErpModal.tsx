@@ -25,21 +25,42 @@ export const extractEan = (raw: unknown): string | null => {
 /** Mapa de embalagem da planilha → sigla canônica (apenas itens LOCAIS). */
 const EMBALAGEM_MAP: Record<string, string> = {
   cx: "CX",
+  caixa: "CX",
   fd: "FD",
+  fardo: "FD",
   kg: "KG",
+  kgs: "KG",
+  quilo: "KG",
+  k: "KG",
   sc: "PCT",
+  saco: "PCT",
   unid: "UNI",
   uni: "UNI",
   un: "UNI",
+  und: "UNI",
+  unidade: "UNI",
   dz: "DZ",
+  duzia: "DZ",
   pct: "PCT",
   pc: "PCT",
+  pacote: "PCT",
 };
 
 export const normalizeEmbalagem = (raw: unknown): string => {
-  const key = String(raw ?? "").trim().toLowerCase();
-  return EMBALAGEM_MAP[key] ?? "UNI";
+  const cleaned = String(raw ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+  if (!cleaned) return "UNI";
+  // tenta valor inteiro e depois o primeiro token alfabético ("sc.", "SC 20KG", "un/cx")
+  const candidates = [cleaned, ...(cleaned.match(/[a-z]+/g) ?? [])];
+  for (const c of candidates) {
+    if (EMBALAGEM_MAP[c]) return EMBALAGEM_MAP[c];
+  }
+  return "UNI";
 };
+
 
 export type DestinoItem = "catalogo" | "local";
 
