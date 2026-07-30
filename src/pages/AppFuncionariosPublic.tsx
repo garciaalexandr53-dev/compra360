@@ -907,7 +907,24 @@ const AppFuncionariosPublic = () => {
                 {isFetchingNextPage && (
                   <div className="px-4 py-3 text-center text-xs text-muted-foreground">Carregando mais...</div>
                 )}
+
+                {productSearch.trim() && !showNewProduct && (
+                  <div className="px-3 py-3 text-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        setCurrent(productSearch.trim());
+                        setShowNewProduct(true);
+                      }}
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Produto não listado
+                    </Button>
+                  </div>
+                )}
               </>
+
             )}
           </div>
 
