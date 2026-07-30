@@ -1,43 +1,20 @@
-## Como o sistema identifica as colunas da planilha ERP
+# Ajuda de busca por EAN no App de Funcionários
 
-Boa notícia: **você não precisa formatar a planilha de forma específica**. O sistema faz detecção automática dos cabeçalhos (primeira linha) procurando por nomes comuns em português e inglês, sem diferenciar maiúsculas/minúsculas.
+Objetivo: deixar claro para o funcionário que o campo de busca da aba "Itens Faltantes" também aceita código de barras.
 
-### Colunas reconhecidas automaticamente
+## Mudanças
 
-| Campo | Cabeçalhos aceitos (case-insensitive) | Obrigatório? |
-|---|---|---|
-| **Nome do produto** | `produto`, `nome`, `descrição`, `descricao`, `item`, `material`, `name`, `product` | Recomendado. Se nenhum for encontrado, usa a **primeira coluna** como fallback |
-| **Quantidade** | `quantidade`, `qtd`, `qtde`, `qty`, `quant`, `quantity` | Opcional — padrão `1` se ausente |
-| **Embalagem/Unidade** | `embalagem`, `unidade`, `un`, `unit`, `emb`, `und`, `uom` | Opcional — padrão `"un"` |
-| **EAN / Código de barras** | `ean`, `ean13`, `gtin`, `codigo de barras`, `código de barras`, `cod barras`, `codbarras`, `barcode`, `codigo`, `código` | Opcional, mas **muito recomendado** |
+1. Placeholder do input de busca: de "Buscar produto..." para "Buscar por nome ou código de barras".
+2. Linha de ajuda discreta logo abaixo do campo (`text-xs text-muted-foreground`), exibida somente quando o campo está vazio: "Digite o nome do produto ou escaneie/digite o código de barras (EAN)".
 
-### Por que o EAN importa tanto
+Nada de lógica de busca, RPCs ou layout de resultados é alterado.
 
-O EAN é o que "casa" seu item com o **Catálogo Mestre** (11 mil+ produtos). Quando o EAN bate:
-- O item entra na cotação com nome, embalagem e fator vindos do catálogo global — sem criar produto local
-- Aparece com badge "Catálogo" na cotação
+## Detalhes técnicos
 
-Sem EAN, o sistema tenta casar por **nome exato** com produtos locais já cadastrados; se não achar, cria um novo produto local.
+- Arquivo único: `src/pages/AppFuncionariosPublic.tsx`, bloco da barra de busca (~linhas 796-819).
+- A ajuda entra dentro do container `space-y-2` existente, condicionada a `productSearch.length === 0`, com `leading-snug px-1` para não quebrar o espaçamento do sticky header.
+- Sem novos tokens de cor: apenas `text-muted-foreground`.
 
-### Formatos e regras técnicas
+## Verificação
 
-- **Extensões aceitas:** `.xlsx`, `.xls`, `.csv`
-- **Quantidade** aceita vírgula ou ponto (`1,5` ou `1.5`)
-- **EAN** é preservado como texto — zeros à esquerda não somem, caracteres não-numéricos são removidos
-- Linhas sem nome de produto são ignoradas
-
-### Formato ideal (para máxima taxa de acerto)
-
-```text
-produto              | quantidade | embalagem | ean
-Arroz Tio João 5kg   | 10         | FD        | 7891234567890
-Feijão Camil 1kg     | 20         | PCT       | 7899876543210
-```
-
-### Recomendação
-
-Se sua planilha do ERP usa nomes muito diferentes (ex.: "descrição do material", "cód. barra"), você tem duas opções:
-1. Renomear os cabeçalhos antes de importar (mais rápido)
-2. Me pedir para adicionar novos aliases à detecção — é só me passar os nomes exatos que aparecem na sua planilha
-
-Quer que eu amplie a lista de aliases para cobrir os cabeçalhos do seu ERP? Se sim, me envia os nomes das colunas que ele exporta.
+- Captura de tela via Playwright em 360px (mobile) e 1440px (desktop) na rota do app de funcionários, confirmando que a linha de ajuda cabe em duas linhas no mobile, uma no desktop, e desaparece ao digitar.
