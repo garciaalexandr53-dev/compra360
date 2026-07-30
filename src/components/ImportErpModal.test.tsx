@@ -179,3 +179,19 @@ describe("findLocalExato", () => {
     expect(findLocalExato("Cafe Pilao 500g Extra", m)).toBeNull();
   });
 });
+
+describe("normalizeEmbalagem — variações da planilha", () => {
+  it("mapeia siglas com ruído e palavras por extenso", () => {
+    expect(normalizeEmbalagem("SC")).toBe("PCT");
+    expect(normalizeEmbalagem("sc.")).toBe("PCT");
+    expect(normalizeEmbalagem("Saco")).toBe("PCT");
+    expect(normalizeEmbalagem(" KG ")).toBe("KG");
+    expect(normalizeEmbalagem("Quilo")).toBe("KG");
+    expect(normalizeEmbalagem("FD")).toBe("FD");
+    expect(normalizeEmbalagem("Fardo")).toBe("FD");
+    expect(normalizeEmbalagem("UND")).toBe("UNI");
+    expect(normalizeEmbalagem("Dúzia")).toBe("DZ");
+    expect(normalizeEmbalagem("")).toBe("UNI");
+    expect(normalizeEmbalagem("xyz")).toBe("UNI");
+  });
+});

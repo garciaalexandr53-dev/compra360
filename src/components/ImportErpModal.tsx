@@ -25,21 +25,42 @@ export const extractEan = (raw: unknown): string | null => {
 /** Mapa de embalagem da planilha → sigla canônica (apenas itens LOCAIS). */
 const EMBALAGEM_MAP: Record<string, string> = {
   cx: "CX",
+  caixa: "CX",
   fd: "FD",
+  fardo: "FD",
   kg: "KG",
+  kgs: "KG",
+  quilo: "KG",
+  k: "KG",
   sc: "PCT",
+  saco: "PCT",
   unid: "UNI",
   uni: "UNI",
   un: "UNI",
+  und: "UNI",
+  unidade: "UNI",
   dz: "DZ",
+  duzia: "DZ",
   pct: "PCT",
   pc: "PCT",
+  pacote: "PCT",
 };
 
 export const normalizeEmbalagem = (raw: unknown): string => {
-  const key = String(raw ?? "").trim().toLowerCase();
-  return EMBALAGEM_MAP[key] ?? "UNI";
+  const cleaned = String(raw ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+  if (!cleaned) return "UNI";
+  // tenta valor inteiro e depois o primeiro token alfabético ("sc.", "SC 20KG", "un/cx")
+  const candidates = [cleaned, ...(cleaned.match(/[a-z]+/g) ?? [])];
+  for (const c of candidates) {
+    if (EMBALAGEM_MAP[c]) return EMBALAGEM_MAP[c];
+  }
+  return "UNI";
 };
+
 
 export type DestinoItem = "catalogo" | "local";
 
@@ -176,9 +197,16 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
     const qtdIdx = lower.findIndex((h) =>
       ["quantidade", "qtd", "qtde", "qty", "quant", "quantity"].includes(h)
     );
-    const embIdx = lower.findIndex((h) =>
-      ["embalagem", "unidade", "un", "unit", "emb", "und", "uom"].includes(h)
-    );
+    const embAliases = [
+      "embalagem", "embalagens", "emb", "emb.", "tipo de embalagem", "tipo embalagem",
+      "unidade", "unidade de medida", "un", "un.", "un med", "unid", "unid.",
+      "und", "und.", "uni", "unit", "uom", "medida", "tipo",
+    ];
+    let embIdx = lower.findIndex((h) => embAliases.includes(h));
+    if (embIdx < 0) {
+      embIdx = lower.findIndex((h) => /(embal|unid|^un$|^und$|^emb)/.test(h));
+    }
+
     const eanIdx = lower.findIndex((h) =>
       ["ean", "ean13", "gtin", "codigo de barras", "código de barras", "cod barras", "codbarras", "barcode", "codigo", "código"].includes(h)
     );
@@ -280,6 +308,16 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
         local: plano.filter((l) => l.destino === "local").length,
         aCriar: aCriar.length,
       });
+      console.table(
+        plano
+          .filter((l) => l.destino === "local")
+          .map((l) => ({
+            nome: l.item.nome,
+            embalagemPlanilha: JSON.stringify(l.item.embalagem),
+            tipo_embalagem: l.embalagem,
+          })),
+      );
+
 
       // 4. Criar produtos locais faltantes com user_id — checando erro
       const newProductInserts: { id: string; nome: string; embalagem: string; fator_embalagem: number }[] = [];
