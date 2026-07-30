@@ -822,19 +822,6 @@ const AppFuncionariosPublic = () => {
                 Digite o nome do produto ou escaneie/digite o código de barras (EAN)
               </p>
             )}
-            {!showNewProduct && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full h-10 gap-2 border-green-500/50 text-green-600 hover:bg-green-500/5 font-medium"
-                onClick={() => {
-                  setCurrent(productSearch.trim());
-                  setShowNewProduct(true);
-                }}
-              >
-                <Plus className="h-4 w-4" /> Produto não listado
-              </Button>
-            )}
           </div>
 
           {/* Product list */}
@@ -853,7 +840,8 @@ const AppFuncionariosPublic = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-10 gap-2"
+                    className="h-11 gap-2 w-full max-w-sm mx-auto border-2 border-green-500/60 text-green-600 hover:bg-green-500/5 font-semibold"
+
                     onClick={() => {
                       setCurrent(productSearch.trim());
                       setShowNewProduct(true);
@@ -919,7 +907,24 @@ const AppFuncionariosPublic = () => {
                 {isFetchingNextPage && (
                   <div className="px-4 py-3 text-center text-xs text-muted-foreground">Carregando mais...</div>
                 )}
+
+                {productSearch.trim() && !showNewProduct && (
+                  <div className="px-3 py-3 text-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        setCurrent(productSearch.trim());
+                        setShowNewProduct(true);
+                      }}
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Produto não listado
+                    </Button>
+                  </div>
+                )}
               </>
+
             )}
           </div>
 
