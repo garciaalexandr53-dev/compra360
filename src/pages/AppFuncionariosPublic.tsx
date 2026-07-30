@@ -133,6 +133,15 @@ const AppFuncionariosPublic = () => {
   });
   const [productSearch, setProductSearch] = useState("");
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
+  const [scannerOpen, setScannerOpen] = useState(false);
+
+  const handleScannerClose = useCallback(() => setScannerOpen(false), []);
+  const handleBarcodeDetected = useCallback((code: string) => {
+    setProductSearch(code);
+    setDebouncedProductSearch(code);
+  }, []);
+
+
   
   const productsListRef = useRef<HTMLDivElement | null>(null);
   const itemsListRef = useRef<HTMLDivElement | null>(null);
