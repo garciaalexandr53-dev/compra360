@@ -10,10 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Search, ClipboardList, Package, Store, MapPin, Plus, Minus, Send } from "lucide-react";
+import { Search, ClipboardList, Package, Store, MapPin, Plus, Minus, Send, ScanBarcode } from "lucide-react";
 import ConferenciaPedidos from "@/components/ConferenciaPedidos";
 import { FATOR_PADRAO } from "@/lib/embalagemFatores";
 import AdicionarItemDialog from "@/components/shared/AdicionarItemDialog";
+import BarcodeScannerModal from "@/components/shared/BarcodeScannerModal";
 
 interface ItemEntry {
   nome: string;
@@ -132,6 +133,15 @@ const AppFuncionariosPublic = () => {
   });
   const [productSearch, setProductSearch] = useState("");
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
+  const [scannerOpen, setScannerOpen] = useState(false);
+
+  const handleScannerClose = useCallback(() => setScannerOpen(false), []);
+  const handleBarcodeDetected = useCallback((code: string) => {
+    setProductSearch(code);
+    setDebouncedProductSearch(code);
+  }, []);
+
+
   
   const productsListRef = useRef<HTMLDivElement | null>(null);
   const itemsListRef = useRef<HTMLDivElement | null>(null);
@@ -802,20 +812,31 @@ const AppFuncionariosPublic = () => {
                 placeholder="Buscar por nome ou código de barras"
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
-                className="pl-9 pr-9 h-12 text-base rounded-xl border-2 focus-visible:ring-primary"
+                className="pl-9 pr-20 h-12 text-base rounded-xl border-2 focus-visible:ring-primary"
                 autoFocus
               />
-              {productSearch.length > 0 && (
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                {productSearch.length > 0 && (
+                  <button
+                    onClick={() => {
+                      setProductSearch("");
+                      searchInputRef.current?.focus();
+                    }}
+                    aria-label="Limpar busca"
+                    className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
                 <button
-                  onClick={() => {
-                    setProductSearch("");
-                    searchInputRef.current?.focus();
-                  }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  onClick={() => setScannerOpen(true)}
+                  aria-label="Escanear código de barras"
+                  title="Escanear código de barras"
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
                 >
-                  <X className="h-4 w-4" />
+                  <ScanBarcode className="h-5 w-5" />
                 </button>
-              )}
+              </div>
             </div>
             {productSearch.length === 0 && (
               <p className="px-1 text-xs leading-snug text-muted-foreground">
@@ -823,6 +844,13 @@ const AppFuncionariosPublic = () => {
               </p>
             )}
           </div>
+
+          <BarcodeScannerModal
+            open={scannerOpen}
+            onClose={handleScannerClose}
+            onDetected={handleBarcodeDetected}
+          />
+
 
           {/* Product list */}
           <div
