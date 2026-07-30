@@ -64,6 +64,8 @@ const AppFuncionariosPublic = () => {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [justAdded, setJustAdded] = useState<Set<string>>(new Set());
   const [showNewProduct, setShowNewProduct] = useState(false);
+  /** EAN escaneado/digitado sem match no catálogo — vira coluna `ean` do item novo. */
+  const [pendingEan, setPendingEan] = useState<string | null>(null);
   const [dialogProduct, setDialogProduct] = useState<ProdutoPublico | null>(null);
   const [dialogQtd, setDialogQtd] = useState("1");
   const [dialogEmbal, setDialogEmbal] = useState("UNI");
@@ -361,17 +363,27 @@ const AppFuncionariosPublic = () => {
     }
   }, [filteredProducts.length, hasNextPage, isFetchingNextPage, fetchNextPage, produtosLoading]);
 
+  /** Termo é um código de barras (só dígitos, 8+). */
+  const termoEhEan = /^\d{8,}$/.test(productSearch.trim());
+
   const addItem = () => {
     const trimmed = current.trim();
     if (!trimmed) return;
     setItems((prev) => [
       ...prev,
-      { nome: trimmed, quantidade: parseInt(currentQtd) || 1, embalagem: currentEmbal || "un", fator: 1 },
+      {
+        nome: trimmed,
+        quantidade: parseInt(currentQtd) || 1,
+        embalagem: currentEmbal || "un",
+        fator: 1,
+        ean: pendingEan,
+      },
     ]);
     setCurrent("");
     setCurrentQtd("1");
     setCurrentEmbal("un");
     setShowNewProduct(false);
+    setPendingEan(null);
     toast.success("Adicionado!");
   };
 
@@ -863,7 +875,18 @@ const AppFuncionariosPublic = () => {
               <div className="p-8 text-center text-muted-foreground text-sm">Carregando...</div>
             ) : filteredProducts.length === 0 ? (
               <div className="p-8 text-center">
-                <p className="text-muted-foreground text-sm mb-3">Nenhum produto encontrado</p>
+                {termoEhEan ? (
+                  <>
+                    <p className="text-muted-foreground text-sm mb-1">
+                      Código de barras não encontrado no catálogo.
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-3 break-all">
+                      Código: {productSearch.trim()}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-muted-foreground text-sm mb-3">Nenhum produto encontrado</p>
+                )}
                 {productSearch.trim() && !showNewProduct && (
                   <Button
                     variant="outline"
@@ -871,12 +894,18 @@ const AppFuncionariosPublic = () => {
                     className="h-11 gap-2 w-full max-w-sm mx-auto border-2 border-green-500/60 text-green-600 hover:bg-green-500/5 font-semibold"
 
                     onClick={() => {
-                      setCurrent(productSearch.trim());
+                      if (termoEhEan) {
+                        setCurrent("");
+                        setPendingEan(productSearch.trim());
+                      } else {
+                        setCurrent(productSearch.trim());
+                        setPendingEan(null);
+                      }
                       setShowNewProduct(true);
                     }}
                   >
                     <Plus className="h-4 w-4" />
-                    Adicionar "{productSearch.trim()}"
+                    {termoEhEan ? "Cadastrar produto" : `Adicionar "${productSearch.trim()}"`}
                   </Button>
                 )}
               </div>
@@ -943,7 +972,13 @@ const AppFuncionariosPublic = () => {
                       size="sm"
                       className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
                       onClick={() => {
-                        setCurrent(productSearch.trim());
+                        if (termoEhEan) {
+                          setCurrent("");
+                          setPendingEan(productSearch.trim());
+                        } else {
+                          setCurrent(productSearch.trim());
+                          setPendingEan(null);
+                        }
                         setShowNewProduct(true);
                       }}
                     >
@@ -961,16 +996,27 @@ const AppFuncionariosPublic = () => {
             <div className="px-4 py-3 bg-card border-t space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Produto novo</span>
-                <button onClick={() => setShowNewProduct(false)} className="text-xs text-muted-foreground">✕</button>
+                <button
+                  onClick={() => {
+                    setShowNewProduct(false);
+                    setPendingEan(null);
+                  }}
+                  className="text-xs text-muted-foreground"
+                >
+                  ✕
+                </button>
               </div>
               <Input
-                placeholder="Nome do produto"
+                placeholder="Digite o nome do produto"
                 value={current}
                 onChange={(e) => setCurrent(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className="h-11"
                 autoFocus
               />
+              {pendingEan && (
+                <p className="text-xs text-muted-foreground break-all">Código: {pendingEan}</p>
+              )}
               <div className="flex gap-2">
                 <Input
                   type="number"
