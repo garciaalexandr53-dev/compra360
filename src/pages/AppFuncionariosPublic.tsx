@@ -368,12 +368,19 @@ const AppFuncionariosPublic = () => {
     if (!trimmed) return;
     setItems((prev) => [
       ...prev,
-      { nome: trimmed, quantidade: parseInt(currentQtd) || 1, embalagem: currentEmbal || "un", fator: 1 },
+      {
+        nome: trimmed,
+        quantidade: parseInt(currentQtd) || 1,
+        embalagem: currentEmbal || "un",
+        fator: 1,
+        ean: pendingEan,
+      },
     ]);
     setCurrent("");
     setCurrentQtd("1");
     setCurrentEmbal("un");
     setShowNewProduct(false);
+    setPendingEan(null);
     toast.success("Adicionado!");
   };
 
