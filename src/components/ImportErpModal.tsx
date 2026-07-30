@@ -308,6 +308,16 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
         local: plano.filter((l) => l.destino === "local").length,
         aCriar: aCriar.length,
       });
+      console.table(
+        plano
+          .filter((l) => l.destino === "local")
+          .map((l) => ({
+            nome: l.item.nome,
+            embalagemPlanilha: JSON.stringify(l.item.embalagem),
+            tipo_embalagem: l.embalagem,
+          })),
+      );
+
 
       // 4. Criar produtos locais faltantes com user_id — checando erro
       const newProductInserts: { id: string; nome: string; embalagem: string; fator_embalagem: number }[] = [];
