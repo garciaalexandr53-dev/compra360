@@ -197,9 +197,16 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
     const qtdIdx = lower.findIndex((h) =>
       ["quantidade", "qtd", "qtde", "qty", "quant", "quantity"].includes(h)
     );
-    const embIdx = lower.findIndex((h) =>
-      ["embalagem", "unidade", "un", "unit", "emb", "und", "uom"].includes(h)
-    );
+    const embAliases = [
+      "embalagem", "embalagens", "emb", "emb.", "tipo de embalagem", "tipo embalagem",
+      "unidade", "unidade de medida", "un", "un.", "un med", "unid", "unid.",
+      "und", "und.", "uni", "unit", "uom", "medida", "tipo",
+    ];
+    let embIdx = lower.findIndex((h) => embAliases.includes(h));
+    if (embIdx < 0) {
+      embIdx = lower.findIndex((h) => /(embal|unid|^un$|^und$|^emb)/.test(h));
+    }
+
     const eanIdx = lower.findIndex((h) =>
       ["ean", "ean13", "gtin", "codigo de barras", "código de barras", "cod barras", "codbarras", "barcode", "codigo", "código"].includes(h)
     );
