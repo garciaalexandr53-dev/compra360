@@ -1003,6 +1003,30 @@ const ProdutosPage = () => {
           <div className="space-y-4">
             <div><Label>Nome do Produto *</Label><Input placeholder="Ex: Detergente Ype 500ml" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
             <div>
+              <Label htmlFor="produto-ean">Código de barras (EAN)</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="produto-ean"
+                  inputMode="numeric"
+                  placeholder="Opcional — ex: 7891000100103"
+                  value={form.ean}
+                  onChange={(e) => setForm({ ...form, ean: normalizeEan(e.target.value) })}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0"
+                  aria-label="Escanear código de barras"
+                  title="Escanear código de barras"
+                  onClick={() => setEanScannerOpen(true)}
+                >
+                  <ScanBarcode className="h-5 w-5" />
+                </Button>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">Opcional. Escaneie ou digite o código do produto.</p>
+            </div>
+            <div>
               <Label>Categoria</Label>
               <div className="flex gap-2">
                 <select
