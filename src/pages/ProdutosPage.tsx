@@ -79,6 +79,7 @@ const ProdutosPage = () => {
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState<string>("Todos");
   const [modalOpen, setModalOpen] = useState(false);
+  const [eanScannerOpen, setEanScannerOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [importOpen, setImportOpen] = useState(false);
