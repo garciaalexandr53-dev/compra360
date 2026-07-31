@@ -51,7 +51,10 @@ const produtoToHibrido = (p: Produto): ProdutoHibrido => ({
   embalagem: p.embalagem ?? null,
   fator_embalagem: (p as any).fator_embalagem ?? null,
 });
-const emptyForm = { nome: "", categoria_id: "", embalagem: "UNI", quantidade: 1, fator_embalagem: 1 };
+const emptyForm = { nome: "", ean: "", categoria_id: "", embalagem: "UNI", quantidade: 1, fator_embalagem: 1 };
+
+/** Mantém apenas dígitos; string vazia quando não há nada válido. */
+export const normalizeEan = (value: string | null | undefined) => (value || "").replace(/\D/g, "");
 const PAGE_SIZE = 80;
 
 const cleanEmbalagem = (raw: string | null | undefined) => raw?.split("|")[0].trim() || "un";
