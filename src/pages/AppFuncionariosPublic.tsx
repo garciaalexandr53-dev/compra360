@@ -14,7 +14,7 @@ import { Search, ClipboardList, Package, Store, MapPin, Plus, Minus, Send, ScanB
 import ConferenciaPedidos from "@/components/ConferenciaPedidos";
 import { FATOR_PADRAO } from "@/lib/embalagemFatores";
 import AdicionarItemDialog from "@/components/shared/AdicionarItemDialog";
-import BarcodeScannerModal from "@/components/shared/BarcodeScannerModal";
+import SearchInputComScanner from "@/components/shared/SearchInputComScanner";
 
 interface ItemEntry {
   nome: string;
