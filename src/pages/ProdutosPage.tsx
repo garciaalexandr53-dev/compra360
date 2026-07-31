@@ -148,8 +148,14 @@ const ProdutosPage = () => {
         .order("nome")
         .range(from, to);
 
-      if (search.trim()) {
-        query = query.ilike("nome", `%${search.trim()}%`);
+      const termo = search.trim();
+      if (termo) {
+        if (/^\d+$/.test(termo)) {
+          // Termo numérico → busca por nome OU código de barras (prefixo)
+          query = query.or(`nome.ilike.%${termo}%,ean.ilike.${termo}%`);
+        } else {
+          query = query.ilike("nome", `%${termo}%`);
+        }
       }
 
       const { data, error, count } = await query;
@@ -775,8 +781,9 @@ const ProdutosPage = () => {
                           >
                             <div className="flex-1 min-w-0">
                               <div className="text-sm font-medium text-foreground truncate">{p.nome}</div>
-                              <div className="text-xs text-muted-foreground">
+                              <div className="text-xs text-muted-foreground truncate">
                                 {p.categorias?.nome || "Sem Categoria"} · {p.embalagem || "un"}
+                                {(p as any).ean ? ` · EAN ${(p as any).ean}` : ""}
                               </div>
                             </div>
                             <div
