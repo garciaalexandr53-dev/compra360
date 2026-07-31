@@ -476,6 +476,7 @@ const ProdutosPage = () => {
     setEditingId(p.id);
     setForm({
       nome: p.nome,
+      ean: (p as any).ean || "",
       categoria_id: p.categoria_id || "",
       embalagem: p.embalagem || "UNI",
       quantidade: 1,
