@@ -12,7 +12,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Search, Trash2, Check, Upload, ChevronLeft, Sparkles, Loader2, MoreHorizontal, ArrowRight, Package, X, Filter } from "lucide-react";
+import { Plus, Search, Trash2, Check, Upload, ChevronLeft, Sparkles, Loader2, MoreHorizontal, ArrowRight, Package, X, Filter, ScanBarcode } from "lucide-react";
+import BarcodeScannerModal from "@/components/shared/BarcodeScannerModal";
 import ProdutoSheet, { type ProdutoSheetItem } from "@/components/produtos/ProdutoSheet";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -51,7 +52,10 @@ const produtoToHibrido = (p: Produto): ProdutoHibrido => ({
   embalagem: p.embalagem ?? null,
   fator_embalagem: (p as any).fator_embalagem ?? null,
 });
-const emptyForm = { nome: "", categoria_id: "", embalagem: "UNI", quantidade: 1, fator_embalagem: 1 };
+const emptyForm = { nome: "", ean: "", categoria_id: "", embalagem: "UNI", quantidade: 1, fator_embalagem: 1 };
+
+/** Mantém apenas dígitos; string vazia quando não há nada válido. */
+export const normalizeEan = (value: string | null | undefined) => (value || "").replace(/\D/g, "");
 const PAGE_SIZE = 80;
 
 const cleanEmbalagem = (raw: string | null | undefined) => raw?.split("|")[0].trim() || "un";
@@ -75,6 +79,7 @@ const ProdutosPage = () => {
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState<string>("Todos");
   const [modalOpen, setModalOpen] = useState(false);
+  const [eanScannerOpen, setEanScannerOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [importOpen, setImportOpen] = useState(false);
@@ -245,6 +250,7 @@ const ProdutosPage = () => {
     mutationFn: async () => {
       const payload = {
         nome: form.nome.trim(),
+        ean: normalizeEan(form.ean) || null,
         categoria_id: form.categoria_id || null,
         embalagem: cleanEmbalagem(form.embalagem),
         fator_embalagem: form.fator_embalagem || 1,
@@ -473,6 +479,7 @@ const ProdutosPage = () => {
     setEditingId(p.id);
     setForm({
       nome: p.nome,
+      ean: (p as any).ean || "",
       categoria_id: p.categoria_id || "",
       embalagem: p.embalagem || "UNI",
       quantidade: 1,
@@ -999,6 +1006,30 @@ const ProdutosPage = () => {
           <div className="space-y-4">
             <div><Label>Nome do Produto *</Label><Input placeholder="Ex: Detergente Ype 500ml" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
             <div>
+              <Label htmlFor="produto-ean">Código de barras (EAN)</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="produto-ean"
+                  inputMode="numeric"
+                  placeholder="Opcional — ex: 7891000100103"
+                  value={form.ean}
+                  onChange={(e) => setForm({ ...form, ean: normalizeEan(e.target.value) })}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0"
+                  aria-label="Escanear código de barras"
+                  title="Escanear código de barras"
+                  onClick={() => setEanScannerOpen(true)}
+                >
+                  <ScanBarcode className="h-5 w-5" />
+                </Button>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">Opcional. Escaneie ou digite o código do produto.</p>
+            </div>
+            <div>
               <Label>Categoria</Label>
               <div className="flex gap-2">
                 <select
@@ -1047,6 +1078,11 @@ const ProdutosPage = () => {
               </div>
             </div>
           </div>
+          <BarcodeScannerModal
+            open={eanScannerOpen}
+            onClose={() => setEanScannerOpen(false)}
+            onDetected={(code) => setForm((f) => ({ ...f, ean: normalizeEan(code) }))}
+          />
           <DialogFooter className="flex-col sm:flex-row gap-2">
             {editingId && (
               <Button

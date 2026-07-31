@@ -778,6 +778,7 @@ export type Database = {
           ativo: boolean
           categoria_id: string | null
           created_at: string
+          ean: string | null
           embalagem: string | null
           fator_embalagem: number
           id: string
@@ -789,6 +790,7 @@ export type Database = {
           ativo?: boolean
           categoria_id?: string | null
           created_at?: string
+          ean?: string | null
           embalagem?: string | null
           fator_embalagem?: number
           id?: string
@@ -800,6 +802,7 @@ export type Database = {
           ativo?: boolean
           categoria_id?: string | null
           created_at?: string
+          ean?: string | null
           embalagem?: string | null
           fator_embalagem?: number
           id?: string
