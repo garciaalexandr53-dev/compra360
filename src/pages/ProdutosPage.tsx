@@ -148,8 +148,14 @@ const ProdutosPage = () => {
         .order("nome")
         .range(from, to);
 
-      if (search.trim()) {
-        query = query.ilike("nome", `%${search.trim()}%`);
+      const termo = search.trim();
+      if (termo) {
+        if (/^\d+$/.test(termo)) {
+          // Termo numérico → busca por nome OU código de barras (prefixo)
+          query = query.or(`nome.ilike.%${termo}%,ean.ilike.${termo}%`);
+        } else {
+          query = query.ilike("nome", `%${termo}%`);
+        }
       }
 
       const { data, error, count } = await query;
