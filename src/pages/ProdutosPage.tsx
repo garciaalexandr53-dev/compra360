@@ -681,29 +681,19 @@ const ProdutosPage = () => {
             </div>
           </div>
 
-          {/* Search com X para limpar */}
+          {/* Search com scanner de código de barras */}
           <div className="flex items-center gap-2">
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar produto..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 pr-8"
-              />
-              {search && (
-                <button
-                  onClick={() => setSearch("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
+            <SearchInputComScanner
+              value={search}
+              onChange={(v) => setSearch(v)}
+              placeholder="Buscar por nome ou código de barras"
+              className="flex-1 min-w-0"
+            />
             <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
               {filtered.length}/{totalCount}
             </span>
           </div>
+
 
           {/* Filtro de categoria */}
           <button
