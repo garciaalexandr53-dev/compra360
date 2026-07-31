@@ -250,6 +250,7 @@ const ProdutosPage = () => {
     mutationFn: async () => {
       const payload = {
         nome: form.nome.trim(),
+        ean: normalizeEan(form.ean) || null,
         categoria_id: form.categoria_id || null,
         embalagem: cleanEmbalagem(form.embalagem),
         fator_embalagem: form.fator_embalagem || 1,
