@@ -1078,6 +1078,11 @@ const ProdutosPage = () => {
               </div>
             </div>
           </div>
+          <BarcodeScannerModal
+            open={eanScannerOpen}
+            onClose={() => setEanScannerOpen(false)}
+            onDetected={(code) => setForm((f) => ({ ...f, ean: normalizeEan(code) }))}
+          />
           <DialogFooter className="flex-col sm:flex-row gap-2">
             {editingId && (
               <Button
