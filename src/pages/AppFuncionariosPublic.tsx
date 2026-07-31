@@ -816,52 +816,21 @@ const AppFuncionariosPublic = () => {
 
 
           {/* Search bar + "não listado" button - always visible */}
-          <div className="px-4 pt-3 pb-2 sticky top-[92px] z-10 bg-background space-y-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                ref={searchInputRef}
-                placeholder="Buscar por nome ou código de barras"
-                value={productSearch}
-                onChange={(e) => setProductSearch(e.target.value)}
-                className="pl-9 pr-20 h-12 text-base rounded-xl border-2 focus-visible:ring-primary"
-                autoFocus
-              />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                {productSearch.length > 0 && (
-                  <button
-                    onClick={() => {
-                      setProductSearch("");
-                      searchInputRef.current?.focus();
-                    }}
-                    aria-label="Limpar busca"
-                    className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-                <button
-                  onClick={() => setScannerOpen(true)}
-                  aria-label="Escanear código de barras"
-                  title="Escanear código de barras"
-                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
-                >
-                  <ScanBarcode className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-            {productSearch.length === 0 && (
-              <p className="px-1 text-xs leading-snug text-muted-foreground">
-                Digite o nome do produto ou escaneie/digite o código de barras (EAN)
-              </p>
-            )}
+          <div className="px-4 pt-3 pb-2 sticky top-[92px] z-10 bg-background">
+            <SearchInputComScanner
+              inputRef={searchInputRef}
+              autoFocus
+              value={productSearch}
+              placeholder="Buscar por nome ou código de barras"
+              textoAjuda="Digite o nome do produto ou escaneie/digite o código de barras (EAN)"
+              onChange={(v, meta) => {
+                setProductSearch(v);
+                if (meta?.fromScanner) setDebouncedProductSearch(v);
+                if (v === "") searchInputRef.current?.focus();
+              }}
+            />
           </div>
 
-          <BarcodeScannerModal
-            open={scannerOpen}
-            onClose={handleScannerClose}
-            onDetected={handleBarcodeDetected}
-          />
 
 
           {/* Product list */}
