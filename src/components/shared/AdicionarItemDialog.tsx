@@ -26,32 +26,42 @@ interface AdicionarItemDialogProps {
   /** Quantidade inicial — padrão 1 */
   quantidadeInicial?: number;
   /**
-   * Quando true, embalagem e fator viram somente leitura.
-   * Usado para produtos vindos do `catalogo_mestre` (Pilar 3:
-   * nem cliente nem funcionário editam embalagem/fator do catálogo).
+   * @deprecated Embalagem/fator são sempre editáveis (ajuste vale só para o item).
+   * Mantido apenas para compatibilidade de chamadas antigas — não tem efeito.
    */
   locked?: boolean;
   /** Badge opcional ao lado do título (ex.: "Catálogo"). */
   badge?: string | null;
+  /** Origem do valor padrão exibido na indicação de ajuste. */
+  origemPadrao?: "catalogo" | "cadastro";
 }
 
 /**
  * Diálogo unificado de adicionar item.
  * Ordem: Nome → Embalagem → Fator → Quantidade → Total → Botões.
  * Usado por ProdutosPage e AppFuncionariosPublic.
+ *
+ * Embalagem e fator são SEMPRE editáveis. O valor de origem (catálogo mestre ou
+ * cadastro local) entra pré-preenchido como padrão; se o usuário ajustar, o
+ * ajuste vale apenas para aquele item (snapshot / itens_faltantes) e nunca
+ * altera o catálogo nem o produto local.
  */
 export const AdicionarItemDialog = ({
   produto,
   onConfirmar,
   onCancelar,
   quantidadeInicial = 1,
-  locked = false,
   badge = null,
+  origemPadrao = "cadastro",
 }: AdicionarItemDialogProps) => {
   const open = !!produto;
   const [embalagem, setEmbalagem] = useState<string>("UNI");
   const [fator, setFator] = useState<string>("1");
   const [qtd, setQtd] = useState<string>(String(quantidadeInicial));
+  const [padrao, setPadrao] = useState<{ embalagem: string; fator: number }>({
+    embalagem: "UNI",
+    fator: 1,
+  });
 
   useEffect(() => {
     if (!produto) return;
@@ -60,12 +70,19 @@ export const AdicionarItemDialog = ({
     setEmbalagem(emb);
     setFator(String(fatorInicial));
     setQtd(String(quantidadeInicial));
+    setPadrao({ embalagem: emb, fator: fatorInicial });
   }, [produto, quantidadeInicial]);
 
   const handleEmbalagemChange = (sigla: string) => {
     setEmbalagem(sigla);
-    setFator(String(fatorPadraoDe(sigla)));
+    setFator(String(sigla === padrao.embalagem ? padrao.fator : fatorPadraoDe(sigla)));
   };
+
+  const voltarAoPadrao = () => {
+    setEmbalagem(padrao.embalagem);
+    setFator(String(padrao.fator));
+  };
+
 
   const confirmar = () => {
     const qtdNum = parseInt(qtd) || 0;
