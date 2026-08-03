@@ -110,7 +110,6 @@ const ProdutosPage = () => {
   const [classifyProgress, setClassifyProgress] = useState(0);
   const [classifyResult, setClassifyResult] = useState({ updated: 0, categories: 0 });
   const [classifyError, setClassifyError] = useState("");
-  const [classifyMode, setClassifyMode] = useState<"classify" | "fator">("classify");
 
   // Diálogo unificado — carrega ProdutoHibrido (local ou catálogo) + metadados de exibição
   const [dialogState, setDialogState] = useState<{ produto: ProdutoHibrido; subtitulo?: string | null } | null>(null);
