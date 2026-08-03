@@ -119,11 +119,6 @@ export const AdicionarItemDialog = ({
           {produto?.subtitulo && (
             <p className="text-xs text-muted-foreground">{produto.subtitulo}</p>
           )}
-          {locked && (
-            <p className="text-[11px] text-muted-foreground">
-              Embalagem e fator definidos pelo catálogo (somente leitura).
-            </p>
-          )}
         </DialogHeader>
 
         {/* 2. Embalagem */}
@@ -134,13 +129,12 @@ export const AdicionarItemDialog = ({
               <button
                 key={emb}
                 type="button"
-                disabled={locked}
-                onClick={() => { if (!locked) handleEmbalagemChange(emb); }}
+                onClick={() => handleEmbalagemChange(emb)}
                 className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
                   embalagem === emb
                     ? "bg-primary text-primary-foreground border-primary"
                     : "border-border text-muted-foreground hover:border-primary/50"
-                } ${locked ? "opacity-60 cursor-not-allowed" : ""}`}
+                }`}
               >
                 {emb}
               </button>
@@ -156,26 +150,43 @@ export const AdicionarItemDialog = ({
             inputMode="numeric"
             min={1}
             value={fator}
-            readOnly={locked}
-            disabled={locked}
-            onFocus={(e) => { if (!locked) e.target.select(); }}
-            onChange={(e) => { if (!locked) setFator(e.target.value.replace(/\D/g, "")); }}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => setFator(e.target.value.replace(/\D/g, ""))}
             onBlur={() => {
-              if (locked) return;
               const val = fator.trim();
               if (!val || val === "0") {
-                setFator(String(fatorPadraoDe(embalagem)));
+                setFator(
+                  String(
+                    embalagem === padrao.embalagem ? padrao.fator : fatorPadraoDe(embalagem),
+                  ),
+                );
               }
             }}
-            className={`h-10 text-center text-base ${locked ? "opacity-60 cursor-not-allowed" : ""}`}
+            className="h-10 text-center text-base"
             aria-invalid={fatorInvalido}
           />
-          {fatorInvalido && !locked && (
+          {fatorInvalido && (
             <p role="alert" className="text-xs text-destructive">
               Informe um fator válido (maior que zero)
             </p>
           )}
+          {ajustado && !fatorInvalido && (
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="text-[11px] text-muted-foreground">
+                Ajustado (padrão do {origemPadrao === "catalogo" ? "catálogo" : "cadastro"}:{" "}
+                {padrao.embalagem} {padrao.fator})
+              </p>
+              <button
+                type="button"
+                onClick={voltarAoPadrao}
+                className="text-[11px] font-medium text-primary underline underline-offset-2"
+              >
+                Voltar ao padrão
+              </button>
+            </div>
+          )}
         </div>
+
 
 
         {/* 4. Quantidade */}
