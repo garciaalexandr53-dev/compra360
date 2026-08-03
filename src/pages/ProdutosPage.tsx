@@ -35,7 +35,6 @@ type Categoria = Tables<"categorias">;
 
 import { EMBALAGEM_SIGLAS } from "@/lib/embalagem";
 import { FATOR_PADRAO, matchEmbalagem } from "@/lib/embalagemFatores";
-import { autoSuggestFator } from "@/lib/autoFator";
 import AdicionarItemDialog from "@/components/shared/AdicionarItemDialog";
 const EMBALAGEM_OPTIONS = EMBALAGEM_SIGLAS;
 
@@ -111,7 +110,6 @@ const ProdutosPage = () => {
   const [classifyProgress, setClassifyProgress] = useState(0);
   const [classifyResult, setClassifyResult] = useState({ updated: 0, categories: 0 });
   const [classifyError, setClassifyError] = useState("");
-  const [classifyMode, setClassifyMode] = useState<"classify" | "fator">("classify");
 
   // Diálogo unificado — carrega ProdutoHibrido (local ou catálogo) + metadados de exibição
   const [dialogState, setDialogState] = useState<{ produto: ProdutoHibrido; subtitulo?: string | null } | null>(null);
@@ -511,7 +509,6 @@ const ProdutosPage = () => {
     }
 
     setClassifyModalOpen(true);
-    setClassifyMode("classify");
     setClassifyStatus("running");
     setClassifyProgress(0);
     setClassifyError("");
@@ -595,42 +592,8 @@ const ProdutosPage = () => {
     }
   };
 
-  // --- AI Suggest Fator ---
-  const autoSuggestFatorProducts = async () => {
-    // Target products with fator = 1 (default), or all if none qualify
-    const candidates = produtos.filter(p => (p.fator_embalagem || 1) === 1);
-    const targets = candidates.length > 0 ? candidates : filtered;
-    if (!targets.length) {
-      toast.info("Nenhum produto para analisar.");
-      return;
-    }
 
-    setClassifyModalOpen(true);
-    setClassifyMode("fator");
-    setClassifyStatus("running");
-    setClassifyProgress(10);
-    setClassifyError("");
-    setClassifyResult({ updated: 0, categories: 0 });
 
-    try {
-      setClassifyProgress(30);
-      const updated = await autoSuggestFator(
-        targets.map(p => ({ id: p.id, nome: p.nome, embalagem: p.embalagem || "UNI", fator_embalagem: p.fator_embalagem || 1 })),
-        {
-          skipIfAlreadySet: false,
-          onProgress: (done, total) => setClassifyProgress(30 + Math.round((done / total) * 60)),
-        }
-      );
-
-      queryClient.invalidateQueries({ queryKey: ["produtos"] });
-      setClassifyProgress(100);
-      setClassifyResult({ updated, categories: 0 });
-      setClassifyStatus("done");
-    } catch (e: any) {
-      setClassifyError(e.message || "Erro ao sugerir fatores");
-      setClassifyStatus("error");
-    }
-  };
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
@@ -660,12 +623,6 @@ const ProdutosPage = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setCatalogoOpen(true)}>
                     <Package className="h-4 w-4 mr-2" /> Catálogo Supermercado
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    if (!checkPlan("pro", "Sugestão de fatores por IA")) return;
-                    autoSuggestFatorProducts();
-                  }} disabled={produtos.length === 0}>
-                    <Sparkles className="h-4 w-4 mr-2" /> Sugerir Fatores IA
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -965,17 +922,13 @@ const ProdutosPage = () => {
           <div className="classify-modal-content">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                {classifyStatus === "running" && <>{classifyMode === "classify" ? <Sparkles className="h-5 w-5 text-primary animate-pulse" /> : <Package className="h-5 w-5 text-primary animate-pulse" />} {classifyMode === "classify" ? "Classificando produtos..." : "Analisando embalagens..."}</>}
-                {classifyStatus === "done" && <><span className="text-xl">✅</span> {classifyMode === "classify" ? "Classificação concluída!" : "Fatores atualizados!"}</>}
-                {classifyStatus === "error" && <><span className="text-xl">❌</span> {classifyMode === "classify" ? "Erro na classificação" : "Erro na análise"}</>}
+                {classifyStatus === "running" && <><Sparkles className="h-5 w-5 text-primary animate-pulse" /> Classificando produtos...</>}
+                {classifyStatus === "done" && <><span className="text-xl">✅</span> Classificação concluída!</>}
+                {classifyStatus === "error" && <><span className="text-xl">❌</span> Erro na classificação</>}
               </DialogTitle>
               <DialogDescription>
-                {classifyStatus === "running" && (classifyMode === "classify"
-                  ? `Analisando ${produtos.filter(p => !p.categoria_id).length || filtered.length} produtos · Aguarde`
-                  : `Sugerindo fatores para ${produtos.filter(p => (p.fator_embalagem || 1) === 1).length || filtered.length} produtos · Aguarde`)}
-                {classifyStatus === "done" && (classifyMode === "classify"
-                  ? `${classifyResult.updated} produtos classificados em ${classifyResult.categories} categorias`
-                  : `${classifyResult.updated} produtos atualizados com novo fator de embalagem`)}
+                {classifyStatus === "running" && `Analisando ${produtos.filter(p => !p.categoria_id).length || filtered.length} produtos · Aguarde`}
+                {classifyStatus === "done" && `${classifyResult.updated} produtos classificados em ${classifyResult.categories} categorias`}
                 {classifyStatus === "error" && classifyError}
               </DialogDescription>
             </DialogHeader>
@@ -999,7 +952,8 @@ const ProdutosPage = () => {
             {classifyStatus === "error" && (
               <DialogFooter className="mt-4 gap-2">
                 <Button variant="outline" onClick={() => setClassifyModalOpen(false)}>Cancelar</Button>
-                <Button onClick={classifyMode === "classify" ? autoClassifyProducts : autoSuggestFatorProducts}>Tentar Novamente</Button>
+                <Button onClick={autoClassifyProducts}>Tentar Novamente</Button>
+
               </DialogFooter>
             )}
           </div>
