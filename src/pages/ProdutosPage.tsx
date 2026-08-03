@@ -35,7 +35,6 @@ type Categoria = Tables<"categorias">;
 
 import { EMBALAGEM_SIGLAS } from "@/lib/embalagem";
 import { FATOR_PADRAO, matchEmbalagem } from "@/lib/embalagemFatores";
-import { autoSuggestFator } from "@/lib/autoFator";
 import AdicionarItemDialog from "@/components/shared/AdicionarItemDialog";
 const EMBALAGEM_OPTIONS = EMBALAGEM_SIGLAS;
 
