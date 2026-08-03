@@ -107,6 +107,33 @@ const FuncionariosPage = () => {
     },
   });
 
+  // Padrões do catálogo mestre para os itens que vieram do catálogo global.
+  // Usado apenas para DETECTAR divergência (sugestão da equipe) — nunca alteramos
+  // o catálogo mestre.
+  const catalogoIds = Array.from(
+    new Set((itens as any[]).map((i) => i.catalogo_mestre_id).filter(Boolean)),
+  ) as string[];
+  const { data: padroesCatalogo = {} } = useQuery({
+    queryKey: ["catalogo-padroes", catalogoIds.sort().join(",")],
+    enabled: catalogoIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("catalogo_mestre")
+        .select("id, embalagem, fator_embalagem")
+        .in("id", catalogoIds);
+      if (error) throw error;
+      const map: Record<string, PadraoEmbalagem> = {};
+      for (const row of data ?? []) {
+        map[row.id] = {
+          embalagem: row.embalagem,
+          fator_embalagem: row.fator_embalagem,
+        };
+      }
+      return map;
+    },
+  });
+
+
   // Fetch active cotação for the active store
   const { data: cotacaoAtivaLoja } = useQuery({
     queryKey: ["cotacao-ativa-loja", lojaEfetivaId],
