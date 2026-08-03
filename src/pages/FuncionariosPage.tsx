@@ -14,7 +14,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ConferenciaPedidos from "@/components/ConferenciaPedidos";
-import { buildCotacaoProdutoInsertFromItem } from "@/lib/itensFaltantesImport";
+import {
+  buildCotacaoProdutoInsertFromItem,
+  detectarSugestaoEquipe,
+  type PadraoEmbalagem,
+} from "@/lib/itensFaltantesImport";
+
 export const parseFatorFromObs = (obs: string | null): number => {
   const match = obs?.match(/Fator:\s*(\d+)/);
   return match ? parseInt(match[1]) : 1;
