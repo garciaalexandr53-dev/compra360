@@ -101,6 +101,9 @@ export const AdicionarItemDialog = ({
   const fatorNum = fatorInvalido ? 1 : fatorParsed;
   const qtdNum = parseInt(qtd) || 0;
   const totalUn = qtdNum * fatorNum;
+  const ajustado =
+    embalagem !== padrao.embalagem || (!fatorInvalido && fatorParsed !== padrao.fator);
+
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onCancelar(); }}>
