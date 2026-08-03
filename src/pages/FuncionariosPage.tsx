@@ -566,10 +566,31 @@ const FuncionariosPage = () => {
     },
   });
 
+  /** Volta embalagem/fator do item ao padrão do catálogo (só o item). */
+  const voltarPadraoMutation = useMutation({
+    mutationFn: async ({
+      id,
+      embalagem,
+      fator,
+    }: { id: string; embalagem: string; fator: number }) => {
+      const { error } = await supabase
+        .from("itens_faltantes")
+        .update({ embalagem, fator_embalagem: fator })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["itens-faltantes"] });
+      toast.success("Voltou ao padrão do catálogo");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const handleStartEdit = (item: any) => {
-    setEditingId(item.id);
+    setEditingId((cur) => (cur === item.id ? null : item.id));
     setEditQty("");
   };
+
 
   const handleSaveQty = (id: string) => {
     const qty = parseInt(editQty);
