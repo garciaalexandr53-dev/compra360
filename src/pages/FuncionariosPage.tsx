@@ -613,8 +613,16 @@ const FuncionariosPage = () => {
   };
 
   const getEmbalagem = (item: any) => {
+    if (item.embalagem?.trim()) return item.embalagem.trim().toUpperCase();
     return item.observacao?.replace("Embalagem: ", "") || "un";
   };
+
+  /** Divergência entre o que a equipe gravou e o padrão do catálogo mestre. */
+  const getSugestao = (item: any) =>
+    item.catalogo_mestre_id
+      ? detectarSugestaoEquipe(item, (padroesCatalogo as any)[item.catalogo_mestre_id])
+      : null;
+
 
   return (
     <div className="p-5 space-y-3">
