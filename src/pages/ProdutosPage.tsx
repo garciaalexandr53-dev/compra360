@@ -661,12 +661,6 @@ const ProdutosPage = () => {
                   <DropdownMenuItem onClick={() => setCatalogoOpen(true)}>
                     <Package className="h-4 w-4 mr-2" /> Catálogo Supermercado
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    if (!checkPlan("pro", "Sugestão de fatores por IA")) return;
-                    autoSuggestFatorProducts();
-                  }} disabled={produtos.length === 0}>
-                    <Sparkles className="h-4 w-4 mr-2" /> Sugerir Fatores IA
-                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => setGestorOpen(true)}
