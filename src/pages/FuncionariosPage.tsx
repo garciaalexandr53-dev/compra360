@@ -14,7 +14,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ConferenciaPedidos from "@/components/ConferenciaPedidos";
-import { buildCotacaoProdutoInsertFromItem } from "@/lib/itensFaltantesImport";
+import {
+  buildCotacaoProdutoInsertFromItem,
+  detectarSugestaoEquipe,
+  type PadraoEmbalagem,
+} from "@/lib/itensFaltantesImport";
+
 export const parseFatorFromObs = (obs: string | null): number => {
   const match = obs?.match(/Fator:\s*(\d+)/);
   return match ? parseInt(match[1]) : 1;
@@ -106,6 +111,33 @@ const FuncionariosPage = () => {
       return data;
     },
   });
+
+  // Padrões do catálogo mestre para os itens que vieram do catálogo global.
+  // Usado apenas para DETECTAR divergência (sugestão da equipe) — nunca alteramos
+  // o catálogo mestre.
+  const catalogoIds = Array.from(
+    new Set((itens as any[]).map((i) => i.catalogo_mestre_id).filter(Boolean)),
+  ) as string[];
+  const { data: padroesCatalogo = {} } = useQuery({
+    queryKey: ["catalogo-padroes", catalogoIds.sort().join(",")],
+    enabled: catalogoIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("catalogo_mestre")
+        .select("id, embalagem, fator_embalagem")
+        .in("id", catalogoIds);
+      if (error) throw error;
+      const map: Record<string, PadraoEmbalagem> = {};
+      for (const row of data ?? []) {
+        map[row.id] = {
+          embalagem: row.embalagem,
+          fator_embalagem: row.fator_embalagem,
+        };
+      }
+      return map;
+    },
+  });
+
 
   // Fetch active cotação for the active store
   const { data: cotacaoAtivaLoja } = useQuery({
@@ -534,10 +566,31 @@ const FuncionariosPage = () => {
     },
   });
 
+  /** Volta embalagem/fator do item ao padrão do catálogo (só o item). */
+  const voltarPadraoMutation = useMutation({
+    mutationFn: async ({
+      id,
+      embalagem,
+      fator,
+    }: { id: string; embalagem: string; fator: number }) => {
+      const { error } = await supabase
+        .from("itens_faltantes")
+        .update({ embalagem, fator_embalagem: fator })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["itens-faltantes"] });
+      toast.success("Voltou ao padrão do catálogo");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const handleStartEdit = (item: any) => {
-    setEditingId(item.id);
+    setEditingId((cur) => (cur === item.id ? null : item.id));
     setEditQty("");
   };
+
 
   const handleSaveQty = (id: string) => {
     const qty = parseInt(editQty);
@@ -581,8 +634,16 @@ const FuncionariosPage = () => {
   };
 
   const getEmbalagem = (item: any) => {
+    if (item.embalagem?.trim()) return item.embalagem.trim().toUpperCase();
     return item.observacao?.replace("Embalagem: ", "") || "un";
   };
+
+  /** Divergência entre o que a equipe gravou e o padrão do catálogo mestre. */
+  const getSugestao = (item: any) =>
+    item.catalogo_mestre_id
+      ? detectarSugestaoEquipe(item, (padroesCatalogo as any)[item.catalogo_mestre_id])
+      : null;
+
 
   return (
     <div className="p-5 space-y-3">
@@ -745,6 +806,9 @@ const FuncionariosPage = () => {
             pendentes.map((item: any, i: number) => {
               const bloqueado = !canImport;
               const emb = getEmbalagem(item);
+              const sugestao = getSugestao(item);
+              const divergente = !!sugestao?.divergente;
+              const editando = editingId === item.id;
               const tempoRelativo = formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: ptBR });
 
               return (
@@ -753,30 +817,78 @@ const FuncionariosPage = () => {
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-foreground flex items-center gap-1.5 flex-wrap">
                       <span className="break-words">{item.nome}</span>
-                      {item.loja_id && item.lojas?.nome && (
-                        <span className="text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">📍 {item.lojas.nome}</span>
-                      )}
                       {bloqueado
                         ? <span className="text-[9px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">⛔ Fornecedor já respondeu</span>
                         : <span className="text-[9px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">✅ Disponível</span>
                       }
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      {editingId === item.id ? (
-                        <Input
-                          type="number"
-                          className="w-20 h-7 text-center text-sm inline-block"
-                          autoFocus
-                          placeholder={String(item.quantidade || 1)}
-                          value={editQty}
-                          onChange={(e) => setEditQty(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === "Enter") handleSaveQty(item.id); }}
-                          onBlur={() => handleSaveQty(item.id)}
-                        />
-                      ) : (
-                        <>Qtd: {item.quantidade || 1} · {emb} · {tempoRelativo}</>
+                      {divergente && (
+                        <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                          💡 Sugestão da equipe
+                        </span>
                       )}
                     </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      Qtd: {item.quantidade || 1} · {emb} · {tempoRelativo}
+                    </div>
+                    {editando && (
+                      <div className="mt-2 rounded-lg border bg-muted/30 p-2 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Qtd:</span>
+                          <Input
+                            type="number"
+                            className="w-20 h-7 text-center text-sm"
+                            autoFocus
+                            placeholder={String(item.quantidade || 1)}
+                            value={editQty}
+                            onChange={(e) => setEditQty(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter") handleSaveQty(item.id); }}
+                          />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs text-primary"
+                            onClick={() => handleSaveQty(item.id)}
+                          >
+                            <Check className="h-3 w-3 mr-1" />Salvar
+                          </Button>
+                        </div>
+                        {divergente && sugestao && (
+                          <div className="space-y-1.5">
+                            <p className="text-[11px] text-muted-foreground">
+                              Sugerido pela equipe: <span className="font-medium text-foreground">{sugestao.sugerido.embalagem} · fator {sugestao.sugerido.fator}</span>
+                              {" · "}Padrão do catálogo: <span className="font-medium text-foreground">{sugestao.padrao.embalagem} · fator {sugestao.padrao.fator}</span>
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2 text-xs"
+                                onClick={() => { setEditingId(null); toast.success("Sugestão da equipe mantida"); }}
+                              >
+                                Aceitar sugestão
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 px-2 text-xs"
+                                disabled={voltarPadraoMutation.isPending}
+                                onClick={() => {
+                                  voltarPadraoMutation.mutate({
+                                    id: item.id,
+                                    embalagem: sugestao.padrao.embalagem,
+                                    fator: sugestao.padrao.fator,
+                                  });
+                                  setEditingId(null);
+                                }}
+                              >
+                                Voltar ao padrão
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                   </div>
                   <div className="flex items-center gap-0.5 shrink-0 pt-0.5">
                     <Button

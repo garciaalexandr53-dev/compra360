@@ -26,32 +26,42 @@ interface AdicionarItemDialogProps {
   /** Quantidade inicial — padrão 1 */
   quantidadeInicial?: number;
   /**
-   * Quando true, embalagem e fator viram somente leitura.
-   * Usado para produtos vindos do `catalogo_mestre` (Pilar 3:
-   * nem cliente nem funcionário editam embalagem/fator do catálogo).
+   * @deprecated Embalagem/fator são sempre editáveis (ajuste vale só para o item).
+   * Mantido apenas para compatibilidade de chamadas antigas — não tem efeito.
    */
   locked?: boolean;
   /** Badge opcional ao lado do título (ex.: "Catálogo"). */
   badge?: string | null;
+  /** Origem do valor padrão exibido na indicação de ajuste. */
+  origemPadrao?: "catalogo" | "cadastro";
 }
 
 /**
  * Diálogo unificado de adicionar item.
  * Ordem: Nome → Embalagem → Fator → Quantidade → Total → Botões.
  * Usado por ProdutosPage e AppFuncionariosPublic.
+ *
+ * Embalagem e fator são SEMPRE editáveis. O valor de origem (catálogo mestre ou
+ * cadastro local) entra pré-preenchido como padrão; se o usuário ajustar, o
+ * ajuste vale apenas para aquele item (snapshot / itens_faltantes) e nunca
+ * altera o catálogo nem o produto local.
  */
 export const AdicionarItemDialog = ({
   produto,
   onConfirmar,
   onCancelar,
   quantidadeInicial = 1,
-  locked = false,
   badge = null,
+  origemPadrao = "cadastro",
 }: AdicionarItemDialogProps) => {
   const open = !!produto;
   const [embalagem, setEmbalagem] = useState<string>("UNI");
   const [fator, setFator] = useState<string>("1");
   const [qtd, setQtd] = useState<string>(String(quantidadeInicial));
+  const [padrao, setPadrao] = useState<{ embalagem: string; fator: number }>({
+    embalagem: "UNI",
+    fator: 1,
+  });
 
   useEffect(() => {
     if (!produto) return;
@@ -60,12 +70,19 @@ export const AdicionarItemDialog = ({
     setEmbalagem(emb);
     setFator(String(fatorInicial));
     setQtd(String(quantidadeInicial));
+    setPadrao({ embalagem: emb, fator: fatorInicial });
   }, [produto, quantidadeInicial]);
 
   const handleEmbalagemChange = (sigla: string) => {
     setEmbalagem(sigla);
-    setFator(String(fatorPadraoDe(sigla)));
+    setFator(String(sigla === padrao.embalagem ? padrao.fator : fatorPadraoDe(sigla)));
   };
+
+  const voltarAoPadrao = () => {
+    setEmbalagem(padrao.embalagem);
+    setFator(String(padrao.fator));
+  };
+
 
   const confirmar = () => {
     const qtdNum = parseInt(qtd) || 0;
@@ -84,6 +101,9 @@ export const AdicionarItemDialog = ({
   const fatorNum = fatorInvalido ? 1 : fatorParsed;
   const qtdNum = parseInt(qtd) || 0;
   const totalUn = qtdNum * fatorNum;
+  const ajustado =
+    embalagem !== padrao.embalagem || (!fatorInvalido && fatorParsed !== padrao.fator);
+
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onCancelar(); }}>
@@ -102,11 +122,6 @@ export const AdicionarItemDialog = ({
           {produto?.subtitulo && (
             <p className="text-xs text-muted-foreground">{produto.subtitulo}</p>
           )}
-          {locked && (
-            <p className="text-[11px] text-muted-foreground">
-              Embalagem e fator definidos pelo catálogo (somente leitura).
-            </p>
-          )}
         </DialogHeader>
 
         {/* 2. Embalagem */}
@@ -117,13 +132,12 @@ export const AdicionarItemDialog = ({
               <button
                 key={emb}
                 type="button"
-                disabled={locked}
-                onClick={() => { if (!locked) handleEmbalagemChange(emb); }}
+                onClick={() => handleEmbalagemChange(emb)}
                 className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
                   embalagem === emb
                     ? "bg-primary text-primary-foreground border-primary"
                     : "border-border text-muted-foreground hover:border-primary/50"
-                } ${locked ? "opacity-60 cursor-not-allowed" : ""}`}
+                }`}
               >
                 {emb}
               </button>
@@ -139,26 +153,43 @@ export const AdicionarItemDialog = ({
             inputMode="numeric"
             min={1}
             value={fator}
-            readOnly={locked}
-            disabled={locked}
-            onFocus={(e) => { if (!locked) e.target.select(); }}
-            onChange={(e) => { if (!locked) setFator(e.target.value.replace(/\D/g, "")); }}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => setFator(e.target.value.replace(/\D/g, ""))}
             onBlur={() => {
-              if (locked) return;
               const val = fator.trim();
               if (!val || val === "0") {
-                setFator(String(fatorPadraoDe(embalagem)));
+                setFator(
+                  String(
+                    embalagem === padrao.embalagem ? padrao.fator : fatorPadraoDe(embalagem),
+                  ),
+                );
               }
             }}
-            className={`h-10 text-center text-base ${locked ? "opacity-60 cursor-not-allowed" : ""}`}
+            className="h-10 text-center text-base"
             aria-invalid={fatorInvalido}
           />
-          {fatorInvalido && !locked && (
+          {fatorInvalido && (
             <p role="alert" className="text-xs text-destructive">
               Informe um fator válido (maior que zero)
             </p>
           )}
+          {ajustado && !fatorInvalido && (
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="text-[11px] text-muted-foreground">
+                Ajustado (padrão do {origemPadrao === "catalogo" ? "catálogo" : "cadastro"}:{" "}
+                {padrao.embalagem} {padrao.fator})
+              </p>
+              <button
+                type="button"
+                onClick={voltarAoPadrao}
+                className="text-[11px] font-medium text-primary underline underline-offset-2"
+              >
+                Voltar ao padrão
+              </button>
+            </div>
+          )}
         </div>
+
 
 
         {/* 4. Quantidade */}

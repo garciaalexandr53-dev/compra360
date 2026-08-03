@@ -1064,7 +1064,7 @@ const AppFuncionariosPublic = () => {
               }
             : null
         }
-        locked={dialogProduct?.locked ?? false}
+        origemPadrao={dialogProduct?.fonte === "catalogo" ? "catalogo" : "cadastro"}
         badge={dialogProduct?.fonte === "catalogo" ? "Catálogo" : undefined}
         onCancelar={() => setDialogProduct(null)}
         onConfirmar={(qty, emb, fator) => {

@@ -1336,7 +1336,7 @@ const ProdutosPage = () => {
               }
             : null
         }
-        locked={dialogState?.produto.fonte === "catalogo"}
+        origemPadrao={dialogState?.produto.fonte === "catalogo" ? "catalogo" : "cadastro"}
         badge={dialogState?.produto.fonte === "catalogo" ? "Catálogo" : null}
         onCancelar={() => setDialogState(null)}
         onConfirmar={(qtd, emb, fator) => {
