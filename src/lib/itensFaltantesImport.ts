@@ -108,3 +108,46 @@ export const buildCotacaoProdutoInsertFromItem = ({
     },
   });
 };
+
+/** Embalagem/fator considerados padrão (catálogo mestre ou cadastro local). */
+export interface PadraoEmbalagem {
+  embalagem: string | null;
+  fator_embalagem: number | null;
+}
+
+export interface SugestaoEquipe {
+  divergente: boolean;
+  sugerido: { embalagem: string; fator: number };
+  padrao: { embalagem: string; fator: number };
+}
+
+const normEmb = (raw: string | null | undefined): string =>
+  (raw || "UNI").split("|")[0]?.trim().toUpperCase() || "UNI";
+
+const normFator = (f: number | null | undefined): number =>
+  f && f > 0 ? f : 1;
+
+/**
+ * Compara o que o funcionário gravou em `itens_faltantes` com o padrão de
+ * origem (catálogo mestre / cadastro local). Divergência = "Sugestão da equipe".
+ * O ajuste NUNCA altera o catálogo — apenas o snapshot do item.
+ */
+export const detectarSugestaoEquipe = (
+  item: Pick<ItemFaltanteRow, "embalagem" | "fator_embalagem">,
+  padrao: PadraoEmbalagem | null | undefined,
+): SugestaoEquipe | null => {
+  if (!padrao) return null;
+  const sugerido = {
+    embalagem: normEmb(item.embalagem),
+    fator: normFator(item.fator_embalagem),
+  };
+  const base = {
+    embalagem: normEmb(padrao.embalagem),
+    fator: normFator(padrao.fator_embalagem),
+  };
+  return {
+    divergente: sugerido.embalagem !== base.embalagem || sugerido.fator !== base.fator,
+    sugerido,
+    padrao: base,
+  };
+};
