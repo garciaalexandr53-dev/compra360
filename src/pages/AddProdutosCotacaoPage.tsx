@@ -587,12 +587,18 @@ const AddProdutosCotacaoPage = () => {
               <ShoppingCart className="h-7 w-7 text-muted-foreground" />
             </div>
             <p className="text-sm font-medium text-foreground">
-              {alreadyCount > 0 ? "Sua cotação já tem produtos" : "Nenhum produto adicionado"}
+              {alreadyCount > 0
+                ? "Sua cotação já tem produtos"
+                : debouncedSearch.trim().length === 0
+                  ? "Comece buscando um produto"
+                  : "Nenhum produto adicionado"}
             </p>
             <p className="mt-1 text-xs text-muted-foreground max-w-[250px]">
               {alreadyCount > 0
                 ? `${alreadyCount} produto(s) já estão prontos para seguir ao próximo passo`
-                : "Digite o nome de um produto no campo acima ou toque em um dos produtos recentes"}
+                : debouncedSearch.trim().length === 0
+                  ? "Você tem mais de 11.500 produtos prontos. Digite o nome ou escaneie o código de barras."
+                  : "Digite o nome de um produto no campo acima"}
             </p>
           </div>
         ) : (

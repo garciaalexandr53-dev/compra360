@@ -801,7 +801,31 @@ const FuncionariosPage = () => {
           {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
           ) : pendentes.length === 0 ? (
-            <div className="p-10 text-center text-muted-foreground">Nenhum item pendente.</div>
+            <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-3">
+                <Package className="h-7 w-7 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium text-foreground">Sua equipe registra o que está faltando</p>
+              <p className="mt-1 text-xs text-muted-foreground max-w-[300px]">
+                Envie o link acima para os funcionários da loja pelo WhatsApp. Eles marcam os produtos em falta direto do celular — e você importa tudo para a cotação com um toque.
+              </p>
+              <div className="mt-4 flex flex-row gap-2 w-full max-w-[300px]">
+                <Button
+                  variant={linkCopiado ? "default" : "outline"}
+                  size="sm"
+                  className={`h-9 gap-1.5 flex-1 ${linkCopiado ? "bg-[hsl(var(--brand))] hover:bg-[hsl(var(--brand))]/90 text-primary-foreground" : ""}`}
+                  onClick={copyLink}
+                  disabled={!effectiveLinkLojaId}
+                >
+                  {linkCopiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  <span className="text-sm">{linkCopiado ? "✓ Copiado!" : "Copiar Link"}</span>
+                </Button>
+                <Button variant="default" size="sm" className="h-9 gap-1.5 flex-1" onClick={openWhatsApp} disabled={!effectiveLinkLojaId}>
+                  <MessageCircle className="h-4 w-4" />
+                  <span className="text-sm">WhatsApp</span>
+                </Button>
+              </div>
+            </div>
           ) : (
             pendentes.map((item: any, i: number) => {
               const bloqueado = !canImport;
