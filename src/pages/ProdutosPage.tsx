@@ -384,75 +384,8 @@ const ProdutosPage = () => {
     onError: (e: any) => toast.error(e.message || "Erro ao adicionar à cotação"),
   });
 
-  // --- Duplicate removal ---
-  const removeDuplicates = async () => {
-    // Fetch ALL products (bypassing 1000-row default limit)
-    let allProducts: { id: string; nome: string; created_at: string }[] = [];
-    let from = 0;
-    const batchSize = 1000;
-    let error: any = null;
-    while (true) {
-      const { data, error: fetchErr } = await supabase
-        .from("produtos")
-        .select("id, nome, created_at")
-        .eq("user_id", user?.id)
-        .order("created_at", { ascending: true })
-        .range(from, from + batchSize - 1);
-      if (fetchErr) { error = fetchErr; break; }
-      if (!data || data.length === 0) break;
-      allProducts = allProducts.concat(data);
-      if (data.length < batchSize) break;
-      from += batchSize;
-    }
-    if (error || !allProducts) {
-      toast.error("Erro ao buscar produtos");
-      return;
-    }
-    const seen = new Map<string, string>();
-    const toDelete: string[] = [];
-    for (const p of allProducts) {
-      const key = p.nome.toLowerCase().trim();
-      if (seen.has(key)) {
-        toDelete.push(p.id);
-      } else {
-        seen.set(key, p.id);
-      }
-    }
-    if (toDelete.length === 0) {
-      toast.info("Nenhuma duplicata encontrada");
-      return;
-    }
-    // Delete in batches to avoid query size limits
-    for (let i = 0; i < toDelete.length; i += 500) {
-      const batch = toDelete.slice(i, i + 500);
-      const { error: delError } = await supabase.from("produtos").delete().in("id", batch);
-      if (delError) {
-        toast.error("Erro ao remover duplicatas");
-        return;
-      }
-    }
-    await cleanOrphanCategories();
-    queryClient.invalidateQueries({ queryKey: ["produtos"] });
-    queryClient.invalidateQueries({ queryKey: ["categorias"] });
-    toast.success(`${toDelete.length} duplicata${toDelete.length > 1 ? "s" : ""} removida${toDelete.length > 1 ? "s" : ""} com sucesso!`);
-  };
 
-  const runGestorAnalise = async () => {
-    setGestorLoading(true);
-    setGestorResult(null);
-    const semCat = produtos.filter(p => !p.categoria_id).length;
-    const seen = new Set<string>();
-    let dupCount = 0;
-    for (const p of produtos) {
-      const key = normalizeProductName(p.nome);
-      if (seen.has(key)) dupCount++;
-      else seen.add(key);
-    }
-    const total = semCat + dupCount;
-    setGestorBadge(total);
-    setGestorResult({ semCategoria: semCat, duplicatas: dupCount });
-    setGestorLoading(false);
-  };
+
 
   const filtered = useMemo(() => produtos.filter((p) => {
     const matchCat = selectedCat === "Todos" || p.categorias?.nome === selectedCat;
