@@ -863,8 +863,19 @@ const ProdutosPage = () => {
                 {classifyStatus === "error" && <><span className="text-xl">❌</span> Erro na classificação</>}
               </DialogTitle>
               <DialogDescription>
-                {classifyStatus === "running" && `Analisando ${produtos.filter(p => !p.categoria_id).length || filtered.length} produtos · Aguarde`}
-                {classifyStatus === "done" && `${classifyResult.updated} produtos classificados em ${classifyResult.categories} categorias`}
+                {classifyStatus === "running" && `Analisando ${produtos.filter(p => !p.categoria_id).length || filtered.length} produtos carregados · Aguarde`}
+                {classifyStatus === "done" && (
+                  <>
+                    {classifyResult.categories > 0
+                      ? `${classifyResult.updated} produtos classificados · ${classifyResult.categories} categorias criadas`
+                      : `${classifyResult.updated} produtos classificados`}
+                    {classifyResult.hasMore && (
+                      <span className="block mt-1">
+                        Role a lista para carregar mais produtos e classificar novamente.
+                      </span>
+                    )}
+                  </>
+                )}
                 {classifyStatus === "error" && classifyError}
               </DialogDescription>
             </DialogHeader>
