@@ -510,8 +510,17 @@ const ProdutosPage = () => {
         queryClient.invalidateQueries({ queryKey: ["categorias"] });
       }
 
+      // Remove categorias que ficaram sem produtos associados
+      await cleanOrphanCategories();
+      queryClient.invalidateQueries({ queryKey: ["categorias"] });
+
       setClassifyProgress(100);
-      setClassifyResult({ updated: totalUpdated, categories: 0 });
+      setClassifyResult({
+        updated: totalUpdated,
+        categories: totalNewCategories,
+        scanned: targets.length,
+        hasMore: Boolean(hasNextPage),
+      });
       setClassifyStatus("done");
       toast.success(`🤖 ${totalUpdated} produtos classificados pela IA!`);
     } catch (e: any) {
