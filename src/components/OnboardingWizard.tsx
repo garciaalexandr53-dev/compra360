@@ -404,45 +404,55 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs">E-mail</Label>
-                      <Input
-                        type="email"
-                        placeholder="email@exemplo.com"
-                        value={f.email}
-                        onChange={(e) => updateFornecedor(f.id, "email", e.target.value)}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Pedido Mínimo (R$)</Label>
-                      <Input
-                        placeholder="0,00"
-                        value={f.pedido_minimo}
-                        onChange={(e) => updateFornecedor(f.id, "pedido_minimo", e.target.value)}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Prazo de pagamento / Dia de entrega</Label>
-                    <Input
-                      placeholder="Ex: 28 dias, entrega às terças"
-                      value={f.prazo_pagamento}
-                      onChange={(e) => updateFornecedor(f.id, "prazo_pagamento", e.target.value)}
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Observações</Label>
-                    <Input
-                      placeholder="Ex: Só entrega acima de R$500"
-                      value={f.observacoes}
-                      onChange={(e) => updateFornecedor(f.id, "observacoes", e.target.value)}
-                      className="h-8 text-sm"
-                    />
-                  </div>
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm" className="w-full justify-between h-8 px-2 text-xs text-muted-foreground">
+                        Mais detalhes (opcional)
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-3 pt-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">E-mail</Label>
+                          <Input
+                            type="email"
+                            placeholder="email@exemplo.com"
+                            value={f.email}
+                            onChange={(e) => updateFornecedor(f.id, "email", e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Pedido Mínimo (R$)</Label>
+                          <Input
+                            placeholder="0,00"
+                            value={f.pedido_minimo}
+                            onChange={(e) => updateFornecedor(f.id, "pedido_minimo", e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Prazo de pagamento / Dia de entrega</Label>
+                        <Input
+                          placeholder="Ex: 28 dias, entrega às terças"
+                          value={f.prazo_pagamento}
+                          onChange={(e) => updateFornecedor(f.id, "prazo_pagamento", e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Observações</Label>
+                        <Input
+                          placeholder="Ex: Só entrega acima de R$500"
+                          value={f.observacoes}
+                          onChange={(e) => updateFornecedor(f.id, "observacoes", e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
               ))}
 
