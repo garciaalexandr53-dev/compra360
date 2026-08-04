@@ -649,6 +649,7 @@ const ProdutosPage = () => {
             ) : (
               <div className="p-10 text-center text-muted-foreground">Nenhum produto encontrado.</div>
             )
+          ) : (
             <>
               {filtered.length > 0 && (
                 <>
