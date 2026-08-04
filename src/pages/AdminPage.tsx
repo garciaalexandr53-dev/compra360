@@ -186,6 +186,26 @@ export default function AdminPage() {
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
+  const deleteClienteMutation = useMutation({
+    mutationFn: async ({ userId, email }: { userId: string; email: string }) => {
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { user_id: userId, confirm_email: email },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      toast({ title: "Conta excluída", description: "O cliente e todos os seus dados foram removidos." });
+      queryClient.invalidateQueries({ queryKey: ["admin-clientes"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-metrics"] });
+      setConfirmDelete(null);
+      setDeleteConfirmEmail("");
+    },
+    onError: (e: any) => toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" }),
+  });
+
+
   const filtrosAtivos = useMemo(() => {
     return (
       filtroPlano !== "todos" ||
