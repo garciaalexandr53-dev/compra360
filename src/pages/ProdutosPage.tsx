@@ -102,7 +102,7 @@ const ProdutosPage = () => {
   const [classifyModalOpen, setClassifyModalOpen] = useState(false);
   const [classifyStatus, setClassifyStatus] = useState<"running" | "done" | "error">("running");
   const [classifyProgress, setClassifyProgress] = useState(0);
-  const [classifyResult, setClassifyResult] = useState({ updated: 0, categories: 0 });
+  const [classifyResult, setClassifyResult] = useState({ updated: 0, categories: 0, scanned: 0, hasMore: false });
   const [classifyError, setClassifyError] = useState("");
 
   // Diálogo unificado — carrega ProdutoHibrido (local ou catálogo) + metadados de exibição
