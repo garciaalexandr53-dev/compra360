@@ -79,6 +79,9 @@ export default function AdminPage() {
     motivo?: MotivoContato;
   }>({ cliente: null, canal: "whatsapp" });
   const [clienteDetalhe, setClienteDetalhe] = useState<Cliente | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Cliente | null>(null);
+  const [deleteConfirmEmail, setDeleteConfirmEmail] = useState("");
+
 
 
   const { data: isAdmin, isLoading: checkingRole } = useQuery({
