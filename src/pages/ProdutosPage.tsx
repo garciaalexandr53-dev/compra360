@@ -634,10 +634,21 @@ const ProdutosPage = () => {
           {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
           ) : filtered.length === 0 && catalogoHibrido.length === 0 ? (
-            <div className="p-10 text-center text-muted-foreground">
-              {catalogoLoading ? "Buscando..." : "Nenhum produto encontrado."}
-            </div>
-          ) : (
+            catalogoLoading ? (
+              <div className="p-10 text-center text-muted-foreground">Buscando...</div>
+            ) : search.trim().length === 0 ? (
+              <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+                <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-3">
+                  <Package className="h-7 w-7 text-muted-foreground" />
+                </div>
+                <p className="text-sm font-medium text-foreground">Busque para ver o catálogo</p>
+                <p className="mt-1 text-xs text-muted-foreground max-w-[280px]">
+                  Mais de 11.500 produtos de supermercado disponíveis. Digite o nome ou escaneie o código de barras. Tem itens próprios? Cadastre em Novo Produto.
+                </p>
+              </div>
+            ) : (
+              <div className="p-10 text-center text-muted-foreground">Nenhum produto encontrado.</div>
+            )
             <>
               {filtered.length > 0 && (
                 <>
