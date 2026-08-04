@@ -95,14 +95,8 @@ const ProdutosPage = () => {
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [deleteAllConfirm, setDeleteAllConfirm] = useState(false);
 
-  // Gestor IA
-  const [gestorOpen, setGestorOpen] = useState(false);
-  const [gestorBadge, setGestorBadge] = useState(0);
-  const [gestorLoading, setGestorLoading] = useState(false);
-  const [gestorResult, setGestorResult] = useState<{
-    semCategoria: number;
-    duplicatas: number;
-  } | null>(null);
+
+
 
   // AI classify modal state
   const [classifyModalOpen, setClassifyModalOpen] = useState(false);
@@ -384,75 +378,8 @@ const ProdutosPage = () => {
     onError: (e: any) => toast.error(e.message || "Erro ao adicionar à cotação"),
   });
 
-  // --- Duplicate removal ---
-  const removeDuplicates = async () => {
-    // Fetch ALL products (bypassing 1000-row default limit)
-    let allProducts: { id: string; nome: string; created_at: string }[] = [];
-    let from = 0;
-    const batchSize = 1000;
-    let error: any = null;
-    while (true) {
-      const { data, error: fetchErr } = await supabase
-        .from("produtos")
-        .select("id, nome, created_at")
-        .eq("user_id", user?.id)
-        .order("created_at", { ascending: true })
-        .range(from, from + batchSize - 1);
-      if (fetchErr) { error = fetchErr; break; }
-      if (!data || data.length === 0) break;
-      allProducts = allProducts.concat(data);
-      if (data.length < batchSize) break;
-      from += batchSize;
-    }
-    if (error || !allProducts) {
-      toast.error("Erro ao buscar produtos");
-      return;
-    }
-    const seen = new Map<string, string>();
-    const toDelete: string[] = [];
-    for (const p of allProducts) {
-      const key = p.nome.toLowerCase().trim();
-      if (seen.has(key)) {
-        toDelete.push(p.id);
-      } else {
-        seen.set(key, p.id);
-      }
-    }
-    if (toDelete.length === 0) {
-      toast.info("Nenhuma duplicata encontrada");
-      return;
-    }
-    // Delete in batches to avoid query size limits
-    for (let i = 0; i < toDelete.length; i += 500) {
-      const batch = toDelete.slice(i, i + 500);
-      const { error: delError } = await supabase.from("produtos").delete().in("id", batch);
-      if (delError) {
-        toast.error("Erro ao remover duplicatas");
-        return;
-      }
-    }
-    await cleanOrphanCategories();
-    queryClient.invalidateQueries({ queryKey: ["produtos"] });
-    queryClient.invalidateQueries({ queryKey: ["categorias"] });
-    toast.success(`${toDelete.length} duplicata${toDelete.length > 1 ? "s" : ""} removida${toDelete.length > 1 ? "s" : ""} com sucesso!`);
-  };
 
-  const runGestorAnalise = async () => {
-    setGestorLoading(true);
-    setGestorResult(null);
-    const semCat = produtos.filter(p => !p.categoria_id).length;
-    const seen = new Set<string>();
-    let dupCount = 0;
-    for (const p of produtos) {
-      const key = normalizeProductName(p.nome);
-      if (seen.has(key)) dupCount++;
-      else seen.add(key);
-    }
-    const total = semCat + dupCount;
-    setGestorBadge(total);
-    setGestorResult({ semCategoria: semCat, duplicatas: dupCount });
-    setGestorLoading(false);
-  };
+
 
   const filtered = useMemo(() => produtos.filter((p) => {
     const matchCat = selectedCat === "Todos" || p.categorias?.nome === selectedCat;
@@ -625,21 +552,7 @@ const ProdutosPage = () => {
                     <Package className="h-4 w-4 mr-2" /> Catálogo Supermercado
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => setGestorOpen(true)}
-                    disabled={produtos.length === 0}
-                  >
-                    <div className="flex items-center flex-1">
-                      <Sparkles className="h-4 w-4 mr-2 text-primary" />
-                      <span className="font-medium">Gestor IA</span>
-                      {gestorBadge > 0 && (
-                        <span className="ml-auto text-[10px] font-bold bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">
-                          {gestorBadge}
-                        </span>
-                      )}
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
                     onClick={() => setDeleteAllConfirm(true)}
@@ -1101,105 +1014,8 @@ const ProdutosPage = () => {
       <CatalogoBaseModal open={catalogoOpen} onOpenChange={setCatalogoOpen} />
       <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
 
-      {/* Gestor IA Dialog */}
-      <Dialog open={gestorOpen} onOpenChange={setGestorOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              Gestor IA de Produtos
-            </DialogTitle>
-            <DialogDescription>
-              Analisa seu banco e sugere melhorias automáticas
-            </DialogDescription>
-          </DialogHeader>
 
-          {!gestorResult && !gestorLoading && (
-            <div className="space-y-4 py-2">
-              <p className="text-sm text-muted-foreground">
-                O Gestor verifica produtos sem categoria e possíveis duplicatas no seu banco de {totalCount} produtos.
-              </p>
-              <Button
-                className="w-full bg-gradient-to-r from-primary to-primary/80"
-                onClick={runGestorAnalise}
-              >
-                <Sparkles className="h-4 w-4 mr-2" /> Analisar agora
-              </Button>
-            </div>
-          )}
 
-          {gestorLoading && (
-            <div className="flex items-center justify-center py-8 gap-3">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <span className="text-sm text-muted-foreground">Analisando produtos...</span>
-            </div>
-          )}
-
-          {gestorResult && !gestorLoading && (
-            <div className="space-y-3 py-2">
-              {gestorResult.semCategoria === 0 && gestorResult.duplicatas === 0 ? (
-                <div className="text-center py-4 space-y-2">
-                  <div className="text-3xl">✅</div>
-                  <p className="text-sm font-medium">Tudo em ordem!</p>
-                  <p className="text-xs text-muted-foreground">Nenhuma melhoria necessária.</p>
-                </div>
-              ) : (
-                <>
-                  {gestorResult.semCategoria > 0 && (
-                    <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl">
-                      <div>
-                        <div className="text-sm font-semibold">Sem categoria</div>
-                        <div className="text-xs text-muted-foreground">
-                          {gestorResult.semCategoria} produto{gestorResult.semCategoria > 1 ? "s" : ""}
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          setGestorOpen(false);
-                          if (!checkPlan("business", "Classificação por IA")) return;
-                          autoClassifyProducts();
-                        }}
-                      >
-                        Classificar IA
-                      </Button>
-                    </div>
-                  )}
-                  {gestorResult.duplicatas > 0 && (
-                    <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl">
-                      <div>
-                        <div className="text-sm font-semibold">Duplicatas</div>
-                        <div className="text-xs text-muted-foreground">
-                          {gestorResult.duplicatas} produto{gestorResult.duplicatas > 1 ? "s" : ""} repetido{gestorResult.duplicatas > 1 ? "s" : ""}
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => {
-                          setGestorOpen(false);
-                          removeDuplicates();
-                          setGestorBadge(prev => Math.max(0, prev - gestorResult.duplicatas));
-                        }}
-                      >
-                        Remover
-                      </Button>
-                    </div>
-                  )}
-                </>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full gap-1"
-                onClick={runGestorAnalise}
-              >
-                <Loader2 className="h-3.5 w-3.5" /> Reanalisar
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Confirmação Excluir Todos */}
       <AlertDialog open={deleteAllConfirm} onOpenChange={setDeleteAllConfirm}>
