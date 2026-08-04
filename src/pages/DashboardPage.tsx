@@ -634,7 +634,9 @@ const DashboardPage = () => {
         totalProdutos={economiaHistorica.totalProdutos}
         economiaTotal={economiaHistorica.economiaTotal}
       />
+      <AppFuncionariosDiscoveryCard />
       <div className="animate-fade-in">
+
         {/* ── STATE 1: No active quote — guided flow ── */}
         {state === 1 && (
           <div className="space-y-5">
