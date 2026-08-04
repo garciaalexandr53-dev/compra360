@@ -625,21 +625,7 @@ const ProdutosPage = () => {
                     <Package className="h-4 w-4 mr-2" /> Catálogo Supermercado
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => setGestorOpen(true)}
-                    disabled={produtos.length === 0}
-                  >
-                    <div className="flex items-center flex-1">
-                      <Sparkles className="h-4 w-4 mr-2 text-primary" />
-                      <span className="font-medium">Gestor IA</span>
-                      {gestorBadge > 0 && (
-                        <span className="ml-auto text-[10px] font-bold bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">
-                          {gestorBadge}
-                        </span>
-                      )}
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
                     onClick={() => setDeleteAllConfirm(true)}
