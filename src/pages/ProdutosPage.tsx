@@ -95,14 +95,8 @@ const ProdutosPage = () => {
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [deleteAllConfirm, setDeleteAllConfirm] = useState(false);
 
-  // Gestor IA
-  const [gestorOpen, setGestorOpen] = useState(false);
-  const [gestorBadge, setGestorBadge] = useState(0);
-  const [gestorLoading, setGestorLoading] = useState(false);
-  const [gestorResult, setGestorResult] = useState<{
-    semCategoria: number;
-    duplicatas: number;
-  } | null>(null);
+
+
 
   // AI classify modal state
   const [classifyModalOpen, setClassifyModalOpen] = useState(false);
