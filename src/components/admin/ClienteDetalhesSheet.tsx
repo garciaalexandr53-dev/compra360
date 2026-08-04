@@ -288,7 +288,19 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
             <Pencil className="h-4 w-4" />
             Alterar plano
           </Button>
+          {onExcluir && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1 min-w-[140px] text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => onExcluir(cliente)}
+            >
+              <Trash2 className="h-4 w-4" />
+              Excluir cliente
+            </Button>
+          )}
         </div>
+
 
         {isLoading && (
           <div className="absolute top-2 right-12">
