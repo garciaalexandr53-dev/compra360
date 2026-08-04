@@ -38,12 +38,6 @@ interface FornecedorDraft {
   observacoes: string;
 }
 
-interface ProdutoDraft {
-  id: string;
-  nome: string;
-  embalagem: string;
-}
-
 const emptyFornecedor = (): FornecedorDraft => ({
   id: crypto.randomUUID(),
   nome: "",
@@ -53,12 +47,6 @@ const emptyFornecedor = (): FornecedorDraft => ({
   pedido_minimo: "",
   prazo_pagamento: "",
   observacoes: "",
-});
-
-const emptyProduto = (): ProdutoDraft => ({
-  id: crypto.randomUUID(),
-  nome: "",
-  embalagem: "",
 });
 
 export default function OnboardingWizard({ open, onClose }: OnboardingWizardProps) {
@@ -75,17 +63,10 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   // Step 2 - Fornecedores (múltiplos)
   const [fornecedores, setFornecedores] = useState<FornecedorDraft[]>([emptyFornecedor()]);
 
-  // Step 3 - Produtos (múltiplos)
-  const [produtos, setProdutos] = useState<ProdutoDraft[]>([emptyProduto()]);
-
   // Tracking saved state
   const [lojaSaved, setLojaSaved] = useState(false);
   const [createdLojaId, setCreatedLojaId] = useState<string | null>(null);
   const [fornSavedCount, setFornSavedCount] = useState(0);
-  const [prodSavedCount, setProdSavedCount] = useState(0);
-
-  // Catálogo base
-  const [showCatalogo, setShowCatalogo] = useState(false);
 
   // Fingerprint
   const [fingerprint, setFingerprint] = useState<string | null>(null);
@@ -107,16 +88,6 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   const removeFornecedor = (id: string) => {
     if (fornecedores.length <= 1) return;
     setFornecedores((prev) => prev.filter((f) => f.id !== id));
-  };
-
-  // --- Produto helpers ---
-  const updateProduto = (id: string, field: keyof ProdutoDraft, value: string) => {
-    setProdutos((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
-  };
-  const addProduto = () => setProdutos((prev) => [...prev, emptyProduto()]);
-  const removeProduto = (id: string) => {
-    if (produtos.length <= 1) return;
-    setProdutos((prev) => prev.filter((p) => p.id !== id));
   };
 
   const saveStep = async () => {
@@ -197,21 +168,6 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         setFornSavedCount(validForn.length);
         qc.invalidateQueries({ queryKey: ["fornecedores"] });
         qc.invalidateQueries({ queryKey: ["fornecedor-lojas"] });
-      } else if (step === 3) {
-        const validProd = produtos.filter((p) => p.nome.trim());
-        if (validProd.length === 0) return;
-
-        const inserts = validProd.map((p) => ({
-          nome: p.nome.trim(),
-          embalagem: p.embalagem.trim() || null,
-          ativo: true,
-          user_id: user?.id,
-        }));
-
-        const { error } = await supabase.from("produtos").insert(inserts);
-        if (error) throw error;
-        setProdSavedCount(validProd.length);
-        qc.invalidateQueries({ queryKey: ["produtos"] });
       }
     } catch (e: any) {
       toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
@@ -222,7 +178,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   };
 
   const handleNext = async () => {
-    if (step >= 1 && step <= 3) {
+    if (step === 1 || step === 2) {
       await saveStep();
     }
     if (step < totalSteps - 1) {
@@ -249,7 +205,6 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
     if (step === 0) return true;
     if (step === 1) return lojaNome.trim().length > 0;
     if (step === 2) return fornecedores.some((f) => f.nome.trim().length > 0);
-    if (step === 3) return produtos.some((p) => p.nome.trim().length > 0);
     return true; // conclusão
   };
 
@@ -312,7 +267,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                 </div>
                 <div className="flex items-start gap-2">
                   <Package className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span><strong>Produtos</strong> — cadastre os itens que você compra regularmente</span>
+                  <span><strong>Produtos</strong> — mais de 11.500 já vêm prontos, sem cadastro</span>
                 </div>
               </div>
               <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm text-left">
@@ -557,7 +512,6 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         </div>
       </DialogContent>
     </Dialog>
-    <CatalogoBaseModal open={showCatalogo} onOpenChange={setShowCatalogo} />
     </>
   );
 }
