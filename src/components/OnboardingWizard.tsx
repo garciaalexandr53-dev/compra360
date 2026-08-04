@@ -558,11 +558,15 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-between pt-2 border-t">
-          <Button variant="ghost" size="sm" onClick={handleSkip} className="text-muted-foreground">
-            <X className="h-4 w-4 mr-1" />
-            Pular por agora
-          </Button>
+        <div className="flex items-center justify-between pt-2 border-t gap-2">
+          {step === 3 ? (
+            <span />
+          ) : (
+            <Button variant="ghost" size="sm" onClick={handleSkip} className="text-muted-foreground">
+              <X className="h-4 w-4 mr-1" />
+              Pular por agora
+            </Button>
+          )}
           <div className="flex gap-2">
             {step > 0 && (
               <Button variant="outline" size="sm" onClick={handleBack} disabled={saving}>
