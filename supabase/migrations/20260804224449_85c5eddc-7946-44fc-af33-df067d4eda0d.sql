@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS public.zz_catalogo_base_drop_20260713;
