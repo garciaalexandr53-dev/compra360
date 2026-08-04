@@ -439,11 +439,12 @@ const ProdutosPage = () => {
     setClassifyStatus("running");
     setClassifyProgress(0);
     setClassifyError("");
-    setClassifyResult({ updated: 0, categories: 0 });
+    setClassifyResult({ updated: 0, categories: 0, scanned: targets.length, hasMore: Boolean(hasNextPage) });
 
     const FRONTEND_BATCH = 150;
     let currentCatNames = categorias.map((c) => c.nome);
     let totalUpdated = 0;
+    let totalNewCategories = 0;
 
     try {
       const batches = chunkArray(targets, FRONTEND_BATCH);
