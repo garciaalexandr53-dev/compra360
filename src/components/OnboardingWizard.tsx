@@ -534,19 +534,15 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   <Truck className="h-4 w-4 text-primary" />
                   <span><strong>{fornSavedCount || fornecedores.filter((f) => f.nome.trim()).length}</strong> fornecedor(es) cadastrado(s)</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Package className="h-4 w-4 text-primary" />
-                  <span><strong>{prodSavedCount || produtos.filter((p) => p.nome.trim()).length}</strong> produto(s) cadastrado(s)</span>
-                </div>
               </div>
 
               <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm text-left space-y-2">
                 <p className="font-medium text-primary">📋 Próximos passos:</p>
                 <ol className="list-decimal list-inside text-muted-foreground space-y-1 text-xs">
-                  <li>Acesse o <strong>Painel</strong> e clique em <strong>Nova Cotação</strong></li>
-                  <li>Adicione os produtos que deseja cotar</li>
+                  <li>No <strong>Painel</strong>, escolha <strong>Importar do ERP</strong> ou <strong>Montar manualmente</strong></li>
+                  <li>Busque os produtos pelo nome ou código de barras</li>
                   <li>Selecione os fornecedores e envie os links</li>
-                  <li>Aguarde as respostas e analise os melhores preços</li>
+                  <li>Compare os preços e feche o pedido</li>
                 </ol>
               </div>
 
