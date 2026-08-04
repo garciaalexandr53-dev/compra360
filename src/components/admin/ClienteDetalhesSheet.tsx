@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Building2, IdCard, Mail, Phone, Calendar, LogIn, CreditCard, Activity,
-  Store, Package, Users, FileText, Send, Loader2, MessageCircle, Pencil, CheckCircle2, XCircle, History,
+  Store, Package, Users, FileText, Send, Loader2, MessageCircle, Pencil, CheckCircle2, XCircle, History, Trash2,
 } from "lucide-react";
 import {
   Cliente, getDiasTrialRestantes, getSaudeCliente, normalizarWhatsAppCliente, PLAN_COLORS,
@@ -25,7 +25,9 @@ interface Props {
   onClose: () => void;
   onContatar: (cliente: Cliente, canal: "whatsapp" | "email") => void;
   onAlterarPlano: (cliente: Cliente) => void;
+  onExcluir?: (cliente: Cliente) => void;
 }
+
 
 type Detalhes = {
   last_sign_in_at: string | null;
@@ -60,7 +62,7 @@ function calcularTotalPago(
   return meses * priceMonthly;
 }
 
-export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onAlterarPlano }: Props) {
+export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onAlterarPlano, onExcluir }: Props) {
   const isMobile = useIsMobile();
   const open = !!cliente;
 
@@ -288,7 +290,19 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
             <Pencil className="h-4 w-4" />
             Alterar plano
           </Button>
+          {onExcluir && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1 min-w-[140px] text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => onExcluir(cliente)}
+            >
+              <Trash2 className="h-4 w-4" />
+              Excluir cliente
+            </Button>
+          )}
         </div>
+
 
         {isLoading && (
           <div className="absolute top-2 right-12">
