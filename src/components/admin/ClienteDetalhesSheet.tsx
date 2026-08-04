@@ -62,7 +62,7 @@ function calcularTotalPago(
   return meses * priceMonthly;
 }
 
-export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onAlterarPlano }: Props) {
+export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onAlterarPlano, onExcluir }: Props) {
   const isMobile = useIsMobile();
   const open = !!cliente;
 
