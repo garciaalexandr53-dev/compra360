@@ -102,7 +102,7 @@ const ProdutosPage = () => {
   const [classifyModalOpen, setClassifyModalOpen] = useState(false);
   const [classifyStatus, setClassifyStatus] = useState<"running" | "done" | "error">("running");
   const [classifyProgress, setClassifyProgress] = useState(0);
-  const [classifyResult, setClassifyResult] = useState({ updated: 0, categories: 0 });
+  const [classifyResult, setClassifyResult] = useState({ updated: 0, categories: 0, scanned: 0, hasMore: false });
   const [classifyError, setClassifyError] = useState("");
 
   // Diálogo unificado — carrega ProdutoHibrido (local ou catálogo) + metadados de exibição
@@ -439,11 +439,12 @@ const ProdutosPage = () => {
     setClassifyStatus("running");
     setClassifyProgress(0);
     setClassifyError("");
-    setClassifyResult({ updated: 0, categories: 0 });
+    setClassifyResult({ updated: 0, categories: 0, scanned: targets.length, hasMore: Boolean(hasNextPage) });
 
     const FRONTEND_BATCH = 150;
     let currentCatNames = categorias.map((c) => c.nome);
     let totalUpdated = 0;
+    let totalNewCategories = 0;
 
     try {
       const batches = chunkArray(targets, FRONTEND_BATCH);
@@ -486,6 +487,7 @@ const ProdutosPage = () => {
           if (!error && data) {
             catMap[catName.toLowerCase()] = data.id;
             currentCatNames.push(catName);
+            totalNewCategories++;
           }
         }
 
@@ -508,8 +510,17 @@ const ProdutosPage = () => {
         queryClient.invalidateQueries({ queryKey: ["categorias"] });
       }
 
+      // Remove categorias que ficaram sem produtos associados
+      await cleanOrphanCategories();
+      queryClient.invalidateQueries({ queryKey: ["categorias"] });
+
       setClassifyProgress(100);
-      setClassifyResult({ updated: totalUpdated, categories: 0 });
+      setClassifyResult({
+        updated: totalUpdated,
+        categories: totalNewCategories,
+        scanned: targets.length,
+        hasMore: Boolean(hasNextPage),
+      });
       setClassifyStatus("done");
       toast.success(`🤖 ${totalUpdated} produtos classificados pela IA!`);
     } catch (e: any) {
@@ -852,8 +863,19 @@ const ProdutosPage = () => {
                 {classifyStatus === "error" && <><span className="text-xl">❌</span> Erro na classificação</>}
               </DialogTitle>
               <DialogDescription>
-                {classifyStatus === "running" && `Analisando ${produtos.filter(p => !p.categoria_id).length || filtered.length} produtos · Aguarde`}
-                {classifyStatus === "done" && `${classifyResult.updated} produtos classificados em ${classifyResult.categories} categorias`}
+                {classifyStatus === "running" && `Analisando ${produtos.filter(p => !p.categoria_id).length || filtered.length} produtos carregados · Aguarde`}
+                {classifyStatus === "done" && (
+                  <>
+                    {classifyResult.categories > 0
+                      ? `${classifyResult.updated} produtos classificados · ${classifyResult.categories} categorias criadas`
+                      : `${classifyResult.updated} produtos classificados`}
+                    {classifyResult.hasMore && (
+                      <span className="block mt-1">
+                        Role a lista para carregar mais produtos e classificar novamente.
+                      </span>
+                    )}
+                  </>
+                )}
                 {classifyStatus === "error" && classifyError}
               </DialogDescription>
             </DialogHeader>
