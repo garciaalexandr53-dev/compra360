@@ -722,11 +722,21 @@ const ConferenciaPedidos = () => {
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">Carregando...</div>
       ) : pedidosFiltrados.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="text-center py-12 px-4">
           <Package className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
-          <p className="text-muted-foreground text-sm">
-            {pedidos.length > 0 ? "Nenhum pedido para este fornecedor" : "Nenhum pedido aguardando conferência"}
-          </p>
+          {pedidos.length > 0 ? (
+            <p className="text-muted-foreground text-sm">Nenhum pedido para este fornecedor</p>
+          ) : (
+            <>
+              <h3 className="text-sm font-semibold mb-1.5">
+                A conferência aparece aqui quando o pedido chegar
+              </h3>
+              <p className="text-muted-foreground text-xs leading-relaxed max-w-sm mx-auto">
+                Depois de fechar uma cotação, o pedido entra nesta aba. Sua equipe confere o que foi
+                entregue contra o que foi pedido — e o sistema aponta divergências de quantidade e preço.
+              </p>
+            </>
+          )}
         </div>
       ) : (
         pedidosFiltrados.map((pedido: any) => (
