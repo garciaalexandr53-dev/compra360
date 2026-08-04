@@ -487,6 +487,7 @@ const ProdutosPage = () => {
           if (!error && data) {
             catMap[catName.toLowerCase()] = data.id;
             currentCatNames.push(catName);
+            totalNewCategories++;
           }
         }
 
