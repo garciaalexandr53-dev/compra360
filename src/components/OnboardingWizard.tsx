@@ -453,63 +453,23 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
             </div>
           )}
 
-          {/* === STEP 3: Produtos (múltiplos) === */}
+          {/* === STEP 3: Produtos (informativo) === */}
           {step === 3 && (
             <div className="space-y-4">
               <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                 <Package className="h-6 w-6 text-primary" />
               </div>
-              <p className="text-sm text-muted-foreground text-center">
-                Cadastre os produtos que você compra regularmente. Você pode adicionar mais depois nas configurações.
+              <h3 className="text-base font-semibold text-center">
+                Produtos — você não precisa cadastrar nada
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Seu Compra360 já vem com mais de 11.500 produtos de supermercado prontos para uso, com embalagem e fator conferidos.
               </p>
-
-              {produtos.map((p, idx) => (
-                <div key={p.id} className="border rounded-lg p-3 space-y-2 relative">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">Produto {idx + 1}</span>
-                    {produtos.length > 1 && (
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeProduto(p.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="col-span-2 space-y-1">
-                      <Label className="text-xs">Nome *</Label>
-                      <Input
-                        placeholder="Ex: Arroz 5kg"
-                        value={p.nome}
-                        onChange={(e) => updateProduto(p.id, "nome", e.target.value)}
-                        autoFocus={idx === 0}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Embalagem</Label>
-                      <Input
-                        placeholder="Ex: Pct 5kg"
-                        value={p.embalagem}
-                        onChange={(e) => updateProduto(p.id, "embalagem", e.target.value)}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1" onClick={addProduto}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Adicionar manualmente
-                </Button>
-                <Button variant="outline" size="sm" className="flex-1" onClick={() => setShowCatalogo(true)}>
-                  <Download className="h-4 w-4 mr-1" />
-                  Importar do catálogo
-                </Button>
-              </div>
-
-              <p className="text-xs text-muted-foreground text-center">
-                💡 O catálogo contém ~2.000 produtos pré-cadastrados de supermercado prontos para importação.
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Ao montar uma cotação, basta buscar pelo nome ou escanear o código de barras — o produto aparece na hora.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Tem itens próprios (a granel, regionais)? Você pode cadastrá-los depois em <strong>Produtos</strong>.
               </p>
             </div>
           )}
