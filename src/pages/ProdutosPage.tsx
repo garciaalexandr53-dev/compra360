@@ -552,6 +552,18 @@ const ProdutosPage = () => {
                     <Package className="h-4 w-4 mr-2" /> Catálogo Supermercado
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (!checkPlan("business", "Classificação por IA")) return;
+                      autoClassifyProducts();
+                    }}
+                    disabled={produtos.length === 0}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2 text-primary" />
+                    <span className="font-medium">Classificar por IA</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+
 
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
