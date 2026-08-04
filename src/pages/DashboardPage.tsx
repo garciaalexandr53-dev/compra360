@@ -27,6 +27,7 @@ import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugesta
 import ModalNovaCotacao from "@/components/cotacao/ModalNovaCotacao";
 import TrialBanner from "@/components/dashboard/TrialBanner";
 import TrialUpsellCard from "@/components/dashboard/TrialUpsellCard";
+import AppFuncionariosDiscoveryCard from "@/components/dashboard/AppFuncionariosDiscoveryCard";
 import TrialExpiredOverlay from "@/components/dashboard/TrialExpiredOverlay";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -634,7 +635,9 @@ const DashboardPage = () => {
         totalProdutos={economiaHistorica.totalProdutos}
         economiaTotal={economiaHistorica.economiaTotal}
       />
+      <AppFuncionariosDiscoveryCard />
       <div className="animate-fade-in">
+
         {/* ── STATE 1: No active quote — guided flow ── */}
         {state === 1 && (
           <div className="space-y-5">
