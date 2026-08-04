@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Building2, IdCard, Mail, Phone, Calendar, LogIn, CreditCard, Activity,
-  Store, Package, Users, FileText, Send, Loader2, MessageCircle, Pencil, CheckCircle2, XCircle, History,
+  Store, Package, Users, FileText, Send, Loader2, MessageCircle, Pencil, CheckCircle2, XCircle, History, Trash2,
 } from "lucide-react";
 import {
   Cliente, getDiasTrialRestantes, getSaudeCliente, normalizarWhatsAppCliente, PLAN_COLORS,
@@ -25,7 +25,9 @@ interface Props {
   onClose: () => void;
   onContatar: (cliente: Cliente, canal: "whatsapp" | "email") => void;
   onAlterarPlano: (cliente: Cliente) => void;
+  onExcluir?: (cliente: Cliente) => void;
 }
+
 
 type Detalhes = {
   last_sign_in_at: string | null;
