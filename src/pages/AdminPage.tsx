@@ -703,7 +703,64 @@ export default function AdminPage() {
           setClienteDetalhe(null);
           setPlanEdit({ cliente: c, novoPlano: c.plan_name });
         }}
+        onExcluir={(c) => {
+          setClienteDetalhe(null);
+          setDeleteConfirmEmail("");
+          setConfirmDelete(c);
+        }}
       />
+
+      {/* Excluir cliente */}
+      <AlertDialog
+        open={!!confirmDelete}
+        onOpenChange={(o) => {
+          if (!o) { setConfirmDelete(null); setDeleteConfirmEmail(""); }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir esta conta permanentemente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso apaga o login de <strong>{confirmDelete?.email}</strong> e todos os dados
+              vinculados: lojas, produtos, categorias, fornecedores, cotações, pedidos, conferências
+              e assinatura. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-2 space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Para confirmar, digite o e-mail do cliente:
+            </p>
+            <Input
+              value={deleteConfirmEmail}
+              onChange={(e) => setDeleteConfirmEmail(e.target.value)}
+              placeholder={confirmDelete?.email || ""}
+              autoComplete="off"
+              inputMode="email"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={
+                deleteClienteMutation.isPending ||
+                deleteConfirmEmail.trim().toLowerCase() !== (confirmDelete?.email || "").toLowerCase()
+              }
+              onClick={(e) => {
+                e.preventDefault();
+                if (!confirmDelete) return;
+                deleteClienteMutation.mutate({
+                  userId: confirmDelete.user_id,
+                  email: deleteConfirmEmail.trim(),
+                });
+              }}
+            >
+              {deleteClienteMutation.isPending ? "Excluindo..." : "Excluir definitivamente"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       {/* Ativar produtos */}
       <AlertDialog open={!!confirmActivate} onOpenChange={(o) => !o && setConfirmActivate(null)}>
