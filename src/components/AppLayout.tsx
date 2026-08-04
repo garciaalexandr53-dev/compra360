@@ -49,18 +49,11 @@ export default function AppLayout() {
     },
   });
 
-  const forceOnboarding = new URLSearchParams(location.search).get("onboarding") === "1";
-
   useEffect(() => {
-    if (forceOnboarding) {
-      setShowOnboarding(true);
-      return;
-    }
     if (!lojasLoading && lojas.length === 0 && user && !localStorage.getItem("onboarding_completed")) {
       setShowOnboarding(true);
     }
-  }, [lojasLoading, lojas, user, forceOnboarding]);
-
+  }, [lojasLoading, lojas, user]);
 
   if (loading) {
     return (
