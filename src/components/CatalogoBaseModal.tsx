@@ -30,7 +30,6 @@ const CatalogoBaseModal = ({ open, onOpenChange }: Props) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [selectedCat, setSelectedCat] = useState("Todos");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
 
@@ -58,15 +57,8 @@ const CatalogoBaseModal = ({ open, onOpenChange }: Props) => {
     enabled: open,
   });
 
-  const categorias = useMemo(() => {
-    const cats = new Map<string, number>();
-    catalogo.forEach((p) => cats.set(p.categoria, (cats.get(p.categoria) || 0) + 1));
-    return Array.from(cats.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [catalogo]);
-
   const filtered = useMemo(() => {
     let items = catalogo;
-    if (selectedCat !== "Todos") items = items.filter((p) => p.categoria === selectedCat);
     const q = search.trim().toLowerCase();
     if (q) {
       const isNumeric = /^\d+$/.test(q);
@@ -75,22 +67,12 @@ const CatalogoBaseModal = ({ open, onOpenChange }: Props) => {
       );
     }
     return items;
-  }, [catalogo, selectedCat, search]);
+  }, [catalogo, search]);
 
   const toggleItem = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
-  const toggleCategory = (cat: string) => {
-    const catItems = catalogo.filter((p) => p.categoria === cat);
-    const allSelected = catItems.every((p) => selectedIds.has(p.id));
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      catItems.forEach((p) => (allSelected ? next.delete(p.id) : next.add(p.id)));
       return next;
     });
   };
@@ -195,27 +177,6 @@ const CatalogoBaseModal = ({ open, onOpenChange }: Props) => {
           />
         </div>
 
-        {/* Category chips */}
-        <div className="flex flex-wrap gap-1">
-          <Badge
-            variant={selectedCat === "Todos" ? "default" : "outline"}
-            className="cursor-pointer text-[10px]"
-            onClick={() => setSelectedCat("Todos")}
-          >
-            Todos ({catalogo.length})
-          </Badge>
-          {categorias.map(([cat, count]) => (
-            <Badge
-              key={cat}
-              variant={selectedCat === cat ? "default" : "outline"}
-              className="cursor-pointer text-[10px]"
-              onClick={() => setSelectedCat(cat)}
-            >
-              {cat} ({count})
-            </Badge>
-          ))}
-        </div>
-
         {/* Select all */}
         <div className="flex items-center justify-between text-xs">
           <button onClick={selectAll} className="text-primary hover:underline">
@@ -243,30 +204,9 @@ const CatalogoBaseModal = ({ open, onOpenChange }: Props) => {
             </div>
           ) : (
             <div>
-              {selectedCat === "Todos"
-                ? categorias.map(([cat]) => {
-                    const catItems = filtered.filter((p) => p.categoria === cat);
-                    if (!catItems.length) return null;
-                    const allCatSelected = catItems.every((p) => selectedIds.has(p.id));
-                    return (
-                      <div key={cat}>
-                        <button
-                          onClick={() => toggleCategory(cat)}
-                          className="w-full flex items-center gap-2 px-3 py-1.5 bg-muted text-[10px] font-bold uppercase tracking-wider text-muted-foreground sticky top-0 z-10 border-b hover:bg-muted/80"
-                        >
-                          <Checkbox checked={allCatSelected} className="h-3 w-3" />
-                          <span>{cat}</span>
-                          <span className="ml-auto font-normal">{catItems.length}</span>
-                        </button>
-                        {catItems.map((p) => (
-                          <ProductRow key={p.id} item={p} selected={selectedIds.has(p.id)} onToggle={toggleItem} />
-                        ))}
-                      </div>
-                    );
-                  })
-                : filtered.map((p) => (
-                    <ProductRow key={p.id} item={p} selected={selectedIds.has(p.id)} onToggle={toggleItem} />
-                  ))}
+              {filtered.map((p) => (
+                <ProductRow key={p.id} item={p} selected={selectedIds.has(p.id)} onToggle={toggleItem} />
+              ))}
             </div>
           )}
         </ScrollArea>
