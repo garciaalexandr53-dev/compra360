@@ -12,10 +12,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Search, Trash2, Check, Upload, ChevronLeft, Sparkles, Loader2, MoreHorizontal, ArrowRight, Package, X, Filter, ScanBarcode } from "lucide-react";
+import { Plus, Search, Trash2, Check, Upload, ChevronLeft, Sparkles, Loader2, MoreHorizontal, ArrowRight, Package, X, ScanBarcode } from "lucide-react";
 import BarcodeScannerModal from "@/components/shared/BarcodeScannerModal";
 import ProdutoSheet, { type ProdutoSheetItem } from "@/components/produtos/ProdutoSheet";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
@@ -76,15 +75,12 @@ const ProdutosPage = () => {
   const { user } = useAuth();
   const { checkLimit, checkPlan, showPlanos, setShowPlanos } = useFeatureCheck();
   const [search, setSearch] = useState("");
-  const [selectedCat, setSelectedCat] = useState<string>("Todos");
   const [modalOpen, setModalOpen] = useState(false);
   const [eanScannerOpen, setEanScannerOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [importOpen, setImportOpen] = useState(false);
   const [catalogoOpen, setCatalogoOpen] = useState(false);
-  const [catSheetOpen, setCatSheetOpen] = useState(false);
-  const [catSearch, setCatSearch] = useState("");
   const [newCatModalOpen, setNewCatModalOpen] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [showFooter, setShowFooter] = useState(false);
@@ -130,7 +126,7 @@ const ProdutosPage = () => {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["produtos", search, selectedCat],
+    queryKey: ["produtos", search],
     queryFn: async ({ pageParam = 0 }) => {
       const from = pageParam * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -381,10 +377,7 @@ const ProdutosPage = () => {
 
 
 
-  const filtered = useMemo(() => produtos.filter((p) => {
-    const matchCat = selectedCat === "Todos" || p.categorias?.nome === selectedCat;
-    return matchCat;
-  }), [produtos, selectedCat]);
+  const filtered = produtos;
 
   const grouped = filtered.reduce<Record<string, Produto[]>>((acc, p) => {
     const cat = p.categorias?.nome || "Sem Categoria";
@@ -626,11 +619,9 @@ const ProdutosPage = () => {
                   )}
                   {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([cat, prods]) => (
                     <div key={cat}>
-                      {selectedCat === "Todos" && (
-                        <div className="px-4 py-1.5 bg-muted text-[10px] font-bold uppercase tracking-wider text-muted-foreground sticky top-0 z-10 border-b">
-                          {cat}
-                        </div>
-                      )}
+                      <div className="px-4 py-1.5 bg-muted text-[10px] font-bold uppercase tracking-wider text-muted-foreground sticky top-0 z-10 border-b">
+                        {cat}
+                      </div>
                       {prods.map((p) => {
                         const inCotacao = itensNaCotacao.has(cotacaoKey("local", p.id));
                         return (
