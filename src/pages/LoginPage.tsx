@@ -55,7 +55,7 @@ const LoginPage = () => {
   };
 
   if (user) {
-    navigate("/dashboard", { replace: true });
+    navigate(afterLogin, { replace: true });
     return null;
   }
 
@@ -130,7 +130,7 @@ const LoginPage = () => {
 
     if (isSignUp) {
       const digits = whatsapp.replace(/\D/g, "");
-      const { error } = await signUp(email, password, digits);
+      const { error } = await signUp(email, password, digits, `${window.location.origin}${afterLogin}`);
       if (error) {
         toast.error(translateAuthError(error.message));
       } else {
@@ -141,7 +141,7 @@ const LoginPage = () => {
       if (error) {
         toast.error(translateAuthError(error.message));
       } else {
-        navigate("/dashboard", { replace: true });
+        navigate(afterLogin, { replace: true });
       }
     }
     setLoading(false);
@@ -207,7 +207,7 @@ const LoginPage = () => {
             onClick={async () => {
               setGoogleLoading(true);
               const { error } = await lovable.auth.signInWithOAuth("google", {
-                redirect_uri: window.location.origin,
+                redirect_uri: nextPath ? `${window.location.origin}${nextPath}` : window.location.origin,
               });
               if (error) {
                 toast.error("Erro ao entrar com Google. Tente novamente.");
