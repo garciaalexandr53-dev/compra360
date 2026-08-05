@@ -7,7 +7,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, whatsapp?: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, whatsapp?: string, redirectTo?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -39,11 +39,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
-  const signUp = async (email: string, password: string, whatsapp?: string) => {
+  const signUp = async (email: string, password: string, whatsapp?: string, redirectTo?: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: whatsapp ? { whatsapp } : undefined },
+      options: {
+        data: whatsapp ? { whatsapp } : undefined,
+        emailRedirectTo: redirectTo,
+      },
     });
 
     if (!error && data?.user?.id) {

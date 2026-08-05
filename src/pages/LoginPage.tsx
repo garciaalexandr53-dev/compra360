@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,10 @@ const LoginPage = () => {
   const [isInstalled, setIsInstalled] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const rawNext = searchParams.get("next") ?? "";
+  const nextPath = /^\/(?!\/)/.test(rawNext) ? rawNext : "";
+  const afterLogin = nextPath || "/dashboard";
 
   useEffect(() => {
     // Check if already installed
@@ -51,7 +55,7 @@ const LoginPage = () => {
   };
 
   if (user) {
-    navigate("/dashboard", { replace: true });
+    navigate(afterLogin, { replace: true });
     return null;
   }
 
@@ -126,7 +130,7 @@ const LoginPage = () => {
 
     if (isSignUp) {
       const digits = whatsapp.replace(/\D/g, "");
-      const { error } = await signUp(email, password, digits);
+      const { error } = await signUp(email, password, digits, `${window.location.origin}${afterLogin}`);
       if (error) {
         toast.error(translateAuthError(error.message));
       } else {
@@ -137,7 +141,7 @@ const LoginPage = () => {
       if (error) {
         toast.error(translateAuthError(error.message));
       } else {
-        navigate("/dashboard", { replace: true });
+        navigate(afterLogin, { replace: true });
       }
     }
     setLoading(false);
@@ -203,7 +207,7 @@ const LoginPage = () => {
             onClick={async () => {
               setGoogleLoading(true);
               const { error } = await lovable.auth.signInWithOAuth("google", {
-                redirect_uri: window.location.origin,
+                redirect_uri: nextPath ? `${window.location.origin}${nextPath}` : window.location.origin,
               });
               if (error) {
                 toast.error("Erro ao entrar com Google. Tente novamente.");
