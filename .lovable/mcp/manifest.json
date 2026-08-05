@@ -1,0 +1,266 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://gkokwhkpjfozhtgfcrhz.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "compra360",
+      "version": "0.1.0",
+      "title": "Compra360"
+    },
+    "tools": [
+      {
+        "name": "listar_lojas",
+        "title": "Listar lojas",
+        "description": "Lista as lojas (unidades) do usuário autenticado no Compra360.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limite": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50,
+              "description": "Máximo de lojas a retornar."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "listar_fornecedores",
+        "title": "Listar fornecedores",
+        "description": "Lista os fornecedores cadastrados do usuário, com pedido mínimo e prazo de pagamento.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "busca": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Filtro por parte do nome do fornecedor."
+            },
+            "limite": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "description": "Máximo de fornecedores a retornar."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "listar_cotacoes",
+        "title": "Listar cotações",
+        "description": "Lista as cotações do usuário (ativas e finalizadas), com loja, status e prazo de resposta.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "ativa",
+                "finalizada"
+              ],
+              "description": "Filtrar por status da cotação."
+            },
+            "loja_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Filtrar por loja (unidade)."
+            },
+            "limite": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 10,
+              "description": "Máximo de cotações a retornar."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "detalhar_cotacao",
+        "title": "Detalhar cotação",
+        "description": "Retorna os itens de uma cotação com quantidades, embalagem e os preços recebidos de cada fornecedor, incluindo o menor preço por item.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cotacao_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "ID da cotação (use listar_cotacoes para obter)."
+            }
+          },
+          "required": [
+            "cotacao_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "buscar_catalogo",
+        "title": "Buscar no catálogo",
+        "description": "Busca produtos no catálogo mestre do Compra360 por nome ou por código de barras (EAN).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "termo": {
+              "type": "string",
+              "minLength": 2,
+              "description": "Nome do produto ou EAN (só dígitos)."
+            },
+            "limite": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "description": "Máximo de resultados."
+            }
+          },
+          "required": [
+            "termo"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "listar_itens_faltantes",
+        "title": "Listar itens faltantes",
+        "description": "Lista os itens de reposição registrados pela equipe da loja (produtos em falta), pendentes ou já importados para cotação.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "loja_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Filtrar por loja (unidade)."
+            },
+            "apenas_pendentes": {
+              "type": "boolean",
+              "default": true,
+              "description": "Se verdadeiro, retorna só os itens ainda não importados."
+            },
+            "limite": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 100,
+              "description": "Máximo de itens a retornar."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "registrar_item_faltante",
+        "title": "Registrar item faltante",
+        "description": "Registra um produto em falta na fila de reposição de uma loja, para depois ser importado em uma cotação.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "loja_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "ID da loja (use listar_lojas)."
+            },
+            "nome": {
+              "type": "string",
+              "minLength": 2,
+              "description": "Nome do produto em falta."
+            },
+            "quantidade": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "description": "Quantidade necessária."
+            },
+            "embalagem": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Embalagem, ex: UN, CX, FD."
+            },
+            "fator_embalagem": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Quantas unidades por embalagem."
+            },
+            "ean": {
+              "type": "string",
+              "description": "Código de barras, se conhecido."
+            },
+            "observacao": {
+              "type": "string",
+              "maxLength": 500,
+              "description": "Observação livre."
+            }
+          },
+          "required": [
+            "loja_id",
+            "nome"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
