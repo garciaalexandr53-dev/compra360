@@ -21,6 +21,10 @@ const LoginPage = () => {
   const [isInstalled, setIsInstalled] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const rawNext = searchParams.get("next") ?? "";
+  const nextPath = /^\/(?!\/)/.test(rawNext) ? rawNext : "";
+  const afterLogin = nextPath || "/dashboard";
 
   useEffect(() => {
     // Check if already installed
