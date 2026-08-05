@@ -1,0 +1,1 @@
+- [MCP Server](mem://tech/mcp-server) — Integrações de agentes, OAuth Supabase, 7 ferramentas, consent route
