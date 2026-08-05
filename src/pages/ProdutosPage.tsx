@@ -594,7 +594,10 @@ const ProdutosPage = () => {
               {filtered.length}/{totalCount}
             </span>
           </div>
+        </div>
 
+        <div ref={scrollRef} onScroll={handleScroll} className={`flex-1 overflow-y-auto ${cotacaoItemCount > 0 ? "pb-24" : ""}`}>
+          {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
           ) : filtered.length === 0 && catalogoHibrido.length === 0 ? (
             catalogoLoading ? (
