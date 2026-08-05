@@ -393,12 +393,6 @@ const ProdutosPage = () => {
     return acc;
   }, {});
 
-  const catCounts = produtos.reduce<Record<string, number>>((acc, p) => {
-    const cat = p.categorias?.nome || "Sem Categoria";
-    acc[cat] = (acc[cat] || 0) + 1;
-    return acc;
-  }, {});
-
   const openAdd = () => {
     if (!checkLimit("max_produtos", totalCount, "Faça upgrade para cadastrar mais produtos.")) return;
     setEditingId(null);
@@ -601,37 +595,6 @@ const ProdutosPage = () => {
             </span>
           </div>
 
-
-          {/* Filtro de categoria */}
-          <button
-            onClick={() => setCatSheetOpen(true)}
-            className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg border text-sm transition-colors ${
-              selectedCat !== "Todos"
-                ? "border-primary bg-primary/5 text-primary font-medium"
-                : "border-border text-muted-foreground hover:border-primary/40"
-            }`}
-          >
-            <Filter className="h-4 w-4 shrink-0" />
-            <span className="truncate flex-1 text-left">
-              {selectedCat === "Todos" ? "Todas as categorias" : selectedCat}
-            </span>
-            {selectedCat !== "Todos" ? (
-              <span
-                onClick={(e) => { e.stopPropagation(); setSelectedCat("Todos"); }}
-                className="text-xs text-primary hover:underline shrink-0"
-              >
-                ✕ limpar
-              </span>
-            ) : (
-              <span className="text-xs text-muted-foreground shrink-0">
-                {categorias.length} categorias
-              </span>
-            )}
-          </button>
-        </div>
-
-        <div ref={scrollRef} onScroll={handleScroll} className={`flex-1 overflow-y-auto ${cotacaoItemCount > 0 ? "pb-24" : ""}`}>
-          {isLoading ? (
             <div className="p-10 text-center text-muted-foreground">Carregando...</div>
           ) : filtered.length === 0 && catalogoHibrido.length === 0 ? (
             catalogoLoading ? (
@@ -1084,62 +1047,6 @@ const ProdutosPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Sheet de categorias */}
-      <Sheet open={catSheetOpen} onOpenChange={(open) => { setCatSheetOpen(open); if (!open) setCatSearch(""); }}>
-        <SheetContent side="bottom" className="h-[70vh] flex flex-col rounded-t-2xl">
-          <SheetHeader className="pb-2 shrink-0">
-            <SheetTitle className="text-base">Filtrar por categoria</SheetTitle>
-          </SheetHeader>
-          <div className="relative mb-3 shrink-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar categoria..."
-              className="pl-9"
-              value={catSearch}
-              onChange={(e) => setCatSearch(e.target.value)}
-            />
-          </div>
-          <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="space-y-1 pb-6">
-              <button
-                onClick={() => { setSelectedCat("Todos"); setCatSheetOpen(false); setCatSearch(""); }}
-                className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                  selectedCat === "Todos"
-                    ? "bg-primary text-primary-foreground font-semibold"
-                    : "hover:bg-muted text-foreground"
-                }`}
-              >
-                <span>Todos os produtos</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                  selectedCat === "Todos" ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"
-                }`}>{totalCount}</span>
-              </button>
-              {categorias
-                .filter(cat => !catSearch || cat.nome.toLowerCase().includes(catSearch.toLowerCase()))
-                .map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => { setSelectedCat(cat.nome); setCatSheetOpen(false); setCatSearch(""); }}
-                    className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                      selectedCat === cat.nome
-                        ? "bg-primary text-primary-foreground font-semibold"
-                        : "hover:bg-muted text-foreground"
-                    }`}
-                  >
-                    <span className="truncate text-left flex-1 mr-2">{cat.nome}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold shrink-0 ${
-                      selectedCat === cat.nome ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"
-                    }`}>{catCounts[cat.nome] || 0}</span>
-                  </button>
-                ))
-              }
-              {categorias.filter(cat => !catSearch || cat.nome.toLowerCase().includes(catSearch.toLowerCase())).length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">Nenhuma categoria encontrada</p>
-              )}
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
 
       <AdicionarItemDialog
         produto={
