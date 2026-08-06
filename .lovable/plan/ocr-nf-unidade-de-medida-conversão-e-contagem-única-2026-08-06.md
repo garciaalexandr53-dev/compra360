@@ -8,7 +8,7 @@ No prompt de OCR do modo "conferência", passar a pedir também a unidade de cad
 
 ## 2. Converter por unidade (nova biblioteca + testes)
 
-Nova lógica isolada em `src/lib/ocrUnidade.ts`, com os mapeamentos de unidade e a função de normalização:
+### Nova lógica isolada em `src/lib/ocrUnidade.ts`, com os mapeamentos de unidade e a função de normalização:
 
 - Unidade da NF é embalagem (CX, FD, DZ, PCT, DP) **e** o fator do item pedido é > 1:
   - preço normalizado = preço da NF ÷ fator
