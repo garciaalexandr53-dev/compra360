@@ -32,16 +32,25 @@ interface PedidoWithDetails {
   items: ConferenciaItem[];
 }
 
-type OcrStatus = "correto" | "divergencia" | "nao_pedido" | "faltando";
+type OcrStatus = "correto" | "divergencia" | "unidade_indefinida" | "faltando";
 
-interface OcrComparisonItem {
-  produto_nome: string;
-  status: OcrStatus;
-  qtd_pedida?: number;
-  qtd_nf?: number;
-  preco_cotado?: number | null;
-  preco_nf?: number | null;
+/** Metadados do OCR por índice do item do pedido. */
+interface OcrMeta {
+  matched: boolean;
+  unidade: string | null;
+  convertido: boolean;
+  unidadeIndefinida: boolean;
+  precoOriginal: number | null;
+  qtdOriginal: number | null;
 }
+
+interface OcrExtra {
+  produto_nome: string;
+  qtd_nf: number | null;
+  preco_nf: number | null;
+  unidade: string | null;
+}
+
 
 const STORAGE_KEY = "conferencia_progress";
 
