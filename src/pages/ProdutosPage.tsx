@@ -262,7 +262,6 @@ const ProdutosPage = () => {
       setModalOpen(false);
       setEditingId(null);
       setForm(emptyForm);
-      setSelectedCat("Todos");
       if (scrollRef.current) scrollRef.current.scrollTop = 0;
       toast.success(editingId ? "Produto atualizado!" : "Produto adicionado!");
     },

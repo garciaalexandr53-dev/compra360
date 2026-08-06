@@ -1,16 +1,23 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type { CascadeResult } from "@/lib/scenarios";
+import { formatBRL } from "@/lib/format";
 
 interface Props {
   cascadeResult: CascadeResult;
+  defaultExpanded?: boolean;
 }
 
-export function PainelMovimentacoes({ cascadeResult }: Props) {
-  const { boostDetails, pullDetails, discardDetails } = cascadeResult;
+export function PainelMovimentacoes({ cascadeResult, defaultExpanded = true }: Props) {
+  const { boostDetails, pullDetails, discardDetails, custoExtraTotal } = cascadeResult;
   const hasAny =
     boostDetails.length > 0 || pullDetails.length > 0 || discardDetails.length > 0;
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(defaultExpanded);
+
+  const resumo = [
+    discardDetails.length > 0 ? `${discardDetails.length} fornecedor(es) fora` : null,
+    pullDetails.length > 0 ? `${pullDetails.length} item(ns) realocado(s)` : null,
+  ].filter(Boolean).join(" · ");
 
   if (!hasAny) return null;
 
@@ -21,10 +28,15 @@ export function PainelMovimentacoes({ cascadeResult }: Props) {
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-muted/40 transition-colors"
       >
-        <span className="text-xs sm:text-sm font-semibold text-foreground">
+        <span className="text-xs sm:text-sm font-semibold text-foreground text-left">
           🔍 O que o sistema ajustou
+          {resumo && (
+            <span className="block font-normal text-[11px] text-muted-foreground mt-0.5">
+              {resumo}
+            </span>
+          )}
         </span>
-        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
           {expanded ? "Ocultar" : "Ver detalhes"}
           <ChevronDown
             className={`h-3.5 w-3.5 transition-transform duration-200 ${
@@ -60,10 +72,28 @@ export function PainelMovimentacoes({ cascadeResult }: Props) {
             </div>
           )}
 
+          {discardDetails.length > 0 && (
+            <div className="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 p-2.5 space-y-1">
+              <div className="text-xs sm:text-sm font-semibold text-red-900 dark:text-red-200">
+                🚫 Fornecedores fora desta estratégia ({discardDetails.length})
+              </div>
+              {discardDetails.map((d, i) => (
+                <div key={i} className="text-xs text-muted-foreground break-words">
+                  · <span className="font-medium text-foreground">{d.fornecedorNome}</span>
+                  {" — "}
+                  {d.motivo || "sem alternativa viável"}
+                  {typeof d.itensRealocados === "number" && d.itensRealocados > 0 && (
+                    <> · {d.itensRealocados} item(ns) realocado(s)</>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           {pullDetails.length > 0 && (
             <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-2.5 space-y-2">
               <div className="text-xs sm:text-sm font-semibold text-amber-900 dark:text-amber-200">
-                🔀 Itens redistribuídos
+                🔀 Itens realocados ({pullDetails.length})
               </div>
               {pullDetails.map((p, i) => (
                 <div key={i} className="space-y-0.5">
@@ -72,25 +102,23 @@ export function PainelMovimentacoes({ cascadeResult }: Props) {
                   </div>
                   <div className="text-xs text-muted-foreground pl-2 break-words">
                     {p.fornecedorOrigem} → {p.fornecedorDestino}
+                    {typeof p.precoAntes === "number" && typeof p.precoDepois === "number" && (
+                      <span className="block">
+                        {formatBRL(p.precoAntes)} → {formatBRL(p.precoDepois)}
+                        {typeof p.custoExtra === "number" && p.custoExtra !== 0 && (
+                          <> ({p.custoExtra > 0 ? "+" : "−"}{formatBRL(Math.abs(p.custoExtra))})</>
+                        )}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {discardDetails.length > 0 && (
-            <div className="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 p-2.5 space-y-1">
-              <div className="text-xs sm:text-sm font-semibold text-red-900 dark:text-red-200">
-                🚫 Fornecedores removidos
-              </div>
-              {discardDetails.map((d, i) => (
-                <div
-                  key={i}
-                  className="text-xs text-muted-foreground break-words"
-                >
-                  · {d.fornecedorNome} — sem alternativa viável
-                </div>
-              ))}
+          {typeof custoExtraTotal === "number" && custoExtraTotal > 0 && (
+            <div className="text-[11px] text-muted-foreground border-t pt-2">
+              Custo da simplificação: <span className="font-semibold text-foreground">+{formatBRL(custoExtraTotal)}</span> em troca de menos pedidos e menos entregas.
             </div>
           )}
         </div>

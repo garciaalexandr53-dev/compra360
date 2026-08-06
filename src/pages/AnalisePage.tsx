@@ -546,6 +546,17 @@ const AnalisePage = () => {
       const comparisons = otherScenarios.map(s => `${s.nome}: ${formatBRL(s.totalGeral)} com ${s.numFornecedores} fornecedores`).join("; ");
       const minIssues = scenario.fornecedores.filter(f => !f.minimoOk);
       const minAlert = minIssues.length > 0 ? `${minIssues.length} fornecedor(es) abaixo do pedido mínimo` : "Todos os fornecedores atingem o pedido mínimo";
+      const cr = scenario.cascadeResult;
+      const removidosDetalhe = (cr?.discardDetails || [])
+        .map((d) => `${d.fornecedorNome}: ${d.motivo || "sem alternativa viável"}${d.itensRealocados ? ` (${d.itensRealocados} item(ns) realocado(s))` : ""}`)
+        .join("; ") || "nenhum";
+      const realocadosDetalhe = (cr?.pullDetails || [])
+        .slice(0, 10)
+        .map((p) => `${p.produto}: ${p.fornecedorOrigem} → ${p.fornecedorDestino}`)
+        .join("; ") || "nenhum";
+      const custoExtraDetalhe = cr?.custoExtraTotal && cr.custoExtraTotal > 0
+        ? formatBRL(cr.custoExtraTotal)
+        : "R$ 0,00";
 
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -557,7 +568,7 @@ const AnalisePage = () => {
           body: JSON.stringify({
           messages: [{
             role: "user",
-            content: `Explique em português o que o sistema fez ao aplicar a estratégia "${scenario.nome}" nesta compra.\n\nDados do cenário:\n- Total: ${formatBRL(scenario.totalGeral)}\n- Fornecedores: ${scenario.numFornecedores}\n- Produtos: ${cotacaoProdutos.length}\n- Comparação com outras opções: ${comparisons || "Única opção disponível"}\n- Status pedidos mínimos: ${minAlert}\n\nO que o sistema realmente fez (cascade):\n- Fornecedores com quantidade ajustada (boost): ${scenario.cascadeResult?.fornecedoresBoostados ?? 0}\n- Itens redistribuídos (pull): ${scenario.cascadeResult?.itensPuxados ?? 0}\n- Fornecedores removidos (discard): ${scenario.cascadeResult?.fornecedoresDescartados ?? 0}\n- Fornecedores antes: ${scenario.cascadeResult?.fornecedoresIniciais ?? scenario.numFornecedores}\n- Fornecedores depois: ${scenario.cascadeResult?.fornecedoresFinais ?? scenario.numFornecedores}\n\nREGRAS ABSOLUTAS:\n- Descreva APENAS o que realmente aconteceu com base nos dados do cascade acima\n- Se fornecedoresDescartados for 0, NUNCA mencione eliminação de fornecedores\n- Se fornecedoresBoostados > 0, explique que o sistema ajustou quantidades para atingir pedido mínimo\n- Nunca invente números ou ações que não ocorreram\n- Linguagem simples e direta para comprador de supermercado\n- Evite: "burocrático", "ínfima", "conformidade", "operacional", "otimização"\n- Máximo 3 linhas no parágrafo explicativo\n- Depois do parágrafo, pule uma linha e escreva exatamente 3 bullet points, cada um começando com ✅ ou ⚠️\n- Não use markdown headers (#)`
+            content: `Explique em português o que o sistema fez ao aplicar a estratégia "${scenario.nome}" nesta compra.\n\nDados do cenário:\n- Total: ${formatBRL(scenario.totalGeral)}\n- Fornecedores: ${scenario.numFornecedores}\n- Produtos: ${cotacaoProdutos.length}\n- Comparação com outras opções: ${comparisons || "Única opção disponível"}\n- Status pedidos mínimos: ${minAlert}\n\nO que o sistema realmente fez (cascade):\n- Fornecedores com quantidade ajustada (boost): ${scenario.cascadeResult?.fornecedoresBoostados ?? 0}\n- Itens redistribuídos (pull): ${scenario.cascadeResult?.itensPuxados ?? 0}\n- Fornecedores removidos (discard): ${scenario.cascadeResult?.fornecedoresDescartados ?? 0}\n- Fornecedores antes: ${scenario.cascadeResult?.fornecedoresIniciais ?? scenario.numFornecedores}\n- Fornecedores depois: ${scenario.cascadeResult?.fornecedoresFinais ?? scenario.numFornecedores}\n- Fornecedores fora e motivo: ${removidosDetalhe}\n- Itens realocados (origem → destino): ${realocadosDetalhe}\n- Custo extra total da realocação: ${custoExtraDetalhe}\n\nREGRAS ABSOLUTAS:\n- Descreva APENAS o que realmente aconteceu com base nos dados do cascade acima\n- Se fornecedoresDescartados for 0, NUNCA mencione eliminação de fornecedores\n- Se houver fornecedores fora, cite os nomes e o motivo exatamente como informado acima\n- Se fornecedoresBoostados > 0, explique que o sistema ajustou quantidades para atingir pedido mínimo\n- Nunca invente números ou ações que não ocorreram\n- Linguagem simples e direta para comprador de supermercado\n- Evite: "burocrático", "ínfima", "conformidade", "operacional", "otimização"\n- Máximo 3 linhas no parágrafo explicativo\n- Depois do parágrafo, pule uma linha e escreva exatamente 3 bullet points, cada um começando com ✅ ou ⚠️\n- Não use markdown headers (#)`
           }],
           }),
         }
@@ -811,6 +822,11 @@ const AnalisePage = () => {
                   <div className="text-2xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenario.totalGeral)}</div>
                   <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground flex-wrap">
                     <span>{scenario.numFornecedores} fornecedor(es)</span>
+                    {(scenario.cascadeResult?.fornecedoresDescartados ?? 0) > 0 && (
+                      <span className="text-muted-foreground/80">
+                        · {scenario.cascadeResult!.fornecedoresDescartados} fora
+                      </span>
+                    )}
                     <span className="text-muted-foreground/40">|</span>
                     {economiaVsMedia > 0 && (
                       <span className="text-green-600 dark:text-green-400 font-medium">
@@ -828,9 +844,12 @@ const AnalisePage = () => {
                   </div>
                 </button>
 
-                {scenario.id === "sem-minimo-abaixo" && scenario.cascadeResult && (
+                {(scenario.id === "sem-minimo-abaixo" || scenario.id === "consolidado") && scenario.cascadeResult && (
                   <div className="px-4 pb-2">
-                    <PainelMovimentacoes cascadeResult={scenario.cascadeResult} />
+                    <PainelMovimentacoes
+                      cascadeResult={scenario.cascadeResult}
+                      defaultExpanded={scenario.id !== "consolidado"}
+                    />
                   </div>
                 )}
 
