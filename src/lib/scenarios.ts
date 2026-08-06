@@ -67,10 +67,15 @@ export interface PullDetail {
   produto: string;
   fornecedorOrigem: string;
   fornecedorDestino: string;
+  precoAntes?: number;
+  precoDepois?: number;
+  custoExtra?: number; // total extra cost of this move (R$)
 }
 
 export interface DiscardDetail {
   fornecedorNome: string;
+  motivo?: string;
+  itensRealocados?: number;
 }
 
 export interface CascadeResult {
@@ -82,6 +87,7 @@ export interface CascadeResult {
   boostDetails: BoostDetail[];
   pullDetails: PullDetail[];
   discardDetails: DiscardDetail[];
+  custoExtraTotal?: number;
 }
 
 export interface Scenario {
