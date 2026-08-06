@@ -546,6 +546,17 @@ const AnalisePage = () => {
       const comparisons = otherScenarios.map(s => `${s.nome}: ${formatBRL(s.totalGeral)} com ${s.numFornecedores} fornecedores`).join("; ");
       const minIssues = scenario.fornecedores.filter(f => !f.minimoOk);
       const minAlert = minIssues.length > 0 ? `${minIssues.length} fornecedor(es) abaixo do pedido mínimo` : "Todos os fornecedores atingem o pedido mínimo";
+      const cr = scenario.cascadeResult;
+      const removidosDetalhe = (cr?.discardDetails || [])
+        .map((d) => `${d.fornecedorNome}: ${d.motivo || "sem alternativa viável"}${d.itensRealocados ? ` (${d.itensRealocados} item(ns) realocado(s))` : ""}`)
+        .join("; ") || "nenhum";
+      const realocadosDetalhe = (cr?.pullDetails || [])
+        .slice(0, 10)
+        .map((p) => `${p.produto}: ${p.fornecedorOrigem} → ${p.fornecedorDestino}`)
+        .join("; ") || "nenhum";
+      const custoExtraDetalhe = cr?.custoExtraTotal && cr.custoExtraTotal > 0
+        ? formatBRL(cr.custoExtraTotal)
+        : "R$ 0,00";
 
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
