@@ -323,7 +323,20 @@ const ConferenciaPedidos = () => {
     item.quantidade_recebida !== item.quantidade_pedida ||
     (item.preco_nf != null && item.preco_cotado != null && item.preco_nf !== item.preco_cotado);
 
-  const totalDivergencias = items.filter(hasDivergencia).length;
+  // FONTE ÚNICA DE VERDADE: um status por item do pedido.
+  // Relatório OCR, selos de contagem e aviso amarelo leem daqui.
+  const statusDoItem = (item: ConferenciaItem, i: number): OcrStatus => {
+    const m = ocrMeta?.[i];
+    if (m) {
+      if (!m.matched) return "faltando";
+      if (m.unidadeIndefinida) return "unidade_indefinida";
+    }
+    return hasDivergencia(item) ? "divergencia" : "correto";
+  };
+
+  const statusPorItem = items.map(statusDoItem);
+  const contarStatus = (s: OcrStatus) => statusPorItem.filter((x) => x === s).length;
+  const totalDivergencias = contarStatus("divergencia");
 
   const finalizarConferencia = async () => {
     if (!selectedPedido || !nome.trim()) {
