@@ -4,13 +4,19 @@ import type { CascadeResult } from "@/lib/scenarios";
 
 interface Props {
   cascadeResult: CascadeResult;
+  defaultExpanded?: boolean;
 }
 
-export function PainelMovimentacoes({ cascadeResult }: Props) {
-  const { boostDetails, pullDetails, discardDetails } = cascadeResult;
+export function PainelMovimentacoes({ cascadeResult, defaultExpanded = true }: Props) {
+  const { boostDetails, pullDetails, discardDetails, custoExtraTotal } = cascadeResult;
   const hasAny =
     boostDetails.length > 0 || pullDetails.length > 0 || discardDetails.length > 0;
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(defaultExpanded);
+
+  const resumo = [
+    discardDetails.length > 0 ? `${discardDetails.length} fornecedor(es) fora` : null,
+    pullDetails.length > 0 ? `${pullDetails.length} item(ns) realocado(s)` : null,
+  ].filter(Boolean).join(" · ");
 
   if (!hasAny) return null;
 
