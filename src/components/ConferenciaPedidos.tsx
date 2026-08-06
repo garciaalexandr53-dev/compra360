@@ -407,6 +407,12 @@ const ConferenciaPedidos = () => {
     }
   };
 
+  const clearOcr = () => {
+    setOcrMeta(null);
+    setOcrExtras([]);
+    setOcrTotalNf(null);
+  };
+
   const resetConferencia = () => {
     clearProgress();
     setSelectedPedido(null);
@@ -414,9 +420,9 @@ const ConferenciaPedidos = () => {
     setShowFaltantes(false);
     setFaltantes([]);
     setConferenciaDone(false);
-    setOcrReport(null);
-    setOcrTotalNf(null);
+    clearOcr();
   };
+
 
   // Done screen
   if (conferenciaDone) {
