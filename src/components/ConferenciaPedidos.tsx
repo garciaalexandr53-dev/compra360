@@ -111,7 +111,8 @@ const ConferenciaPedidos = () => {
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
 
-      const ocrItems: { produto: string; quantidade: number; preco_unitario: number }[] = data.result || [];
+      const ocrItems: { produto: string; unidade?: string | null; quantidade: number; preco_unitario: number }[] =
+        data.result || [];
       if (!ocrItems.length) {
         toast.warning("Nenhum item encontrado na nota fiscal.");
         return;
@@ -120,8 +121,10 @@ const ConferenciaPedidos = () => {
       // Match OCR items to conference items by fuzzy name
       let matched = 0;
       const updatedItems = [...items];
-      const comparisonReport: OcrComparisonItem[] = [];
+      const meta: Record<number, OcrMeta> = {};
+      const extras: OcrExtra[] = [];
       const matchedIndices = new Set<number>();
+      let indefinidos = 0;
 
       for (const ocr of ocrItems) {
         const ocrName = (ocr.produto || "").toLowerCase().trim();
@@ -134,26 +137,30 @@ const ConferenciaPedidos = () => {
 
         if (idx >= 0) {
           matchedIndices.add(idx);
-          if (ocr.quantidade != null) updatedItems[idx].quantidade_recebida = ocr.quantidade;
-          if (ocr.preco_unitario != null) updatedItems[idx].preco_nf = ocr.preco_unitario;
           matched++;
 
-          const qtdMatch = ocr.quantidade === updatedItems[idx].quantidade_pedida;
-          comparisonReport.push({
-            produto_nome: updatedItems[idx].produto_nome,
-            status: qtdMatch ? "correto" : "divergencia",
-            qtd_pedida: updatedItems[idx].quantidade_pedida,
-            qtd_nf: ocr.quantidade,
-            preco_cotado: updatedItems[idx].preco_cotado,
-            preco_nf: ocr.preco_unitario,
-          });
+          const norm = normalizarLinhaNf(
+            { unidade: ocr.unidade, quantidade: ocr.quantidade, preco_unitario: ocr.preco_unitario },
+            updatedItems[idx].fator || 1,
+          );
+          if (norm.quantidade != null) updatedItems[idx].quantidade_recebida = norm.quantidade;
+          if (norm.preco_unitario != null) updatedItems[idx].preco_nf = norm.preco_unitario;
+          if (norm.unidadeIndefinida) indefinidos++;
+
+          meta[idx] = {
+            matched: true,
+            unidade: norm.unidade,
+            convertido: norm.convertido,
+            unidadeIndefinida: norm.unidadeIndefinida,
+            precoOriginal: norm.precoOriginal,
+            qtdOriginal: norm.quantidadeOriginal,
+          };
         } else {
-          // Item in NF but not in order
-          comparisonReport.push({
+          extras.push({
             produto_nome: ocr.produto,
-            status: "nao_pedido",
-            qtd_nf: ocr.quantidade,
-            preco_nf: ocr.preco_unitario,
+            qtd_nf: ocr.quantidade ?? null,
+            preco_nf: ocr.preco_unitario ?? null,
+            unidade: ocr.unidade ?? null,
           });
         }
       }
@@ -161,24 +168,29 @@ const ConferenciaPedidos = () => {
       // Items in order but not in NF
       updatedItems.forEach((item, i) => {
         if (!matchedIndices.has(i)) {
-          comparisonReport.push({
-            produto_nome: item.produto_nome,
-            status: "faltando",
-            qtd_pedida: item.quantidade_pedida,
-            preco_cotado: item.preco_cotado,
-          });
-          // Set received to 0 for missing items
+          meta[i] = {
+            matched: false,
+            unidade: null,
+            convertido: false,
+            unidadeIndefinida: false,
+            precoOriginal: null,
+            qtdOriginal: null,
+          };
           updatedItems[i].quantidade_recebida = 0;
         }
       });
 
-      // Calculate NF total
+      // Calculate NF total (valores como aparecem na nota)
       const nfTotal = ocrItems.reduce((sum, ocr) => sum + (ocr.preco_unitario || 0) * (ocr.quantidade || 1), 0);
 
       setItems(updatedItems);
-      setOcrReport(comparisonReport);
+      setOcrMeta(meta);
+      setOcrExtras(extras);
       setOcrTotalNf(nfTotal);
-      toast.success(`OCR: ${matched} de ${ocrItems.length} itens identificados`);
+      toast.success(
+        `OCR: ${matched} de ${ocrItems.length} itens identificados` +
+          (indefinidos > 0 ? ` · ${indefinidos} sem unidade na nota` : ""),
+      );
     } catch (err: any) {
       toast.error(err.message || "Erro ao processar nota fiscal");
     } finally {
