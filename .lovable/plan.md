@@ -1,48 +1,44 @@
-# Inteligência de preço na cotação
+# Deixar claro o que acontece em "Menos Fornecedores"
 
-Como você deixou a escolha comigo, vou pela melhoria de maior retorno por esforço e que não exige nenhum aprendizado novo do comprador: **mostrar a referência histórica de preço dentro da matriz de cotação**.
+## O problema (confirmado no código)
 
-Hoje a matriz (`src/components/cotacao/TabelaCotacao.tsx`) só sabe comparar os preços daquela cotação entre si — a única inteligência existente é o alerta de anomalia (preço 80% acima da mediana). Não há nenhuma referência do que o supermercado já pagou antes. Ou seja: o comprador escolhe o menor preço da rodada, mesmo quando essa rodada inteira está caríssima em relação ao mês passado.
+O cenário "Menos Fornecedores" agrupa itens e elimina fornecedores, mas ele é o único cenário que **não** produz o registro de movimentações (`cascadeResult`). Por isso o painel "🔍 O que o sistema ajustou" — que já existe e aparece na Economia Inteligente — nunca é exibido nesse card. O comprador vê apenas "7 fornecedor(es)" e um total, sem saber quem saiu, por que saiu e para onde foram os itens.
 
-## O que o usuário vai ver
+## O que vamos entregar
 
-Na linha de cada produto, ao lado do nome, uma referência discreta:
+### 1. Registrar as movimentações do "Menos Fornecedores"
+Passar a gravar, durante o cálculo:
+- **Fornecedores removidos**, cada um com o motivo real:
+  - "preço próximo — itens realocados" (consolidação por diferença até 5%)
+  - "não atingiu o pedido mínimo (R$ X de R$ Y)"
+- **Itens realocados**: produto, fornecedor de origem, fornecedor de destino, preço antes → preço depois e a diferença em R$.
+- Contagem de fornecedores antes e depois.
+
+### 2. Mostrar isso no card da estratégia
+Reaproveitar o painel existente "O que o sistema ajustou" também no card "Menos Fornecedores", com uma seção nova:
 
 ```text
-Arroz 5kg  ·  ref. R$ 24,90        (média das últimas cotações)
+🚫 Fornecedores fora desta estratégia (3)
+ · Distribuidora X — preço próximo, 2 itens realocados
+ · Atacado Y — não atingiu o pedido mínimo (R$ 380 de R$ 800)
+
+🔀 Itens realocados (5)
+ · Açúcar União 5kg — Distribuidora X → MUFATAO
+   R$ 5,58 → R$ 5,72 (+R$ 0,14/un)
 ```
 
-E em cada célula de preço preenchida, um sinal de variação:
+Colapsado por padrão nesse card (para não pesar em 360px), com resumo na linha do cabeçalho: "3 fornecedores fora · 5 itens realocados". Custo extra total da consolidação exibido no rodapé do painel ("custo da simplificação: +R$ 42,10").
 
-- verde com seta para baixo: abaixo da referência (bom)
-- neutro: dentro de ~3% da referência
-- vermelho com seta para cima: acima da referência (atenção)
+### 3. Explicação da IA coerente
+O prompt de "Por que essa estratégia?" hoje só recebe dados de cascade da Economia Inteligente. Passará a receber também os do "Menos Fornecedores" (removidos com motivo, itens realocados, custo extra), mantendo as regras atuais de nunca inventar números.
 
-Tocando na referência abre um detalhe curto: último preço pago, melhor preço já obtido, quantas cotações compõem a média e a data da última.
-
-No rodapé da análise, uma linha de resultado: **"Esta cotação está R$ X (Y%) abaixo/acima da sua média histórica"** — o número que justifica o sistema.
-
-## Regras
-
-- Referência = média dos preços vencedores do mesmo produto nas últimas 5 cotações fechadas da loja ativa.
-- Menos de 2 cotações históricas: nada é exibido (degradação silenciosa, sem placeholder feio).
-- Comparação sempre por preço unitário já convertido pelo fator de embalagem, para não comparar caixa com unidade.
-- Somente leitura: nada disso altera preços, distribuição ou pedidos.
-
-## Layout
-
-- Mobile 360px: a referência entra como segunda linha do nome do produto, em texto pequeno; a variação na célula é só um ícone + percentual curto (ex. `-6%`), sem quebrar a largura mínima de 175px das colunas.
-- Desktop: referência na mesma linha do nome; variação com ícone e percentual ao lado do valor.
+### 4. Linha do card
+Acrescentar, quando houver remoções, um indicador discreto ao lado de "7 fornecedor(es)": "3 fora" — sem alterar o layout nem o botão de ação.
 
 ## Detalhes técnicos
 
-- Novo hook `src/hooks/useReferenciaPrecos.ts`: para os produtos da cotação atual, busca em lote os preços vencedores das últimas 5 cotações fechadas da loja e devolve um mapa `produto_id -> { media, ultimo, melhor, amostras, ultimaData }`. Uma query paginada com `fetchAllRows`, sem N+1.
-- Novo utilitário puro `src/lib/referenciaPrecos.ts` com o cálculo (normalização por fator, média, classificação verde/neutro/vermelho) e testes em `referenciaPrecos.test.ts`.
-- `TabelaCotacao.tsx` passa a consumir o mapa e renderizar os indicadores. Nenhuma mudança nas mutations de preço, no alerta de anomalia existente, nem na distribuição.
-- Resumo de economia adicionado como bloco de leitura em `src/components/analise/ResumoContent.tsx`.
-
-## Próximos passos sugeridos (não incluídos agora)
-
-1. Curva ABC destacando os itens que concentram o gasto.
-2. Cockpit de "próximo passo" no Painel, com ação de 1 toque.
-3. Relatório mensal de economia consolidado no Histórico.
+- `src/lib/scenarios.ts`: estender `CascadeResult`/`DiscardDetail`/`PullDetail` com `motivo`, `itensRealocados`, `precoAntes`/`precoDepois`, `custoExtra`; instrumentar `scenarioConsolidado` (loop de consolidação e loop pós-mínimos) para preencher e retornar `cascadeResult`. Nenhuma mudança na lógica de decisão — só instrumentação.
+- `src/components/analise/PainelMovimentacoes.tsx`: novos campos opcionais (motivo, deltas de preço, custo extra) e prop `defaultExpanded`, mantendo compatibilidade com o uso atual.
+- `src/pages/AnalisePage.tsx`: renderizar o painel para `scenario.id === "consolidado"` além de `"sem-minimo-abaixo"`; incluir os dados no prompt da explicação IA; badge "N fora" no cabeçalho.
+- Teste unitário para `scenarioConsolidado`: garante que fornecedores eliminados aparecem em `discardDetails` com motivo e que a soma dos `custoExtra` dos itens realocados bate com `diffVsBaseline`.
+- Validação responsiva em 360px e desktop.
