@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Info } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/lib/supabaseHelpers";
 import { formatBRL, formatDateTime, formatNumber } from "@/lib/format";
 import { getCotacaoNome, getCotacaoEmbalagem } from "@/lib/buscaProdutos";
 import { cn } from "@/lib/utils";
