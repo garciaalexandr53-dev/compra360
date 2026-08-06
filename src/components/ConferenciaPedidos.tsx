@@ -507,16 +507,16 @@ const ConferenciaPedidos = () => {
         </div>
 
         {/* OCR Comparison Report */}
-        {ocrReport && (
+        {ocrMeta && (
           <div className="bg-card border rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold">📋 Relatório OCR</h3>
-              <button onClick={() => setOcrReport(null)} className="text-xs text-muted-foreground hover:text-foreground">✕ fechar</button>
+              <button onClick={clearOcr} className="text-xs text-muted-foreground hover:text-foreground">✕ fechar</button>
             </div>
 
             {/* Value comparison */}
             {totalDiff !== null && (
-              <div className={`rounded-lg px-3 py-2 text-sm flex items-center justify-between ${
+              <div className={`rounded-lg px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-1 justify-between ${
                 Math.abs(totalDiff) < 0.01 ? "bg-green-50 dark:bg-green-950/30" : "bg-amber-50 dark:bg-amber-950/30"
               }`}>
                 <span className="text-muted-foreground text-xs">Total NF: <span className="font-bold text-foreground">{formatBRL(ocrTotalNf!)}</span></span>
@@ -529,15 +529,15 @@ const ConferenciaPedidos = () => {
               </div>
             )}
 
-            {/* Status summary */}
+            {/* Status summary — mesma fonte dos cartões */}
             <div className="flex gap-2 flex-wrap">
               {[
                 { status: "correto" as OcrStatus, label: "Correto", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: "✅" },
                 { status: "divergencia" as OcrStatus, label: "Divergência", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: "⚠️" },
-                { status: "nao_pedido" as OcrStatus, label: "Não pedido", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400", icon: "❌" },
+                { status: "unidade_indefinida" as OcrStatus, label: "Confira a unidade", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400", icon: "❓" },
                 { status: "faltando" as OcrStatus, label: "Faltando", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400", icon: "🔴" },
               ].map(({ status, label, color, icon }) => {
-                const count = ocrReport.filter((r) => r.status === status).length;
+                const count = contarStatus(status);
                 if (count === 0) return null;
                 return (
                   <span key={status} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>
@@ -545,37 +545,87 @@ const ConferenciaPedidos = () => {
                   </span>
                 );
               })}
+              <span className="text-[11px] text-muted-foreground self-center">
+                de {items.length} item(ns) do pedido
+              </span>
             </div>
 
             {/* Item list */}
-            <ScrollArea className="max-h-[200px]">
+            <ScrollArea className="max-h-[220px]">
               <div className="space-y-1.5">
-                {ocrReport.map((r, i) => (
-                  <div key={i} className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-xs ${
-                    r.status === "correto" ? "bg-green-50/50 dark:bg-green-950/10" :
-                    r.status === "divergencia" ? "bg-amber-50/50 dark:bg-amber-950/10" :
-                    r.status === "nao_pedido" ? "bg-red-50/50 dark:bg-red-950/10" :
-                    "bg-purple-50/50 dark:bg-purple-950/10"
-                  }`}>
-                    <span className="shrink-0">
-                      {r.status === "correto" ? "✅" : r.status === "divergencia" ? "⚠️" : r.status === "nao_pedido" ? "❌" : "🔴"}
-                    </span>
-                    <span className="flex-1 font-medium truncate">{r.produto_nome}</span>
-                    {r.status === "divergencia" && (
-                      <span className="text-amber-600 shrink-0">Ped:{r.qtd_pedida} → NF:{r.qtd_nf}</span>
-                    )}
-                    {r.status === "faltando" && (
-                      <span className="text-purple-600 shrink-0">Pedido: {r.qtd_pedida}</span>
-                    )}
-                    {r.status === "nao_pedido" && (
-                      <span className="text-red-600 shrink-0">NF: {r.qtd_nf}</span>
-                    )}
+                {items.map((item, i) => {
+                  const status = statusPorItem[i];
+                  const m = ocrMeta[i];
+                  const conversao = m?.convertido
+                    ? descreverConversao({
+                        quantidade: item.quantidade_recebida,
+                        preco_unitario: item.preco_nf,
+                        convertido: true,
+                        unidadeIndefinida: false,
+                        unidade: m.unidade,
+                        quantidadeOriginal: m.qtdOriginal,
+                        precoOriginal: m.precoOriginal,
+                      })
+                    : null;
+                  return (
+                    <div key={i} className={`px-2 py-1.5 rounded-md text-xs ${
+                      status === "correto" ? "bg-green-50/50 dark:bg-green-950/10" :
+                      status === "divergencia" ? "bg-amber-50/50 dark:bg-amber-950/10" :
+                      status === "unidade_indefinida" ? "bg-blue-50/50 dark:bg-blue-950/10" :
+                      "bg-purple-50/50 dark:bg-purple-950/10"
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <span className="shrink-0">
+                          {status === "correto" ? "✅" : status === "divergencia" ? "⚠️" : status === "unidade_indefinida" ? "❓" : "🔴"}
+                        </span>
+                        <span className="flex-1 font-medium truncate">{item.produto_nome}</span>
+                        {status === "divergencia" && (
+                          <span className="text-amber-600 shrink-0">Ped:{item.quantidade_pedida} → NF:{item.quantidade_recebida}</span>
+                        )}
+                        {status === "faltando" && (
+                          <span className="text-purple-600 shrink-0">Pedido: {item.quantidade_pedida}</span>
+                        )}
+                        {status === "unidade_indefinida" && (
+                          <span className="text-blue-600 shrink-0">Confira a unidade</span>
+                        )}
+                      </div>
+                      {conversao && (
+                        <div className="pl-6 mt-0.5 text-[11px] text-muted-foreground break-words">
+                          {conversao}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+
+            {/* Linhas da nota que não estão no pedido (não entram na contagem acima) */}
+            {ocrExtras.length > 0 && (
+              <div className="rounded-md border border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/10 p-2 space-y-1">
+                <div className="text-xs font-semibold text-red-700 dark:text-red-400">
+                  ❌ Na nota, fora do pedido ({ocrExtras.length})
+                </div>
+                {ocrExtras.map((x, i) => (
+                  <div key={i} className="text-[11px] text-muted-foreground break-words">
+                    · {x.produto_nome} — NF: {x.qtd_nf ?? "?"} {x.unidade ?? ""}
                   </div>
                 ))}
               </div>
-            </ScrollArea>
+            )}
           </div>
         )}
+
+        {/* Divergence counter */}
+        {totalDivergencias > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5 flex items-center gap-2 dark:bg-amber-950/30 dark:border-amber-800">
+            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+            <span className="text-sm text-amber-800 dark:text-amber-300 font-medium">
+              {totalDivergencias} divergência(s) encontrada(s)
+            </span>
+          </div>
+        )}
+
 
         {/* Divergence counter */}
         {totalDivergencias > 0 && (
