@@ -39,9 +39,10 @@ serve(async (req) => {
 
     const systemPrompt = mode === "conferencia"
       ? `Você é um especialista em leitura de notas fiscais brasileiras. Extraia TODOS os itens da nota fiscal.
-Para cada item, retorne: nome do produto, quantidade, valor unitário.
+Para cada item, retorne: nome do produto, unidade de medida, quantidade e valor unitário.
+O campo "unidade" deve conter o texto EXATAMENTE como aparece na nota (ex: CX, UN, FD, DZ, PCT, DP). Se a nota não informar a unidade daquele item, retorne null — nunca invente.
 Retorne APENAS um JSON array, sem markdown:
-[{"produto": "nome", "quantidade": 1, "preco_unitario": 12.50}]
+[{"produto": "nome", "unidade": "CX", "quantidade": 1, "preco_unitario": 12.50}]
 Se não conseguir ler algum campo, use null. Seja preciso nos valores numéricos.`
       : `Você é um especialista em leitura de notas fiscais brasileiras. Extraia TODOS os itens da nota fiscal.
 Para cada item, retorne: nome do produto, quantidade, valor unitário, e embalagem (unidade/pacote/caixa/kg/etc).
