@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Check, CheckCheck, AlertTriangle, ChevronRight, Minus, Plus, ArrowLeft, Package, Camera, Loader2, XCircle, AlertCircle, Filter } from "lucide-react";
 import { formatBRL } from "@/lib/format";
 import { getCotacaoNome, getCotacaoEmbalagem } from "@/lib/buscaProdutos";
+import { normalizarLinhaNf, descreverConversao } from "@/lib/ocrUnidade";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ConferenciaItem {
@@ -32,16 +33,25 @@ interface PedidoWithDetails {
   items: ConferenciaItem[];
 }
 
-type OcrStatus = "correto" | "divergencia" | "nao_pedido" | "faltando";
+type OcrStatus = "correto" | "divergencia" | "unidade_indefinida" | "faltando";
 
-interface OcrComparisonItem {
-  produto_nome: string;
-  status: OcrStatus;
-  qtd_pedida?: number;
-  qtd_nf?: number;
-  preco_cotado?: number | null;
-  preco_nf?: number | null;
+/** Metadados do OCR por índice do item do pedido. */
+interface OcrMeta {
+  matched: boolean;
+  unidade: string | null;
+  convertido: boolean;
+  unidadeIndefinida: boolean;
+  precoOriginal: number | null;
+  qtdOriginal: number | null;
 }
+
+interface OcrExtra {
+  produto_nome: string;
+  qtd_nf: number | null;
+  preco_nf: number | null;
+  unidade: string | null;
+}
+
 
 const STORAGE_KEY = "conferencia_progress";
 
@@ -71,7 +81,8 @@ const ConferenciaPedidos = () => {
   const [faltantes, setFaltantes] = useState<{ nome: string; qtd: number }[]>([]);
   const [conferenciaDone, setConferenciaDone] = useState(false);
   const [ocrLoading, setOcrLoading] = useState(false);
-  const [ocrReport, setOcrReport] = useState<OcrComparisonItem[] | null>(null);
+  const [ocrMeta, setOcrMeta] = useState<Record<number, OcrMeta> | null>(null);
+  const [ocrExtras, setOcrExtras] = useState<OcrExtra[]>([]);
   const [ocrTotalNf, setOcrTotalNf] = useState<number | null>(null);
   const [filtroFornecedor, setFiltroFornecedor] = useState<string>("todos");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -101,7 +112,8 @@ const ConferenciaPedidos = () => {
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
 
-      const ocrItems: { produto: string; quantidade: number; preco_unitario: number }[] = data.result || [];
+      const ocrItems: { produto: string; unidade?: string | null; quantidade: number; preco_unitario: number }[] =
+        data.result || [];
       if (!ocrItems.length) {
         toast.warning("Nenhum item encontrado na nota fiscal.");
         return;
@@ -110,8 +122,10 @@ const ConferenciaPedidos = () => {
       // Match OCR items to conference items by fuzzy name
       let matched = 0;
       const updatedItems = [...items];
-      const comparisonReport: OcrComparisonItem[] = [];
+      const meta: Record<number, OcrMeta> = {};
+      const extras: OcrExtra[] = [];
       const matchedIndices = new Set<number>();
+      let indefinidos = 0;
 
       for (const ocr of ocrItems) {
         const ocrName = (ocr.produto || "").toLowerCase().trim();
@@ -124,26 +138,30 @@ const ConferenciaPedidos = () => {
 
         if (idx >= 0) {
           matchedIndices.add(idx);
-          if (ocr.quantidade != null) updatedItems[idx].quantidade_recebida = ocr.quantidade;
-          if (ocr.preco_unitario != null) updatedItems[idx].preco_nf = ocr.preco_unitario;
           matched++;
 
-          const qtdMatch = ocr.quantidade === updatedItems[idx].quantidade_pedida;
-          comparisonReport.push({
-            produto_nome: updatedItems[idx].produto_nome,
-            status: qtdMatch ? "correto" : "divergencia",
-            qtd_pedida: updatedItems[idx].quantidade_pedida,
-            qtd_nf: ocr.quantidade,
-            preco_cotado: updatedItems[idx].preco_cotado,
-            preco_nf: ocr.preco_unitario,
-          });
+          const norm = normalizarLinhaNf(
+            { unidade: ocr.unidade, quantidade: ocr.quantidade, preco_unitario: ocr.preco_unitario },
+            updatedItems[idx].fator || 1,
+          );
+          if (norm.quantidade != null) updatedItems[idx].quantidade_recebida = norm.quantidade;
+          if (norm.preco_unitario != null) updatedItems[idx].preco_nf = norm.preco_unitario;
+          if (norm.unidadeIndefinida) indefinidos++;
+
+          meta[idx] = {
+            matched: true,
+            unidade: norm.unidade,
+            convertido: norm.convertido,
+            unidadeIndefinida: norm.unidadeIndefinida,
+            precoOriginal: norm.precoOriginal,
+            qtdOriginal: norm.quantidadeOriginal,
+          };
         } else {
-          // Item in NF but not in order
-          comparisonReport.push({
+          extras.push({
             produto_nome: ocr.produto,
-            status: "nao_pedido",
-            qtd_nf: ocr.quantidade,
-            preco_nf: ocr.preco_unitario,
+            qtd_nf: ocr.quantidade ?? null,
+            preco_nf: ocr.preco_unitario ?? null,
+            unidade: ocr.unidade ?? null,
           });
         }
       }
@@ -151,24 +169,29 @@ const ConferenciaPedidos = () => {
       // Items in order but not in NF
       updatedItems.forEach((item, i) => {
         if (!matchedIndices.has(i)) {
-          comparisonReport.push({
-            produto_nome: item.produto_nome,
-            status: "faltando",
-            qtd_pedida: item.quantidade_pedida,
-            preco_cotado: item.preco_cotado,
-          });
-          // Set received to 0 for missing items
+          meta[i] = {
+            matched: false,
+            unidade: null,
+            convertido: false,
+            unidadeIndefinida: false,
+            precoOriginal: null,
+            qtdOriginal: null,
+          };
           updatedItems[i].quantidade_recebida = 0;
         }
       });
 
-      // Calculate NF total
+      // Calculate NF total (valores como aparecem na nota)
       const nfTotal = ocrItems.reduce((sum, ocr) => sum + (ocr.preco_unitario || 0) * (ocr.quantidade || 1), 0);
 
       setItems(updatedItems);
-      setOcrReport(comparisonReport);
+      setOcrMeta(meta);
+      setOcrExtras(extras);
       setOcrTotalNf(nfTotal);
-      toast.success(`OCR: ${matched} de ${ocrItems.length} itens identificados`);
+      toast.success(
+        `OCR: ${matched} de ${ocrItems.length} itens identificados` +
+          (indefinidos > 0 ? ` · ${indefinidos} sem unidade na nota` : ""),
+      );
     } catch (err: any) {
       toast.error(err.message || "Erro ao processar nota fiscal");
     } finally {
@@ -301,7 +324,20 @@ const ConferenciaPedidos = () => {
     item.quantidade_recebida !== item.quantidade_pedida ||
     (item.preco_nf != null && item.preco_cotado != null && item.preco_nf !== item.preco_cotado);
 
-  const totalDivergencias = items.filter(hasDivergencia).length;
+  // FONTE ÚNICA DE VERDADE: um status por item do pedido.
+  // Relatório OCR, selos de contagem e aviso amarelo leem daqui.
+  const statusDoItem = (item: ConferenciaItem, i: number): OcrStatus => {
+    const m = ocrMeta?.[i];
+    if (m) {
+      if (!m.matched) return "faltando";
+      if (m.unidadeIndefinida) return "unidade_indefinida";
+    }
+    return hasDivergencia(item) ? "divergencia" : "correto";
+  };
+
+  const statusPorItem = items.map(statusDoItem);
+  const contarStatus = (s: OcrStatus) => statusPorItem.filter((x) => x === s).length;
+  const totalDivergencias = contarStatus("divergencia");
 
   const finalizarConferencia = async () => {
     if (!selectedPedido || !nome.trim()) {
@@ -371,6 +407,12 @@ const ConferenciaPedidos = () => {
     }
   };
 
+  const clearOcr = () => {
+    setOcrMeta(null);
+    setOcrExtras([]);
+    setOcrTotalNf(null);
+  };
+
   const resetConferencia = () => {
     clearProgress();
     setSelectedPedido(null);
@@ -378,9 +420,9 @@ const ConferenciaPedidos = () => {
     setShowFaltantes(false);
     setFaltantes([]);
     setConferenciaDone(false);
-    setOcrReport(null);
-    setOcrTotalNf(null);
+    clearOcr();
   };
+
 
   // Done screen
   if (conferenciaDone) {
@@ -440,7 +482,7 @@ const ConferenciaPedidos = () => {
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => { setSelectedPedido(null); setItems([]); setOcrReport(null); setOcrTotalNf(null); }}>
+          <Button variant="ghost" size="icon" onClick={() => { setSelectedPedido(null); setItems([]); clearOcr(); }}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1">
@@ -472,16 +514,16 @@ const ConferenciaPedidos = () => {
         </div>
 
         {/* OCR Comparison Report */}
-        {ocrReport && (
+        {ocrMeta && (
           <div className="bg-card border rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold">📋 Relatório OCR</h3>
-              <button onClick={() => setOcrReport(null)} className="text-xs text-muted-foreground hover:text-foreground">✕ fechar</button>
+              <button onClick={clearOcr} className="text-xs text-muted-foreground hover:text-foreground">✕ fechar</button>
             </div>
 
             {/* Value comparison */}
             {totalDiff !== null && (
-              <div className={`rounded-lg px-3 py-2 text-sm flex items-center justify-between ${
+              <div className={`rounded-lg px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-1 justify-between ${
                 Math.abs(totalDiff) < 0.01 ? "bg-green-50 dark:bg-green-950/30" : "bg-amber-50 dark:bg-amber-950/30"
               }`}>
                 <span className="text-muted-foreground text-xs">Total NF: <span className="font-bold text-foreground">{formatBRL(ocrTotalNf!)}</span></span>
@@ -494,15 +536,15 @@ const ConferenciaPedidos = () => {
               </div>
             )}
 
-            {/* Status summary */}
+            {/* Status summary — mesma fonte dos cartões */}
             <div className="flex gap-2 flex-wrap">
               {[
                 { status: "correto" as OcrStatus, label: "Correto", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400", icon: "✅" },
                 { status: "divergencia" as OcrStatus, label: "Divergência", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", icon: "⚠️" },
-                { status: "nao_pedido" as OcrStatus, label: "Não pedido", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400", icon: "❌" },
+                { status: "unidade_indefinida" as OcrStatus, label: "Confira a unidade", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400", icon: "❓" },
                 { status: "faltando" as OcrStatus, label: "Faltando", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400", icon: "🔴" },
               ].map(({ status, label, color, icon }) => {
-                const count = ocrReport.filter((r) => r.status === status).length;
+                const count = contarStatus(status);
                 if (count === 0) return null;
                 return (
                   <span key={status} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>
@@ -510,35 +552,74 @@ const ConferenciaPedidos = () => {
                   </span>
                 );
               })}
+              <span className="text-[11px] text-muted-foreground self-center">
+                de {items.length} item(ns) do pedido
+              </span>
             </div>
 
             {/* Item list */}
-            <ScrollArea className="max-h-[200px]">
+            <ScrollArea className="max-h-[220px]">
               <div className="space-y-1.5">
-                {ocrReport.map((r, i) => (
-                  <div key={i} className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-xs ${
-                    r.status === "correto" ? "bg-green-50/50 dark:bg-green-950/10" :
-                    r.status === "divergencia" ? "bg-amber-50/50 dark:bg-amber-950/10" :
-                    r.status === "nao_pedido" ? "bg-red-50/50 dark:bg-red-950/10" :
-                    "bg-purple-50/50 dark:bg-purple-950/10"
-                  }`}>
-                    <span className="shrink-0">
-                      {r.status === "correto" ? "✅" : r.status === "divergencia" ? "⚠️" : r.status === "nao_pedido" ? "❌" : "🔴"}
-                    </span>
-                    <span className="flex-1 font-medium truncate">{r.produto_nome}</span>
-                    {r.status === "divergencia" && (
-                      <span className="text-amber-600 shrink-0">Ped:{r.qtd_pedida} → NF:{r.qtd_nf}</span>
-                    )}
-                    {r.status === "faltando" && (
-                      <span className="text-purple-600 shrink-0">Pedido: {r.qtd_pedida}</span>
-                    )}
-                    {r.status === "nao_pedido" && (
-                      <span className="text-red-600 shrink-0">NF: {r.qtd_nf}</span>
-                    )}
+                {items.map((item, i) => {
+                  const status = statusPorItem[i];
+                  const m = ocrMeta[i];
+                  const conversao = m?.convertido
+                    ? descreverConversao({
+                        quantidade: item.quantidade_recebida,
+                        preco_unitario: item.preco_nf,
+                        convertido: true,
+                        unidadeIndefinida: false,
+                        unidade: m.unidade,
+                        quantidadeOriginal: m.qtdOriginal,
+                        precoOriginal: m.precoOriginal,
+                      })
+                    : null;
+                  return (
+                    <div key={i} className={`px-2 py-1.5 rounded-md text-xs ${
+                      status === "correto" ? "bg-green-50/50 dark:bg-green-950/10" :
+                      status === "divergencia" ? "bg-amber-50/50 dark:bg-amber-950/10" :
+                      status === "unidade_indefinida" ? "bg-blue-50/50 dark:bg-blue-950/10" :
+                      "bg-purple-50/50 dark:bg-purple-950/10"
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <span className="shrink-0">
+                          {status === "correto" ? "✅" : status === "divergencia" ? "⚠️" : status === "unidade_indefinida" ? "❓" : "🔴"}
+                        </span>
+                        <span className="flex-1 font-medium truncate">{item.produto_nome}</span>
+                        {status === "divergencia" && (
+                          <span className="text-amber-600 shrink-0">Ped:{item.quantidade_pedida} → NF:{item.quantidade_recebida}</span>
+                        )}
+                        {status === "faltando" && (
+                          <span className="text-purple-600 shrink-0">Pedido: {item.quantidade_pedida}</span>
+                        )}
+                        {status === "unidade_indefinida" && (
+                          <span className="text-blue-600 shrink-0">Confira a unidade</span>
+                        )}
+                      </div>
+                      {conversao && (
+                        <div className="pl-6 mt-0.5 text-[11px] text-muted-foreground break-words">
+                          {conversao}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+
+            {/* Linhas da nota que não estão no pedido (não entram na contagem acima) */}
+            {ocrExtras.length > 0 && (
+              <div className="rounded-md border border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/10 p-2 space-y-1">
+                <div className="text-xs font-semibold text-red-700 dark:text-red-400">
+                  ❌ Na nota, fora do pedido ({ocrExtras.length})
+                </div>
+                {ocrExtras.map((x, i) => (
+                  <div key={i} className="text-[11px] text-muted-foreground break-words">
+                    · {x.produto_nome} — NF: {x.qtd_nf ?? "?"} {x.unidade ?? ""}
                   </div>
                 ))}
               </div>
-            </ScrollArea>
+            )}
           </div>
         )}
 
@@ -552,11 +633,26 @@ const ConferenciaPedidos = () => {
           </div>
         )}
 
+
+
         {/* Items list */}
         <ScrollArea className="h-[calc(100vh-380px)]">
           <div className="space-y-3">
             {items.map((item, i) => {
-              const isDivergent = hasDivergencia(item);
+              const status = statusPorItem[i];
+              const isDivergent = status === "divergencia";
+              const m = ocrMeta?.[i];
+              const conversaoItem = m?.convertido
+                ? descreverConversao({
+                    quantidade: item.quantidade_recebida,
+                    preco_unitario: item.preco_nf,
+                    convertido: true,
+                    unidadeIndefinida: false,
+                    unidade: m.unidade,
+                    quantidadeOriginal: m.qtdOriginal,
+                    precoOriginal: m.precoOriginal,
+                  })
+                : null;
               return (
                 <div
                   key={i}
@@ -571,7 +667,18 @@ const ConferenciaPedidos = () => {
                         {item.embalagem}
                         {item.fator > 1 && <span className="ml-1 font-mono text-[10px] text-primary">×{item.fator}</span>}
                       </div>
+                      {conversaoItem && (
+                        <div className="text-[11px] text-muted-foreground mt-0.5 break-words">
+                          {conversaoItem}
+                        </div>
+                      )}
+                      {status === "unidade_indefinida" && (
+                        <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                          ❓ Confira a unidade da nota
+                        </span>
+                      )}
                     </div>
+
                     {isDivergent ? (
                       <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                     ) : (
