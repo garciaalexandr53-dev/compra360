@@ -822,6 +822,11 @@ const AnalisePage = () => {
                   <div className="text-2xl font-extrabold font-mono text-foreground mt-1">{formatBRL(scenario.totalGeral)}</div>
                   <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground flex-wrap">
                     <span>{scenario.numFornecedores} fornecedor(es)</span>
+                    {(scenario.cascadeResult?.fornecedoresDescartados ?? 0) > 0 && (
+                      <span className="text-muted-foreground/80">
+                        · {scenario.cascadeResult!.fornecedoresDescartados} fora
+                      </span>
+                    )}
                     <span className="text-muted-foreground/40">|</span>
                     {economiaVsMedia > 0 && (
                       <span className="text-green-600 dark:text-green-400 font-medium">
