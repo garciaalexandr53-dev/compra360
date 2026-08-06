@@ -839,9 +839,12 @@ const AnalisePage = () => {
                   </div>
                 </button>
 
-                {scenario.id === "sem-minimo-abaixo" && scenario.cascadeResult && (
+                {(scenario.id === "sem-minimo-abaixo" || scenario.id === "consolidado") && scenario.cascadeResult && (
                   <div className="px-4 pb-2">
-                    <PainelMovimentacoes cascadeResult={scenario.cascadeResult} />
+                    <PainelMovimentacoes
+                      cascadeResult={scenario.cascadeResult}
+                      defaultExpanded={scenario.id !== "consolidado"}
+                    />
                   </div>
                 )}
 
