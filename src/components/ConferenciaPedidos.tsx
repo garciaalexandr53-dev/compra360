@@ -639,7 +639,20 @@ const ConferenciaPedidos = () => {
         <ScrollArea className="h-[calc(100vh-380px)]">
           <div className="space-y-3">
             {items.map((item, i) => {
-              const isDivergent = hasDivergencia(item);
+              const status = statusPorItem[i];
+              const isDivergent = status === "divergencia";
+              const m = ocrMeta?.[i];
+              const conversaoItem = m?.convertido
+                ? descreverConversao({
+                    quantidade: item.quantidade_recebida,
+                    preco_unitario: item.preco_nf,
+                    convertido: true,
+                    unidadeIndefinida: false,
+                    unidade: m.unidade,
+                    quantidadeOriginal: m.qtdOriginal,
+                    precoOriginal: m.precoOriginal,
+                  })
+                : null;
               return (
                 <div
                   key={i}
@@ -654,7 +667,18 @@ const ConferenciaPedidos = () => {
                         {item.embalagem}
                         {item.fator > 1 && <span className="ml-1 font-mono text-[10px] text-primary">×{item.fator}</span>}
                       </div>
+                      {conversaoItem && (
+                        <div className="text-[11px] text-muted-foreground mt-0.5 break-words">
+                          {conversaoItem}
+                        </div>
+                      )}
+                      {status === "unidade_indefinida" && (
+                        <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                          ❓ Confira a unidade da nota
+                        </span>
+                      )}
                     </div>
+
                     {isDivergent ? (
                       <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                     ) : (
