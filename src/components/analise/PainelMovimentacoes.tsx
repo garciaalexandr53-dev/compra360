@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type { CascadeResult } from "@/lib/scenarios";
+import { formatBRL } from "@/lib/format";
 
 interface Props {
   cascadeResult: CascadeResult;
