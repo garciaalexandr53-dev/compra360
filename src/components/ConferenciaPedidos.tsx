@@ -482,7 +482,7 @@ const ConferenciaPedidos = () => {
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => { setSelectedPedido(null); setItems([]); setOcrReport(null); setOcrTotalNf(null); }}>
+          <Button variant="ghost" size="icon" onClick={() => { setSelectedPedido(null); setItems([]); clearOcr(); }}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1">
