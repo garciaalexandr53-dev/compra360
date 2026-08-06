@@ -489,6 +489,29 @@ function scenarioConsolidado(
   }
 
   const droppedSuppliers = new Set<string>();
+  const pullDetails: PullDetail[] = [];
+  const discardDetails: DiscardDetail[] = [];
+  const fornecedoresIniciais = new Set(Object.values(assignments).map((a) => a.fornecedorId)).size;
+
+  const registrarMove = (
+    cpId: string,
+    origemFId: string,
+    destinoFId: string,
+    precoAntes: number,
+    precoDepois: number
+  ) => {
+    const cp = cotacaoProdutos.find((c) => c.id === cpId);
+    const qtdTotal = (cp?.quantidade ?? 1) * (cp?.fator ?? 1);
+    pullDetails.push({
+      produto: cp?.produtoNome || "?",
+      fornecedorOrigem: fornecedorMap[origemFId]?.nome || "?",
+      fornecedorDestino: fornecedorMap[destinoFId]?.nome || "?",
+      precoAntes,
+      precoDepois,
+      custoExtra: (precoDepois - precoAntes) * qtdTotal,
+    });
+  };
+
   let changed = true;
   let iterations = 0;
   while (changed && iterations < 20) {
@@ -520,9 +543,15 @@ function scenarioConsolidado(
 
       if (canConsolidate && moves.length > 0) {
         for (const m of moves) {
+          registrarMove(m.cpId, fId, m.newFId, m.oldPreco, m.newPreco);
           assignments[m.cpId] = { fornecedorId: m.newFId, preco: m.newPreco };
         }
         droppedSuppliers.add(fId);
+        discardDetails.push({
+          fornecedorNome: fornecedorMap[fId]?.nome || "?",
+          motivo: "preço próximo dos demais — itens realocados",
+          itensRealocados: moves.length,
+        });
         changed = true;
         break;
       }
@@ -549,19 +578,30 @@ function scenarioConsolidado(
       if (minimo <= 0 || total >= minimo) continue;
       droppedSuppliers.add(fId);
       changed = true;
+      let realocados = 0;
       for (const [cpId, a] of Object.entries(assignments)) {
         if (a.fornecedorId !== fId) continue;
         const prices = priceMap[cpId];
         if (!prices) continue;
         const next = prices.find((p) => !droppedSuppliers.has(p.fornecedorId));
-        if (next) assignments[cpId] = { fornecedorId: next.fornecedorId, preco: next.preco };
+        if (next) {
+          registrarMove(cpId, fId, next.fornecedorId, a.preco, next.preco);
+          assignments[cpId] = { fornecedorId: next.fornecedorId, preco: next.preco };
+          realocados++;
+        }
       }
+      discardDetails.push({
+        fornecedorNome: f?.nome || "?",
+        motivo: `não atingiu o pedido mínimo (R$ ${total.toFixed(2)} de R$ ${minimo.toFixed(2)})`,
+        itensRealocados: realocados,
+      });
       break;
     }
   }
 
   const { suppliers, total, semPreco } = buildSupplierResult(assignments, cotacaoProdutos, fornecedorMap);
   const diff = total - baselineTotal;
+  const custoExtraTotal = pullDetails.reduce((s, p) => s + (p.custoExtra || 0), 0);
 
   return {
     id: "consolidado",
@@ -573,6 +613,17 @@ function scenarioConsolidado(
     fornecedores: suppliers,
     semPreco,
     numFornecedores: suppliers.length,
+    cascadeResult: {
+      fornecedoresIniciais,
+      fornecedoresFinais: suppliers.length,
+      fornecedoresBoostados: 0,
+      itensPuxados: pullDetails.length,
+      fornecedoresDescartados: discardDetails.length,
+      boostDetails: [],
+      pullDetails,
+      discardDetails,
+      custoExtraTotal,
+    },
   };
 }
 
