@@ -80,7 +80,8 @@ const ConferenciaPedidos = () => {
   const [faltantes, setFaltantes] = useState<{ nome: string; qtd: number }[]>([]);
   const [conferenciaDone, setConferenciaDone] = useState(false);
   const [ocrLoading, setOcrLoading] = useState(false);
-  const [ocrReport, setOcrReport] = useState<OcrComparisonItem[] | null>(null);
+  const [ocrMeta, setOcrMeta] = useState<Record<number, OcrMeta> | null>(null);
+  const [ocrExtras, setOcrExtras] = useState<OcrExtra[]>([]);
   const [ocrTotalNf, setOcrTotalNf] = useState<number | null>(null);
   const [filtroFornecedor, setFiltroFornecedor] = useState<string>("todos");
   const fileInputRef = useRef<HTMLInputElement>(null);
