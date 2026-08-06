@@ -627,15 +627,6 @@ const ConferenciaPedidos = () => {
         )}
 
 
-        {/* Divergence counter */}
-        {totalDivergencias > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5 flex items-center gap-2 dark:bg-amber-950/30 dark:border-amber-800">
-            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-            <span className="text-sm text-amber-800 dark:text-amber-300 font-medium">
-              {totalDivergencias} divergência(s) encontrada(s)
-            </span>
-          </div>
-        )}
 
         {/* Items list */}
         <ScrollArea className="h-[calc(100vh-380px)]">
