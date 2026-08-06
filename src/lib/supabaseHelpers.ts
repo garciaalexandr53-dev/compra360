@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
  * Fetches all rows from a table, bypassing the default 1000-row limit.
  * Uses pagination with .range() to fetch in batches.
  */
-async function fetchAllRows<T = Record<string, unknown>>(
+export async function fetchAllRows<T = Record<string, unknown>>(
   tableName: string,
   selectColumns: string,
   filters?: (query: any) => any,

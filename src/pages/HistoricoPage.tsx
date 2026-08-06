@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Info } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/lib/supabaseHelpers";
 import { formatBRL, formatDateTime, formatNumber } from "@/lib/format";
 import { getCotacaoNome, getCotacaoEmbalagem } from "@/lib/buscaProdutos";
 import { cn } from "@/lib/utils";
@@ -443,19 +444,21 @@ const HistoricoPage = () => {
 
       // Summary per cotação: products count, responding suppliers, total ordered
       const cotIds = cots.map((c) => c.id);
-      const { data: pedidos } = await supabase
-        .from("pedidos")
-        .select("cotacao_id, total")
-        .in("cotacao_id", cotIds);
+      const pedidos = await fetchAllRows<{ cotacao_id: string; total: number | null }>(
+        "pedidos",
+        "cotacao_id, total",
+        (q) => q.in("cotacao_id", cotIds),
+      );
       const totalByCot = new Map<string, number>();
       for (const p of pedidos || []) {
         totalByCot.set(p.cotacao_id, (totalByCot.get(p.cotacao_id) || 0) + Number(p.total || 0));
       }
 
-      const { data: cps } = await supabase
-        .from("cotacao_produtos")
-        .select("id, cotacao_id")
-        .in("cotacao_id", cotIds);
+      const cps = await fetchAllRows<{ id: string; cotacao_id: string }>(
+        "cotacao_produtos",
+        "id, cotacao_id",
+        (q) => q.in("cotacao_id", cotIds),
+      );
       const prodCountByCot = new Map<string, number>();
       const cpsByCot = new Map<string, string[]>();
       for (const cp of cps || []) {
@@ -464,14 +467,20 @@ const HistoricoPage = () => {
         cpsByCot.get(cp.cotacao_id)!.push(cp.id);
       }
 
-      const allCpIds = (cps || []).map((cp: any) => cp.id);
-      const { data: precos } = allCpIds.length
-        ? await supabase
-            .from("precos")
-            .select("cotacao_produto_id, fornecedor_id, preco")
-            .in("cotacao_produto_id", allCpIds)
-            .gt("preco", 0)
-        : { data: [] as any[] };
+      const allCpIds = (cps || []).map((cp) => cp.id);
+      // Chunk the id list to avoid overly long request URLs, and paginate each chunk
+      const CHUNK = 200;
+      const precos: { cotacao_produto_id: string; fornecedor_id: string; preco: number }[] = [];
+      for (let i = 0; i < allCpIds.length; i += CHUNK) {
+        const slice = allCpIds.slice(i, i + CHUNK);
+        const rows = await fetchAllRows<{ cotacao_produto_id: string; fornecedor_id: string; preco: number }>(
+          "precos",
+          "cotacao_produto_id, fornecedor_id, preco",
+          (q) => q.in("cotacao_produto_id", slice).gt("preco", 0),
+        );
+        precos.push(...rows);
+      }
+
       const cpToCot = new Map<string, string>();
       for (const cp of cps || []) cpToCot.set(cp.id, cp.cotacao_id);
       const fornsByCot = new Map<string, Set<string>>();
