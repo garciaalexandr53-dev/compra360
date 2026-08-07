@@ -418,14 +418,15 @@ export default function LandingPage() {
             <a href="#planos" className="hover:text-white transition-colors">Planos</a>
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white" onClick={goLogin}>
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white px-2 sm:px-3" onClick={goLogin}>
               Entrar
             </Button>
-            <Button size="sm" className="bg-emerald-500 hover:bg-emerald-400 text-white hover:scale-105 transition-all" onClick={goLogin}>
+            <Button size="sm" className="bg-emerald-500 hover:bg-emerald-400 text-white hover:scale-105 transition-all px-2.5 sm:px-3 whitespace-nowrap" onClick={goLogin}>
               Começar grátis
             </Button>
           </div>
+
         </div>
       </nav>
 
