@@ -213,7 +213,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
 
   return (<>
     <Dialog open={open} onOpenChange={(o) => !o && handleSkip()}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg">
