@@ -10,6 +10,8 @@ import { Check, CheckCheck, AlertTriangle, ChevronRight, Minus, Plus, ArrowLeft,
 import { formatBRL } from "@/lib/format";
 import { getCotacaoNome, getCotacaoEmbalagem } from "@/lib/buscaProdutos";
 import { normalizarLinhaNf, descreverConversao } from "@/lib/ocrUnidade";
+import { encontrarMelhorMatch } from "@/lib/ocrMatch";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ConferenciaItem {
@@ -127,14 +129,11 @@ const ConferenciaPedidos = () => {
       const matchedIndices = new Set<number>();
       let indefinidos = 0;
 
+      const nomesPedido = updatedItems.map((it) => it.produto_nome);
+
       for (const ocr of ocrItems) {
-        const ocrName = (ocr.produto || "").toLowerCase().trim();
-        const idx = updatedItems.findIndex((item, i) => {
-          if (matchedIndices.has(i)) return false;
-          const itemName = item.produto_nome.toLowerCase().trim();
-          return itemName.includes(ocrName) || ocrName.includes(itemName) ||
-            itemName.split(" ").some(w => w.length > 3 && ocrName.includes(w));
-        });
+        const idx = encontrarMelhorMatch(ocr.produto || "", nomesPedido, matchedIndices);
+
 
         if (idx >= 0) {
           matchedIndices.add(idx);

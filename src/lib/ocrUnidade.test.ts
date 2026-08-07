@@ -32,10 +32,20 @@ describe("ocrUnidade", () => {
     expect(descreverConversao(n)).toBeNull();
   });
 
+  it("trata PC/PT/CT como embalagem (pacote/cartela na NF)", () => {
+    expect(classificarUnidade("PC")).toBe("embalagem");
+    expect(classificarUnidade("CT")).toBe("embalagem");
+    const n = normalizarLinhaNf({ unidade: "PC", quantidade: 6, preco_unitario: 154.5 }, 50);
+    expect(n.convertido).toBe(true);
+    expect(n.quantidade).toBe(300);
+    expect(n.preco_unitario).toBeCloseTo(3.09, 2);
+  });
+
   it("classifica unidades tolerando caixa e pontuação", () => {
     expect(classificarUnidade(" cx ")).toBe("embalagem");
     expect(classificarUnidade("UNI")).toBe("unitaria");
     expect(classificarUnidade("")).toBe("indefinida");
     expect(classificarUnidade("KG")).toBe("indefinida");
   });
+
 });
