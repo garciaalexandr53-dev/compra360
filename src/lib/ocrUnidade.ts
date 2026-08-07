@@ -7,11 +7,20 @@
  * NUNCA adivinhamos: o item é marcado para conferência manual.
  */
 
-/** Unidades que representam embalagem fechada (múltiplas unidades). */
-export const UNIDADES_EMBALAGEM = ["CX", "FD", "DZ", "PCT", "DP"] as const;
+/**
+ * Unidades que representam embalagem fechada (múltiplas unidades).
+ * Inclui PC/PÇ/PT (pacote), CT (cartela/caixa) e CJ (conjunto): em notas de
+ * supermercado esses códigos são embalagem, não unidade avulsa. A conversão só
+ * acontece quando o item do pedido tem fator > 1, ou seja, quando o próprio
+ * comprador declarou que compra em embalagem.
+ */
+export const UNIDADES_EMBALAGEM = [
+  "CX", "FD", "DZ", "PCT", "PT", "PC", "PÇ", "DP", "CT", "CJ", "SC", "BD", "CTN",
+] as const;
 
 /** Unidades que representam unidade avulsa. */
-export const UNIDADES_UNITARIAS = ["UN", "UNI", "UND", "UNID", "PC", "PÇ"] as const;
+export const UNIDADES_UNITARIAS = ["UN", "UNI", "UND", "UNID", "UNIDADE"] as const;
+
 
 export type ClasseUnidade = "embalagem" | "unitaria" | "indefinida";
 
