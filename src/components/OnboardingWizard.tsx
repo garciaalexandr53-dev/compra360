@@ -231,7 +231,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
               return (
                 <div
                   key={label}
-                  className={`flex-1 flex flex-col items-center gap-1 text-xs ${
+                  className={`flex-1 min-w-0 flex flex-col items-center gap-1 text-xs ${
                     i <= step ? "text-primary" : "text-muted-foreground"
                   }`}
                 >
