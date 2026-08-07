@@ -460,8 +460,9 @@ export default function LandingPage() {
           </div>
 
           {/* Glass Card */}
-          <div className={`relative ${anim(hero.visible)}`} style={{ transitionDelay: "400ms" }}>
+          <div className={`relative overflow-hidden rounded-3xl ${anim(hero.visible)}`} style={{ transitionDelay: "400ms" }}>
             <div className="absolute -inset-6 bg-gradient-to-b from-emerald-500/10 to-teal-500/5 rounded-3xl blur-2xl pointer-events-none" />
+
             <div className="relative bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <p className="text-xs text-slate-400 font-medium">Detergente Ypê 500ml — Caixa c/ 24un</p>
