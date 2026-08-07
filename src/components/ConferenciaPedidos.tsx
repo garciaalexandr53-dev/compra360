@@ -10,6 +10,8 @@ import { Check, CheckCheck, AlertTriangle, ChevronRight, Minus, Plus, ArrowLeft,
 import { formatBRL } from "@/lib/format";
 import { getCotacaoNome, getCotacaoEmbalagem } from "@/lib/buscaProdutos";
 import { normalizarLinhaNf, descreverConversao } from "@/lib/ocrUnidade";
+import { encontrarMelhorMatch } from "@/lib/ocrMatch";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ConferenciaItem {
