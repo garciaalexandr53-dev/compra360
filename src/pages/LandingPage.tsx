@@ -418,14 +418,15 @@ export default function LandingPage() {
             <a href="#planos" className="hover:text-white transition-colors">Planos</a>
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white" onClick={goLogin}>
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white px-2 sm:px-3" onClick={goLogin}>
               Entrar
             </Button>
-            <Button size="sm" className="bg-emerald-500 hover:bg-emerald-400 text-white hover:scale-105 transition-all" onClick={goLogin}>
+            <Button size="sm" className="bg-emerald-500 hover:bg-emerald-400 text-white hover:scale-105 transition-all px-2.5 sm:px-3 whitespace-nowrap" onClick={goLogin}>
               Começar grátis
             </Button>
           </div>
+
         </div>
       </nav>
 
@@ -460,8 +461,9 @@ export default function LandingPage() {
           </div>
 
           {/* Glass Card */}
-          <div className={`relative ${anim(hero.visible)}`} style={{ transitionDelay: "400ms" }}>
+          <div className={`relative overflow-hidden rounded-3xl ${anim(hero.visible)}`} style={{ transitionDelay: "400ms" }}>
             <div className="absolute -inset-6 bg-gradient-to-b from-emerald-500/10 to-teal-500/5 rounded-3xl blur-2xl pointer-events-none" />
+
             <div className="relative bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <p className="text-xs text-slate-400 font-medium">Detergente Ypê 500ml — Caixa c/ 24un</p>

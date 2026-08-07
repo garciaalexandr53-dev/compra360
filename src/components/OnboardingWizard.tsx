@@ -213,7 +213,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
 
   return (<>
     <Dialog open={open} onOpenChange={(o) => !o && handleSkip()}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg">
@@ -225,13 +225,13 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
 
         {/* Progress */}
         <div className="space-y-2">
-          <div className="flex gap-1">
+          <div className="flex gap-1 min-w-0">
             {stepLabels.map((label, i) => {
               const Icon = stepIcons[i];
               return (
                 <div
                   key={label}
-                  className={`flex-1 flex flex-col items-center gap-1 text-xs ${
+                  className={`flex-1 min-w-0 flex flex-col items-center gap-1 text-xs ${
                     i <= step ? "text-primary" : "text-muted-foreground"
                   }`}
                 >
@@ -479,32 +479,32 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-between pt-2 border-t gap-2">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between pt-2 border-t gap-2">
           {step === 3 ? (
-            <span />
+            <span className="hidden sm:block" />
           ) : (
-            <Button variant="ghost" size="sm" onClick={handleSkip} className="text-muted-foreground">
-              <X className="h-4 w-4 mr-1" />
-              Pular por agora
+            <Button variant="ghost" size="sm" onClick={handleSkip} className="text-muted-foreground w-full sm:w-auto">
+              <X className="h-4 w-4 mr-1 shrink-0" />
+              <span className="truncate">Pular por agora</span>
             </Button>
           )}
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             {step > 0 && (
-              <Button variant="outline" size="sm" onClick={handleBack} disabled={saving}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Voltar
+              <Button variant="outline" size="sm" onClick={handleBack} disabled={saving} className="flex-1 sm:flex-none min-w-0">
+                <ArrowLeft className="h-4 w-4 mr-1 shrink-0" />
+                <span className="truncate">Voltar</span>
               </Button>
             )}
-            <Button size="sm" onClick={handleNext} disabled={!canAdvance() || saving}>
+            <Button size="sm" onClick={handleNext} disabled={!canAdvance() || saving} className="flex-1 sm:flex-none min-w-0">
               {step === totalSteps - 1 ? (
                 <>
-                  <Check className="h-4 w-4 mr-1" />
-                  Começar a usar
+                  <Check className="h-4 w-4 mr-1 shrink-0" />
+                  <span className="truncate">Começar a usar</span>
                 </>
               ) : (
                 <>
-                  Avançar
-                  <ArrowRight className="h-4 w-4 ml-1" />
+                  <span className="truncate">Avançar</span>
+                  <ArrowRight className="h-4 w-4 ml-1 shrink-0" />
                 </>
               )}
             </Button>
