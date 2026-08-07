@@ -225,7 +225,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
 
         {/* Progress */}
         <div className="space-y-2">
-          <div className="flex gap-1">
+          <div className="flex gap-1 min-w-0">
             {stepLabels.map((label, i) => {
               const Icon = stepIcons[i];
               return (
