@@ -11,6 +11,7 @@ import { formatBRL } from "@/lib/format";
 import { getCotacaoNome, getCotacaoEmbalagem } from "@/lib/buscaProdutos";
 import { normalizarLinhaNf, descreverConversao } from "@/lib/ocrUnidade";
 import { encontrarMelhorMatch } from "@/lib/ocrMatch";
+import { isFeatureEnabled } from "@/lib/featureFlags";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
