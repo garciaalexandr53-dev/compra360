@@ -91,7 +91,7 @@ const benefits = [
 ];
 
 const stats = [
-  { value: 11500, suffix: "+", label: "Produtos no catálogo" },
+  { value: 11500, suffix: "+", decimals: 0, label: "Produtos no catálogo" },
   { value: 9.5, suffix: "%", decimals: 1, label: "Economia média" },
 ];
 
