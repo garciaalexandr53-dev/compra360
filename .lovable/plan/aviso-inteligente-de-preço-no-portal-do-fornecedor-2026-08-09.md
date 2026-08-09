@@ -132,8 +132,7 @@ Notas sobre as cláusulas da variante comprador:
 - `cp2.cotacao_id <> _cotacao_id` exclui a própria cotação em andamento, para o fornecedor não ser comparado com os preços já digitados nela.
 - `LIMIT 1` no `LATERAL` implementa a precedência: global primeiro, comprador depois, nenhum → `NULL` (front cai na faixa fixa).
 
-
-**Front — `src/pages/FornecedorCotacaoPage.tsx`:**
+**Front —** `src/pages/FornecedorCotacaoPage.tsx`**:**
 
 - Ler os 3 campos novos da RPC e guardá-los no item.
 - Substituir a checagem de faixa fixa por um helper puro em `src/lib/` (`avaliarPreco`), com testes cobrindo: divergência acima, abaixo, dentro da tolerância, e ausência de referência (cai na faixa fixa).
