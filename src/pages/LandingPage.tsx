@@ -55,13 +55,14 @@ const anim = (visible: boolean, delay = 0) =>
   `transition-all duration-700 ease-out ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"} ${delay ? `delay-[${delay}ms]` : ""}`;
 
 /* ── Animated counter ── */
-function AnimatedCounter({ target, suffix = "", visible }: { target: number; suffix?: string; visible: boolean }) {
+function AnimatedCounter({ target, suffix = "", decimals = 0, visible }: { target: number; suffix?: string; decimals?: number; visible: boolean }) {
   const [count, setCount] = useState(0);
   useEffect(() => {
     if (!visible) return;
     let start = 0;
     const duration = 1500;
-    const step = Math.ceil(target / (duration / 30));
+    const ticks = duration / 30;
+    const step = target / ticks;
     const timer = setInterval(() => {
       start += step;
       if (start >= target) { setCount(target); clearInterval(timer); }
@@ -69,8 +70,9 @@ function AnimatedCounter({ target, suffix = "", visible }: { target: number; suf
     }, 30);
     return () => clearInterval(timer);
   }, [visible, target]);
-  return <>{count.toLocaleString("pt-BR")}{suffix}</>;
+  return <>{count.toLocaleString("pt-BR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}{suffix}</>;
 }
+
 
 /* ── data ── */
 const steps = [
