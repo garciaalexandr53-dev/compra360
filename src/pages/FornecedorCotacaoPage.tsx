@@ -6,13 +6,17 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { formatNumber, formatHoraLocal, formatTimeRemaining } from "@/lib/format";
 import { withAssetVersion } from "@/lib/assetVersion";
+import { avaliarPreco, type ReferenciaFonte } from "@/lib/avaliarPreco";
 
 interface ProdutoItem {
   cotacao_produto_id: string;
   nome: string;
+  ean: string | null;
   embalagem: string;
   quantidade: number;
   fator: number;
+  precoReferencia: number | null;
+  referenciaFonte: ReferenciaFonte;
 }
 
 type ScreenState = "loading" | "invalid" | "closed" | "expired" | "empty" | "ready" | "sent";
@@ -147,13 +151,17 @@ const FornecedorCotacaoPage = () => {
         return;
       }
 
-      const items = (cpData as any[])
+      const items: ProdutoItem[] = (cpData as any[])
         .map((cp: any) => ({
           cotacao_produto_id: cp.id,
           nome: cp.produto_nome || "?",
+          ean: cp.produto_ean || null,
           embalagem: cp.produto_embalagem || "un",
           quantidade: cp.quantidade || 1,
           fator: cp.fator_embalagem ?? 1,
+          precoReferencia:
+            cp.preco_referencia != null ? Number(cp.preco_referencia) : null,
+          referenciaFonte: (cp.referencia_fonte ?? null) as ReferenciaFonte,
         }))
         .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
       setProdutos(items);
@@ -420,6 +428,11 @@ const FornecedorCotacaoPage = () => {
               <span className="text-xs text-muted-foreground shrink-0">{i + 1}.</span>
             </div>
             <div className="font-semibold text-sm mb-1 break-words">{p.nome}</div>
+            {p.ean && (
+              <div className="text-[11px] text-muted-foreground font-mono mb-1 break-all">
+                EAN {p.ean}
+              </div>
+            )}
             <div className="text-xs text-primary font-medium mb-3">
               💰 Informe o preço por unidade
             </div>
@@ -438,16 +451,24 @@ const FornecedorCotacaoPage = () => {
               const raw = prices[p.cotacao_produto_id];
               if (!raw || !raw.trim()) return null;
               const num = parseFloat(raw.replace(/\./g, "").replace(",", "."));
-              if (!Number.isFinite(num) || num <= 0) return null;
-              if (num < 0.5 || num > 999) {
-                return (
-                  <div className="mt-2 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-1">
-                    <span>⚠️</span>
-                    <span>Valor incomum — confirme se está correto</span>
-                  </div>
-                );
-              }
-              return null;
+              const av = avaliarPreco(num, p.precoReferencia, p.referenciaFonte);
+              if (!av.alerta) return null;
+              return (
+                <div className="mt-2 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-1.5">
+                  <span className="shrink-0">⚠️</span>
+                  <span className="leading-snug min-w-0">
+                    Valor fora do padrão — confirme se está correto
+                    {av.motivo === "mediana" && av.referencia != null && (
+                      <span className="block opacity-80 mt-0.5">
+                        {av.fonte === "comprador"
+                          ? "Referência de cotações anteriores"
+                          : "Referência de mercado"}
+                        : R$ {formatNumber(av.referencia)}
+                      </span>
+                    )}
+                  </span>
+                </div>
+              );
             })()}
           </div>
         ))}
