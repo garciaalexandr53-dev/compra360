@@ -451,22 +451,13 @@ const FornecedorCotacaoPage = () => {
               const raw = prices[p.cotacao_produto_id];
               if (!raw || !raw.trim()) return null;
               const num = parseFloat(raw.replace(/\./g, "").replace(",", "."));
-              const av = avaliarPreco(num, p.precoReferencia, p.referenciaFonte);
-              if (!av.alerta) return null;
+              if (!Number.isFinite(num) || num <= 0) return null;
+              const { alerta, mensagem } = avaliarPreco(num, p.precoReferencia, p.referenciaFonte);
+              if (!alerta) return null;
               return (
                 <div className="mt-2 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-1.5">
                   <span className="shrink-0">⚠️</span>
-                  <span className="leading-snug min-w-0">
-                    Valor fora do padrão — confirme se está correto
-                    {av.motivo === "mediana" && av.referencia != null && (
-                      <span className="block opacity-80 mt-0.5">
-                        {av.fonte === "comprador"
-                          ? "Referência de cotações anteriores"
-                          : "Referência de mercado"}
-                        : R$ {formatNumber(av.referencia)}
-                      </span>
-                    )}
-                  </span>
+                  <span className="leading-snug min-w-0 break-words">{mensagem}</span>
                 </div>
               );
             })()}
