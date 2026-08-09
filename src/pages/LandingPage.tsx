@@ -205,7 +205,7 @@ const faqItems = [
   { q: "Os fornecedores precisam criar conta?", a: "Não. Eles recebem um link pelo WhatsApp e preenchem os preços sem instalar nada." },
   { q: "É difícil de usar?", a: "Não. Se você sabe usar WhatsApp, sabe usar o Compra360. Você aprende em minutos." },
   { q: "Funciona para meu tipo de negócio?", a: "Sim. Qualquer empresa que compra de fornecedores — supermercados, pet shops, farmácias, restaurantes, padarias e mais." },
-  { q: "Isso realmente ajuda a economizar?", a: "Sim. Com os preços lado a lado você compra sempre do mais barato, sem esforço e sem achismo. Nossos usuários economizam em média 20% nas compras." },
+  { q: "Isso realmente ajuda a economizar?", a: "Sim. Com os preços lado a lado você compra sempre do mais barato, sem esforço e sem achismo. Em uma única cotação de 99 itens com 11 fornecedores, um cliente economizou R$ 1.913." },
   { q: "Meus dados ficam seguros?", a: "Sim. Suas cotações e preços são privados e criptografados. Nenhum fornecedor vê o preço do concorrente." },
   { q: "Posso cancelar quando quiser?", a: "Sim. Sem fidelidade, sem multa. Cancele quando quiser com um clique." },
 ];
