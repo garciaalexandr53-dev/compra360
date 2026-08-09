@@ -6,13 +6,17 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { formatNumber, formatHoraLocal, formatTimeRemaining } from "@/lib/format";
 import { withAssetVersion } from "@/lib/assetVersion";
+import { avaliarPreco, type ReferenciaFonte } from "@/lib/avaliarPreco";
 
 interface ProdutoItem {
   cotacao_produto_id: string;
   nome: string;
+  ean: string | null;
   embalagem: string;
   quantidade: number;
   fator: number;
+  precoReferencia: number | null;
+  referenciaFonte: ReferenciaFonte;
 }
 
 type ScreenState = "loading" | "invalid" | "closed" | "expired" | "empty" | "ready" | "sent";
