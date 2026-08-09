@@ -1144,9 +1144,12 @@ export type Database = {
         Returns: {
           fator_embalagem: number
           id: string
+          preco_referencia: number
+          produto_ean: string
           produto_embalagem: string
           produto_nome: string
           quantidade: number
+          referencia_fonte: string
         }[]
       }
       get_supplier_existing_prices: {
