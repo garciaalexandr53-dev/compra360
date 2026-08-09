@@ -55,13 +55,14 @@ const anim = (visible: boolean, delay = 0) =>
   `transition-all duration-700 ease-out ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"} ${delay ? `delay-[${delay}ms]` : ""}`;
 
 /* ── Animated counter ── */
-function AnimatedCounter({ target, suffix = "", visible }: { target: number; suffix?: string; visible: boolean }) {
+function AnimatedCounter({ target, suffix = "", decimals = 0, visible }: { target: number; suffix?: string; decimals?: number; visible: boolean }) {
   const [count, setCount] = useState(0);
   useEffect(() => {
     if (!visible) return;
     let start = 0;
     const duration = 1500;
-    const step = Math.ceil(target / (duration / 30));
+    const ticks = duration / 30;
+    const step = target / ticks;
     const timer = setInterval(() => {
       start += step;
       if (start >= target) { setCount(target); clearInterval(timer); }
@@ -69,8 +70,9 @@ function AnimatedCounter({ target, suffix = "", visible }: { target: number; suf
     }, 30);
     return () => clearInterval(timer);
   }, [visible, target]);
-  return <>{count.toLocaleString("pt-BR")}{suffix}</>;
+  return <>{count.toLocaleString("pt-BR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}{suffix}</>;
 }
+
 
 /* ── data ── */
 const steps = [
@@ -80,20 +82,19 @@ const steps = [
 ];
 
 const benefits = [
-  { icon: TrendingDown, title: "Economize até 20%", desc: "Compare preços lado a lado e compre sempre do fornecedor mais barato, automaticamente." },
+  { icon: TrendingDown, title: "Compre sempre do mais barato", desc: "Compare preços lado a lado e feche com o fornecedor mais barato de cada item, automaticamente." },
   { icon: Clock, title: "Cotação em minutos", desc: "Chega de horas ao telefone pedindo preço. Seus fornecedores preenchem online, quando puderem." },
   { icon: Smartphone, title: "100% pelo celular", desc: "Funciona no navegador do celular. Sem instalar nada, sem computador obrigatório." },
   { icon: Brain, title: "IA integrada", desc: "Inteligência artificial analisa preços, sugere fornecedores e classifica produtos para você." },
-  { icon: Shield, title: "Dados protegidos", desc: "Nenhum fornecedor vê o preço do concorrente. Suas cotações são privadas e criptografadas." },
+  { icon: Shield, title: "Dados protegidos", desc: "Nenhum fornecedor vê o preço do concorrente. Cada cotação fica restrita à sua conta e o tráfego é protegido por HTTPS." },
   { icon: Users, title: "Equipe conectada", desc: "Funcionários registram itens faltantes pelo celular. Tudo chega na sua lista automaticamente." },
 ];
 
 const stats = [
-  { value: 2000, suffix: "+", label: "Produtos no catálogo" },
-  { value: 47, suffix: "", label: "Empresas ativas" },
-  { value: 20, suffix: "%", label: "Economia média" },
-  { value: 5, suffix: "min", label: "Tempo médio de cotação" },
+  { value: 11500, suffix: "+", decimals: 0, label: "Produtos no catálogo" },
+  { value: 9.5, suffix: "%", decimals: 1, label: "Economia média" },
 ];
+
 
 const testimonials = [
   {
@@ -204,7 +205,7 @@ const faqItems = [
   { q: "Os fornecedores precisam criar conta?", a: "Não. Eles recebem um link pelo WhatsApp e preenchem os preços sem instalar nada." },
   { q: "É difícil de usar?", a: "Não. Se você sabe usar WhatsApp, sabe usar o Compra360. Você aprende em minutos." },
   { q: "Funciona para meu tipo de negócio?", a: "Sim. Qualquer empresa que compra de fornecedores — supermercados, pet shops, farmácias, restaurantes, padarias e mais." },
-  { q: "Isso realmente ajuda a economizar?", a: "Sim. Com os preços lado a lado você compra sempre do mais barato, sem esforço e sem achismo. Nossos usuários economizam em média 20% nas compras." },
+  { q: "Isso realmente ajuda a economizar?", a: "Sim. Com os preços lado a lado você compra sempre do mais barato, sem esforço e sem achismo. Em uma única cotação de 99 itens com 11 fornecedores, um cliente economizou R$ 1.913." },
   { q: "Meus dados ficam seguros?", a: "Sim. Suas cotações e preços são privados e criptografados. Nenhum fornecedor vê o preço do concorrente." },
   { q: "Posso cancelar quando quiser?", a: "Sim. Sem fidelidade, sem multa. Cancele quando quiser com um clique." },
 ];
@@ -507,21 +508,32 @@ export default function LandingPage() {
 
       {/* ── STATS ── */}
       <section ref={statsSection.ref} className="py-12 px-5 border-t border-white/5 bg-slate-900/50">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6">
+        <div className="max-w-2xl mx-auto grid grid-cols-2 gap-6">
           {stats.map((s, i) => (
             <div
               key={s.label}
-              className={`text-center ${anim(statsSection.visible)}`}
+              className={`text-center min-w-0 ${anim(statsSection.visible)}`}
               style={{ transitionDelay: `${i * 100}ms` }}
             >
               <p className="text-3xl sm:text-4xl font-bold text-white">
-                <AnimatedCounter target={s.value} suffix={s.suffix} visible={statsSection.visible} />
+                <AnimatedCounter target={s.value} suffix={s.suffix} decimals={s.decimals ?? 0} visible={statsSection.visible} />
               </p>
               <p className="text-sm text-slate-400 mt-1">{s.label}</p>
             </div>
           ))}
         </div>
+
+        {/* Prova real */}
+        <p
+          className={`max-w-2xl mx-auto mt-8 text-center text-xs sm:text-sm text-slate-400 leading-relaxed ${anim(statsSection.visible)}`}
+          style={{ transitionDelay: "250ms" }}
+        >
+          Um cliente comparou <span className="text-slate-200 font-medium">R$ 148 mil</span> em compras e economizou{" "}
+          <span className="text-emerald-400 font-semibold">R$ 13.981</span> — em uma única cotação de 99 itens com 11 fornecedores, foram{" "}
+          <span className="text-emerald-400 font-semibold">R$ 1.913</span>.
+        </p>
       </section>
+
 
       {/* ── COMO FUNCIONA ── */}
       <section id="como-funciona" ref={stepsSection.ref} className="py-16 px-5 border-t border-white/5">
