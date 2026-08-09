@@ -151,13 +151,17 @@ const FornecedorCotacaoPage = () => {
         return;
       }
 
-      const items = (cpData as any[])
+      const items: ProdutoItem[] = (cpData as any[])
         .map((cp: any) => ({
           cotacao_produto_id: cp.id,
           nome: cp.produto_nome || "?",
+          ean: cp.produto_ean || null,
           embalagem: cp.produto_embalagem || "un",
           quantidade: cp.quantidade || 1,
           fator: cp.fator_embalagem ?? 1,
+          precoReferencia:
+            cp.preco_referencia != null ? Number(cp.preco_referencia) : null,
+          referenciaFonte: (cp.referencia_fonte ?? null) as ReferenciaFonte,
         }))
         .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
       setProdutos(items);
