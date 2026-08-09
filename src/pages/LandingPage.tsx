@@ -82,20 +82,19 @@ const steps = [
 ];
 
 const benefits = [
-  { icon: TrendingDown, title: "Economize até 20%", desc: "Compare preços lado a lado e compre sempre do fornecedor mais barato, automaticamente." },
+  { icon: TrendingDown, title: "Compre sempre do mais barato", desc: "Compare preços lado a lado e feche com o fornecedor mais barato de cada item, automaticamente." },
   { icon: Clock, title: "Cotação em minutos", desc: "Chega de horas ao telefone pedindo preço. Seus fornecedores preenchem online, quando puderem." },
   { icon: Smartphone, title: "100% pelo celular", desc: "Funciona no navegador do celular. Sem instalar nada, sem computador obrigatório." },
   { icon: Brain, title: "IA integrada", desc: "Inteligência artificial analisa preços, sugere fornecedores e classifica produtos para você." },
-  { icon: Shield, title: "Dados protegidos", desc: "Nenhum fornecedor vê o preço do concorrente. Suas cotações são privadas e criptografadas." },
+  { icon: Shield, title: "Dados protegidos", desc: "Nenhum fornecedor vê o preço do concorrente. Cada cotação fica restrita à sua conta e o tráfego é protegido por HTTPS." },
   { icon: Users, title: "Equipe conectada", desc: "Funcionários registram itens faltantes pelo celular. Tudo chega na sua lista automaticamente." },
 ];
 
 const stats = [
-  { value: 2000, suffix: "+", label: "Produtos no catálogo" },
-  { value: 47, suffix: "", label: "Empresas ativas" },
-  { value: 20, suffix: "%", label: "Economia média" },
-  { value: 5, suffix: "min", label: "Tempo médio de cotação" },
+  { value: 11500, suffix: "+", label: "Produtos no catálogo" },
+  { value: 9.5, suffix: "%", decimals: 1, label: "Economia média" },
 ];
+
 
 const testimonials = [
   {
