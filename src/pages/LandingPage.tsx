@@ -508,21 +508,32 @@ export default function LandingPage() {
 
       {/* ── STATS ── */}
       <section ref={statsSection.ref} className="py-12 px-5 border-t border-white/5 bg-slate-900/50">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6">
+        <div className="max-w-2xl mx-auto grid grid-cols-2 gap-6">
           {stats.map((s, i) => (
             <div
               key={s.label}
-              className={`text-center ${anim(statsSection.visible)}`}
+              className={`text-center min-w-0 ${anim(statsSection.visible)}`}
               style={{ transitionDelay: `${i * 100}ms` }}
             >
               <p className="text-3xl sm:text-4xl font-bold text-white">
-                <AnimatedCounter target={s.value} suffix={s.suffix} visible={statsSection.visible} />
+                <AnimatedCounter target={s.value} suffix={s.suffix} decimals={s.decimals ?? 0} visible={statsSection.visible} />
               </p>
               <p className="text-sm text-slate-400 mt-1">{s.label}</p>
             </div>
           ))}
         </div>
+
+        {/* Prova real */}
+        <p
+          className={`max-w-2xl mx-auto mt-8 text-center text-xs sm:text-sm text-slate-400 leading-relaxed ${anim(statsSection.visible)}`}
+          style={{ transitionDelay: "250ms" }}
+        >
+          Um cliente comparou <span className="text-slate-200 font-medium">R$ 148 mil</span> em compras e economizou{" "}
+          <span className="text-emerald-400 font-semibold">R$ 13.981</span> — em uma única cotação de 99 itens com 11 fornecedores, foram{" "}
+          <span className="text-emerald-400 font-semibold">R$ 1.913</span>.
+        </p>
       </section>
+
 
       {/* ── COMO FUNCIONA ── */}
       <section id="como-funciona" ref={stepsSection.ref} className="py-16 px-5 border-t border-white/5">
