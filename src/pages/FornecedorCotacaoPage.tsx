@@ -463,6 +463,7 @@ const FornecedorCotacaoPage = () => {
                 placeholder="0,00"
                 value={prices[p.cotacao_produto_id] || ""}
                 onChange={(e) => handlePriceChange(p.cotacao_produto_id, e.target.value)}
+                onFocus={(e) => e.target.select()}
                 onBlur={() => {
                   if (debounceTimers.current[p.cotacao_produto_id]) {
                     clearTimeout(debounceTimers.current[p.cotacao_produto_id]);
