@@ -439,11 +439,12 @@ export default function LandingPage() {
               Economize tempo e dinheiro nas compras da sua empresa
             </p>
             <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-6 ${anim(hero.visible)}`} style={{ transitionDelay: "100ms" }}>
-              Sua empresa pode estar pagando mais caro sem perceber.
+              Compra360 — sistema de cotação de preços para supermercados
             </h1>
             <p className={`text-lg text-slate-400 leading-relaxed mb-4 max-w-xl ${anim(hero.visible)}`} style={{ transitionDelay: "200ms" }}>
-              O Compra360 reúne fornecedores em uma única tela para encontrar a melhor compra em minutos.
+              Sua empresa pode estar pagando mais caro sem perceber. O Compra360 reúne fornecedores em uma única tela para encontrar a melhor compra em minutos.
             </p>
+
             <ul className={`space-y-2.5 mb-8 ${anim(hero.visible)}`} style={{ transitionDelay: "250ms" }}>
               <li className="flex items-center gap-2 text-slate-300 text-sm sm:text-base"><CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" /> Compare preços de vários fornecedores em segundos</li>
               <li className="flex items-center gap-2 text-slate-300 text-sm sm:text-base"><CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" /> Descubra automaticamente a melhor compra</li>
