@@ -156,7 +156,7 @@ const ModalFornecedores = ({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={saving} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
+          <Button onClick={handleSave} disabled={saving || selectedCount === 0} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
             Salvar Seleção{selectedCount > 0 ? ` (${selectedCount})` : ""}
           </Button>
         </DialogFooter>
