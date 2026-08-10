@@ -8,6 +8,8 @@ import ScaledSlide from "@/components/slides/ScaledSlide";
 import SlideRenderer from "@/components/slides/SlideRenderer";
 import { slides } from "@/components/slides/slidesData";
 import { useTheme } from "@/hooks/useTheme";
+import Seo from "@/components/Seo";
+
 
 export default function ApresentacaoPage() {
   const [params, setParams] = useSearchParams();
