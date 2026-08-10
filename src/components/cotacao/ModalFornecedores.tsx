@@ -48,15 +48,16 @@ const ModalFornecedores = ({
 }: ModalFornecedoresProps) => {
   const enablePrazo = typeof onPrazoChange === "function";
   const [prazoLocal, setPrazoLocal] = useState<string>(isoToDatetimeLocal(prazoIso));
-  const [semPrazo, setSemPrazo] = useState<boolean>(!prazoIso);
+  const [semPrazo, setSemPrazo] = useState<boolean>(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
       setPrazoLocal(isoToDatetimeLocal(prazoIso));
-      setSemPrazo(!prazoIso);
+      setSemPrazo(false);
     }
   }, [open, prazoIso]);
+
 
   const handleQuick = (hours: number) => {
     setSemPrazo(false);
@@ -76,7 +77,7 @@ const ModalFornecedores = ({
     }
   };
 
-  const selectedCount = fornecedores.filter(f => selectedSuppliers[f.id] !== false).length;
+  const selectedCount = fornecedores.filter(f => selectedSuppliers[f.id] === true).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -93,13 +94,14 @@ const ModalFornecedores = ({
           {fornecedores.map((f) => (
             <label
               key={f.id}
-              className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${selectedSuppliers[f.id] !== false ? "border-primary/30 bg-primary/5" : "border-border hover:border-muted-foreground/30 opacity-60"}`}
+              className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${selectedSuppliers[f.id] === true ? "border-primary/30 bg-primary/5" : "border-border hover:border-muted-foreground/30 opacity-60"}`}
               onClick={() => onToggle(f.id)}
             >
               <Checkbox
-                checked={selectedSuppliers[f.id] !== false}
+                checked={selectedSuppliers[f.id] === true}
                 onCheckedChange={() => onToggle(f.id)}
               />
+
               <div className="flex-1">
                 <div className="text-sm font-bold">{f.nome}</div>
                 <div className="text-xs text-muted-foreground">
@@ -154,7 +156,7 @@ const ModalFornecedores = ({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={saving} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
+          <Button onClick={handleSave} disabled={saving || selectedCount === 0} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]">
             Salvar Seleção{selectedCount > 0 ? ` (${selectedCount})` : ""}
           </Button>
         </DialogFooter>
