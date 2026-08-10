@@ -434,7 +434,7 @@ const FornecedorCotacaoPage = () => {
               </div>
             )}
             <div className="text-xs text-primary font-medium mb-3">
-              💰 Informe o preço por unidade
+              Informe o preço por unidade
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">R$</span>
