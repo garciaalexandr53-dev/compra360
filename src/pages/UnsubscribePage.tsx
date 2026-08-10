@@ -62,17 +62,16 @@ export default function UnsubscribePage() {
              status === 'invalid' || status === 'error' ? <XCircle className="h-6 w-6 text-destructive" /> :
              <CheckCircle2 className="h-6 w-6 text-primary" />}
           </div>
-          <CardTitle asChild>
-            <h1>
-              {status === 'loading' && 'Verificando link…'}
-              {status === 'valid' && 'Cancelar assinatura de e-mails'}
-              {status === 'submitting' && 'Processando…'}
-              {status === 'success' && 'E-mails cancelados'}
-              {status === 'already' && 'Você já cancelou'}
-              {status === 'invalid' && 'Link inválido'}
-              {status === 'error' && 'Não foi possível processar'}
-            </h1>
-          </CardTitle>
+          <h1 className="text-2xl font-semibold leading-none tracking-tight">
+            {status === 'loading' && 'Verificando link…'}
+            {status === 'valid' && 'Cancelar assinatura de e-mails'}
+            {status === 'submitting' && 'Processando…'}
+            {status === 'success' && 'E-mails cancelados'}
+            {status === 'already' && 'Você já cancelou'}
+            {status === 'invalid' && 'Link inválido'}
+            {status === 'error' && 'Não foi possível processar'}
+          </h1>
+
 
         </CardHeader>
         <CardContent className="text-center space-y-4">
