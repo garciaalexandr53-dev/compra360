@@ -8,6 +8,8 @@ import ScaledSlide from "@/components/slides/ScaledSlide";
 import SlideRenderer from "@/components/slides/SlideRenderer";
 import { slides } from "@/components/slides/slidesData";
 import { useTheme } from "@/hooks/useTheme";
+import Seo from "@/components/Seo";
+
 
 export default function ApresentacaoPage() {
   const [params, setParams] = useSearchParams();
@@ -114,6 +116,12 @@ export default function ApresentacaoPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-muted">
+      <Seo
+        title="Apresentação Compra360 — como funciona o sistema"
+        description="Apresentação completa do Compra360: da montagem da cotação ao envio dos pedidos, incluindo o app de reposição para a equipe."
+        path="/apresentacao"
+      />
+
       <header className="flex flex-wrap items-center justify-between gap-2 border-b bg-card px-3 py-2 md:px-5">
         <div className="flex items-center gap-2">
           <span className="text-base font-bold tracking-tight text-primary">Compra360</span>

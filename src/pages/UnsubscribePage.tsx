@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Loader2, CheckCircle2, XCircle, MailX } from 'lucide-react';
+import Seo from '@/components/Seo';
+
 
 type Status = 'loading' | 'valid' | 'already' | 'invalid' | 'submitting' | 'success' | 'error';
 
@@ -48,6 +50,12 @@ export default function UnsubscribePage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Seo
+        title="Cancelar assinatura de e-mails — Compra360"
+        description="Cancele o recebimento dos e-mails de notificação do Compra360 em um clique."
+        path="/unsubscribe"
+        noindex
+      />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-muted flex items-center justify-center">
@@ -56,15 +64,17 @@ export default function UnsubscribePage() {
              status === 'invalid' || status === 'error' ? <XCircle className="h-6 w-6 text-destructive" /> :
              <CheckCircle2 className="h-6 w-6 text-primary" />}
           </div>
-          <CardTitle>
+          <h1 className="text-2xl font-semibold leading-none tracking-tight">
             {status === 'loading' && 'Verificando link…'}
-            {status === 'valid' && 'Cancelar e-mails do Compra360'}
+            {status === 'valid' && 'Cancelar assinatura de e-mails'}
             {status === 'submitting' && 'Processando…'}
             {status === 'success' && 'E-mails cancelados'}
             {status === 'already' && 'Você já cancelou'}
             {status === 'invalid' && 'Link inválido'}
             {status === 'error' && 'Não foi possível processar'}
-          </CardTitle>
+          </h1>
+
+
         </CardHeader>
         <CardContent className="text-center space-y-4">
           {status === 'valid' && (

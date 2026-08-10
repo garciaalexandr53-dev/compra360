@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { PLAN_PRICES } from "@/lib/planPrices";
 import { withAssetVersion } from "@/lib/assetVersion";
+import Seo from "@/components/Seo";
+
 import {
   Accordion,
   AccordionContent,
@@ -404,6 +406,12 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
+      <Seo
+        title="Compra360 — Sistema de Cotação para Supermercado"
+        description="Compare preços de fornecedores em tempo real pelo celular e economize nas compras do seu supermercado. Teste grátis por 30 dias."
+        path="/"
+      />
+
       {/* ── NAV ── */}
       <nav className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-5 h-24 sm:h-20">
@@ -439,11 +447,12 @@ export default function LandingPage() {
               Economize tempo e dinheiro nas compras da sua empresa
             </p>
             <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-6 ${anim(hero.visible)}`} style={{ transitionDelay: "100ms" }}>
-              Sua empresa pode estar pagando mais caro sem perceber.
+              Compra360 — sistema de cotação de preços para supermercados
             </h1>
             <p className={`text-lg text-slate-400 leading-relaxed mb-4 max-w-xl ${anim(hero.visible)}`} style={{ transitionDelay: "200ms" }}>
-              O Compra360 reúne fornecedores em uma única tela para encontrar a melhor compra em minutos.
+              Sua empresa pode estar pagando mais caro sem perceber. O Compra360 reúne fornecedores em uma única tela para encontrar a melhor compra em minutos.
             </p>
+
             <ul className={`space-y-2.5 mb-8 ${anim(hero.visible)}`} style={{ transitionDelay: "250ms" }}>
               <li className="flex items-center gap-2 text-slate-300 text-sm sm:text-base"><CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" /> Compare preços de vários fornecedores em segundos</li>
               <li className="flex items-center gap-2 text-slate-300 text-sm sm:text-base"><CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" /> Descubra automaticamente a melhor compra</li>
