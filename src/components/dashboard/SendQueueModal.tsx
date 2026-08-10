@@ -102,29 +102,31 @@ const SendQueueModal = ({ open, onOpenChange, fornecedores, onConclude }: Props 
                 const status = statuses[f.id] || "pending";
                 const isNext = f.id === nextPending?.id;
                 return (
-                  <div key={f.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                  <div key={f.id} className={`flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-3 p-3 rounded-lg border transition-all ${
                     status === "sent" ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800" 
                     : status === "skipped" ? "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 opacity-60" 
                     : isNext ? "bg-primary/5 border-primary/30 shadow-sm" 
                     : "border-border"
                   }`}>
-                    <div className="shrink-0">
-                      {status === "sent" && <CheckCircle2 className="h-5 w-5 text-green-600" />}
-                      {status === "skipped" && <SkipForward className="h-5 w-5 text-amber-500" />}
-                      {status === "pending" && <Clock className="h-5 w-5 text-muted-foreground" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{f.nome}</p>
-                      {f.telefone && <p className="text-xs text-muted-foreground">{f.telefone}</p>}
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="shrink-0">
+                        {status === "sent" && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+                        {status === "skipped" && <SkipForward className="h-5 w-5 text-amber-500" />}
+                        {status === "pending" && <Clock className="h-5 w-5 text-muted-foreground" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{f.nome}</p>
+                        {f.telefone && <p className="text-xs text-muted-foreground truncate">{f.telefone}</p>}
+                      </div>
                     </div>
                     {status === "pending" && (
-                      <div className="flex gap-1.5 shrink-0">
+                      <div className="flex flex-wrap gap-1.5 w-full sm:w-auto sm:shrink-0">
                         {isNext && (
-                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs" onClick={() => openWhatsApp(f)}>
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white text-xs flex-1 sm:flex-none" onClick={() => openWhatsApp(f)}>
                             <Smartphone className="h-3 w-3 mr-1" /> WhatsApp
                           </Button>
                         )}
-                        <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" onClick={() => skip(f.id)}>
+                        <Button size="sm" variant="ghost" className="text-xs text-muted-foreground flex-1 sm:flex-none" onClick={() => skip(f.id)}>
                           Pular
                         </Button>
                       </div>
@@ -137,12 +139,13 @@ const SendQueueModal = ({ open, onOpenChange, fornecedores, onConclude }: Props 
         )}
 
         {!allDone && (
-          <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground pt-2 border-t">
             <span>✅ {sentCount} enviado(s)</span>
             <span>⏭️ {skippedCount} pulado(s)</span>
             <span>⏳ {fornecedores.length - sentCount - skippedCount} restante(s)</span>
           </div>
         )}
+
       </DialogContent>
     </Dialog>
   );
