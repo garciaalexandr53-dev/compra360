@@ -94,13 +94,14 @@ const ModalFornecedores = ({
           {fornecedores.map((f) => (
             <label
               key={f.id}
-              className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${selectedSuppliers[f.id] !== false ? "border-primary/30 bg-primary/5" : "border-border hover:border-muted-foreground/30 opacity-60"}`}
+              className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${selectedSuppliers[f.id] === true ? "border-primary/30 bg-primary/5" : "border-border hover:border-muted-foreground/30 opacity-60"}`}
               onClick={() => onToggle(f.id)}
             >
               <Checkbox
-                checked={selectedSuppliers[f.id] !== false}
+                checked={selectedSuppliers[f.id] === true}
                 onCheckedChange={() => onToggle(f.id)}
               />
+
               <div className="flex-1">
                 <div className="text-sm font-bold">{f.nome}</div>
                 <div className="text-xs text-muted-foreground">
