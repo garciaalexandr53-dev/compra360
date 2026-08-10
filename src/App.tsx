@@ -39,6 +39,7 @@ const PerfilPage = lazy(() => retryImport(() => import("./pages/PerfilPage")));
 const NotFound = lazy(() => retryImport(() => import("./pages/NotFound")));
 const UnsubscribePage = lazy(() => retryImport(() => import("./pages/UnsubscribePage")));
 const OAuthConsent = lazy(() => retryImport(() => import("./pages/OAuthConsent")));
+const ApresentacaoPage = lazy(() => retryImport(() => import("./pages/ApresentacaoPage")));
 
 const queryClient = new QueryClient();
 
@@ -58,7 +59,9 @@ const App = () => (
                 <Route path="/reposicao" element={<Suspense fallback={null}><AppFuncionariosPublic /></Suspense>} />
                 <Route path="/app-funcionarios" element={<Navigate to={`/reposicao${window.location.search}`} replace />} />
                 <Route path="/admin" element={<Suspense fallback={null}><AdminPage /></Suspense>} />
+                <Route path="/apresentacao" element={<Suspense fallback={null}><ApresentacaoPage /></Suspense>} />
                 <Route path="/unsubscribe" element={<Suspense fallback={null}><UnsubscribePage /></Suspense>} />
+
                 <Route path="/.lovable/oauth/consent" element={<Suspense fallback={null}><OAuthConsent /></Suspense>} />
 
                 <Route element={<Suspense fallback={null}><AppLayout /></Suspense>}>
