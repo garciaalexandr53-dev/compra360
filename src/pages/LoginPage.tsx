@@ -149,6 +149,11 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background p-4">
+      <Seo
+        title="Entrar no Compra360 — acesso ao sistema de cotação"
+        description="Acesse sua conta Compra360 para criar cotações, comparar preços de fornecedores e fechar pedidos pelo celular."
+        path="/login"
+      />
       <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="text-center pb-2">
           <div className="flex justify-center">
@@ -158,10 +163,14 @@ const LoginPage = () => {
               className="max-w-[200px] sm:max-w-[260px] w-full h-auto object-contain"
             />
           </div>
+          <h1 className="text-lg font-semibold text-foreground">
+            {isSignUp ? "Criar conta no Compra360" : "Entrar no Compra360"}
+          </h1>
           <CardDescription>
             {isSignUp ? "Crie sua conta" : "Entre com sua conta para continuar"}
           </CardDescription>
         </CardHeader>
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
