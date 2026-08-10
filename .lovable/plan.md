@@ -7,7 +7,7 @@ Criar uma apresentação de vendas completa do Compra360 (fluxo de cotação do 
 
 Ambos compartilham o mesmo roteiro de ~20 slides e a identidade visual do Compra360 (teal + Sora, logo real).
 
-## Roteiro de slides (~20)
+## Roteiro de slides (~22)
 1. **Capa** — Compra360 · Cotação inteligente para supermercados
 2. **O problema** — cotação manual: tempo perdido, sem poder de negociação, erros de digitação
 3. **A solução** — plataforma de cotação automatizada + 3 pilares (comparar, economizar, ganhar tempo)
@@ -15,19 +15,26 @@ Ambos compartilham o mesmo roteiro de ~20 slides e a identidade visual do Compra
 5. **Passo 1: Configuração guiada** — onboarding (loja + fornecedores) em minutos
 6. **Banco de produtos** — 11.500+ prontos, busca por nome/EAN, importar ERP/Excel
 7. **Cadastro de fornecedores** — nome, pedido mínimo, prazo de pagamento, observações
-8. **App de Funcionários** — equipe registra itens faltando pelo WhatsApp, chega na cotação
-9. **Passo 2: Cotação** — matriz de preços comparativa (produtos × fornecedores)
-10. **Destaques inteligentes** — 🟢 MIN, 🟡 2º, ⚠️ erro de digitação, 🔴 sobrepreço
-11. **Envio para fornecedores** — links/WhatsApp, status em tempo real, prazo de resposta
-12. **Portal do fornecedor** — preenchimento simples pelo celular, aviso inteligente de preço
-13. **Passo 3: Análise** — KPIs (total, cobertura, ranking), resumo automático
-14. **Distribuição inteligente (IA)** — boost até 30%, puxar itens, negociar
-15. **Pedidos otimizados** — agrupamento por fornecedor, envio por WhatsApp
-16. **Conferência de pedidos** — validação dos recebidos vs nota fiscal
-17. **Histórico & insights** — ranking, variação de preços, curva ABC, relatórios
-18. **Resultados** — 9,5% economia média + depoimentos reais de clientes
-19. **Planos** — Gratuito / Pro / Business (benefícios por tier, **sem preços**)
-20. **Próximos passos** — CTA: comece grátis / agende demo + contato
+
+**Seção dedicada — App de Funcionários** (demonstração passo a passo)
+
+8. **Por que existe** — quem vê a falta na gôndola não é quem compra. A equipe registra, o comprador decide. Link por WhatsApp, sem instalar app, sem login.
+9. **Demonstração: registrar item faltante** — 4 telas em sequência mostradas como mockups do fluxo real: abrir o link → buscar por nome ou código de barras (scanner da câmera) → informar quantidade, embalagem e observação → item enviado. Destaque: sugestão de embalagem/fator da equipe.
+10. **Demonstração: comprador recebe** — tela de Itens Pendentes com badge "Sugestão da equipe", aceitar ou voltar ao padrão, e importação em 1 toque para a cotação ativa.
+11. **Demonstração: conferência de recebimento** — a equipe confere o pedido recebido contra o pedido enviado, marca divergências de quantidade e o comprador vê o histórico de conferências.
+
+12. **Passo 2: Cotação** — matriz de preços comparativa (produtos × fornecedores)
+13. **Destaques inteligentes** — 🟢 MIN, 🟡 2º, ⚠️ erro de digitação, 🔴 sobrepreço
+14. **Envio para fornecedores** — links/WhatsApp, status em tempo real, prazo de resposta
+15. **Portal do fornecedor** — preenchimento simples pelo celular, aviso inteligente de preço
+16. **Passo 3: Análise** — KPIs (total, cobertura, ranking), resumo automático
+17. **Distribuição inteligente (IA)** — boost até 30%, puxar itens, negociar
+18. **Pedidos otimizados** — agrupamento por fornecedor, envio por WhatsApp
+19. **Histórico & insights** — ranking, variação de preços, relatórios consolidados
+20. **Resultados** — 9,5% economia média + depoimentos reais de clientes
+21. **Planos** — Gratuito / Pro / Business (benefícios por tier, **sem preços**)
+22. **Próximos passos** — CTA: comece grátis / agende demo + contato
+
 
 ## Entrega 1 — PowerPoint (.pptx)
 
