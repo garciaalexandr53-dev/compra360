@@ -106,15 +106,29 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
     () => normalizarWhatsAppCliente(detalhes?.telefone ?? cliente?.whatsapp ?? null),
     [detalhes?.telefone, cliente?.whatsapp],
   );
-  const totalPago = useMemo(() => {
-    if (!cliente || !detalhes) return 0;
-    return calcularTotalPago(
-      cliente.plan_name,
-      cliente.plan_status,
-      detalhes.plan_price_monthly,
-      detalhes.subscription_started_at || detalhes.subscription_created_at,
-    );
-  }, [cliente, detalhes]);
+  const { data: pagamentos, isLoading: loadingPagamentos, isError: erroPagamentos } = useQuery({
+    queryKey: ["admin-cliente-pagamentos", cliente?.email],
+    enabled: !!cliente?.email,
+    queryFn: async (): Promise<PagamentosCliente> => {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const resp = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/stripe-dados?customer_email=${encodeURIComponent(cliente!.email)}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!resp.ok) throw new Error(await resp.text());
+      return resp.json();
+    },
+  });
+
+  const totalPagoLabel = loadingPagamentos
+    ? "..."
+    : erroPagamentos
+      ? "—"
+      : !pagamentos?.found || pagamentos.faturas_pagas === 0
+        ? "Nenhum pagamento registrado"
+        : formatBRL((pagamentos.total_pago || 0) / 100);
+
 
   if (!cliente) return null;
 
