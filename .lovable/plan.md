@@ -45,6 +45,7 @@ Gerado com **pptxgenjs** (skill pptx), salvo em `/mnt/documents`.
 - **Logo real**: embeda `public/compra360-icon.png` como base64 em capa e rodapé.
 - **Motivo visual**: cartões arredondados com borda lateral teal + ícones em círculos teal; barras de progresso dos 4 passos. Sem linhas de acento sob títulos.
 - **Tipografia**: título 40-54pt, corpo 20-24pt, stat callouts 60-80pt (legível em projeção).
+- **Mockups de tela**: os slides de demonstração (App de Funcionários, matriz de cotação, portal do fornecedor) usam mockups de celular desenhados com shapes do pptxgenjs — moldura arredondada, barra de status e conteúdo fiel às telas reais. Sem capturas de tela desatualizadas.
 - **Cada slide tem um elemento visual** (ícone/shape/diagrama) — nenhum slide só-texto.
 - **Conteúdo factual**: só dados reais (11.500+, 9,5%, depoimentos existentes, planos sem preço). Sem métricas inventadas.
 - **QA**: validar schema com `validate_document.py --auto-repair`, extrair texto com markitdown, converter em imagens (LibreOffice→PDF→pdftoppm) e inspecionar cada slide — corrigir overflow/sobreposição até passar.
