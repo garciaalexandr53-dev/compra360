@@ -203,8 +203,24 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
                     value={diasTrial !== null ? `${diasTrial} dia(s)` : "—"} />
                 </>
               )}
-              <Info icon={<CreditCard className="h-3.5 w-3.5" />} label="Total pago estimado"
-                value={isLoading ? "..." : formatBRL(totalPago)} />
+              <Info icon={<CreditCard className="h-3.5 w-3.5" />} label="Total pago"
+                value={totalPagoLabel} />
+              {pagamentos?.found && (pagamentos.faturas_pagas || 0) > 0 && (
+                <>
+                  <Info icon={<FileText className="h-3.5 w-3.5" />} label="Faturas pagas"
+                    value={`${pagamentos.faturas_pagas}`} />
+                  <Info icon={<Calendar className="h-3.5 w-3.5" />} label="Último pagamento"
+                    value={formatUnix(pagamentos.ultima_fatura_paga_em)} />
+                </>
+              )}
+              {pagamentos?.proxima_cobranca_em && (
+                <Info icon={<Calendar className="h-3.5 w-3.5" />} label="Próxima cobrança"
+                  value={`${formatUnix(pagamentos.proxima_cobranca_em)}${
+                    pagamentos.proxima_cobranca_valor
+                      ? ` · ${formatBRL(pagamentos.proxima_cobranca_valor / 100)}`
+                      : ""
+                  }`} />
+              )}
             </Secao>
 
             <Separator />
