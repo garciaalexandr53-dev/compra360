@@ -49,18 +49,22 @@ function formatDateTime(iso: string | null | undefined): string {
   }
 }
 
-function calcularTotalPago(
-  planName: string,
-  planStatus: string,
-  priceMonthly: number | null,
-  subscriptionStart: string | null,
-): number {
-  if (planStatus !== "active" || !priceMonthly || !subscriptionStart) return 0;
-  if (planName === "free") return 0;
-  const start = new Date(subscriptionStart).getTime();
-  const meses = Math.max(1, Math.floor((Date.now() - start) / (1000 * 60 * 60 * 24 * 30)));
-  return meses * priceMonthly;
+type PagamentosCliente = {
+  found: boolean;
+  total_pago: number;
+  faturas_pagas: number;
+  ultima_fatura_paga_em: number | null;
+  proxima_cobranca_em: number | null;
+  proxima_cobranca_valor: number | null;
+};
+
+function formatUnix(ts: number | null | undefined): string {
+  if (!ts) return "—";
+  return new Date(ts * 1000).toLocaleDateString("pt-BR", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+  });
 }
+
 
 export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onAlterarPlano, onExcluir }: Props) {
   const isMobile = useIsMobile();
