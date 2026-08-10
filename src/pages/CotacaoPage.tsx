@@ -158,17 +158,11 @@ const CotacaoPage = () => {
         if (prevKeys === newKeys && Object.values(prev).join(",") === Object.values(sel).join(",")) return prev;
         return sel;
       });
-    } else {
-      setSelectedSuppliers((prev) => {
-        if (Object.keys(prev).length > 0) return prev;
-        const initial: Record<string, boolean> = {};
-        allFornecedores.forEach((f) => { initial[f.id] = true; });
-        return initial;
-      });
     }
   }, [allFornecedores, cotacaoFornecedores, cotacaoAtiva?.id]);
 
-  const fornecedores = useMemo(() => allFornecedores.filter((f) => selectedSuppliers[f.id] !== false), [allFornecedores, selectedSuppliers]);
+  const fornecedores = useMemo(() => allFornecedores.filter((f) => selectedSuppliers[f.id] === true), [allFornecedores, selectedSuppliers]);
+
 
   const { data: cotacaoProdutos = [] } = useQuery({
     queryKey: ["cotacao-produtos", cotacaoAtiva?.id],
