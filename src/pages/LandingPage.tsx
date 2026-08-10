@@ -498,8 +498,8 @@ export default function LandingPage() {
               </div>
               <div className="mt-5 pt-4 border-t border-white/10 grid grid-cols-2 gap-3">
                 <div className="text-center">
-                  <p className="text-slate-500 text-xs">Você pagaria</p>
-                  <p className="text-slate-400 text-sm line-through">R$ 54,90</p>
+                  <p className="text-slate-500 text-xs">Média dos fornecedores</p>
+                  <p className="text-slate-400 text-sm line-through">R$ 48,85</p>
                 </div>
                 <div className="text-center">
                   <p className="text-slate-500 text-xs">Com o Compra360</p>
@@ -507,8 +507,8 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="mt-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-center">
-                <p className="text-emerald-400 font-bold text-sm">💰 Economia: R$ 11,00/cx</p>
-                <p className="text-slate-500 text-xs mt-0.5">× 10 caixas/mês = <span className="text-emerald-400 font-semibold">R$ 110,00 economizados</span></p>
+                <p className="text-emerald-400 font-bold text-sm">💰 Economia: R$ 4,95/cx</p>
+                <p className="text-slate-500 text-xs mt-0.5">× 10 caixas/mês = <span className="text-emerald-400 font-semibold">R$ 49,50 economizados</span></p>
               </div>
             </div>
           </div>
