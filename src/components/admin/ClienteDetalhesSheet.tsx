@@ -49,18 +49,22 @@ function formatDateTime(iso: string | null | undefined): string {
   }
 }
 
-function calcularTotalPago(
-  planName: string,
-  planStatus: string,
-  priceMonthly: number | null,
-  subscriptionStart: string | null,
-): number {
-  if (planStatus !== "active" || !priceMonthly || !subscriptionStart) return 0;
-  if (planName === "free") return 0;
-  const start = new Date(subscriptionStart).getTime();
-  const meses = Math.max(1, Math.floor((Date.now() - start) / (1000 * 60 * 60 * 24 * 30)));
-  return meses * priceMonthly;
+type PagamentosCliente = {
+  found: boolean;
+  total_pago: number;
+  faturas_pagas: number;
+  ultima_fatura_paga_em: number | null;
+  proxima_cobranca_em: number | null;
+  proxima_cobranca_valor: number | null;
+};
+
+function formatUnix(ts: number | null | undefined): string {
+  if (!ts) return "—";
+  return new Date(ts * 1000).toLocaleDateString("pt-BR", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+  });
 }
+
 
 export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onAlterarPlano, onExcluir }: Props) {
   const isMobile = useIsMobile();
@@ -102,15 +106,29 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
     () => normalizarWhatsAppCliente(detalhes?.telefone ?? cliente?.whatsapp ?? null),
     [detalhes?.telefone, cliente?.whatsapp],
   );
-  const totalPago = useMemo(() => {
-    if (!cliente || !detalhes) return 0;
-    return calcularTotalPago(
-      cliente.plan_name,
-      cliente.plan_status,
-      detalhes.plan_price_monthly,
-      detalhes.subscription_started_at || detalhes.subscription_created_at,
-    );
-  }, [cliente, detalhes]);
+  const { data: pagamentos, isLoading: loadingPagamentos, isError: erroPagamentos } = useQuery({
+    queryKey: ["admin-cliente-pagamentos", cliente?.email],
+    enabled: !!cliente?.email,
+    queryFn: async (): Promise<PagamentosCliente> => {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const resp = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/stripe-dados?customer_email=${encodeURIComponent(cliente!.email)}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!resp.ok) throw new Error(await resp.text());
+      return resp.json();
+    },
+  });
+
+  const totalPagoLabel = loadingPagamentos
+    ? "..."
+    : erroPagamentos
+      ? "—"
+      : !pagamentos?.found || pagamentos.faturas_pagas === 0
+        ? "Nenhum pagamento registrado"
+        : formatBRL((pagamentos.total_pago || 0) / 100);
+
 
   if (!cliente) return null;
 
@@ -185,8 +203,24 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
                     value={diasTrial !== null ? `${diasTrial} dia(s)` : "—"} />
                 </>
               )}
-              <Info icon={<CreditCard className="h-3.5 w-3.5" />} label="Total pago estimado"
-                value={isLoading ? "..." : formatBRL(totalPago)} />
+              <Info icon={<CreditCard className="h-3.5 w-3.5" />} label="Total pago"
+                value={totalPagoLabel} />
+              {pagamentos?.found && (pagamentos.faturas_pagas || 0) > 0 && (
+                <>
+                  <Info icon={<FileText className="h-3.5 w-3.5" />} label="Faturas pagas"
+                    value={`${pagamentos.faturas_pagas}`} />
+                  <Info icon={<Calendar className="h-3.5 w-3.5" />} label="Último pagamento"
+                    value={formatUnix(pagamentos.ultima_fatura_paga_em)} />
+                </>
+              )}
+              {pagamentos?.proxima_cobranca_em && (
+                <Info icon={<Calendar className="h-3.5 w-3.5" />} label="Próxima cobrança"
+                  value={`${formatUnix(pagamentos.proxima_cobranca_em)}${
+                    pagamentos.proxima_cobranca_valor
+                      ? ` · ${formatBRL(pagamentos.proxima_cobranca_valor / 100)}`
+                      : ""
+                  }`} />
+              )}
             </Secao>
 
             <Separator />

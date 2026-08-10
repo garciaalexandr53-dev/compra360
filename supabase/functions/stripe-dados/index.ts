@@ -101,6 +101,97 @@ serve(async (req) => {
       Math.min(365, parseInt(url.searchParams.get("invoices_days") || "30", 10)),
     );
 
+    // ---- Per-customer mode: real payment totals for one client ----
+    const customerEmail = url.searchParams.get("customer_email")?.trim().toLowerCase();
+    if (customerEmail) {
+      if (customerEmail.length > 320 || !customerEmail.includes("@")) {
+        return new Response(JSON.stringify({ error: "customer_email inválido" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const custList = await stripe.customers.list({ email: customerEmail, limit: 10 });
+      if (custList.data.length === 0) {
+        return new Response(
+          JSON.stringify({
+            found: false,
+            total_pago: 0,
+            faturas_pagas: 0,
+            ultima_fatura_paga_em: null,
+            proxima_cobranca_em: null,
+            proxima_cobranca_valor: null,
+            currency: "brl",
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      let totalPago = 0;
+      let faturasPagas = 0;
+      let ultimaPagaEm: number | null = null;
+      let proximaEm: number | null = null;
+      let proximaValor: number | null = null;
+
+      for (const cust of custList.data) {
+        // Full invoice history (paginated)
+        let startingAfter: string | undefined = undefined;
+        for (let page = 0; page < 20; page++) {
+          const resp = await stripe.invoices.list({
+            customer: cust.id,
+            limit: 100,
+            ...(startingAfter ? { starting_after: startingAfter } : {}),
+          });
+          for (const inv of resp.data) {
+            if (inv.status === "paid" && inv.amount_paid > 0) {
+              totalPago += inv.amount_paid;
+              faturasPagas += 1;
+              const pagoEm = (inv.status_transitions?.paid_at ?? inv.created) as number;
+              if (!ultimaPagaEm || pagoEm > ultimaPagaEm) ultimaPagaEm = pagoEm;
+            }
+          }
+          if (!resp.has_more || resp.data.length === 0) break;
+          startingAfter = resp.data[resp.data.length - 1].id;
+        }
+
+        // Next charge from active/trialing subscription
+        const subs = await stripe.subscriptions.list({
+          customer: cust.id,
+          status: "all",
+          limit: 10,
+          expand: ["data.items.data.price"],
+        });
+        for (const s of subs.data) {
+          if (s.status !== "active" && s.status !== "trialing") continue;
+          const item = s.items.data[0];
+          const end = ((s as unknown as { current_period_end?: number }).current_period_end ??
+            (item as unknown as { current_period_end?: number })?.current_period_end ??
+            null) as number | null;
+          if (end && (!proximaEm || end < proximaEm)) {
+            proximaEm = end;
+            proximaValor = item?.price?.unit_amount ?? null;
+          }
+        }
+      }
+
+      log("Per-customer totals", { customerEmail, totalPago, faturasPagas });
+
+      return new Response(
+        JSON.stringify({
+          found: true,
+          total_pago: totalPago,
+          faturas_pagas: faturasPagas,
+          ultima_fatura_paga_em: ultimaPagaEm,
+          proxima_cobranca_em: proximaEm,
+          proxima_cobranca_valor: proximaValor,
+          currency: "brl",
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+
+
     // List subscriptions (all statuses, last 100)
     const subsResp = await stripe.subscriptions.list({
       limit: 100,
