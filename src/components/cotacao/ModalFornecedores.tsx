@@ -77,7 +77,7 @@ const ModalFornecedores = ({
     }
   };
 
-  const selectedCount = fornecedores.filter(f => selectedSuppliers[f.id] !== false).length;
+  const selectedCount = fornecedores.filter(f => selectedSuppliers[f.id] === true).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
