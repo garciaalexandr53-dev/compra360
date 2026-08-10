@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Loader2, CheckCircle2, XCircle, MailX } from 'lucide-react';
+import Seo from '@/components/Seo';
+
 
 type Status = 'loading' | 'valid' | 'already' | 'invalid' | 'submitting' | 'success' | 'error';
 
