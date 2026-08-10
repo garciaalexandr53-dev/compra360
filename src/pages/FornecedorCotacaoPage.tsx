@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { formatNumber, formatHoraLocal, formatTimeRemaining } from "@/lib/format";
 import { withAssetVersion } from "@/lib/assetVersion";
 import { avaliarPreco, type ReferenciaFonte } from "@/lib/avaliarPreco";
+import { PRECO_FALLBACK_MIN, DEBOUNCE_AVALIACAO_MS } from "@/lib/precoReferencia";
 
 interface ProdutoItem {
   cotacao_produto_id: string;
@@ -31,12 +32,20 @@ const FornecedorCotacaoPage = () => {
   const [lojaNome, setLojaNome] = useState("");
   const [produtos, setProdutos] = useState<ProdutoItem[]>([]);
   const [prices, setPrices] = useState<Record<string, string>>({});
+  const [prontoParaAvaliar, setProntoParaAvaliar] = useState<Record<string, boolean>>({});
+  const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const [sending, setSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [prazoIso, setPrazoIso] = useState<string | null>(null);
   const [cotacaoId, setCotacaoId] = useState<string | null>(null);
   const [, forceTick] = useState(0);
   const visualizadoMarcado = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      Object.values(debounceTimers.current).forEach(clearTimeout);
+    };
+  }, []);
 
   const hasAnyPrice = Object.values(prices).some((v) => v.trim().length > 0);
 
@@ -201,6 +210,16 @@ const FornecedorCotacaoPage = () => {
 
   const handlePriceChange = (cpId: string, raw: string) => {
     setPrices({ ...prices, [cpId]: formatCurrency(raw) });
+    setProntoParaAvaliar((p) => ({ ...p, [cpId]: false }));
+
+    if (debounceTimers.current[cpId]) clearTimeout(debounceTimers.current[cpId]);
+    debounceTimers.current[cpId] = setTimeout(() => {
+      const formatted = formatCurrency(raw);
+      const num = parseFloat(formatted.replace(/\./g, "").replace(",", "."));
+      if (Number.isFinite(num) && num >= PRECO_FALLBACK_MIN) {
+        setProntoParaAvaliar((p) => ({ ...p, [cpId]: true }));
+      }
+    }, DEBOUNCE_AVALIACAO_MS);
   };
 
   const handleSend = async () => {
@@ -444,10 +463,17 @@ const FornecedorCotacaoPage = () => {
                 placeholder="0,00"
                 value={prices[p.cotacao_produto_id] || ""}
                 onChange={(e) => handlePriceChange(p.cotacao_produto_id, e.target.value)}
+                onBlur={() => {
+                  if (debounceTimers.current[p.cotacao_produto_id]) {
+                    clearTimeout(debounceTimers.current[p.cotacao_produto_id]);
+                  }
+                  setProntoParaAvaliar((prev) => ({ ...prev, [p.cotacao_produto_id]: true }));
+                }}
                 className="font-mono text-right text-base font-bold"
               />
             </div>
             {(() => {
+              if (!prontoParaAvaliar[p.cotacao_produto_id]) return null;
               const raw = prices[p.cotacao_produto_id];
               if (!raw || !raw.trim()) return null;
               const num = parseFloat(raw.replace(/\./g, "").replace(",", "."));
