@@ -48,15 +48,16 @@ const ModalFornecedores = ({
 }: ModalFornecedoresProps) => {
   const enablePrazo = typeof onPrazoChange === "function";
   const [prazoLocal, setPrazoLocal] = useState<string>(isoToDatetimeLocal(prazoIso));
-  const [semPrazo, setSemPrazo] = useState<boolean>(!prazoIso);
+  const [semPrazo, setSemPrazo] = useState<boolean>(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
       setPrazoLocal(isoToDatetimeLocal(prazoIso));
-      setSemPrazo(!prazoIso);
+      setSemPrazo(false);
     }
   }, [open, prazoIso]);
+
 
   const handleQuick = (hours: number) => {
     setSemPrazo(false);
