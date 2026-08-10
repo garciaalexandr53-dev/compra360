@@ -404,6 +404,12 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
+      <Seo
+        title="Compra360 — Sistema de Cotação para Supermercado"
+        description="Compare preços de fornecedores em tempo real pelo celular e economize nas compras do seu supermercado. Teste grátis por 30 dias."
+        path="/"
+      />
+
       {/* ── NAV ── */}
       <nav className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-5 h-24 sm:h-20">
