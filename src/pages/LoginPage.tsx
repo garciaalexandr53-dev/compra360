@@ -9,6 +9,8 @@ import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import { Download } from "lucide-react";
 import { withAssetVersion } from "@/lib/assetVersion";
+import Seo from "@/components/Seo";
+
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
