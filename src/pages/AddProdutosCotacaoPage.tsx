@@ -29,7 +29,6 @@ interface LocalItem {
   produtoId?: string;
   catalogoMestreId?: string;
   ean?: string | null;
-  locked?: boolean;
 }
 
 let localIdCounter = 0;
