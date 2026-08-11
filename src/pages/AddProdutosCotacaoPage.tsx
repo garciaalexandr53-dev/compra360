@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback } from "react";
-import { FATOR_PADRAO } from "@/lib/embalagemFatores";
+import AdicionarItemDialog from "@/components/shared/AdicionarItemDialog";
 import {
   buildSnapshotInsert,
   type ProdutoHibrido,
@@ -13,7 +13,7 @@ import { useProdutosHibrido } from "@/hooks/useProdutosHibrido";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+
 import { Plus, Minus, Trash2, ShoppingCart, ArrowLeft, Check, PlusCircle, Search } from "lucide-react";
 import DashboardProgress from "@/components/dashboard/DashboardProgress";
 import { toast } from "sonner";
@@ -51,15 +51,13 @@ const AddProdutosCotacaoPage = () => {
   // Dialog states
   const [dialogItem, setDialogItem] = useState<{
     nome: string;
+    embalagem?: string | null;
+    fator?: number | null;
     produtoId?: string;
     catalogoMestreId?: string;
     ean?: string | null;
-    locked?: boolean;
   } | null>(null);
-  const [dialogQtd, setDialogQtd] = useState("");
-  const [dialogEmb, setDialogEmb] = useState("UNI");
-  const [dialogFator, setDialogFator] = useState("1");
-  const dialogInputRef = useRef<HTMLInputElement>(null);
+
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -141,41 +139,22 @@ const AddProdutosCotacaoPage = () => {
   // Dialog handlers
   const handlePickSuggestion = (produto: ProdutoHibrido | { id: string; nome: string; embalagem?: string | null; fator_embalagem?: number | null; fonte?: "catalogo" | "local"; ean?: string | null }) => {
     const fonte: "catalogo" | "local" = (produto as ProdutoHibrido).fonte ?? "local";
-    const embRaw = (produto.embalagem || "UNI").split("|")[0]?.trim().toUpperCase() || "UNI";
-    const tipos = ["UNI", "CX", "DZ", "½DZ", "DP", "FD", "KG", "PCT"];
-    const matched = tipos.find((t) => embRaw.startsWith(t)) || "UNI";
-    const fatorCadastrado =
-      produto.fator_embalagem && produto.fator_embalagem > 0
-        ? produto.fator_embalagem
-        : (FATOR_PADRAO[matched] ?? 1);
     setDialogItem({
       nome: produto.nome,
+      embalagem: produto.embalagem ?? null,
+      fator: produto.fator_embalagem ?? null,
       produtoId: fonte === "local" ? produto.id : undefined,
       catalogoMestreId: fonte === "catalogo" ? produto.id : undefined,
       ean: (produto as ProdutoHibrido).ean ?? null,
-      locked: fonte === "catalogo",
     });
-    setDialogQtd("");
-    setDialogEmb(matched);
-    setDialogFator(String(fatorCadastrado));
-    setTimeout(() => dialogInputRef.current?.focus(), 100);
   };
 
   const handlePickNovo = () => {
     setDialogItem({ nome: nome.trim() });
-    setDialogQtd("");
-    setDialogEmb("UNI");
-    setDialogFator("1");
-    setTimeout(() => dialogInputRef.current?.focus(), 100);
   };
 
-  const handleDialogConfirm = () => {
+  const handleDialogConfirm = (qtd: number, embalagem: string, fator: number) => {
     if (!dialogItem) return;
-    const qtd = parseInt(dialogQtd || "0");
-    if (!qtd || qtd < 1) {
-      toast.error("Informe a quantidade (mínimo 1)");
-      return;
-    }
     if (items.some(i => i.nome.toLowerCase() === dialogItem.nome.toLowerCase())) {
       toast.error("Produto já adicionado à lista");
       setDialogItem(null);
@@ -186,12 +165,12 @@ const AddProdutosCotacaoPage = () => {
       id: genId(),
       nome: dialogItem.nome,
       quantidade: qtd,
-      embalagem: dialogEmb,
-      fator: parseInt(dialogFator) || 1,
+      embalagem,
+      fator,
       produtoId: dialogItem.produtoId,
       catalogoMestreId: dialogItem.catalogoMestreId,
       ean: dialogItem.ean ?? null,
-      locked: dialogItem.locked,
+      locked: !!dialogItem.catalogoMestreId,
     }]);
     setDialogItem(null);
     setNome("");
@@ -202,6 +181,7 @@ const AddProdutosCotacaoPage = () => {
       toast.success("Produto adicionado ✔", { duration: 1500 });
     }
   };
+
 
   const updateQty = (id: string, delta: number) => {
     setItems(prev => prev.map(i =>
@@ -481,103 +461,19 @@ const AddProdutosCotacaoPage = () => {
       </div>
 
       {/* Quantity Dialog */}
-      <Dialog open={!!dialogItem} onOpenChange={(open) => { if (!open) setDialogItem(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-base font-semibold truncate flex items-center gap-2 flex-wrap">
-              <span>{dialogItem?.nome}</span>
-              {dialogItem?.locked && (
-                <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                  Catálogo
-                </span>
-              )}
-            </DialogTitle>
-            {dialogItem?.locked ? (
-              <p className="text-xs text-muted-foreground">
-                Embalagem e fator definidos pelo catálogo (somente leitura).
-              </p>
-            ) : dialogItem?.produtoId ? (
-              <p className="text-xs text-muted-foreground">Produto existente no banco</p>
-            ) : null}
-          </DialogHeader>
+      <AdicionarItemDialog
+        produto={dialogItem ? {
+          nome: dialogItem.nome,
+          embalagem: dialogItem.embalagem,
+          fator: dialogItem.fator,
+          subtitulo: !dialogItem.catalogoMestreId && dialogItem.produtoId ? "Produto existente no banco" : null,
+        } : null}
+        onConfirmar={handleDialogConfirm}
+        onCancelar={() => setDialogItem(null)}
+        badge={dialogItem?.catalogoMestreId ? "Catálogo" : null}
+        origemPadrao={dialogItem?.catalogoMestreId ? "catalogo" : "cadastro"}
+      />
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Quantidade</label>
-            <Input
-              ref={dialogInputRef}
-              type="number"
-              inputMode="numeric"
-              placeholder="Ex: 10"
-              value={dialogQtd}
-              onFocus={(e) => e.target.select()}
-              onChange={(e) => setDialogQtd(e.target.value.replace(/\D/g, ""))}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleDialogConfirm();
-              }}
-              className="h-12 text-center text-lg font-bold"
-              autoFocus
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Embalagem</label>
-            <div className="flex flex-wrap gap-2">
-              {["UNI", "CX", "DZ", "½DZ", "DP", "FD", "KG", "PCT"].map(emb => (
-                <button
-                  key={emb}
-                  disabled={dialogItem?.locked}
-                  onClick={() => {
-                    if (dialogItem?.locked) return;
-                    setDialogEmb(emb);
-                    setDialogFator(String(FATOR_PADRAO[emb] ?? 1));
-                  }}
-                  className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                    dialogEmb === emb
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border text-muted-foreground hover:border-primary/50"
-                  } ${dialogItem?.locked ? "opacity-60 cursor-not-allowed" : ""}`}
-                >
-                  {emb}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Fator (un/embalagem)</label>
-            <Input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              value={dialogFator}
-              readOnly={dialogItem?.locked}
-              disabled={dialogItem?.locked}
-              onFocus={(e) => { if (!dialogItem?.locked) e.target.select(); }}
-              onChange={(e) => { if (!dialogItem?.locked) setDialogFator(e.target.value.replace(/\D/g, "")); }}
-              onBlur={() => { if (!dialogItem?.locked) setDialogFator(prev => prev === "" || prev === "0" ? "1" : prev); }}
-              className={`h-10 text-center text-base ${dialogItem?.locked ? "opacity-60 cursor-not-allowed" : ""}`}
-            />
-            <p className="text-[10px] text-muted-foreground text-center">
-              {parseInt(dialogFator) > 1
-                ? `1 ${dialogEmb} = ${dialogFator} unidades`
-                : "Preço por unidade"}
-            </p>
-          </div>
-
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDialogItem(null)}>
-              Cancelar
-            </Button>
-            <Button
-              className="flex-1 bg-gradient-to-r from-primary to-primary/80"
-              onClick={handleDialogConfirm}
-            >
-              ✅ Adicionar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Product list */}
       <div className="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom,0px)+80px)]">
