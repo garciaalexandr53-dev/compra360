@@ -29,7 +29,6 @@ interface LocalItem {
   produtoId?: string;
   catalogoMestreId?: string;
   ean?: string | null;
-  locked?: boolean;
 }
 
 let localIdCounter = 0;
@@ -170,7 +169,6 @@ const AddProdutosCotacaoPage = () => {
       produtoId: dialogItem.produtoId,
       catalogoMestreId: dialogItem.catalogoMestreId,
       ean: dialogItem.ean ?? null,
-      locked: !!dialogItem.catalogoMestreId,
     }]);
     setDialogItem(null);
     setNome("");
