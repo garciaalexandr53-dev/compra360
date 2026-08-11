@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback } from "react";
-import { FATOR_PADRAO } from "@/lib/embalagemFatores";
+import AdicionarItemDialog from "@/components/shared/AdicionarItemDialog";
 import {
   buildSnapshotInsert,
   type ProdutoHibrido,
