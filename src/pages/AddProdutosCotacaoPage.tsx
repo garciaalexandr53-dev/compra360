@@ -169,7 +169,6 @@ const AddProdutosCotacaoPage = () => {
       produtoId: dialogItem.produtoId,
       catalogoMestreId: dialogItem.catalogoMestreId,
       ean: dialogItem.ean ?? null,
-      locked: !!dialogItem.catalogoMestreId,
     }]);
     setDialogItem(null);
     setNome("");
