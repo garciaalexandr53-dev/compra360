@@ -481,103 +481,19 @@ const AddProdutosCotacaoPage = () => {
       </div>
 
       {/* Quantity Dialog */}
-      <Dialog open={!!dialogItem} onOpenChange={(open) => { if (!open) setDialogItem(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-base font-semibold truncate flex items-center gap-2 flex-wrap">
-              <span>{dialogItem?.nome}</span>
-              {dialogItem?.locked && (
-                <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                  Catálogo
-                </span>
-              )}
-            </DialogTitle>
-            {dialogItem?.locked ? (
-              <p className="text-xs text-muted-foreground">
-                Embalagem e fator definidos pelo catálogo (somente leitura).
-              </p>
-            ) : dialogItem?.produtoId ? (
-              <p className="text-xs text-muted-foreground">Produto existente no banco</p>
-            ) : null}
-          </DialogHeader>
+      <AdicionarItemDialog
+        produto={dialogItem ? {
+          nome: dialogItem.nome,
+          embalagem: dialogItem.embalagem,
+          fator: dialogItem.fator,
+          subtitulo: !dialogItem.catalogoMestreId && dialogItem.produtoId ? "Produto existente no banco" : null,
+        } : null}
+        onConfirmar={handleDialogConfirm}
+        onCancelar={() => setDialogItem(null)}
+        badge={dialogItem?.catalogoMestreId ? "Catálogo" : null}
+        origemPadrao={dialogItem?.catalogoMestreId ? "catalogo" : "cadastro"}
+      />
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Quantidade</label>
-            <Input
-              ref={dialogInputRef}
-              type="number"
-              inputMode="numeric"
-              placeholder="Ex: 10"
-              value={dialogQtd}
-              onFocus={(e) => e.target.select()}
-              onChange={(e) => setDialogQtd(e.target.value.replace(/\D/g, ""))}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleDialogConfirm();
-              }}
-              className="h-12 text-center text-lg font-bold"
-              autoFocus
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Embalagem</label>
-            <div className="flex flex-wrap gap-2">
-              {["UNI", "CX", "DZ", "½DZ", "DP", "FD", "KG", "PCT"].map(emb => (
-                <button
-                  key={emb}
-                  disabled={dialogItem?.locked}
-                  onClick={() => {
-                    if (dialogItem?.locked) return;
-                    setDialogEmb(emb);
-                    setDialogFator(String(FATOR_PADRAO[emb] ?? 1));
-                  }}
-                  className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                    dialogEmb === emb
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border text-muted-foreground hover:border-primary/50"
-                  } ${dialogItem?.locked ? "opacity-60 cursor-not-allowed" : ""}`}
-                >
-                  {emb}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Fator (un/embalagem)</label>
-            <Input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              value={dialogFator}
-              readOnly={dialogItem?.locked}
-              disabled={dialogItem?.locked}
-              onFocus={(e) => { if (!dialogItem?.locked) e.target.select(); }}
-              onChange={(e) => { if (!dialogItem?.locked) setDialogFator(e.target.value.replace(/\D/g, "")); }}
-              onBlur={() => { if (!dialogItem?.locked) setDialogFator(prev => prev === "" || prev === "0" ? "1" : prev); }}
-              className={`h-10 text-center text-base ${dialogItem?.locked ? "opacity-60 cursor-not-allowed" : ""}`}
-            />
-            <p className="text-[10px] text-muted-foreground text-center">
-              {parseInt(dialogFator) > 1
-                ? `1 ${dialogEmb} = ${dialogFator} unidades`
-                : "Preço por unidade"}
-            </p>
-          </div>
-
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDialogItem(null)}>
-              Cancelar
-            </Button>
-            <Button
-              className="flex-1 bg-gradient-to-r from-primary to-primary/80"
-              onClick={handleDialogConfirm}
-            >
-              ✅ Adicionar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Product list */}
       <div className="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom,0px)+80px)]">
