@@ -51,15 +51,13 @@ const AddProdutosCotacaoPage = () => {
   // Dialog states
   const [dialogItem, setDialogItem] = useState<{
     nome: string;
+    embalagem?: string | null;
+    fator?: number | null;
     produtoId?: string;
     catalogoMestreId?: string;
     ean?: string | null;
-    locked?: boolean;
   } | null>(null);
-  const [dialogQtd, setDialogQtd] = useState("");
-  const [dialogEmb, setDialogEmb] = useState("UNI");
-  const [dialogFator, setDialogFator] = useState("1");
-  const dialogInputRef = useRef<HTMLInputElement>(null);
+
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
