@@ -139,41 +139,22 @@ const AddProdutosCotacaoPage = () => {
   // Dialog handlers
   const handlePickSuggestion = (produto: ProdutoHibrido | { id: string; nome: string; embalagem?: string | null; fator_embalagem?: number | null; fonte?: "catalogo" | "local"; ean?: string | null }) => {
     const fonte: "catalogo" | "local" = (produto as ProdutoHibrido).fonte ?? "local";
-    const embRaw = (produto.embalagem || "UNI").split("|")[0]?.trim().toUpperCase() || "UNI";
-    const tipos = ["UNI", "CX", "DZ", "½DZ", "DP", "FD", "KG", "PCT"];
-    const matched = tipos.find((t) => embRaw.startsWith(t)) || "UNI";
-    const fatorCadastrado =
-      produto.fator_embalagem && produto.fator_embalagem > 0
-        ? produto.fator_embalagem
-        : (FATOR_PADRAO[matched] ?? 1);
     setDialogItem({
       nome: produto.nome,
+      embalagem: produto.embalagem ?? null,
+      fator: produto.fator_embalagem ?? null,
       produtoId: fonte === "local" ? produto.id : undefined,
       catalogoMestreId: fonte === "catalogo" ? produto.id : undefined,
       ean: (produto as ProdutoHibrido).ean ?? null,
-      locked: fonte === "catalogo",
     });
-    setDialogQtd("");
-    setDialogEmb(matched);
-    setDialogFator(String(fatorCadastrado));
-    setTimeout(() => dialogInputRef.current?.focus(), 100);
   };
 
   const handlePickNovo = () => {
     setDialogItem({ nome: nome.trim() });
-    setDialogQtd("");
-    setDialogEmb("UNI");
-    setDialogFator("1");
-    setTimeout(() => dialogInputRef.current?.focus(), 100);
   };
 
-  const handleDialogConfirm = () => {
+  const handleDialogConfirm = (qtd: number, embalagem: string, fator: number) => {
     if (!dialogItem) return;
-    const qtd = parseInt(dialogQtd || "0");
-    if (!qtd || qtd < 1) {
-      toast.error("Informe a quantidade (mínimo 1)");
-      return;
-    }
     if (items.some(i => i.nome.toLowerCase() === dialogItem.nome.toLowerCase())) {
       toast.error("Produto já adicionado à lista");
       setDialogItem(null);
@@ -184,12 +165,12 @@ const AddProdutosCotacaoPage = () => {
       id: genId(),
       nome: dialogItem.nome,
       quantidade: qtd,
-      embalagem: dialogEmb,
-      fator: parseInt(dialogFator) || 1,
+      embalagem,
+      fator,
       produtoId: dialogItem.produtoId,
       catalogoMestreId: dialogItem.catalogoMestreId,
       ean: dialogItem.ean ?? null,
-      locked: dialogItem.locked,
+      locked: !!dialogItem.catalogoMestreId,
     }]);
     setDialogItem(null);
     setNome("");
@@ -200,6 +181,7 @@ const AddProdutosCotacaoPage = () => {
       toast.success("Produto adicionado ✔", { duration: 1500 });
     }
   };
+
 
   const updateQty = (id: string, delta: number) => {
     setItems(prev => prev.map(i =>
