@@ -13,7 +13,7 @@ import { useProdutosHibrido } from "@/hooks/useProdutosHibrido";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+
 import { Plus, Minus, Trash2, ShoppingCart, ArrowLeft, Check, PlusCircle, Search } from "lucide-react";
 import DashboardProgress from "@/components/dashboard/DashboardProgress";
 import { toast } from "sonner";
