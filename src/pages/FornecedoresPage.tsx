@@ -33,7 +33,7 @@ const FornecedoresPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
-  const { checkLimit, showPlanos, setShowPlanos } = useFeatureCheck();
+  const [modalOpen, setModalOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -177,7 +177,6 @@ const FornecedoresPage = () => {
   });
 
   const openAdd = () => {
-    if (!checkLimit("max_fornecedores", fornecedores.length, "Faça upgrade para cadastrar mais fornecedores.")) return;
     setEditingId(null); setForm(emptyForm); setSelectedLojas([]); setModalOpen(true);
   };
 
@@ -520,7 +519,6 @@ const FornecedoresPage = () => {
           )}
         </DialogContent>
       </Dialog>
-      <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
   );
 };
