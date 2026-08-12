@@ -1,24 +1,49 @@
-# Log de exclusão de cotações (auditoria)
+# Apertar o Free por cotação (não por cadastro)
 
-Hoje, quando uma cotação é excluída, o registro desaparece do banco sem deixar rastro — não é possível saber depois se um cliente apagou cotações. O objetivo é passar a registrar toda exclusão, com quem apagou, quando e um resumo do que foi perdido.
+## Objetivo
+Inverter o gargalo do plano Free: em vez de limitar o cadastro de produtos e fornecedores, limitar quantos deles podem entrar em uma única cotação. Isso mantém o fluxo completo gratuito, mas força upgrade quando o cliente cresce de volume.
 
-## Como vai funcionar
+## Mudanças propostas
 
-- Toda exclusão de cotação passa a gravar automaticamente uma linha em um histórico de exclusões, com: nome da cotação, loja, status no momento da exclusão, data de criação, quantos produtos / fornecedores / preços / pedidos existiam, quem apagou e quando.
-- O registro é gravado pelo próprio banco (gatilho), então funciona em qualquer caminho de exclusão que já existe hoje: Cotação ativa (descartar), Histórico (excluir uma ou em lote) e exclusão de cliente pelo admin.
-- Nenhuma mudança no fluxo do cliente: continua excluindo do mesmo jeito, sem tela nova nem confirmação extra.
-- No painel administrativo, ao abrir um cliente, aparece um bloco "Cotações excluídas" com a lista (nome, data de criação, data da exclusão, status e volumes). Se não houver nenhuma, o bloco não aparece.
-- Registros antigos não podem ser recuperados — o log passa a valer das próximas exclusões em diante.
+### 1. Redefinir os limites por cotação
+Repurposear `max_produtos` e `max_fornecedores` da tabela `plans` para significar **por cotação**, não mais por catálogo.
 
-## Detalhes técnicos
+| Plano | Lojas | Produtos/cotação | Fornecedores/cotação | Cotações simultâneas |
+|---|---|---|---|---|
+| Free | 1 | 25 | 4 | 1 |
+| Pro | 3 | 500 | 30 | 3 |
+| Business | ∞ | ∞ | ∞ | ∞ |
 
-1. Migração:
-   - Nova tabela `public.cotacoes_excluidas` (colunas: `cotacao_id`, `nome`, `status`, `loja_id`, `loja_nome`, `created_by`, `cotacao_created_at`, `finalizada_at`, `total_produtos`, `total_fornecedores`, `total_precos`, `total_pedidos`, `deleted_by`, `deleted_at`).
-   - GRANTs: `SELECT` para `authenticated`, `ALL` para `service_role` (o INSERT é feito pelo gatilho SECURITY DEFINER).
-   - RLS habilitada: dono (`created_by = auth.uid()`) pode ler as próprias; admin (`is_admin()`) lê todas. Sem UPDATE/DELETE para ninguém (log imutável).
-   - Função `public.log_cotacao_excluida()` SECURITY DEFINER, `SET search_path = public`, disparada por trigger `BEFORE DELETE ON public.cotacoes`, contabilizando os totais a partir de `cotacao_produtos`, `cotacao_fornecedores`, `precos` e `pedidos` antes do cascade.
-   - Função `public.admin_list_cotacoes_excluidas(_user_id uuid)` SECURITY DEFINER com gate `is_admin()`, retornando o log do cliente ordenado por `deleted_at DESC`.
+- Atualizar os registros da tabela `public.plans` via data update (não é migration de schema).
+- Atualizar o fallback `FREE_PLAN` em `src/hooks/useSubscription.tsx` para refletir 25 produtos e 4 fornecedores por cotação.
 
-2. Frontend:
-   - `src/components/admin/ClienteDetalhesSheet.tsx`: nova seção "Cotações excluídas" consumindo a RPC via TanStack Query, renderizada apenas quando há registros. Cards empilhados no mobile (360px) e linha compacta no desktop, seguindo o padrão visual atual do sheet.
-   - Nenhuma alteração em `CotacaoPage.tsx`, `HistoricoPage.tsx` ou na Edge Function `admin-delete-user` — o gatilho cobre todos.
+### 2. Remover limites de cadastro
+- `src/pages/ProdutosPage.tsx`: remover o `checkLimit("max_produtos", totalCount, ...)` que hoje bloqueia o cadastro de novos produtos.
+- `src/pages/FornecedoresPage.tsx`: remover o `checkLimit("max_fornecedores", fornecedores.length, ...)` que bloqueia o cadastro de novos fornecedores.
+- O catálogo local de produtos e fornecedores passa a ser ilimitado no Free; o gargalo passa a ser o uso dentro da cotação.
+
+### 3. Adicionar validação por cotação no frontend
+- `src/pages/AddProdutosCotacaoPage.tsx`: antes de inserir um produto na cotação ativa, contar quantos produtos já estão nela. Se o plano for Free e o limite de 25 for atingido, exibir o toast/upgrade modal.
+- `src/pages/CotacaoPage.tsx` / `src/components/cotacao/ModalFornecedores.tsx`: antes de adicionar/selecionar um fornecedor para a cotação ativa, contar quantos fornecedores já estão nela. Se o plano for Free e o limite de 4 for atingido, exibir o toast/upgrade modal.
+- Manter o `checkLimit` de `max_cotacoes_simultaneas` como está (impede uma segunda cotação ativa no Free).
+
+### 4. Atualizar a comunicação dos planos
+- `src/components/PlanosModal.tsx`: ajustar o texto do Free para "Até 25 produtos por cotação" e "Até 4 fornecedores por cotação".
+- `src/pages/LandingPage.tsx`: corrigir a lista de features do Free (hoje está inconsistente: "3 fornecedores", "50 produtos", "2 cotações/mês") para refletir a nova regra.
+- `src/hooks/useSubscription.tsx`: atualizar o array `features` do `FREE_PLAN`.
+
+### 5. Dados existentes
+- Cotações, produtos e fornecedores já cadastrados não serão removidos nem alterados.
+- A regra passa a valer apenas para novos produtos/fornecedores adicionados a uma cotação após a mudança.
+
+## Fora de escopo deste plano
+- Não alterar preços dos planos.
+- Não alterar os 30 dias grátis do Business.
+- Não restringir funcionalidades que hoje estão no Free (IA de categorias, histórico, etc.).
+- Não alterar o layout ou design fora do texto necessário.
+
+## Critérios de aceitação
+- Build verde.
+- Mobile 360px e desktop funcionam.
+- Usuário Free consegue cadastrar produtos e fornecedores sem limite, mas é bloqueado ao tentar adicionar o 26º produto ou 5º fornecedor na mesma cotação.
+- Textos de PlanosModal e LandingPage refletem os novos limites.
