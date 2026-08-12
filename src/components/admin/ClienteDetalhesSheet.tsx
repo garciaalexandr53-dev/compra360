@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
-  Building2, IdCard, Mail, Phone, Calendar, LogIn, CreditCard, Activity,
+  Building2, IdCard, Mail, Phone, Calendar, LogIn, CreditCard, Activity, Clock,
   Store, Package, Users, FileText, Send, Loader2, MessageCircle, Pencil, CheckCircle2, XCircle, History, Trash2,
 } from "lucide-react";
 import {
