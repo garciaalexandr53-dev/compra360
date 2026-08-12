@@ -134,9 +134,10 @@ type PeriodoLanding = "mensal" | "anual";
 function buildPlans(periodo: PeriodoLanding) {
   const isAnual = periodo === "anual";
   const proFeatures = [
-    "Cotações ilimitadas",
-    "Fornecedores ilimitados",
-    "Até 500 produtos",
+    "Até 3 lojas",
+    "Até 500 produtos por cotação",
+    "Até 30 fornecedores por cotação",
+    "3 cotações simultâneas",
     "IA completa (análise + sugestões)",
     "Importação em massa (CSV/Excel)",
     "Histórico completo",
@@ -144,8 +145,10 @@ function buildPlans(periodo: PeriodoLanding) {
   ];
   const businessFeatures = [
     "Tudo do Pro",
-    "Múltiplas lojas em rede",
-    "Produtos ilimitados",
+    "Lojas ilimitadas",
+    "Produtos ilimitados por cotação",
+    "Fornecedores ilimitados por cotação",
+    "Cotações simultâneas ilimitadas",
     "Conferência de notas fiscais",
     "Distribuição inteligente por IA",
     "Relatórios executivos",
@@ -161,7 +164,7 @@ function buildPlans(periodo: PeriodoLanding) {
       badge: null as string | null,
       oldPrice: null as string | null,
       subPrice: null as string | null,
-      features: ["Sem cartão de crédito", "1 loja", "Até 3 fornecedores", "Até 50 produtos", "2 cotações por mês"],
+      features: ["Sem cartão de crédito", "1 loja", "Até 25 produtos por cotação", "Até 4 fornecedores por cotação", "1 cotação simultânea"],
       cta: "Começar grátis",
       note: null as string | null,
     },

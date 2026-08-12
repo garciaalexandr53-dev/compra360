@@ -386,7 +386,6 @@ const ProdutosPage = () => {
   }, {});
 
   const openAdd = () => {
-    if (!checkLimit("max_produtos", totalCount, "Faça upgrade para cadastrar mais produtos.")) return;
     setEditingId(null);
     setForm(emptyForm);
     setModalOpen(true);
