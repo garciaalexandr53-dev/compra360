@@ -235,6 +235,8 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
                 value={cliente.total_fornecedores.toString()} />
               <Info icon={<FileText className="h-3.5 w-3.5" />} label="Cotações"
                 value={cliente.total_cotacoes.toString()} />
+              <Info icon={<Clock className="h-3.5 w-3.5" />} label="Última cotação"
+                value={cliente.ultima_cotacao_at ? formatDateTime(cliente.ultima_cotacao_at) : "—"} />
               <Info icon={<Send className="h-3.5 w-3.5" />} label="Pedidos enviados"
                 value={cliente.total_pedidos.toString()} />
               <Info
