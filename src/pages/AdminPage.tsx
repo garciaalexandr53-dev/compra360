@@ -601,7 +601,7 @@ export default function AdminPage() {
                           <button
                             type="button"
                             onClick={() => setClienteDetalhe(c)}
-                            className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 hover:bg-muted/40 transition-colors text-left min-h-[52px] max-h-[52px] sm:max-h-none"
+                            className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 hover:bg-muted/40 transition-colors text-left min-h-[52px]"
                             title={saude.label}
                           >
                             <span
@@ -611,6 +611,11 @@ export default function AdminPage() {
                             <div className="flex-1 min-w-0">
                               <div className="text-sm font-medium truncate">
                                 {c.loja_principal || c.email}
+                              </div>
+                              <div className="text-xs text-muted-foreground truncate">
+                                {c.ultima_cotacao_at
+                                  ? `Última cotação: ${formatDate(c.ultima_cotacao_at)}`
+                                  : "Sem cotação"}
                               </div>
                             </div>
                             <Badge
