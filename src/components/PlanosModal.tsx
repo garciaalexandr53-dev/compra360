@@ -48,8 +48,9 @@ const plans = [
     features: [
       "Lojas ilimitadas",
       "Produtos ilimitados por cotação",
-      "Fornecedores ilimitados por cotação",
-      "Cotações simultâneas ilimitadas",
+      "Fornecedores ilimitados",
+      "Cotações ativas ilimitadas",
+      "Importação em massa (CSV/Excel)",
       "IA avançada completa",
       "Suporte prioritário",
       "Conferência de pedidos",
