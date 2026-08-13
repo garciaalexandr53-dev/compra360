@@ -1,0 +1,1 @@
+UPDATE public.plans SET max_produtos = 150 WHERE name = 'pro';
