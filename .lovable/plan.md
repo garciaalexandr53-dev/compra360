@@ -45,5 +45,5 @@ Um único campo (`max_fornecedores`) passa a valer para os dois lugares: Free 4,
 ## Critérios de aceitação
 - Build verde; mobile 360px e desktop.
 - Conta Pro: bloqueio no 101º produto da cotação, no 21º fornecedor da cotação, no 21º fornecedor cadastrado e na 3ª loja.
-- Conta Free: cadastro de fornecedores segue sem limite.
+- Conta Free: bloqueio no 5º fornecedor cadastrado e no 5º fornecedor da cotação.
 - Importação em massa (produtos e ERP) exibe upgrade para Business em Free e Pro.
