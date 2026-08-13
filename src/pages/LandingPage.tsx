@@ -134,12 +134,11 @@ type PeriodoLanding = "mensal" | "anual";
 function buildPlans(periodo: PeriodoLanding) {
   const isAnual = periodo === "anual";
   const proFeatures = [
-    "Até 3 lojas",
-    "Até 500 produtos por cotação",
-    "Até 30 fornecedores por cotação",
-    "3 cotações simultâneas",
+    "Até 2 lojas",
+    "Até 100 produtos por cotação",
+    "Até 20 fornecedores",
+    "1 cotação ativa por loja",
     "IA completa (análise + sugestões)",
-    "Importação em massa (CSV/Excel)",
     "Histórico completo",
     "Suporte por WhatsApp",
   ];
@@ -147,8 +146,8 @@ function buildPlans(periodo: PeriodoLanding) {
     "Tudo do Pro",
     "Lojas ilimitadas",
     "Produtos ilimitados por cotação",
-    "Fornecedores ilimitados por cotação",
-    "Cotações simultâneas ilimitadas",
+    "Fornecedores ilimitados",
+    "Importação em massa (CSV/Excel)",
     "Conferência de notas fiscais",
     "Distribuição inteligente por IA",
     "Relatórios executivos",
