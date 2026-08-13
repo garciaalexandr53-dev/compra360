@@ -112,7 +112,7 @@ export default function AppLayout() {
             </div>
           </header>
           <BannerAviso />
-          <main className="flex-1 overflow-auto pb-16 md:pb-0">
+          <main className="flex-1 overflow-auto pb-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] md:pb-0">
             <Outlet />
           </main>
         </div>

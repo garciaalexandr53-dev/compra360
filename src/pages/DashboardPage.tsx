@@ -624,7 +624,7 @@ const DashboardPage = () => {
   );
 
   return (
-    <div className="p-5 max-w-2xl mx-auto">
+    <div className="p-fluid w-full max-w-2xl mx-auto">
       <WhatsAppRequiredModal />
       <TrialBanner />
       <TrialUpsellCard
@@ -647,7 +647,7 @@ const DashboardPage = () => {
                 <Rocket className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">Vamos começar uma nova cotação!</h1>
+                <h1 className="text-fluid-title font-bold text-foreground">Vamos começar uma nova cotação!</h1>
                 <p className="text-sm text-muted-foreground mt-0.5">Siga os passos abaixo</p>
               </div>
             </div>
@@ -750,7 +750,7 @@ const DashboardPage = () => {
           <div className="space-y-5">
             <div>
               <Badge variant="secondary" className="mb-2 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800">🟡 Cotação em andamento</Badge>
-              <h1 className="text-xl font-bold text-foreground">Adicione os produtos à cotação</h1>
+              <h1 className="text-fluid-title font-bold text-foreground">Adicione os produtos à cotação</h1>
               <p className="text-sm text-muted-foreground mt-1">A lista está vazia. Importe ou adicione manualmente.</p>
             </div>
             <ActionButtons />
@@ -763,7 +763,7 @@ const DashboardPage = () => {
           <div className="space-y-5">
             <div>
               <Badge variant="secondary" className="mb-2 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800">🟡 Aguardando envio</Badge>
-              <h1 className="text-xl font-bold text-foreground">Cotação pronta! Envie para os fornecedores</h1>
+              <h1 className="text-fluid-title font-bold text-foreground">Cotação pronta! Envie para os fornecedores</h1>
             </div>
             <Card>
               <CardContent className="p-4 flex items-center justify-between">
@@ -828,7 +828,7 @@ const DashboardPage = () => {
               {/* Header */}
               <div>
                 <Badge variant="secondary" className="mb-1 text-xs px-2 py-0.5 bg-primary/10 text-primary border-primary/20">{statusMsg}</Badge>
-                <h1 className="text-2xl font-bold text-foreground">{respostaCount} de {selectedSupplierCount} fornecedores responderam</h1>
+                <h1 className="text-fluid-title font-bold text-foreground">{respostaCount} de {selectedSupplierCount} fornecedores responderam</h1>
                 <div className="mt-2">
                   <PrazoEditableBadge cotacaoId={cotacaoAtiva.id} prazoIso={(cotacaoAtiva as any)?.prazo_resposta ?? null} />
                 </div>
@@ -969,7 +969,7 @@ const DashboardPage = () => {
               <Badge variant="secondary" className="mb-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800">
                 🟢 Pronto para decidir!
               </Badge>
-              <h1 className="text-xl font-bold text-foreground">Todos os fornecedores responderam</h1>
+              <h1 className="text-fluid-title font-bold text-foreground">Todos os fornecedores responderam</h1>
             </div>
             {economyEstimate && economyEstimate > 0 && (
               <Card className="border-green-500/30 bg-green-950/10 dark:bg-green-950/20 shadow-[0_0_15px_rgba(16,185,129,0.08)]">

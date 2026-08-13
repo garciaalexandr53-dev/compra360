@@ -63,21 +63,21 @@ export default function BottomNav() {
   return (
     <>
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t md:hidden safe-area-bottom">
-        <div className="flex items-stretch h-14">
+        <div className="flex items-stretch min-h-14">
           {tabs.map((tab) => {
             const active = isActive(tab.path);
             return (
               <button
                 key={tab.path}
                 onClick={() => handleTap(tab.path)}
-                className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
+                className={`flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 transition-colors ${
                   active
                     ? "text-primary"
                     : "text-muted-foreground"
                 }`}
               >
-                <tab.icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium">{tab.label}</span>
+                <tab.icon className="h-5 w-5 shrink-0" />
+                <span className="text-[10px] leading-tight font-medium whitespace-nowrap">{tab.label}</span>
               </button>
             );
           })}
@@ -89,7 +89,7 @@ export default function BottomNav() {
           <SheetHeader className="pb-2">
             <SheetTitle className="text-base">Mais opções</SheetTitle>
           </SheetHeader>
-          <div className="grid grid-cols-3 gap-3 py-2">
+          <div className="grid grid-cols-2 min-[380px]:grid-cols-3 gap-3 py-2">
             {items.map((item) => {
               const active = location.pathname.startsWith(item.path);
               return (
