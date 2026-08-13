@@ -163,6 +163,10 @@
   }
 
   .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+
 
   .price-best {
     @apply bg-transparent font-bold;
