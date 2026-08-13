@@ -48,7 +48,7 @@ const CotacaoPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
-  const { checkPlan, showPlanos, setShowPlanos } = useFeatureCheck();
+  const { checkPlan, checkLimit, showPlanos, setShowPlanos } = useFeatureCheck();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isReviewMode = searchParams.get("review") === "1";
@@ -498,8 +498,15 @@ const CotacaoPage = () => {
     }
   };
 
-  const toggleSupplier = (id: string) => { setSelectedSuppliers((prev) => ({ ...prev, [id]: !prev[id] })); };
-  const selectAllSuppliers = (val: boolean) => { const updated: Record<string, boolean> = {}; allFornecedores.forEach((f) => { updated[f.id] = val; }); setSelectedSuppliers(updated); };
+  const toggleSupplier = (id: string) => {
+    const willAdd = !selectedSuppliers[id];
+    if (willAdd && !checkLimit("max_fornecedores", fornecedores.length, "Faça upgrade para adicionar mais fornecedores à cotação.")) return;
+    setSelectedSuppliers((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+  const selectAllSuppliers = (val: boolean) => {
+    if (val && !checkLimit("max_fornecedores", allFornecedores.length, "Faça upgrade para adicionar mais fornecedores à cotação.")) return;
+    const updated: Record<string, boolean> = {}; allFornecedores.forEach((f) => { updated[f.id] = val; }); setSelectedSuppliers(updated);
+  };
 
   const saveSupplierSelection = async () => {
     if (!cotacaoAtiva?.id) return;

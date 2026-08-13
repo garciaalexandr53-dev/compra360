@@ -13,8 +13,6 @@ import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, More
 import { toast } from "sonner";
 import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
-import { useFeatureCheck } from "@/components/FeatureGate";
-import PlanosModal from "@/components/PlanosModal";
 import BackToLojaButton from "@/components/shared/BackToLojaButton";
 
 type Fornecedor = Tables<"fornecedores">;
@@ -33,7 +31,6 @@ const FornecedoresPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
-  const { checkLimit, showPlanos, setShowPlanos } = useFeatureCheck();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -177,7 +174,6 @@ const FornecedoresPage = () => {
   });
 
   const openAdd = () => {
-    if (!checkLimit("max_fornecedores", fornecedores.length, "Faça upgrade para cadastrar mais fornecedores.")) return;
     setEditingId(null); setForm(emptyForm); setSelectedLojas([]); setModalOpen(true);
   };
 
@@ -520,7 +516,6 @@ const FornecedoresPage = () => {
           )}
         </DialogContent>
       </Dialog>
-      <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
   );
 };

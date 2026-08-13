@@ -19,6 +19,7 @@ import DashboardProgress from "@/components/dashboard/DashboardProgress";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { defaultPrazoHoje } from "@/lib/format";
+import { useFeatureCheck } from "@/components/FeatureGate";
 
 interface LocalItem {
   id: string;
@@ -40,6 +41,7 @@ const AddProdutosCotacaoPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
+  const { checkLimit } = useFeatureCheck();
 
   const [items, setItems] = useState<LocalItem[]>([]);
   const [qtyDrafts, setQtyDrafts] = useState<Record<string, string>>({});
@@ -156,6 +158,10 @@ const AddProdutosCotacaoPage = () => {
     if (!dialogItem) return;
     if (items.some(i => i.nome.toLowerCase() === dialogItem.nome.toLowerCase())) {
       toast.error("Produto já adicionado à lista");
+      setDialogItem(null);
+      return;
+    }
+    if (!checkLimit("max_produtos", totalItems, "Faça upgrade para adicionar mais produtos à cotação.")) {
       setDialogItem(null);
       return;
     }

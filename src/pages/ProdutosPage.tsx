@@ -73,7 +73,7 @@ const ProdutosPage = () => {
   const queryClient = useQueryClient();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
-  const { checkLimit, checkPlan, showPlanos, setShowPlanos } = useFeatureCheck();
+  const { checkPlan, showPlanos, setShowPlanos } = useFeatureCheck();
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [eanScannerOpen, setEanScannerOpen] = useState(false);
@@ -386,7 +386,6 @@ const ProdutosPage = () => {
   }, {});
 
   const openAdd = () => {
-    if (!checkLimit("max_produtos", totalCount, "Faça upgrade para cadastrar mais produtos.")) return;
     setEditingId(null);
     setForm(emptyForm);
     setModalOpen(true);
