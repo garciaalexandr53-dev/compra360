@@ -539,7 +539,7 @@ const ProdutosPage = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuItem onClick={() => {
-                    if (!checkPlan("pro", "Importação em massa")) return;
+                    if (!checkPlan("business", "Importação em massa")) return;
                     setImportOpen(true);
                   }}>
                     <Upload className="h-4 w-4 mr-2" /> Importar Produtos
