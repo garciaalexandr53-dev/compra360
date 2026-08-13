@@ -23,10 +23,10 @@ Por isso o plano trata "cotações simultâneas" como consequência do limite de
 ### 1. Dados dos planos
 Atualizar o registro `pro` da tabela `plans` (data update): `max_lojas = 2`, `max_produtos = 100`, `max_fornecedores = 20`, `max_cotacoes_simultaneas = 2`.
 
-### 2. Fornecedores no Pro: 20 no cadastro e 20 por cotação
-- Por cotação: já existe a checagem em `src/pages/CotacaoPage.tsx` (`toggleSupplier`/`selectAllSuppliers`) usando `max_fornecedores` — passa a valer 20 automaticamente com o dado atualizado.
-- No cadastro: adicionar coluna `max_fornecedores_cadastro` em `plans` (migration) com Free `-1` (ilimitado), Pro `20`, Business `-1`, e reativar a checagem em `src/pages/FornecedoresPage.tsx` usando esse novo campo. Isso mantém a decisão anterior de não limitar cadastro no Free e aplica o teto só no Pro.
-- Refletir o novo campo em `UserPlan` (`src/hooks/useSubscription.tsx`), nos tipos de `limitKey` em `src/components/FeatureGate.tsx` e no retorno de `get_user_plan`.
+### 2. Fornecedores: mesmo limite no cadastro e por cotação
+Um único campo (`max_fornecedores`) passa a valer para os dois lugares: Free 4, Pro 20, Business ilimitado. Sem coluna nova.
+- Por cotação: a checagem já existe em `src/pages/CotacaoPage.tsx` (`toggleSupplier`/`selectAllSuppliers`) e passa a usar os novos valores automaticamente.
+- No cadastro: reativar `checkLimit("max_fornecedores", fornecedores.length, ...)` em `src/pages/FornecedoresPage.tsx` (foi removido na rodada anterior).
 
 ### 3. Importação em massa passa a ser Business
 - `src/pages/ProdutosPage.tsx`: `checkPlan("pro", "Importação em massa")` → `checkPlan("business", ...)`.
