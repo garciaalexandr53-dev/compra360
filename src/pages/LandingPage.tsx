@@ -135,7 +135,7 @@ function buildPlans(periodo: PeriodoLanding) {
   const isAnual = periodo === "anual";
   const proFeatures = [
     "Até 2 lojas",
-    "Até 100 produtos por cotação",
+    "Até 150 produtos por cotação",
     "Até 20 fornecedores",
     "1 cotação ativa por loja",
     "IA completa (análise + sugestões)",

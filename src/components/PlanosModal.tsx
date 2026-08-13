@@ -34,7 +34,7 @@ const plans = [
     popular: true,
     features: [
       "Até 2 lojas",
-      "Até 100 produtos por cotação",
+      "Até 150 produtos por cotação",
       "Até 20 fornecedores",
       "1 cotação ativa por loja",
       "IA completa (análise + sugestões)",
