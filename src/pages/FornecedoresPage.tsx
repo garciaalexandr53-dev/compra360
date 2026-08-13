@@ -174,6 +174,7 @@ const FornecedoresPage = () => {
   });
 
   const openAdd = () => {
+    if (!checkLimit("max_fornecedores", fornecedores.length, "Faça upgrade para cadastrar mais fornecedores.")) return;
     setEditingId(null); setForm(emptyForm); setSelectedLojas([]); setModalOpen(true);
   };
 
