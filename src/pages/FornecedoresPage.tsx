@@ -520,6 +520,8 @@ const FornecedoresPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
   );
 };
