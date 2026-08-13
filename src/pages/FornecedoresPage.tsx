@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import BackToLojaButton from "@/components/shared/BackToLojaButton";
+import { useFeatureCheck } from "@/components/FeatureGate";
+import PlanosModal from "@/components/PlanosModal";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -38,6 +40,7 @@ const FornecedoresPage = () => {
   const [selectedFornecedor, setSelectedFornecedor] = useState<Fornecedor | null>(null);
   const [selectedLojas, setSelectedLojas] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const { checkLimit, showPlanos, setShowPlanos } = useFeatureCheck();
 
   const { data: lojas = [] } = useQuery({
     queryKey: ["lojas"],
@@ -174,6 +177,7 @@ const FornecedoresPage = () => {
   });
 
   const openAdd = () => {
+    if (!checkLimit("max_fornecedores", fornecedores.length, "Faça upgrade para cadastrar mais fornecedores.")) return;
     setEditingId(null); setForm(emptyForm); setSelectedLojas([]); setModalOpen(true);
   };
 
@@ -516,6 +520,8 @@ const FornecedoresPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
   );
 };

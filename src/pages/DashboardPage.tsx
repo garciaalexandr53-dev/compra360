@@ -578,7 +578,7 @@ const DashboardPage = () => {
         </Button>
       )}
       <Button variant="outline" className="w-full justify-start gap-3 h-12" disabled={erpStarting} onClick={async () => {
-        if (!checkPlan("pro", "Importação do ERP")) return;
+        if (!checkPlan("business", "Importação do ERP")) return;
         setErpStarting(true);
         try {
           const { startErpImport } = await import("@/lib/startErpImport");
