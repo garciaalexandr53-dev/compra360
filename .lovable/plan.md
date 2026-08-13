@@ -4,9 +4,9 @@
 
 | Plano | Lojas | Produtos/cotação | Fornecedores/cotação | Fornecedores no cadastro | Cotações ativas | Importação em massa |
 |---|---|---|---|---|---|---|
-| Free | 1 | 25 | 4 | ilimitado | 1 (1 loja) | Não |
+| Free | 1 | 25 | 4 | 4 | 1 (1 loja) | Não |
 | Pro | 2 | 100 | 20 | 20 | 2 (1 por loja) | **Não** |
-| Business | ∞ | ∞ | ∞ | ilimitado | ∞ (1 por loja) | Sim |
+| Business | ∞ | ∞ | ∞ | ∞ | ∞ (1 por loja) | Sim |
 
 ## Sobre "cotações simultâneas" — o que realmente acontece hoje
 
