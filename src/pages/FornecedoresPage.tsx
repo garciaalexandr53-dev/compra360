@@ -40,6 +40,7 @@ const FornecedoresPage = () => {
   const [selectedFornecedor, setSelectedFornecedor] = useState<Fornecedor | null>(null);
   const [selectedLojas, setSelectedLojas] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const { checkLimit, showPlanos, setShowPlanos } = useFeatureCheck();
 
   const { data: lojas = [] } = useQuery({
     queryKey: ["lojas"],
