@@ -720,8 +720,8 @@ const AppFuncionariosPublic = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Frequent items */}
-              {itensFrequentes.length > 0 && (
+              {/* Frequent items (hidden while searching) */}
+              {!buscaEnviadosNorm && itensFrequentes.length > 0 && (
                 <div className="rounded-xl border bg-amber-500/5 border-amber-500/30 overflow-hidden">
                   <button
                     onClick={() => setFrequentesAberto((v) => !v)}
