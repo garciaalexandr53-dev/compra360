@@ -177,8 +177,11 @@ const AddProdutosCotacaoPage = () => {
       ean: dialogItem.ean ?? null,
     }]);
     setDialogItem(null);
-    setNome("");
-    setTimeout(() => inputRef.current?.focus(), 100);
+    // Mantém o termo digitado; o foco volta com o texto selecionado para uma nova busca rápida.
+    setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }, 100);
     if (isFirstProduct) {
       toast.success("🎉 Primeiro produto adicionado!");
     } else {
@@ -349,6 +352,7 @@ const AddProdutosCotacaoPage = () => {
           placeholder="Buscar produto..."
           value={nome}
           onChange={e => setNome(e.target.value)}
+          onFocus={e => e.target.select()}
           autoFocus
           className="h-12 w-full"
         />

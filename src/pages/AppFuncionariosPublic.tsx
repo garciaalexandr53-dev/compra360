@@ -435,8 +435,11 @@ const AppFuncionariosPublic = () => {
       catalogoMestreId: dialogProduct.catalogoMestreId ?? null,
     }]);
 
-    setProductSearch("");
-    setTimeout(() => searchInputRef.current?.focus(), 100);
+    // Mantém o termo digitado (só o "x" limpa) e devolve o foco com o texto selecionado.
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    }, 100);
 
     const totalUn = fator > 1 ? ` (${qty * fator}un)` : "";
     toast.success(`✅ ${dialogProduct.nome} — ${qty} ${dialogEmbal}${totalUn}`, { duration: 1500, position: "top-center" });
@@ -1129,8 +1132,11 @@ const AppFuncionariosPublic = () => {
               catalogoMestreId: dialogProduct.catalogoMestreId ?? null,
             },
           ]);
-          setProductSearch("");
-          setTimeout(() => searchInputRef.current?.focus(), 100);
+          // Mantém o termo digitado (só o "x" limpa) e devolve o foco com o texto selecionado.
+          setTimeout(() => {
+            searchInputRef.current?.focus();
+            searchInputRef.current?.select();
+          }, 100);
           const totalUn = fator > 1 ? ` (${qty * fator}un)` : "";
           toast.success(`✅ ${dialogProduct.nome} — ${qty} ${emb}${totalUn}`, {
             duration: 1500,

@@ -43,6 +43,8 @@ const SearchInputComScanner = ({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          /* Ao focar, seleciona tudo: digitar substitui o termo anterior sem apagar letra por letra. */
+          onFocus={(e) => e.target.select()}
           className="pl-9 pr-20 h-12 text-base rounded-xl border-2 focus-visible:ring-primary"
           autoFocus={autoFocus}
         />
