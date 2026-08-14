@@ -776,12 +776,25 @@ const AppFuncionariosPublic = () => {
               )}
 
               <p className="text-xs text-muted-foreground">
-                {enviados.length} item(ns) nos últimos {filtroEnviados} dias
+                {buscaEnviadosNorm
+                  ? `${enviados.length} item(ns) encontrados em "${buscaEnviados.trim()}"`
+                  : `${enviados.length} item(ns) nos últimos ${filtroEnviados} dias`}
               </p>
 
               {enviados.length === 0 ? (
-                <div className="p-6 text-center text-muted-foreground text-sm">
-                  Nenhum item nos últimos {filtroEnviados} dias
+                <div className="p-6 text-center text-muted-foreground text-sm space-y-3">
+                  {buscaEnviadosNorm ? (
+                    <>
+                      <p>
+                        Nenhum item enviado com esse nome nos últimos {filtroEnviados} dias
+                      </p>
+                      <Button variant="outline" size="sm" onClick={() => setBuscaEnviados("")}>
+                        Limpar busca
+                      </Button>
+                    </>
+                  ) : (
+                    <p>Nenhum item nos últimos {filtroEnviados} dias</p>
+                  )}
                 </div>
               ) : (
                 enviadosGrouped.map(([dateLabel, groupItems]) => (
