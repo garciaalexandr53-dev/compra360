@@ -32,6 +32,14 @@ describe("SearchInputComScanner", () => {
     expect(onChange).toHaveBeenCalledWith("");
   });
 
+  it("seleciona todo o texto ao focar (nova busca substitui o termo)", () => {
+    render(<SearchInputComScanner value="detergente" onChange={() => {}} placeholder="Buscar" />);
+    const input = screen.getByPlaceholderText("Buscar") as HTMLInputElement;
+    const select = vi.spyOn(input, "select");
+    fireEvent.focus(input);
+    expect(select).toHaveBeenCalled();
+  });
+
   it("não exibe o botão limpar com campo vazio", () => {
     render(<SearchInputComScanner value="" onChange={() => {}} />);
     expect(screen.queryByLabelText("Limpar busca")).toBeNull();
