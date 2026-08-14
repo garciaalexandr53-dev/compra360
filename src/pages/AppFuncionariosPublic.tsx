@@ -669,6 +669,26 @@ const AppFuncionariosPublic = () => {
         <div className="flex-1 overflow-y-auto p-4">
           {lojaSelector}
 
+          {/* Search by product name */}
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar item enviado..."
+              value={buscaEnviados}
+              onChange={(e) => setBuscaEnviados(e.target.value)}
+              className="pl-9 pr-9 h-11 text-base rounded-xl"
+            />
+            {buscaEnviados.length > 0 && (
+              <button
+                onClick={() => setBuscaEnviados("")}
+                aria-label="Limpar busca"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
           {/* Period filter toggle */}
           <div className="flex items-center gap-1 mb-3 p-1 rounded-lg bg-muted/40 border w-fit">
             {(["7", "30", "90"] as const).map((p) => (
