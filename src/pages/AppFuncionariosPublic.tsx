@@ -51,6 +51,14 @@ const SEARCH_DEBOUNCE_MS = 250;
 const getProductKey = (product: ProdutoPublico) =>
   `${product.fonte ?? "local"}::${product.nome}::${product.embalagem || "un"}`;
 
+/** Normaliza texto para busca: minúsculas sem acentos. */
+const normalizarTexto = (texto: string) =>
+  texto
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
 const AppFuncionariosPublic = () => {
   const [activeTab, setActiveTab] = useState<AppTab>("lista");
   const [items, setItems] = useState<ItemEntry[]>([]);
