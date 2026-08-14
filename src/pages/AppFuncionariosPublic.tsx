@@ -316,11 +316,16 @@ const AppFuncionariosPublic = () => {
     }
   }, [activeTab, selectedLojaId]);
 
-  // Client-side filter by selected period
+  // Client-side filter by selected period + search term
+  const buscaEnviadosNorm = normalizarTexto(buscaEnviados);
   const enviados = useMemo(() => {
     const cutoff = subDays(new Date(), Number(filtroEnviados)).getTime();
-    return enviadosRaw.filter((item) => new Date(item.created_at).getTime() >= cutoff);
-  }, [enviadosRaw, filtroEnviados]);
+    return enviadosRaw.filter((item) => {
+      if (new Date(item.created_at).getTime() < cutoff) return false;
+      if (!buscaEnviadosNorm) return true;
+      return normalizarTexto(item.nome).includes(buscaEnviadosNorm);
+    });
+  }, [enviadosRaw, filtroEnviados, buscaEnviadosNorm]);
 
   // Frequent items: nome appears > 2 times within last 90 days (full dataset)
   const itensFrequentes = useMemo(() => {
