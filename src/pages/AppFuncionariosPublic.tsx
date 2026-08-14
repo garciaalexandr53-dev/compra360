@@ -71,6 +71,7 @@ const AppFuncionariosPublic = () => {
   const [dialogEmbal, setDialogEmbal] = useState("UNI");
   const [dialogFator, setDialogFator] = useState("1");
   const [filtroEnviados, setFiltroEnviados] = useState<"7" | "30" | "90">("30");
+  const [buscaEnviados, setBuscaEnviados] = useState("");
   const [frequentesAberto, setFrequentesAberto] = useState(true);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
