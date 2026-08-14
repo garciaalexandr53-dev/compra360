@@ -76,20 +76,20 @@ export default function AppLayout() {
         </div>
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-14 flex items-center justify-between border-b px-4 bg-card shadow-sm">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               <SidebarTrigger className="hidden md:flex" />
               {isDashboard ? (
-                <span className="text-lg font-bold text-primary tracking-tight">Compra360</span>
+                <span className="text-lg font-bold text-primary tracking-tight truncate">Compra360</span>
               ) : isFuncionarios ? (
-                <span className="text-lg font-bold text-primary tracking-tight">Reposição</span>
+                <span className="text-lg font-bold text-primary tracking-tight truncate">Reposição</span>
               ) : isLojas ? (
-                <span className="text-lg font-bold text-primary tracking-tight">Lojas</span>
+                <span className="text-lg font-bold text-primary tracking-tight truncate">Lojas</span>
               ) : isFornecedores ? (
-                <span className="text-lg font-bold text-primary tracking-tight">Fornecedores</span>
+                <span className="text-lg font-bold text-primary tracking-tight truncate">Fornecedores</span>
               ) : null}
               {!isLojas && <LojaSelector />}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               {isAdmin && (
                 <Button
                   variant="ghost"
@@ -105,11 +105,19 @@ export default function AppLayout() {
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={toggle}>
                 {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
               </Button>
-              <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setShowLogoutConfirm(true)}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sair
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground shrink-0 px-2 sm:px-3"
+                onClick={() => setShowLogoutConfirm(true)}
+                title="Sair"
+                aria-label="Sair"
+              >
+                <LogOut className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Sair</span>
               </Button>
             </div>
+
           </header>
           <BannerAviso />
           <main className="flex-1 overflow-auto pb-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] md:pb-0">
