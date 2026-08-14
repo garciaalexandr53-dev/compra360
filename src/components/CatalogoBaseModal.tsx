@@ -172,6 +172,7 @@ const CatalogoBaseModal = ({ open, onOpenChange }: Props) => {
             placeholder="Buscar por nome ou EAN..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onFocus={(e) => e.target.select()}
             inputMode="text"
             className="pl-9"
           />
