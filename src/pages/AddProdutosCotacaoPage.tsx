@@ -352,6 +352,7 @@ const AddProdutosCotacaoPage = () => {
           placeholder="Buscar produto..."
           value={nome}
           onChange={e => setNome(e.target.value)}
+          onFocus={e => e.target.select()}
           autoFocus
           className="h-12 w-full"
         />
