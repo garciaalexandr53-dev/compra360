@@ -8,6 +8,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { LojaProvider } from "@/hooks/useLojaAtiva";
 import { ThemeProvider } from "@/hooks/useTheme";
 import LandingSkeleton from "./components/LandingSkeleton";
+import ErrorBoundary from "./components/ErrorBoundary";
+import RouteFallback from "./components/RouteFallback";
 
 function retryImport(factory: () => Promise<any>, retries = 1): Promise<any> {
   return factory().catch((err) => {
