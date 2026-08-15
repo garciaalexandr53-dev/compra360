@@ -53,12 +53,13 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
+            <ErrorBoundary>
+              <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Suspense fallback={<LandingSkeleton />}><LandingPage /></Suspense>} />
                 <Route path="/login" element={<Suspense fallback={null}><LoginPage /></Suspense>} />
                 <Route path="/fornecedor/:token" element={<Suspense fallback={null}><FornecedorCotacaoPage /></Suspense>} />
-                <Route path="/reposicao" element={<Suspense fallback={null}><AppFuncionariosPublic /></Suspense>} />
+                <Route path="/reposicao" element={<Suspense fallback={<RouteFallback />}><AppFuncionariosPublic /></Suspense>} />
                 <Route path="/app-funcionarios" element={<Navigate to={`/reposicao${window.location.search}`} replace />} />
                 <Route path="/admin" element={<Suspense fallback={null}><AdminPage /></Suspense>} />
                 <Route path="/apresentacao" element={<Suspense fallback={null}><ApresentacaoPage /></Suspense>} />
@@ -87,6 +88,7 @@ const App = () => (
                 <Route path="*" element={<Suspense fallback={null}><NotFound /></Suspense>} />
               </Routes>
             </BrowserRouter>
+              </ErrorBoundary>
           </TooltipProvider>
         </ThemeProvider>
       </LojaProvider>
