@@ -59,6 +59,48 @@ const normalizarTexto = (texto: string) =>
     .toLowerCase()
     .trim();
 
+const DRAFT_PREFIX = "funcionarios_rascunho_";
+/** Rascunhos mais antigos que isso são descartados na abertura. */
+const DRAFT_TTL_MS = 3 * 24 * 60 * 60 * 1000;
+
+const draftKey = (lojaId: string) => `${DRAFT_PREFIX}${lojaId}`;
+
+/** Lê a lista pendente da loja, descartando rascunhos vencidos ou corrompidos. */
+const lerRascunho = (lojaId: string): ItemEntry[] => {
+  try {
+    const raw = window.localStorage.getItem(draftKey(lojaId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as { items?: ItemEntry[]; savedAt?: number };
+    if (!parsed?.savedAt || Date.now() - parsed.savedAt > DRAFT_TTL_MS) {
+      window.localStorage.removeItem(draftKey(lojaId));
+      return [];
+    }
+    return Array.isArray(parsed.items) ? parsed.items : [];
+  } catch {
+    return [];
+  }
+};
+
+const gravarRascunho = (lojaId: string, items: ItemEntry[]) => {
+  try {
+    if (items.length === 0) {
+      window.localStorage.removeItem(draftKey(lojaId));
+      return;
+    }
+    window.localStorage.setItem(draftKey(lojaId), JSON.stringify({ items, savedAt: Date.now() }));
+  } catch {
+    /* armazenamento cheio ou bloqueado — segue sem persistir */
+  }
+};
+
+const limparRascunho = (lojaId: string) => {
+  try {
+    window.localStorage.removeItem(draftKey(lojaId));
+  } catch {
+    /* ignore */
+  }
+};
+
 const AppFuncionariosPublic = () => {
   const [activeTab, setActiveTab] = useState<AppTab>("lista");
   const [items, setItems] = useState<ItemEntry[]>([]);
@@ -82,6 +124,8 @@ const AppFuncionariosPublic = () => {
   const [buscaEnviados, setBuscaEnviados] = useState("");
   const [frequentesAberto, setFrequentesAberto] = useState(true);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  /** Loja cujo rascunho já foi hidratado — evita sobrescrever antes de ler. */
+  const rascunhoHidratadoRef = useRef<string | null>(null);
 
   // Keep title consistent and capture install prompt
   useEffect(() => {
@@ -170,6 +214,26 @@ const AppFuncionariosPublic = () => {
       window.history.replaceState({}, "", `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}`);
     }
   }, [selectedLojaId]);
+
+  // Recupera a lista pendente daquela loja (uma vez por loja).
+  useEffect(() => {
+    if (!selectedLojaId || rascunhoHidratadoRef.current === selectedLojaId) return;
+    rascunhoHidratadoRef.current = selectedLojaId;
+    const salvos = lerRascunho(selectedLojaId);
+    if (salvos.length > 0) {
+      setItems(salvos);
+      toast.info(`Sua lista foi recuperada — ${salvos.length} ${salvos.length === 1 ? "item" : "itens"}`, {
+        duration: 3500,
+        position: "top-center",
+      });
+    }
+  }, [selectedLojaId]);
+
+  // Salva cada alteração da lista no aparelho, separada por loja.
+  useEffect(() => {
+    if (!selectedLojaId || rascunhoHidratadoRef.current !== selectedLojaId) return;
+    gravarRascunho(selectedLojaId, items);
+  }, [items, selectedLojaId]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -534,6 +598,8 @@ const AppFuncionariosPublic = () => {
       if (error) throw error;
 
       setSent(true);
+      const lojaDoEnvio = selectedLojaId || (lojas.length === 1 ? lojas[0].id : "");
+      if (lojaDoEnvio) limparRascunho(lojaDoEnvio);
       queryClient.invalidateQueries({ queryKey: ["itens-enviados", selectedLojaId] });
       const lojaMsg = selectedLojaName ? ` para ${selectedLojaName}` : "";
       toast.success(`${items.length} itens enviados${lojaMsg}!`);
