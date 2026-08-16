@@ -58,22 +58,50 @@ interface OcrExtra {
 
 const STORAGE_KEY = "conferencia_progress";
 
+/** Progresso salvo só é aceito com a forma esperada — versão antiga/corrompida é descartada. */
 const loadProgress = (): { pedidoId: string; items: ConferenciaItem[]; nome: string } | null => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw) as Partial<{ pedidoId: string; items: unknown; nome: string }>;
+    if (!parsed || typeof parsed.pedidoId !== "string" || !Array.isArray(parsed.items)) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    const items = (parsed.items as ConferenciaItem[])
+      .filter((i) => !!i && typeof i === "object" && typeof i.produto_nome === "string")
+      .map((i) => ({
+        ...i,
+        quantidade_pedida: Number(i.quantidade_pedida) || 0,
+        quantidade_recebida: Number(i.quantidade_recebida) || 0,
+        preco_cotado: Number(i.preco_cotado) || 0,
+        preco_nf: typeof i.preco_nf === "number" ? i.preco_nf : null,
+      }));
+    return { pedidoId: parsed.pedidoId, items, nome: typeof parsed.nome === "string" ? parsed.nome : "" };
   } catch {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
     return null;
   }
 };
 
 const saveProgress = (pedidoId: string, items: ConferenciaItem[], nome: string) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ pedidoId, items, nome }));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ pedidoId, items, nome }));
+  } catch {
+    /* armazenamento cheio ou bloqueado — segue sem persistir */
+  }
 };
 
 const clearProgress = () => {
-  localStorage.removeItem(STORAGE_KEY);
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
 };
 
 const ConferenciaPedidos = () => {

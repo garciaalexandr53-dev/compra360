@@ -1,4 +1,4 @@
-import { useCallback, useState, type Ref } from "react";
+import { useCallback, useRef, useState, type Ref } from "react";
 import { Search, ScanBarcode, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -28,10 +28,14 @@ const SearchInputComScanner = ({
 }: SearchInputComScannerProps) => {
   const [scannerOpen, setScannerOpen] = useState(false);
 
+  // Identidade estável: o scanner não deve reiniciar a câmera quando o pai re-renderiza.
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
   const handleClose = useCallback(() => setScannerOpen(false), []);
   const handleDetected = useCallback(
-    (code: string) => onChange(code, { fromScanner: true }),
-    [onChange],
+    (code: string) => onChangeRef.current(code, { fromScanner: true }),
+    [],
   );
 
   return (

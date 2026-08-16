@@ -60,22 +60,40 @@ const normalizarTexto = (texto: string) =>
     .trim();
 
 const DRAFT_PREFIX = "funcionarios_rascunho_";
+
+/** Hora do envio; nunca lança, mesmo com data inválida vinda do cache. */
+const formatHoraSegura = (valor: string) => {
+  const date = new Date(valor);
+  return Number.isNaN(date.getTime()) ? "--:--" : format(date, "HH:mm");
+};
 /** Rascunhos mais antigos que isso são descartados na abertura. */
 const DRAFT_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 
 const draftKey = (lojaId: string) => `${DRAFT_PREFIX}${lojaId}`;
+
+/** Aceita apenas itens com a forma esperada — rascunho antigo/corrompido é descartado. */
+const itemValido = (item: unknown): item is ItemEntry => {
+  const i = item as ItemEntry | null;
+  return !!i && typeof i === "object" && typeof i.nome === "string" && i.nome.trim().length > 0;
+};
 
 /** Lê a lista pendente da loja, descartando rascunhos vencidos ou corrompidos. */
 const lerRascunho = (lojaId: string): ItemEntry[] => {
   try {
     const raw = window.localStorage.getItem(draftKey(lojaId));
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as { items?: ItemEntry[]; savedAt?: number };
+    const parsed = JSON.parse(raw) as { items?: unknown; savedAt?: number };
     if (!parsed?.savedAt || Date.now() - parsed.savedAt > DRAFT_TTL_MS) {
       window.localStorage.removeItem(draftKey(lojaId));
       return [];
     }
-    return Array.isArray(parsed.items) ? parsed.items : [];
+    if (!Array.isArray(parsed.items)) return [];
+    return parsed.items.filter(itemValido).map((item) => ({
+      ...item,
+      quantidade: Number(item.quantidade) > 0 ? Number(item.quantidade) : 1,
+      embalagem: typeof item.embalagem === "string" ? item.embalagem : "un",
+      fator: Number(item.fator) > 0 ? Number(item.fator) : 1,
+    }));
   } catch {
     return [];
   }
@@ -183,7 +201,13 @@ const AppFuncionariosPublic = () => {
   const [selectedLojaId, setSelectedLojaId] = useState<string>(() => {
     if (typeof window === "undefined") return "";
     const lojaFromLink = new URLSearchParams(window.location.search).get("loja") || "";
-    const lojaPersistida = window.localStorage.getItem("funcionarios_loja_id") || "";
+    let lojaPersistida = "";
+    try {
+      // Navegador com armazenamento bloqueado (modo privado/webview) lança aqui.
+      lojaPersistida = window.localStorage.getItem("funcionarios_loja_id") || "";
+    } catch {
+      lojaPersistida = "";
+    }
     return lojaFromLink || lojaPersistida;
   });
   const [productSearch, setProductSearch] = useState("");
@@ -205,7 +229,11 @@ const AppFuncionariosPublic = () => {
   useEffect(() => {
     if (!selectedLojaId) return;
 
-    window.localStorage.setItem("funcionarios_loja_id", selectedLojaId);
+    try {
+      window.localStorage.setItem("funcionarios_loja_id", selectedLojaId);
+    } catch {
+      /* armazenamento bloqueado — segue sem persistir a loja */
+    }
 
     const params = new URLSearchParams(window.location.search);
     if (!params.get("loja")) {
@@ -418,7 +446,9 @@ const AppFuncionariosPublic = () => {
     for (const item of enviados) {
       const date = new Date(item.created_at);
       let label: string;
-      if (isToday(date)) label = "Hoje";
+      // date-fns v3 lança RangeError em data inválida — evitar quebrar a tela.
+      if (Number.isNaN(date.getTime())) label = "Sem data";
+      else if (isToday(date)) label = "Hoje";
       else if (isYesterday(date)) label = "Ontem";
       else label = format(date, "dd/MM/yyyy (EEEE)", { locale: ptBR });
       if (!groups[label]) groups[label] = [];
@@ -899,7 +929,7 @@ const AppFuncionariosPublic = () => {
                             </span>
                           )}
                           <span className="text-[10px] text-muted-foreground shrink-0">
-                            {format(new Date(item.created_at), "HH:mm")}
+                            {formatHoraSegura(item.created_at)}
                           </span>
                         </div>
                       ))}
