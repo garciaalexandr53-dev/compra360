@@ -195,7 +195,13 @@ const AppFuncionariosPublic = () => {
   const [selectedLojaId, setSelectedLojaId] = useState<string>(() => {
     if (typeof window === "undefined") return "";
     const lojaFromLink = new URLSearchParams(window.location.search).get("loja") || "";
-    const lojaPersistida = window.localStorage.getItem("funcionarios_loja_id") || "";
+    let lojaPersistida = "";
+    try {
+      // Navegador com armazenamento bloqueado (modo privado/webview) lança aqui.
+      lojaPersistida = window.localStorage.getItem("funcionarios_loja_id") || "";
+    } catch {
+      lojaPersistida = "";
+    }
     return lojaFromLink || lojaPersistida;
   });
   const [productSearch, setProductSearch] = useState("");
