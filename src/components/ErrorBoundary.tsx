@@ -74,6 +74,14 @@ class ErrorBoundary extends Component<Props, State> {
               Recarregar o app
             </Button>
           </div>
+          <div className="mt-5 rounded-lg bg-muted/60 px-3 py-2 text-left">
+            <p className="text-[11px] font-medium text-muted-foreground">
+              Código do erro: {this.state.code}
+            </p>
+            <p className="mt-0.5 break-words text-[11px] leading-snug text-muted-foreground/80">
+              {`${this.state.error.name}: ${this.state.error.message}`.slice(0, 200)}
+            </p>
+          </div>
         </div>
       </div>
     );
