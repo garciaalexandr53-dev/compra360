@@ -223,7 +223,11 @@ const AppFuncionariosPublic = () => {
   useEffect(() => {
     if (!selectedLojaId) return;
 
-    window.localStorage.setItem("funcionarios_loja_id", selectedLojaId);
+    try {
+      window.localStorage.setItem("funcionarios_loja_id", selectedLojaId);
+    } catch {
+      /* armazenamento bloqueado — segue sem persistir a loja */
+    }
 
     const params = new URLSearchParams(window.location.search);
     if (!params.get("loja")) {
