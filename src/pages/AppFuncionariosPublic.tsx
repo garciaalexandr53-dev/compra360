@@ -65,17 +65,29 @@ const DRAFT_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 
 const draftKey = (lojaId: string) => `${DRAFT_PREFIX}${lojaId}`;
 
+/** Aceita apenas itens com a forma esperada — rascunho antigo/corrompido é descartado. */
+const itemValido = (item: unknown): item is ItemEntry => {
+  const i = item as ItemEntry | null;
+  return !!i && typeof i === "object" && typeof i.nome === "string" && i.nome.trim().length > 0;
+};
+
 /** Lê a lista pendente da loja, descartando rascunhos vencidos ou corrompidos. */
 const lerRascunho = (lojaId: string): ItemEntry[] => {
   try {
     const raw = window.localStorage.getItem(draftKey(lojaId));
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as { items?: ItemEntry[]; savedAt?: number };
+    const parsed = JSON.parse(raw) as { items?: unknown; savedAt?: number };
     if (!parsed?.savedAt || Date.now() - parsed.savedAt > DRAFT_TTL_MS) {
       window.localStorage.removeItem(draftKey(lojaId));
       return [];
     }
-    return Array.isArray(parsed.items) ? parsed.items : [];
+    if (!Array.isArray(parsed.items)) return [];
+    return parsed.items.filter(itemValido).map((item) => ({
+      ...item,
+      quantidade: Number(item.quantidade) > 0 ? Number(item.quantidade) : 1,
+      embalagem: typeof item.embalagem === "string" ? item.embalagem : "un",
+      fator: Number(item.fator) > 0 ? Number(item.fator) : 1,
+    }));
   } catch {
     return [];
   }
