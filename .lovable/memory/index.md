@@ -1,1 +1,2 @@
 - [MCP Server](mem://tech/mcp-server) — Integrações de agentes, OAuth Supabase, 7 ferramentas, consent route
+- [Leitor de código de barras](mem://tech/leitor-codigo-barras) — html5-qrcode: nó imperativo, stop antes de fechar, callbacks em ref
