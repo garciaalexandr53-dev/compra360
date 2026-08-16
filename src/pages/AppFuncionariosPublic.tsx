@@ -60,6 +60,12 @@ const normalizarTexto = (texto: string) =>
     .trim();
 
 const DRAFT_PREFIX = "funcionarios_rascunho_";
+
+/** Hora do envio; nunca lança, mesmo com data inválida vinda do cache. */
+const formatHoraSegura = (valor: string) => {
+  const date = new Date(valor);
+  return Number.isNaN(date.getTime()) ? "--:--" : format(date, "HH:mm");
+};
 /** Rascunhos mais antigos que isso são descartados na abertura. */
 const DRAFT_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 
