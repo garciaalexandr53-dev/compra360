@@ -69,7 +69,7 @@ const loadProgress = (): { pedidoId: string; items: ConferenciaItem[]; nome: str
       return null;
     }
     const items = (parsed.items as ConferenciaItem[])
-      .filter((i) => !!i && typeof i === "object" && typeof i.nome === "string")
+      .filter((i) => !!i && typeof i === "object" && typeof i.produto_nome === "string")
       .map((i) => ({
         ...i,
         quantidade_pedida: Number(i.quantidade_pedida) || 0,
