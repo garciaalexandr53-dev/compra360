@@ -28,10 +28,14 @@ const SearchInputComScanner = ({
 }: SearchInputComScannerProps) => {
   const [scannerOpen, setScannerOpen] = useState(false);
 
+  // Identidade estável: o scanner não deve reiniciar a câmera quando o pai re-renderiza.
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
   const handleClose = useCallback(() => setScannerOpen(false), []);
   const handleDetected = useCallback(
-    (code: string) => onChange(code, { fromScanner: true }),
-    [onChange],
+    (code: string) => onChangeRef.current(code, { fromScanner: true }),
+    [],
   );
 
   return (
