@@ -440,7 +440,9 @@ const AppFuncionariosPublic = () => {
     for (const item of enviados) {
       const date = new Date(item.created_at);
       let label: string;
-      if (isToday(date)) label = "Hoje";
+      // date-fns v3 lança RangeError em data inválida — evitar quebrar a tela.
+      if (Number.isNaN(date.getTime())) label = "Sem data";
+      else if (isToday(date)) label = "Hoje";
       else if (isYesterday(date)) label = "Ontem";
       else label = format(date, "dd/MM/yyyy (EEEE)", { locale: ptBR });
       if (!groups[label]) groups[label] = [];
