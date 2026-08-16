@@ -8,17 +8,26 @@ interface Props {
 
 interface State {
   error: Error | null;
+  code: string | null;
 }
+
+/** Código curto e estável a partir da mensagem, para o usuário informar ao suporte. */
+const gerarCodigo = (error: Error) => {
+  const base = `${error.name}:${error.message}`;
+  let hash = 0;
+  for (let i = 0; i < base.length; i++) hash = (hash * 31 + base.charCodeAt(i)) | 0;
+  return Math.abs(hash).toString(36).toUpperCase().slice(0, 6).padStart(6, "0");
+};
 
 /**
  * Evita tela branca: qualquer erro de render mostra uma tela com explicação
  * e opções de recuperação, além de registrar o erro no console.
  */
 class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null };
+  state: State = { error: null, code: null };
 
   static getDerivedStateFromError(error: Error): State {
-    return { error };
+    return { error, code: gerarCodigo(error) };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
@@ -26,7 +35,7 @@ class ErrorBoundary extends Component<Props, State> {
     console.error("[Compra360][ErrorBoundary]", error, info.componentStack);
   }
 
-  reset = () => this.setState({ error: null });
+  reset = () => this.setState({ error: null, code: null });
 
   hardReload = () => {
     if (typeof caches !== "undefined") {
