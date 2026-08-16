@@ -923,7 +923,7 @@ const AppFuncionariosPublic = () => {
                             </span>
                           )}
                           <span className="text-[10px] text-muted-foreground shrink-0">
-                            {format(new Date(item.created_at), "HH:mm")}
+                            {formatHoraSegura(item.created_at)}
                           </span>
                         </div>
                       ))}
