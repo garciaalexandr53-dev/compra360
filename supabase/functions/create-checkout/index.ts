@@ -49,7 +49,9 @@ serve(async (req) => {
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
+    console.error("[CREATE-CHECKOUT] erro", msg);
     return new Response(JSON.stringify({ error: msg }), {
+
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
