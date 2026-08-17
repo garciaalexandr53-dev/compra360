@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import PlanosModal from "@/components/PlanosModal";
 import { toast } from "sonner";
+import { mensagemErroFuncao } from "@/lib/functionError";
 
 const DISMISS_KEY = "banner_trial_dismissed_session";
 
@@ -65,7 +66,7 @@ export default function BannerAviso() {
         throw new Error("URL do portal não retornada");
       }
     } catch (err: any) {
-      toast.error("Erro ao abrir portal: " + (err.message || "tente novamente"));
+      toast.error("Erro ao abrir portal: " + (await mensagemErroFuncao(err)));
     } finally {
       setPortalLoading(false);
     }

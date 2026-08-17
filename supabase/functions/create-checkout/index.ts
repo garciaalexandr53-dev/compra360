@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { getAuthUser } from "../_shared/getAuthUser.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,20 +12,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-  );
-
   try {
-    const authHeader = req.headers.get("Authorization")!;
-    const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated");
+    const user = await getAuthUser(req);
+    console.log("[CREATE-CHECKOUT] user", user.id);
 
     const { priceId } = await req.json();
     if (!priceId) throw new Error("priceId is required");
+
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
@@ -56,7 +49,9 @@ serve(async (req) => {
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
+    console.error("[CREATE-CHECKOUT] erro", msg);
     return new Response(JSON.stringify({ error: msg }), {
+
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { STRIPE_PRICES, getStripePriceId, type Periodo } from "@/lib/stripePrices";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
+import { mensagemErroFuncao } from "@/lib/functionError";
 import { PLAN_PRICES } from "@/lib/planPrices";
 import { cn } from "@/lib/utils";
 
@@ -78,7 +79,7 @@ export default function PlanosModal({ open, onClose }: PlanosModalProps) {
         throw new Error("URL de checkout não retornada");
       }
     } catch (err: any) {
-      toast.error("Erro ao iniciar checkout: " + (err.message || "tente novamente"));
+      toast.error("Erro ao iniciar checkout: " + (await mensagemErroFuncao(err)));
     } finally {
       setLoading(null);
     }
@@ -95,11 +96,12 @@ export default function PlanosModal({ open, onClose }: PlanosModalProps) {
         throw new Error("URL do portal não retornada");
       }
     } catch (err: any) {
-      toast.error("Erro ao abrir portal: " + (err.message || "tente novamente"));
+      toast.error("Erro ao abrir portal: " + (await mensagemErroFuncao(err)));
     } finally {
       setLoading(null);
     }
   };
+
 
   const renderPrice = (planKey: "free" | "pro" | "business") => {
     if (planKey === "free") {
