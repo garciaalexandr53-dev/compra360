@@ -795,6 +795,9 @@ const AppFuncionariosPublic = () => {
         <div className="flex-1 overflow-y-auto p-4">
           {lojaSelector}
 
+          {faixaLojaCard && <div className="mb-3">{faixaLojaCard}</div>}
+
+
           {/* Search by product name */}
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
