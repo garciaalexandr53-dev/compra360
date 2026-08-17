@@ -972,15 +972,8 @@ const AppFuncionariosPublic = () => {
         <div className="flex flex-col flex-1">
           {lojaSelector}
 
-          {/* Loja indicator (fixed label only) */}
-          {selectedLojaName && (
-            <div className="px-4 pt-3">
-              <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5" />
-                Loja: <span className="font-medium text-foreground">{selectedLojaName}</span>
-              </p>
-            </div>
-          )}
+          {/* Contexto da loja em destaque */}
+          {faixaLoja}
 
 
           {/* Search bar + "não listado" button - always visible */}
