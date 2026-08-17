@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { STRIPE_PRICES, getStripePriceId, type Periodo } from "@/lib/stripePrices";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
+import { mensagemErroFuncao } from "@/lib/functionError";
 import { PLAN_PRICES } from "@/lib/planPrices";
 import { cn } from "@/lib/utils";
 
