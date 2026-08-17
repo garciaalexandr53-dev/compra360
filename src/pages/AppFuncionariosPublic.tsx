@@ -594,6 +594,27 @@ const AppFuncionariosPublic = () => {
     </div>
   ) : null;
 
+  const faixaLoja = selectedLojaName ? (
+    <div className="px-4 pt-3">
+      <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5">
+        <p className="text-sm text-muted-foreground flex items-start gap-1.5">
+          <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+          <span className="min-w-0">
+            Você está registrando itens para{" "}
+            <span className="font-semibold text-foreground break-words">{selectedLojaName}</span>
+          </span>
+        </p>
+        {lojaFromUrl && (
+          <p className="text-[11px] text-muted-foreground/80 mt-1 pl-[1.375rem]">
+            Loja definida pelo link recebido.
+          </p>
+        )}
+      </div>
+    </div>
+  ) : null;
+
+
+
   const enviar = async () => {
     if (!items.length) {
       toast.error("Adicione pelo menos um item!");
