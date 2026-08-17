@@ -681,10 +681,10 @@ const AppFuncionariosPublic = () => {
             <div>
               <h1 className="text-base font-bold leading-tight">Compra360 Reposição</h1>
               {selectedLojaName && (
-                <p className="text-[11px] opacity-80 flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {selectedLojaName}
-                </p>
+                <span className="mt-1 inline-flex max-w-[9.5rem] sm:max-w-[16rem] items-center gap-1 rounded-full bg-white/25 px-2 py-0.5 text-[11px] font-bold">
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{selectedLojaName}</span>
+                </span>
               )}
             </div>
           </div>
