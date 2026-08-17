@@ -1202,6 +1202,14 @@ const AppFuncionariosPublic = () => {
 
               {/* Send button */}
               <div className="px-3 pb-3 pt-1">
+                {selectedLojaName && (
+                  <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="min-w-0 truncate">
+                      Enviando para <span className="font-semibold text-foreground">{selectedLojaName}</span>
+                    </span>
+                  </p>
+                )}
                 <Button
                   onClick={enviar}
                   disabled={sending || (lojas.length > 1 && !selectedLojaId)}
