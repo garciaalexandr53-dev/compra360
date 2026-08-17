@@ -594,6 +594,27 @@ const AppFuncionariosPublic = () => {
     </div>
   ) : null;
 
+  const faixaLojaCard = selectedLojaName ? (
+    <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5">
+      <p className="text-sm text-muted-foreground flex items-start gap-1.5">
+        <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+        <span className="min-w-0">
+          Você está registrando itens para{" "}
+          <span className="font-semibold text-foreground break-words">{selectedLojaName}</span>
+        </span>
+      </p>
+      {lojaFromUrl && (
+        <p className="text-[11px] text-muted-foreground/80 mt-1 pl-[1.375rem]">
+          Loja definida pelo link recebido.
+        </p>
+      )}
+    </div>
+  ) : null;
+
+  const faixaLoja = faixaLojaCard ? <div className="px-4 pt-3">{faixaLojaCard}</div> : null;
+
+
+
   const enviar = async () => {
     if (!items.length) {
       toast.error("Adicione pelo menos um item!");
@@ -647,7 +668,13 @@ const AppFuncionariosPublic = () => {
           <div className="text-6xl mb-4">✅</div>
           <h1 className="text-xl font-bold mb-2">Lista Enviada!</h1>
           <p className="text-muted-foreground mb-1">{items.length} item(ns) registrado(s).</p>
-          {selectedLojaName && <p className="text-sm text-primary font-medium mb-4">Loja: {selectedLojaName}</p>}
+          {selectedLojaName && (
+            <p className="text-base font-semibold text-foreground mb-4 flex items-center justify-center gap-1.5">
+              <MapPin className="h-4 w-4 text-primary shrink-0" />
+              <span className="truncate max-w-[16rem]">{selectedLojaName}</span>
+            </p>
+          )}
+
           <Button
             onClick={() => {
               setItems([]);
@@ -675,10 +702,10 @@ const AppFuncionariosPublic = () => {
             <div>
               <h1 className="text-base font-bold leading-tight">Compra360 Reposição</h1>
               {selectedLojaName && (
-                <p className="text-[11px] opacity-80 flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {selectedLojaName}
-                </p>
+                <span className="mt-1 inline-flex max-w-[9.5rem] sm:max-w-[16rem] items-center gap-1 rounded-full bg-white/25 px-2 py-0.5 text-[11px] font-bold">
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{selectedLojaName}</span>
+                </span>
               )}
             </div>
           </div>
@@ -767,6 +794,9 @@ const AppFuncionariosPublic = () => {
       ) : activeTab === "enviados" ? (
         <div className="flex-1 overflow-y-auto p-4">
           {lojaSelector}
+
+          {faixaLojaCard && <div className="mb-3">{faixaLojaCard}</div>}
+
 
           {/* Search by product name */}
           <div className="relative mb-3">
@@ -945,15 +975,8 @@ const AppFuncionariosPublic = () => {
         <div className="flex flex-col flex-1">
           {lojaSelector}
 
-          {/* Loja indicator (fixed label only) */}
-          {selectedLojaName && (
-            <div className="px-4 pt-3">
-              <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5" />
-                Loja: <span className="font-medium text-foreground">{selectedLojaName}</span>
-              </p>
-            </div>
-          )}
+          {/* Contexto da loja em destaque */}
+          {faixaLoja}
 
 
           {/* Search bar + "não listado" button - always visible */}
@@ -1182,6 +1205,14 @@ const AppFuncionariosPublic = () => {
 
               {/* Send button */}
               <div className="px-3 pb-3 pt-1">
+                {selectedLojaName && (
+                  <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="min-w-0 truncate">
+                      Enviando para <span className="font-semibold text-foreground">{selectedLojaName}</span>
+                    </span>
+                  </p>
+                )}
                 <Button
                   onClick={enviar}
                   disabled={sending || (lojas.length > 1 && !selectedLojaId)}
