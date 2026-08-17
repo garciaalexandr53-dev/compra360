@@ -647,7 +647,13 @@ const AppFuncionariosPublic = () => {
           <div className="text-6xl mb-4">✅</div>
           <h1 className="text-xl font-bold mb-2">Lista Enviada!</h1>
           <p className="text-muted-foreground mb-1">{items.length} item(ns) registrado(s).</p>
-          {selectedLojaName && <p className="text-sm text-primary font-medium mb-4">Loja: {selectedLojaName}</p>}
+          {selectedLojaName && (
+            <p className="text-base font-semibold text-foreground mb-4 flex items-center justify-center gap-1.5">
+              <MapPin className="h-4 w-4 text-primary shrink-0" />
+              <span className="truncate max-w-[16rem]">{selectedLojaName}</span>
+            </p>
+          )}
+
           <Button
             onClick={() => {
               setItems([]);
