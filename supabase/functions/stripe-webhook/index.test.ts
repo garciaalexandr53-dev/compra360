@@ -130,6 +130,12 @@ const patchedSource = fnSource
   // The function calls `serve(handler)` at module load. Replace it with an
   // export so tests can call the handler directly without binding a port.
   .replace(
+    `"../_shared/stripeTiers.ts"`,
+    JSON.stringify
+      ? `"${new URL("../_shared/stripeTiers.ts", import.meta.url).href}"`
+      : "",
+  )
+  .replace(
     `import { serve } from "https://deno.land/std@0.190.0/http/server.ts";`,
     `const serve = (h) => { globalThis.__handler = h; };`,
   );
