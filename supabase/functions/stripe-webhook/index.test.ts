@@ -127,12 +127,19 @@ const patchedSource = fnSource
     `import { createClient } from "npm:@supabase/supabase-js@2.57.2";`,
     `import { createClient } from "${importMap.imports["npm:@supabase/supabase-js@2.57.2"]}";`,
   )
+  // O módulo compartilhado é importado por caminho relativo; num módulo data:
+  // isso não resolve, então trocamos por uma URL absoluta.
+  .replace(
+    `"../_shared/stripeTiers.ts"`,
+    `"${new URL("../_shared/stripeTiers.ts", import.meta.url).href}"`,
+  )
   // The function calls `serve(handler)` at module load. Replace it with an
   // export so tests can call the handler directly without binding a port.
   .replace(
     `import { serve } from "https://deno.land/std@0.190.0/http/server.ts";`,
     `const serve = (h) => { globalThis.__handler = h; };`,
   );
+
 
 Deno.env.set("STRIPE_SECRET_KEY", "sk_test_dummy");
 Deno.env.set("STRIPE_WEBHOOK_SECRET", "whsec_dummy");

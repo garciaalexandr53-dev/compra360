@@ -1,38 +1,16 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import {
+  TIERS_BY_PRODUCT as TIERS,
+  TIERS_BY_PRICE,
+  unixToIso,
+  periodStart,
+  periodEnd,
+  mapStatus,
+} from "../_shared/stripeTiers.ts";
 
-// Stripe product_id -> internal plan name
-const TIERS: Record<string, string> = {
-  // Produção (live)
-  prod_UYfyII4JC0pj09: "pro", // Compra360 Pro (mensal)
-  prod_UYgEdk6iT58nVq: "pro", // Compra360 Pro (anual)
-  prod_UYgHaqHI56ZhCg: "business", // Compra360 Business (mensal)
-  prod_UYgIdiTdFac5BR: "business", // Compra360 Business (anual)
-  // Teste (mantidos para não quebrar assinaturas antigas)
-  prod_UJS4YQNTiMkNEO: "pro",
-  prod_UJS4CAxWQ3djwF: "business",
-};
 
-// Stripe price_id -> internal plan name (fallback)
-const TIERS_BY_PRICE: Record<string, string> = {
-  price_1TZYctRsAnnCWikuFoi74yDA: "pro",
-  price_1TZYrmRsAnnCWikupP0T8XEL: "pro",
-  price_1TZYusRsAnnCWikuRWNE0cJ6: "business",
-  price_1TZYvrRsAnnCWikueV1dORha: "business",
-  price_1TKpAoRqa8H38ghzHoJp4PWR: "pro",
-  price_1TKpAORqa8H38ghzur73xJl8: "business",
-  price_1TYyddRqa8H38ghzos78Tvwq: "pro",
-  price_1TYykORqa8H38ghznsu67izE: "business",
-};
-
-// Stripe moved current_period_* onto subscription items in newer API versions
-const unixToIso = (v: unknown): string | null =>
-  typeof v === "number" && Number.isFinite(v) ? new Date(v * 1000).toISOString() : null;
-const periodStart = (sub: any): string | null =>
-  unixToIso(sub?.current_period_start ?? sub?.items?.data?.[0]?.current_period_start);
-const periodEnd = (sub: any): string | null =>
-  unixToIso(sub?.current_period_end ?? sub?.items?.data?.[0]?.current_period_end);
 
 
 const logStep = (step: string, details?: unknown) => {
@@ -83,33 +61,69 @@ serve(async (req) => {
       planId = plan?.id ?? null;
     }
 
-    // Find user by existing subscription customer id
-    const { data: existing } = await supabase
+    // 1) Tenta pelo stripe_customer_id já salvo
+    const { data: byCustomer } = await supabase
       .from("subscriptions")
       .select("id, user_id")
       .eq("stripe_customer_id", customerId)
       .maybeSingle();
 
+    let existing = byCustomer ?? null;
+    let userId: string | null = existing?.user_id ?? null;
+
+    // 2) Fallback: casa pelo e-mail do customer no Stripe
     if (!existing) {
-      logStep("No matching subscription row for customer", { customerId });
+      try {
+        const customer = await stripe.customers.retrieve(customerId);
+        const email = (customer as Stripe.Customer)?.email ?? null;
+        if (email) {
+          const { data: usersPage } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+          const match = usersPage?.users?.find(
+            (u) => (u.email ?? "").toLowerCase() === email.toLowerCase()
+          );
+          if (match) {
+            userId = match.id;
+            const { data: byUser } = await supabase
+              .from("subscriptions")
+              .select("id, user_id")
+              .eq("user_id", match.id)
+              .maybeSingle();
+            existing = byUser ?? null;
+          }
+        }
+      } catch (e) {
+        logStep("Customer lookup failed", { customerId, msg: e instanceof Error ? e.message : String(e) });
+      }
+    }
+
+    if (!userId) {
+      logStep("No matching user for customer", { customerId });
       return;
     }
 
     const startIso = periodStart(sub);
     const endIso = periodEnd(sub);
-    const update: Record<string, unknown> = {
-      status: sub.status,
+    const payload: Record<string, unknown> = {
+      status: mapStatus(sub.status),
+      stripe_customer_id: customerId,
       stripe_subscription_id: sub.id,
       canceled_at: unixToIso(sub.canceled_at),
       updated_at: new Date().toISOString(),
     };
-    if (startIso) update.current_period_start = startIso;
-    if (endIso) update.current_period_end = endIso;
-    if (planId) update.plan_id = planId;
+    if (startIso) payload.current_period_start = startIso;
+    if (endIso) payload.current_period_end = endIso;
+    if (planId) payload.plan_id = planId;
 
+    if (existing) {
+      await supabase.from("subscriptions").update(payload).eq("id", existing.id);
+    } else if (planId) {
+      await supabase.from("subscriptions").insert({ ...payload, user_id: userId });
+    } else {
+      logStep("Skipping insert without plan", { customerId });
+      return;
+    }
+    logStep("Subscription synced", { customerId, status: sub.status, tier });
 
-    await supabase.from("subscriptions").update(update).eq("id", existing.id);
-    logStep("Subscription updated", { customerId, status: sub.status, tier });
   };
 
   try {

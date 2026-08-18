@@ -11,6 +11,8 @@ import {
   Loader2, Wallet, AlertTriangle, CalendarClock, Users, ExternalLink, RefreshCw,
 } from "lucide-react";
 import { formatDate } from "@/lib/format";
+import ResyncAssinaturasButton from "./ResyncAssinaturasButton";
+
 
 type StripeSubscription = {
   id: string;
@@ -146,8 +148,16 @@ export default function PagamentosTab() {
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <p className="text-xs text-muted-foreground">
+          Dados vindos direto do Stripe. Use a re-sincronização para corrigir divergências no banco.
+        </p>
+        <ResyncAssinaturasButton />
+      </div>
+
       {/* Resumo */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+
         <SummaryCard
           icon={<Wallet className="h-4 w-4" />}
           label="💰 Recebido este mês"
