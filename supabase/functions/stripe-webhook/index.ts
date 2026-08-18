@@ -69,7 +69,9 @@ serve(async (req) => {
   const upsertSubscription = async (sub: Stripe.Subscription) => {
     const customerId = sub.customer as string;
     const productId = sub.items.data[0]?.price.product as string;
-    const tier = TIERS[productId];
+    const priceId = sub.items.data[0]?.price.id as string | undefined;
+    const tier = TIERS[productId] ?? (priceId ? TIERS_BY_PRICE[priceId] : undefined);
+
 
     let planId: string | null = null;
     if (tier) {
