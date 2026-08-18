@@ -95,15 +95,18 @@ serve(async (req) => {
       return;
     }
 
+    const startIso = periodStart(sub);
+    const endIso = periodEnd(sub);
     const update: Record<string, unknown> = {
       status: sub.status,
       stripe_subscription_id: sub.id,
-      current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
-      canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
+      canceled_at: unixToIso(sub.canceled_at),
       updated_at: new Date().toISOString(),
     };
+    if (startIso) update.current_period_start = startIso;
+    if (endIso) update.current_period_end = endIso;
     if (planId) update.plan_id = planId;
+
 
     await supabase.from("subscriptions").update(update).eq("id", existing.id);
     logStep("Subscription updated", { customerId, status: sub.status, tier });
