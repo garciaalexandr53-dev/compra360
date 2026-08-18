@@ -11,6 +11,8 @@ import {
   Loader2, Wallet, AlertTriangle, CalendarClock, Users, ExternalLink, RefreshCw,
 } from "lucide-react";
 import { formatDate } from "@/lib/format";
+import ResyncAssinaturasButton from "./ResyncAssinaturasButton";
+
 
 type StripeSubscription = {
   id: string;
