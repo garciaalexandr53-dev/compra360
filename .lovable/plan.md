@@ -1,35 +1,49 @@
-# Por que alguns clientes novos aparecem no plano Free
+# Re-sincronização de assinaturas + botão no painel admin
 
-## O que eu verifiquei no banco
+## Sua dúvida: já é automático?
 
-O teste grátis Business **não é criado no cadastro**. Ele é criado por um gatilho que só dispara quando o cliente **cria a primeira loja** (`trigger_create_trial_on_first_loja`). Quem se cadastra e abandona o onboarding antes de salvar a loja fica sem assinatura — e a função de plano devolve `free` como padrão.
+Sim, em parte. Hoje existem dois caminhos automáticos:
 
-Dados reais (últimos cadastros):
+1. **Webhook do Stripe** (`stripe-webhook`): recebe eventos de checkout, renovação, cancelamento e falha de pagamento e atualiza o banco.
+2. **`check-subscription`**: roda quando o cliente faz login/abre o app e reconcilia o plano dele com o Stripe.
 
-```text
-pedrosantis4533@gmail.com     16/08  0 lojas  sem assinatura -> Free
-catuchamatos@gmail.com        14/08  0 lojas  sem assinatura -> Free
-emailtestejclx@gmail.com      23/07  0 lojas  sem assinatura -> Free
-mariasnascimentomaria@...     22/07  0 lojas  sem assinatura -> Free
-cristianoalveslobo83@...      12/08  1 loja   business/trialing -> OK
-```
+Onde isso falha hoje (verificado no código e nos dados):
 
-Todos os que criaram loja receberam `business/trialing` corretamente. Ou seja: não é bug de cobrança nem de leitura de plano — é o momento em que o trial é concedido.
+- O webhook só atualiza uma linha que **já tenha `stripe_customer_id` salvo**. Se o cliente pagou antes de o app ter gravado esse ID, o evento é ignorado com "No matching subscription row for customer".
+- Se o segredo de assinatura do webhook ficar dessincronizado (foi o que aconteceu recentemente), todos os eventos são rejeitados e o banco fica parado.
+- O `check-subscription` só corrige o plano do cliente **que estiver logado** — quem não entra fica com dado velho.
+- Nada expira trial interno vencido: hoje há registros com status ativo/trial e período já encerrado (ex.: períodos terminados em maio, junho, julho e 07/08).
 
-Um efeito colateral: o controle anti-abuso (CNPJ) também só é gravado na criação da loja, então hoje o trial "espera" o CNPJ para ser liberado.
+Estado atual conferido: no Stripe live existe **1 assinatura paga ativa** (Business mensal). Os demais registros ativos/trial do banco são trials internos, sem vínculo com Stripe.
 
-## Proposta de correção
+## O que vamos construir
 
-1. **Conceder o trial de 30 dias no momento do cadastro**, junto da criação do perfil do usuário: assinatura Business com status `trialing`, 30 dias, sem exigir loja nem CNPJ.
-2. **Manter o anti-abuso**, agora em duas camadas:
-   - no cadastro, registrar o controle de trial pelo usuário (e telefone/fingerprint quando disponíveis);
-   - quando a loja for criada com CNPJ, gravar o CNPJ no controle e, se aquele CNPJ já tiver usado trial antes, encerrar o trial recém-criado (vira Free) em vez de liberar 30 dias novos.
-3. **Regularizar os cadastros já existentes sem assinatura**: conceder o trial de 30 dias a partir de agora para os clientes que se cadastraram e nunca tiveram assinatura (os 4 casos acima e similares), sem mexer em quem já tem assinatura ativa, em trial ou cancelada.
+### 1. Função de backend `admin-resync-subscriptions`
+- Acesso restrito a admin (valida JWT + `has_role(uid,'admin')`).
+- Percorre todas as assinaturas do Stripe (paginado, `status: all`) e, para cada uma:
+  - identifica o cliente pelo `stripe_customer_id` ou, se não achar, pelo **e-mail do customer** contra `auth.users` (é isso que resolve o caso "pagou e continua Free");
+  - resolve o plano por `product_id` com fallback por `price_id`;
+  - grava status, `stripe_subscription_id`, `stripe_customer_id`, início/fim de período e `canceled_at`.
+- Marca como `canceled` quem está ativo no banco com assinatura Stripe que não está mais ativa.
+- Expira trials internos vencidos: status ativo/trial, sem assinatura ativa no Stripe e `current_period_end` no passado viram `canceled` (cliente volta ao Free).
+- Aceita `dry_run: true` e devolve relatório: total no Stripe, atualizados, criados, cancelados, trials expirados, não vinculados (com e-mail), erros.
+
+### 2. Correção no webhook
+Aplicar o mesmo fallback por e-mail do customer no `upsertSubscription`, para o evento não ser descartado quando o `stripe_customer_id` ainda não estiver salvo.
+
+### 3. Botão no painel administrativo
+Na área de assinaturas/Stripe do `/admin`:
+- Botão "Re-sincronizar assinaturas" com estado de carregamento.
+- Primeiro clique roda em **simulação** e abre um resumo do que mudaria; um segundo botão "Aplicar" confirma e executa de verdade.
+- Ao final, toast com o resumo e recarregamento das listas de clientes.
+- Layout responsivo (360px e desktop).
+
+### 4. Execução da correção agora
+Depois de publicar a função, rodo a simulação, mostro o relatório e aplico a sincronização real.
 
 ## Detalhes técnicos
 
-- Migração ajustando `handle_new_user_profile` (ou gatilho novo em `auth.users`) para inserir em `subscriptions` (plano `business`, `trialing`, `current_period_end = now() + 30 dias`) e em `trial_controls`.
-- Ajuste em `create_trial_subscription`: em vez de só criar o trial, passa a completar o CNPJ no `trial_controls` e a revogar o trial quando o CNPJ já foi usado por outro usuário.
-- `get_user_plan` não muda.
-- UPDATE/INSERT único de regularização dos usuários sem assinatura.
-- Nenhuma mudança de frontend necessária; o banner de trial e os limites passam a refletir Business automaticamente.
+- Nova função: `supabase/functions/admin-resync-subscriptions/index.ts` (CORS, `verify_jwt=false` com validação em código, service role para escrita).
+- Reaproveita os mapas de plano por produto/preço já existentes, centralizando-os em `supabase/functions/_shared/stripeTiers.ts` para webhook, `check-subscription` e a nova função usarem a mesma fonte.
+- Leitura de período com fallback para `items.data[0].current_period_*` e conversão segura para ISO (mesmo padrão já corrigido no webhook).
+- Sem migração de banco: usa apenas a tabela `subscriptions` e `plans` existentes.
