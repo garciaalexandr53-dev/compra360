@@ -17,6 +17,10 @@ import ConferenciaPedidos from "@/components/ConferenciaPedidos";
 import {
   buildCotacaoProdutoInsertFromItem,
   detectarSugestaoEquipe,
+  normalizarNomeItem,
+  agruparItensParaImportacao,
+  chaveItemFaltante,
+  contarRepeticoes,
   type PadraoEmbalagem,
 } from "@/lib/itensFaltantesImport";
 
