@@ -33,7 +33,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
 import BackToLojaButton from "@/components/shared/BackToLojaButton";
-import { buildCarryInserts, registrarCarry, filtrarItensSemPreco } from "@/lib/itensSemPreco";
+import { buildCarryInserts, registrarCarry } from "@/lib/itensSemPreco";
 
 type Fornecedor = Tables<"fornecedores">;
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
@@ -986,7 +986,6 @@ const CotacaoPage = () => {
             Todos
           </button>
           {(() => {
-            const semPrecoCount = cotacaoProdutos.filter((cp) => hasNoPrice(cp.id)).length;
             return (
               <button
                 onClick={() => setFilterSemPreco(true)}
