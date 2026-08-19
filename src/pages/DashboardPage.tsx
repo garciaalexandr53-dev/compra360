@@ -21,6 +21,8 @@ import DashboardHistorico from "@/components/dashboard/DashboardHistorico";
 import DashboardReposicao from "@/components/dashboard/DashboardReposicao";
 import SendQueueModal from "@/components/dashboard/SendQueueModal";
 import ConclusaoScreen from "@/components/dashboard/ConclusaoScreen";
+import ItensCarregadosBanner from "@/components/dashboard/ItensCarregadosBanner";
+import { filtrarItensSemPreco, buildCarryInserts, registrarCarry, lerCarry, limparCarry } from "@/lib/itensSemPreco";
 import ImportErpModal from "@/components/ImportErpModal";
 import ModalFornecedores from "@/components/cotacao/ModalFornecedores";
 import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugestao";
@@ -347,6 +349,24 @@ const DashboardPage = () => {
     }
   };
 
+  // Itens sem preço da cotação ativa (nenhum fornecedor respondeu preço > 0)
+  const { data: itensSemPreco = [] } = useQuery({
+    queryKey: ["itens-sem-preco", cotacaoAtiva?.id],
+    enabled: !!cotacaoAtiva?.id,
+    queryFn: async () => {
+      const { data: cps } = await supabase
+        .from("cotacao_produtos")
+        .select("id, produto_id, catalogo_mestre_id, nome, ean, quantidade, tipo_embalagem, fator_embalagem")
+        .eq("cotacao_id", cotacaoAtiva!.id);
+      if (!cps?.length) return [];
+      const { data: precos } = await supabase
+        .from("precos")
+        .select("cotacao_produto_id, preco")
+        .in("cotacao_produto_id", cps.map((cp) => cp.id));
+      return filtrarItensSemPreco(cps as any[], (precos || []) as any[]);
+    },
+  });
+
   // Economy estimate for state 5
   const { data: economyEstimate } = useQuery({
     queryKey: ["economy-estimate", cotacaoAtiva?.id],
@@ -433,7 +453,15 @@ const DashboardPage = () => {
       const nome = `Cotação ${format(new Date(), "dd/MM/yyyy HH:mm")}`;
       const { data: newCot } = await supabase.from("cotacoes").insert({ nome, loja_id: lojaAtiva?.id || null, created_by: (await supabase.auth.getUser()).data.user?.id, prazo_resposta: prazoIso } as any).select().single();
       
-      if (newCot && novaCotacaoOpt !== "zerar") {
+      if (newCot && novaCotacaoOpt === "zerar") {
+        // Itens que ficaram sem preço seguem para a nova cotação (não se perdem)
+        if (itensSemPreco.length > 0) {
+          const inserts = buildCarryInserts(newCot.id, itensSemPreco as any[]);
+          await supabase.from("cotacao_produtos").insert(inserts as any);
+          registrarCarry(newCot.id, itensSemPreco.length);
+          toast.info(`${itensSemPreco.length} item(ns) sem preço foram levados para a nova cotação.`);
+        }
+      } else if (newCot) {
         const { data: oldCps } = await supabase.from("cotacao_produtos").select("*").eq("cotacao_id", cotacaoAtiva.id);
         if (oldCps?.length) {
           const newCps = oldCps.map((cp: any) => ({ cotacao_id: newCot.id, produto_id: cp.produto_id, catalogo_mestre_id: cp.catalogo_mestre_id ?? null, nome: cp.nome ?? "", ean: cp.ean ?? null, quantidade: cp.quantidade, tipo_embalagem: cp.tipo_embalagem ?? undefined, fator_embalagem: cp.fator_embalagem ?? undefined }));
@@ -636,6 +664,7 @@ const DashboardPage = () => {
         economiaTotal={economiaHistorica.economiaTotal}
       />
       <AppFuncionariosDiscoveryCard />
+      <ItensCarregadosBanner cotacaoId={cotacaoAtiva?.id ?? null} />
       <div className="animate-fade-in">
 
         {/* ── STATE 1: No active quote — guided flow ── */}
@@ -1034,6 +1063,7 @@ const DashboardPage = () => {
         <ConclusaoScreen
           economyEstimate={economyEstimate || null}
           pedidos={pedidoResumos}
+          itensSemPreco={itensSemPreco.map((cp: any) => cp.nome || "Item sem nome")}
           onNewCotacao={() => setNovaCotacaoOpen(true)}
           onDismiss={dismissConclusao}
         />
@@ -1078,7 +1108,7 @@ const DashboardPage = () => {
         }}
       />
       <ModalFornecedorSugestao open={fornSuggestOpen} onOpenChange={setFornSuggestOpen} text={fornSuggestText} loading={fornSuggestLoading} hasHistory={fornSuggestHasHistory} recommendedIds={fornSuggestRecommendedIds} onApply={applyFornSuggestions} />
-      <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} loading={novaCotacaoLoading} lojaId={lojaAtiva?.id} />
+      <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} loading={novaCotacaoLoading} lojaId={lojaAtiva?.id} semPrecoCount={itensSemPreco.length} />
 
       <AlertDialog open={!!removeSupplier} onOpenChange={(open) => { if (!open) setRemoveSupplier(null); }}>
         <AlertDialogContent>
