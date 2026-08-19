@@ -733,25 +733,40 @@ const HistoricoPage = () => {
   const batchIdsKey = batchIds.join(",");
   const needsBatchDetails = activeTab === "insights" || selectionMode;
 
-  const { data: batchDetails, isLoading: batchLoading } = useQuery({
+  const { data: batchDetails, isLoading: batchLoading, error: batchError } = useQuery({
     queryKey: ["historico-batch-details", batchIdsKey],
     enabled: needsBatchDetails && batchIds.length > 0,
     queryFn: async () => {
-      const { data: cps } = await supabase
-        .from("cotacao_produtos")
-        .select("id, cotacao_id, produto_id, tipo_embalagem, fator_embalagem, quantidade, nome, produtos(nome, embalagem)")
-        .in("cotacao_id", batchIds);
-      const cpList = cps || [];
+      // Paginate cotacao_produtos in chunks of cotação ids (avoids 1000-row cap + long URLs)
+      const COT_CHUNK = 40;
+      const cpList: any[] = [];
+      for (let i = 0; i < batchIds.length; i += COT_CHUNK) {
+        const slice = batchIds.slice(i, i + COT_CHUNK);
+        const rows = await fetchAllRows<any>(
+          "cotacao_produtos",
+          "id, cotacao_id, produto_id, tipo_embalagem, fator_embalagem, quantidade, nome, produtos(nome, embalagem)",
+          (q) => q.in("cotacao_id", slice),
+        );
+        cpList.push(...rows);
+      }
+
+      // Prices in chunks of cotacao_produto ids, each chunk paginated
       const cpIds = cpList.map((cp: any) => cp.id);
-      const { data: precos } = cpIds.length
-        ? await supabase
-            .from("precos")
-            .select("id, cotacao_produto_id, fornecedor_id, preco, fornecedores(nome)")
-            .in("cotacao_produto_id", cpIds)
-            .gt("preco", 0)
-        : { data: [] as any[] };
-      return { cps: cpList, precos: precos || [] };
+      const CP_CHUNK = 200;
+      const precos: any[] = [];
+      for (let i = 0; i < cpIds.length; i += CP_CHUNK) {
+        const slice = cpIds.slice(i, i + CP_CHUNK);
+        const rows = await fetchAllRows<any>(
+          "precos",
+          "id, cotacao_produto_id, fornecedor_id, preco, fornecedores(nome)",
+          (q) => q.in("cotacao_produto_id", slice).gt("preco", 0),
+        );
+        precos.push(...rows);
+      }
+
+      return { cps: cpList, precos };
     },
+
   });
 
   // Build per-cotação rows + winner-only insight rows, in one pass.
@@ -1612,7 +1627,12 @@ const HistoricoPage = () => {
             <div className="text-center py-16 text-muted-foreground text-sm">
               Sem cotações no histórico.
             </div>
+          ) : batchError ? (
+            <div className="text-center py-16 text-sm text-destructive px-4">
+              Não foi possível carregar os dados dos insights. Verifique sua conexão e tente novamente.
+            </div>
           ) : batchLoading || !batchDetails ? (
+
             <div className="space-y-3">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {Array.from({ length: 4 }).map((_, i) => (
