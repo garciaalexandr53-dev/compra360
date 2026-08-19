@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Building2, IdCard, Mail, Phone, Calendar, LogIn, CreditCard, Activity, Clock,
-  Store, Package, Users, FileText, Send, Loader2, MessageCircle, Pencil, CheckCircle2, XCircle, History, Trash2,
+  Store, Package, Users, FileText, Send, Loader2, MessageCircle, Pencil, CheckCircle2, XCircle, History, Trash2, HandCoins,
 } from "lucide-react";
 import {
   Cliente, getDiasTrialRestantes, getSaudeCliente, normalizarWhatsAppCliente, PLAN_COLORS,
@@ -19,6 +19,7 @@ import {
 
 import { formatBRL, formatDate } from "@/lib/format";
 import { useIsMobile } from "@/hooks/use-mobile";
+import PagamentoManualDialog from "./PagamentoManualDialog";
 
 interface Props {
   cliente: Cliente | null;
@@ -67,6 +68,7 @@ function formatUnix(ts: number | null | undefined): string {
 
 
 export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onAlterarPlano, onExcluir }: Props) {
+  const [pagamentoOpen, setPagamentoOpen] = useState(false);
   const isMobile = useIsMobile();
   const open = !!cliente;
 
@@ -326,6 +328,15 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
             <Pencil className="h-4 w-4" />
             Alterar plano
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 min-w-[180px]"
+            onClick={() => setPagamentoOpen(true)}
+          >
+            <HandCoins className="h-4 w-4 text-primary" />
+            Registrar pagamento manual
+          </Button>
           {onExcluir && (
             <Button
               size="sm"
@@ -346,6 +357,15 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
           </div>
         )}
       </SheetContent>
+
+      <PagamentoManualDialog
+        open={pagamentoOpen}
+        onOpenChange={setPagamentoOpen}
+        userId={cliente.user_id}
+        email={cliente.email}
+        planoAtual={cliente.plan_name}
+        vencimentoAtual={cliente.trial_end}
+      />
     </Sheet>
   );
 }

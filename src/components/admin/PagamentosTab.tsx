@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { formatDate } from "@/lib/format";
 import ResyncAssinaturasButton from "./ResyncAssinaturasButton";
+import AssinaturasManuaisSection from "./AssinaturasManuaisSection";
 
 
 type StripeSubscription = {
@@ -119,25 +120,31 @@ export default function PagamentosTab() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+        <AssinaturasManuaisSection />
       </div>
     );
   }
 
   if (isError) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center space-y-3">
-          <AlertTriangle className="h-8 w-8 text-destructive mx-auto" />
-          <p className="text-sm text-muted-foreground">
-            Erro ao consultar Stripe: {error instanceof Error ? error.message : "desconhecido"}
-          </p>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-1" /> Tentar novamente
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6 text-center space-y-3">
+            <AlertTriangle className="h-8 w-8 text-destructive mx-auto" />
+            <p className="text-sm text-muted-foreground">
+              Erro ao consultar Stripe: {error instanceof Error ? error.message : "desconhecido"}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <RefreshCw className="h-4 w-4 mr-1" /> Tentar novamente
+            </Button>
+          </CardContent>
+        </Card>
+        <AssinaturasManuaisSection />
+      </div>
     );
   }
 
@@ -180,6 +187,8 @@ export default function PagamentosTab() {
           value={summary.assinaturas_ativas.toString()}
         />
       </div>
+
+      <AssinaturasManuaisSection />
 
       {isEmpty ? (
         <Card>
