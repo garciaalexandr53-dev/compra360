@@ -326,6 +326,15 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
             <Pencil className="h-4 w-4" />
             Alterar plano
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 min-w-[180px]"
+            onClick={() => setPagamentoOpen(true)}
+          >
+            <HandCoins className="h-4 w-4 text-primary" />
+            Registrar pagamento manual
+          </Button>
           {onExcluir && (
             <Button
               size="sm"
