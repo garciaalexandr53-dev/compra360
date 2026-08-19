@@ -188,6 +188,8 @@ export default function PagamentosTab() {
         />
       </div>
 
+      <AssinaturasManuaisSection />
+
       {isEmpty ? (
         <Card>
           <CardContent className="p-8 text-center text-sm text-muted-foreground">
