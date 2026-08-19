@@ -473,43 +473,56 @@ const FuncionariosPage = () => {
         if (cot?.id) {
           const { data: existingCp } = await supabase
             .from("cotacao_produtos")
-            .select("produto_id, catalogo_mestre_id")
+            .select("id, produto_id, catalogo_mestre_id, nome, ean, quantidade")
             .eq("cotacao_id", cot.id);
-          const existingProdIds = new Set(
-            (existingCp || []).map((cp: any) => cp.produto_id).filter(Boolean),
-          );
-          const existingCatIds = new Set(
-            (existingCp || []).map((cp: any) => cp.catalogo_mestre_id).filter(Boolean),
-          );
 
-          const cpInserts: any[] = [];
+          const existentes = new Map<string, { id: string; quantidade: number }>();
+          for (const cp of existingCp || []) {
+            const ref = { id: cp.id, quantidade: Math.max(1, Number(cp.quantidade) || 1) };
+            const chaves = [
+              cp.catalogo_mestre_id ? `cat:${cp.catalogo_mestre_id}` : null,
+              cp.ean?.trim() ? `ean:${cp.ean.trim()}` : null,
+              cp.produto_id ? `prod:${cp.produto_id}` : null,
+              cp.nome ? `nome:${normalizarNomeItem(cp.nome)}` : null,
+            ].filter(Boolean) as string[];
+            for (const k of chaves) if (!existentes.has(k)) existentes.set(k, ref);
+          }
 
-          if (isCatalogo) {
-            if (!existingCatIds.has(item.catalogo_mestre_id)) {
-              const cp = buildCotacaoProdutoInsertFromItem({ cotacaoId: cot.id, item });
-              if (cp) cpInserts.push(cp);
-            }
-          } else {
+          // Um único produto local correspondente (evita duplicar homônimos)
+          let produtoLocal: any = null;
+          if (!isCatalogo) {
             const { data: matchedProds } = await supabase
               .from("produtos")
               .select("id, nome, embalagem, fator_embalagem")
               .ilike("nome", item.nome.trim());
+            produtoLocal = (matchedProds || [])[0] || null;
+          }
 
-            for (const p of matchedProds || []) {
-              if (existingProdIds.has(p.id)) continue;
+          if (isCatalogo || produtoLocal) {
+            const chavesBusca = [
+              chaveItemFaltante(item),
+              produtoLocal ? `prod:${produtoLocal.id}` : null,
+            ].filter(Boolean) as string[];
+            const existente = chavesBusca.map((k) => existentes.get(k)).find(Boolean);
+
+            if (existente) {
+              // Já está na cotação: soma a quantidade em vez de duplicar
+              await supabase
+                .from("cotacao_produtos")
+                .update({
+                  quantidade: existente.quantidade + Math.max(1, Number(item.quantidade) || 1),
+                })
+                .eq("id", existente.id);
+            } else {
               const cp = buildCotacaoProdutoInsertFromItem({
                 cotacaoId: cot.id,
                 item,
-                produtoLocal: p,
+                produtoLocal,
                 legacyResolveEmb: resolveEmbalagem,
                 legacyResolveFator: resolveFator,
               });
-              if (cp) cpInserts.push(cp);
+              if (cp) await supabase.from("cotacao_produtos").insert([cp]);
             }
-          }
-
-          if (cpInserts.length) {
-            await supabase.from("cotacao_produtos").insert(cpInserts);
           }
         }
       }
