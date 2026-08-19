@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { formatDate } from "@/lib/format";
 import ResyncAssinaturasButton from "./ResyncAssinaturasButton";
+import AssinaturasManuaisSection from "./AssinaturasManuaisSection";
 
 
 type StripeSubscription = {
