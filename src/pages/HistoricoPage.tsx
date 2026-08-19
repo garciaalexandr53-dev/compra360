@@ -891,18 +891,14 @@ const HistoricoPage = () => {
       }
     }
     let economia = 0;
-    for (const r of insightRowsForInsights) {
-      // find matching cpKey via lookup-set (any key starting with cotacaoId:)
-      // Easier: scan perCotacao
-    }
     for (const [cotId, det] of consolidated.perCotacao) {
       if (!insightsCotIdSet.has(cotId)) continue;
       for (const r of det.rows) {
         if (r.precoUnit == null) continue;
         const all = priceLookup.get(r.cpKey) || [r.precoUnit];
         if (all.length < 2) continue;
-        const worst = Math.max(...all);
-        const diff = worst - r.precoUnit;
+        const media = all.reduce((a: number, n: number) => a + n, 0) / all.length;
+        const diff = media - r.precoUnit;
         if (diff > 0) economia += diff * r.qtd * r.fator;
       }
     }
