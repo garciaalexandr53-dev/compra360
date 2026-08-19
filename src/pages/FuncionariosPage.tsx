@@ -23,6 +23,7 @@ import {
   contarRepeticoes,
   type PadraoEmbalagem,
 } from "@/lib/itensFaltantesImport";
+import { filtrarItensSemPreco } from "@/lib/itensSemPreco";
 
 export const parseFatorFromObs = (obs: string | null): number => {
   const match = obs?.match(/Fator:\s*(\d+)/);
@@ -182,6 +183,33 @@ const FuncionariosPage = () => {
       return count || 0;
     },
     enabled: !!cotacaoAtivaLoja?.id,
+  });
+
+  // Chaves dos itens que JÁ estão na cotação ativa e ainda não receberam preço
+  // (ex.: carregados da cotação anterior). Evita registro em duplicidade.
+  const { data: chavesSemPreco = new Set<string>() } = useQuery({
+    queryKey: ["cotacao-itens-sem-preco", cotacaoAtivaLoja?.id],
+    enabled: !!cotacaoAtivaLoja?.id,
+    queryFn: async () => {
+      const { data: cps } = await supabase
+        .from("cotacao_produtos")
+        .select("id, produto_id, catalogo_mestre_id, nome, ean")
+        .eq("cotacao_id", cotacaoAtivaLoja!.id);
+      if (!cps?.length) return new Set<string>();
+      const { data: precos } = await supabase
+        .from("precos")
+        .select("cotacao_produto_id, preco")
+        .in("cotacao_produto_id", cps.map((cp: any) => cp.id));
+      const semPreco = filtrarItensSemPreco(cps as any[], (precos || []) as any[]);
+      const keys = new Set<string>();
+      for (const cp of semPreco as any[]) {
+        if (cp.catalogo_mestre_id) keys.add(`cat:${cp.catalogo_mestre_id}`);
+        if (cp.ean?.trim()) keys.add(`ean:${cp.ean.trim()}`);
+        if (cp.produto_id) keys.add(`prod:${cp.produto_id}`);
+        if (cp.nome) keys.add(`nome:${normalizarNomeItem(cp.nome)}`);
+      }
+      return keys;
+    },
   });
 
   const cotacaoTemPrecos = precosCount > 0;
@@ -895,6 +923,9 @@ const FuncionariosPage = () => {
               const editando = editingId === item.id;
               const tempoRelativo = formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: ptBR });
               const repeticoes = repeticoesPendentes.get(chaveItemFaltante(item)) || 1;
+              const jaNaCotacaoSemPreco =
+                chavesSemPreco.has(chaveItemFaltante(item)) ||
+                (item.nome ? chavesSemPreco.has(`nome:${normalizarNomeItem(item.nome)}`) : false);
 
               return (
                 <div key={item.id} className={`flex items-start gap-2 px-4 py-3 border-b hover:bg-muted/30 transition-colors ${bloqueado ? 'opacity-50' : ''}`}>
@@ -912,6 +943,14 @@ const FuncionariosPage = () => {
                           title="Este produto aparece mais de uma vez na lista. Na importação as quantidades serão somadas em uma única linha."
                         >
                           🔁 {repeticoes}x na lista
+                        </span>
+                      )}
+                      {jaNaCotacaoSemPreco && (
+                        <span
+                          className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0"
+                          title="Este item já está na cotação atual aguardando preço. Ao importar, a quantidade será somada na linha existente."
+                        >
+                          ⏳ já na cotação (sem preço)
                         </span>
                       )}
                       {divergente && (

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Clock } from "lucide-react";
+import { AlertTriangle, Clock, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { timeInputToTodayIso } from "@/lib/format";
 
@@ -14,9 +14,11 @@ interface ModalNovaCotacaoProps {
   onConfirm: (prazoIso: string | null) => void;
   loading?: boolean;
   lojaId?: string | null;
+  /** Itens da cotação atual que não receberam preço de nenhum fornecedor. */
+  semPrecoCount?: number;
 }
 
-const ModalNovaCotacao = ({ open, onOpenChange, novaCotacaoOpt, setNovaCotacaoOpt, onConfirm, loading, lojaId }: ModalNovaCotacaoProps) => {
+const ModalNovaCotacao = ({ open, onOpenChange, novaCotacaoOpt, setNovaCotacaoOpt, onConfirm, loading, lojaId, semPrecoCount = 0 }: ModalNovaCotacaoProps) => {
   const [prazoTime, setPrazoTime] = useState("18:00");
   const [semPrazo, setSemPrazo] = useState(false);
 
@@ -113,9 +115,18 @@ const ModalNovaCotacao = ({ open, onOpenChange, novaCotacaoOpt, setNovaCotacaoOp
                 onClick={() => setNovaCotacaoOpt("zerar")}
               >
                 <input type="radio" name="nc" checked={novaCotacaoOpt === "zerar"} readOnly className="mt-1 accent-red-600" />
-                <div>
+                <div className="min-w-0">
                   <div className="text-sm font-bold">Zerar tudo — lista nova</div>
                   <div className="text-xs text-muted-foreground">Remove todos os produtos e preços. Começa do zero.</div>
+                  {semPrecoCount > 0 && (
+                    <div className="mt-1.5 flex items-start gap-1.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                      <Info className="h-3.5 w-3.5 shrink-0 mt-px" />
+                      <span>
+                        {semPrecoCount} ite{semPrecoCount === 1 ? "m ficou" : "ns ficaram"} sem preço e{" "}
+                        {semPrecoCount === 1 ? "será levado" : "serão levados"} automaticamente para a nova cotação.
+                      </span>
+                    </div>
+                  )}
                 </div>
               </label>
             </div>
