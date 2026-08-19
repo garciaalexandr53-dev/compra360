@@ -891,18 +891,14 @@ const HistoricoPage = () => {
       }
     }
     let economia = 0;
-    for (const r of insightRowsForInsights) {
-      // find matching cpKey via lookup-set (any key starting with cotacaoId:)
-      // Easier: scan perCotacao
-    }
     for (const [cotId, det] of consolidated.perCotacao) {
       if (!insightsCotIdSet.has(cotId)) continue;
       for (const r of det.rows) {
         if (r.precoUnit == null) continue;
         const all = priceLookup.get(r.cpKey) || [r.precoUnit];
         if (all.length < 2) continue;
-        const worst = Math.max(...all);
-        const diff = worst - r.precoUnit;
+        const media = all.reduce((a: number, n: number) => a + n, 0) / all.length;
+        const diff = media - r.precoUnit;
         if (diff > 0) economia += diff * r.qtd * r.fator;
       }
     }
@@ -1669,7 +1665,7 @@ const HistoricoPage = () => {
                   <div className="text-base md:text-lg font-bold text-green-600 dark:text-green-400 mt-1 break-words">
                     {formatBRL(kpis.economiaEstimada)}
                   </div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5">vs. piores preços recebidos</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">vs. média dos preços recebidos</div>
                 </div>
                 <div className="bg-card border rounded-xl p-3 shadow-sm">
                   <div className="flex items-center gap-1 text-[10px] uppercase text-muted-foreground tracking-wide">

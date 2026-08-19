@@ -98,7 +98,7 @@ const ConclusaoScreen = ({ economyEstimate, pedidos, itensSemPreco = [], onNewCo
                 <p className="text-3xl font-bold text-green-400">
                   <AnimatedNumber value={economyEstimate} />
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">comparado ao fornecedor mais caro desta cotação</p>
+                <p className="text-xs text-muted-foreground mt-1">comparado à média dos preços recebidos nesta cotação</p>
               </CardContent>
             </Card>
           </div>

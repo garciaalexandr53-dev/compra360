@@ -378,15 +378,16 @@ const DashboardPage = () => {
       const { data: precos } = await supabase.from("precos").select("cotacao_produto_id, preco").in("cotacao_produto_id", cpIds).not("preco", "is", null);
       if (!precos?.length) return null;
       
-      let totalMin = 0, totalMax = 0;
+      let totalMin = 0, totalMedia = 0;
       for (const cp of cps) {
         const cpPrecos = precos.filter(p => p.cotacao_produto_id === cp.id).map(p => Number(p.preco)).filter(v => v > 0);
         if (cpPrecos.length < 2) continue;
         const qty = cp.quantidade || 1;
+        const media = cpPrecos.reduce((a, n) => a + n, 0) / cpPrecos.length;
         totalMin += Math.min(...cpPrecos) * qty;
-        totalMax += Math.max(...cpPrecos) * qty;
+        totalMedia += media * qty;
       }
-      return totalMax > totalMin ? totalMax - totalMin : null;
+      return totalMedia > totalMin ? totalMedia - totalMin : null;
     },
   });
 
@@ -1005,7 +1006,7 @@ const DashboardPage = () => {
                 <CardContent className="p-4 text-center">
                   <p className="text-xs text-muted-foreground mb-1">💰 Economia estimada</p>
                   <p className="text-2xl font-bold text-green-500 dark:text-green-400">{formatBRL(economyEstimate)}</p>
-                  <p className="text-[11px] text-muted-foreground mt-1">comparado ao fornecedor mais caro</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">comparado à média dos preços recebidos</p>
                   {isTrial && (
                     <Button
                       size="sm"

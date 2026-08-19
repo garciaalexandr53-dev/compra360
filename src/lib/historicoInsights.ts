@@ -153,7 +153,8 @@ export function buildProdutoVariacao(rows: InsightRow[]): ProdutoVariacao[] {
 }
 
 /**
- * Estimate aggregate savings vs paying the worst (most expensive) price for each item.
+ * Estimate aggregate savings vs paying the AVERAGE price received for each item
+ * (i.e. what you'd pay buying without comparing). More defensible than the worst price.
  * `pricesPerRow` maps an InsightRow to all valid unit prices received for that line.
  */
 export function computeEconomia(
@@ -164,8 +165,8 @@ export function computeEconomia(
   for (const r of rows) {
     const all = pricesPerRow(r);
     if (all.length < 2) continue;
-    const worst = Math.max(...all);
-    const diff = worst - r.precoUnit;
+    const media = all.reduce((a, n) => a + n, 0) / all.length;
+    const diff = media - r.precoUnit;
     if (diff > 0) economia += diff * r.qtd * r.fator;
   }
   return economia;

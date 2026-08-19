@@ -80,11 +80,11 @@ describe("historicoInsights", () => {
     expect(v[0].ultimoFornecedor).toBe("Forn C");
   });
 
-  it("computeEconomia soma diferença qtd × fator × (worst - winner)", () => {
+  it("computeEconomia soma diferença qtd × fator × (média - winner)", () => {
     const r = row({ qtd: 10, fator: 5, precoUnit: 4 });
-    // Worst = 7 → economia = (7-4) * 10 * 5 = 150
+    // Média = (4+5+7)/3 = 5.333… → economia = (5.333-4) * 10 * 5 ≈ 66,67
     const economia = computeEconomia([r], () => [4, 5, 7]);
-    expect(economia).toBe(150);
+    expect(economia).toBeCloseTo(66.6667, 3);
   });
 
   it("computeEconomia ignora linhas com apenas 1 preço", () => {
