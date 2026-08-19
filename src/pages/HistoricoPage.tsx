@@ -737,21 +737,36 @@ const HistoricoPage = () => {
     queryKey: ["historico-batch-details", batchIdsKey],
     enabled: needsBatchDetails && batchIds.length > 0,
     queryFn: async () => {
-      const { data: cps } = await supabase
-        .from("cotacao_produtos")
-        .select("id, cotacao_id, produto_id, tipo_embalagem, fator_embalagem, quantidade, nome, produtos(nome, embalagem)")
-        .in("cotacao_id", batchIds);
-      const cpList = cps || [];
+      // Paginate cotacao_produtos in chunks of cotação ids (avoids 1000-row cap + long URLs)
+      const COT_CHUNK = 40;
+      const cpList: any[] = [];
+      for (let i = 0; i < batchIds.length; i += COT_CHUNK) {
+        const slice = batchIds.slice(i, i + COT_CHUNK);
+        const rows = await fetchAllRows<any>(
+          "cotacao_produtos",
+          "id, cotacao_id, produto_id, tipo_embalagem, fator_embalagem, quantidade, nome, produtos(nome, embalagem)",
+          (q) => q.in("cotacao_id", slice),
+        );
+        cpList.push(...rows);
+      }
+
+      // Prices in chunks of cotacao_produto ids, each chunk paginated
       const cpIds = cpList.map((cp: any) => cp.id);
-      const { data: precos } = cpIds.length
-        ? await supabase
-            .from("precos")
-            .select("id, cotacao_produto_id, fornecedor_id, preco, fornecedores(nome)")
-            .in("cotacao_produto_id", cpIds)
-            .gt("preco", 0)
-        : { data: [] as any[] };
-      return { cps: cpList, precos: precos || [] };
+      const CP_CHUNK = 200;
+      const precos: any[] = [];
+      for (let i = 0; i < cpIds.length; i += CP_CHUNK) {
+        const slice = cpIds.slice(i, i + CP_CHUNK);
+        const rows = await fetchAllRows<any>(
+          "precos",
+          "id, cotacao_produto_id, fornecedor_id, preco, fornecedores(nome)",
+          (q) => q.in("cotacao_produto_id", slice).gt("preco", 0),
+        );
+        precos.push(...rows);
+      }
+
+      return { cps: cpList, precos };
     },
+
   });
 
   // Build per-cotação rows + winner-only insight rows, in one pass.
