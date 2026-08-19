@@ -531,37 +531,45 @@ const HistoricoPage = () => {
   });
 
   const { data: itemSearchResults = [] } = useQuery({
-    queryKey: ["item-search", searchItem],
+    queryKey: ["item-search-v3", searchItem],
     enabled: searchItem.length >= 2,
     queryFn: async () => {
-      const { data: prods } = await supabase
-        .from("produtos")
-        .select("id, nome")
-        .ilike("nome", `%${searchItem}%`)
-        .limit(20);
-      if (!prods?.length) return [];
-
-      const prodIds = prods.map((p) => p.id);
-      const { data: cps } = await supabase
-        .from("cotacao_produtos")
-        .select("*, cotacoes(nome, created_at, status), produtos(nome, embalagem)")
-        .in("produto_id", prodIds)
-        .order("cotacao_id");
-      if (!cps?.length) return [];
+      // Search directly on the snapshot name stored on the cotação line, so items
+      // coming from the master catalog (no local produto_id) also show up.
+      const cpsAll = await fetchAllRows<any>(
+        "cotacao_produtos",
+        "*, cotacoes(nome, created_at, status), produtos(nome, embalagem)",
+        (q) => q.ilike("nome", `%${searchItem}%`),
+      );
+      const cps = (cpsAll || []).filter((cp: any) => cp.cotacoes?.status !== "ativa");
+      if (!cps.length) return [];
 
       const cpIds = cps.map((cp: any) => cp.id);
-      const { data: precos } = await supabase
-        .from("precos")
-        .select("*, fornecedores(nome)")
-        .in("cotacao_produto_id", cpIds)
-        .gt("preco", 0);
+      const CHUNK = 200;
+      const precos: any[] = [];
+      for (let i = 0; i < cpIds.length; i += CHUNK) {
+        const slice = cpIds.slice(i, i + CHUNK);
+        const rows = await fetchAllRows<any>(
+          "precos",
+          "*, fornecedores(nome)",
+          (q) => q.in("cotacao_produto_id", slice).gt("preco", 0),
+        );
+        precos.push(...rows);
+      }
+
+      const precosByCp = new Map<string, any[]>();
+      for (const p of precos) {
+        if (!precosByCp.has(p.cotacao_produto_id)) precosByCp.set(p.cotacao_produto_id, []);
+        precosByCp.get(p.cotacao_produto_id)!.push(p);
+      }
 
       return cps.map((cp: any) => ({
         ...cp,
-        precos: (precos || []).filter((p: any) => p.cotacao_produto_id === cp.id),
+        precos: precosByCp.get(cp.id) || [],
       }));
     },
   });
+
 
   const clearHistoryMutation = useMutation({
     mutationFn: async () => {
