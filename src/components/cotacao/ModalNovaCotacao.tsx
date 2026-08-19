@@ -113,9 +113,18 @@ const ModalNovaCotacao = ({ open, onOpenChange, novaCotacaoOpt, setNovaCotacaoOp
                 onClick={() => setNovaCotacaoOpt("zerar")}
               >
                 <input type="radio" name="nc" checked={novaCotacaoOpt === "zerar"} readOnly className="mt-1 accent-red-600" />
-                <div>
+                <div className="min-w-0">
                   <div className="text-sm font-bold">Zerar tudo — lista nova</div>
                   <div className="text-xs text-muted-foreground">Remove todos os produtos e preços. Começa do zero.</div>
+                  {semPrecoCount > 0 && (
+                    <div className="mt-1.5 flex items-start gap-1.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                      <Info className="h-3.5 w-3.5 shrink-0 mt-px" />
+                      <span>
+                        {semPrecoCount} ite{semPrecoCount === 1 ? "m ficou" : "ns ficaram"} sem preço e{" "}
+                        {semPrecoCount === 1 ? "será levado" : "serão levados"} automaticamente para a nova cotação.
+                      </span>
+                    </div>
+                  )}
                 </div>
               </label>
             </div>
