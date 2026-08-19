@@ -1006,7 +1006,7 @@ const DashboardPage = () => {
                 <CardContent className="p-4 text-center">
                   <p className="text-xs text-muted-foreground mb-1">💰 Economia estimada</p>
                   <p className="text-2xl font-bold text-green-500 dark:text-green-400">{formatBRL(economyEstimate)}</p>
-                  <p className="text-[11px] text-muted-foreground mt-1">comparado ao fornecedor mais caro</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">comparado à média dos preços recebidos</p>
                   {isTrial && (
                     <Button
                       size="sm"
