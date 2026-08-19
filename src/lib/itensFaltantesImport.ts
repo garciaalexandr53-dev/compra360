@@ -151,3 +151,92 @@ export const detectarSugestaoEquipe = (
     padrao: base,
   };
 };
+
+/* -------------------------------------------------------------------------
+ * Deduplicação na importação
+ * ---------------------------------------------------------------------- */
+
+/** Normaliza nome: sem acento, sem caixa, sem espaços duplicados. */
+export const normalizarNomeItem = (nome: string | null | undefined): string =>
+  (nome || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+export type ChaveItem = string;
+
+/**
+ * Chave de identidade de um item para fins de deduplicação:
+ * 1. item do catálogo mestre  → `cat:<id>`
+ * 2. possui código de barras  → `ean:<ean>`
+ * 3. caso contrário           → `nome:<nome normalizado>`
+ */
+export const chaveItemFaltante = (item: {
+  catalogo_mestre_id?: string | null;
+  ean?: string | null;
+  nome?: string | null;
+  produto_id?: string | null;
+}): ChaveItem => {
+  if (item.catalogo_mestre_id) return `cat:${item.catalogo_mestre_id}`;
+  const ean = item.ean?.trim();
+  if (ean) return `ean:${ean}`;
+  if (item.produto_id) return `prod:${item.produto_id}`;
+  return `nome:${normalizarNomeItem(item.nome)}`;
+};
+
+export interface GrupoItens<T> {
+  chave: ChaveItem;
+  /** Primeiro item do grupo — usado como representante do snapshot. */
+  principal: T;
+  /** Soma das quantidades de todos os itens do grupo (mínimo 1). */
+  quantidadeTotal: number;
+  /** Quantos itens do lote caíram nesse grupo. */
+  ocorrencias: number;
+}
+
+/**
+ * Agrupa itens do lote de importação por identidade, somando quantidades.
+ * Garante que o mesmo produto registrado várias vezes gere UMA única linha.
+ */
+export const agruparItensParaImportacao = <
+  T extends {
+    catalogo_mestre_id?: string | null;
+    ean?: string | null;
+    nome?: string | null;
+    quantidade?: number | null;
+  },
+>(
+  itens: T[],
+): GrupoItens<T>[] => {
+  const mapa = new Map<ChaveItem, GrupoItens<T>>();
+  for (const item of itens) {
+    const chave = chaveItemFaltante(item);
+    const qtd = Math.max(1, Number(item.quantidade) || 1);
+    const atual = mapa.get(chave);
+    if (atual) {
+      atual.quantidadeTotal += qtd;
+      atual.ocorrencias += 1;
+    } else {
+      mapa.set(chave, { chave, principal: item, quantidadeTotal: qtd, ocorrencias: 1 });
+    }
+  }
+  return Array.from(mapa.values());
+};
+
+/** Quantas vezes cada chave aparece numa lista (para badge "2x na lista"). */
+export const contarRepeticoes = (
+  itens: Array<{
+    catalogo_mestre_id?: string | null;
+    ean?: string | null;
+    nome?: string | null;
+  }>,
+): Map<ChaveItem, number> => {
+  const contagem = new Map<ChaveItem, number>();
+  for (const item of itens) {
+    const chave = chaveItemFaltante(item);
+    contagem.set(chave, (contagem.get(chave) || 0) + 1);
+  }
+  return contagem;
+};

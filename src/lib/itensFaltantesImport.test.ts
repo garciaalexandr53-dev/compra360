@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   buildCotacaoProdutoInsertFromItem,
+  chaveItemFaltante,
+  agruparItensParaImportacao,
+  contarRepeticoes,
   type ItemFaltanteRow,
   type ProdutoLocalCadastro,
 } from "@/lib/itensFaltantesImport";
@@ -135,5 +138,63 @@ describe("buildCotacaoProdutoInsertFromItem — local", () => {
       produtoLocal: localProd(),
     });
     expect(cp?.ean).toBeNull();
+  });
+});
+
+describe("chaveItemFaltante / agruparItensParaImportacao", () => {
+  it("usa catalogo_mestre_id como chave primária", () => {
+    expect(chaveItemFaltante({ catalogo_mestre_id: "c1", ean: "123", nome: "X" })).toBe("cat:c1");
+  });
+
+  it("usa EAN quando não há item de catálogo", () => {
+    expect(chaveItemFaltante({ ean: "7891150070974", nome: "Amaciante" })).toBe("ean:7891150070974");
+  });
+
+  it("normaliza nome (acento, caixa, espaços) quando não há EAN", () => {
+    expect(chaveItemFaltante({ nome: "Leite  de Côco  SOCOCO 200ml" })).toBe(
+      chaveItemFaltante({ nome: "leite de coco sococo 200ml" }),
+    );
+  });
+
+  it("agrupa repetições do catálogo somando quantidades", () => {
+    const grupos = agruparItensParaImportacao([
+      { catalogo_mestre_id: "c1", nome: "Amaciante", quantidade: 2 },
+      { catalogo_mestre_id: "c1", nome: "Amaciante", quantidade: 3 },
+      { catalogo_mestre_id: "c1", nome: "Amaciante", quantidade: null },
+      { catalogo_mestre_id: "c2", nome: "Shampoo", quantidade: 1 },
+    ]);
+    expect(grupos).toHaveLength(2);
+    const amaciante = grupos.find((g) => g.chave === "cat:c1")!;
+    expect(amaciante.quantidadeTotal).toBe(6);
+    expect(amaciante.ocorrencias).toBe(3);
+  });
+
+  it("agrupa EAN igual mesmo com nomes diferentes", () => {
+    const grupos = agruparItensParaImportacao([
+      { ean: "111", nome: "Leite de Coco Sococo Vidro 200ml", quantidade: 1 },
+      { ean: "111", nome: "Leite De Côco Sococo 200ml Vidro", quantidade: 4 },
+    ]);
+    expect(grupos).toHaveLength(1);
+    expect(grupos[0].quantidadeTotal).toBe(5);
+  });
+
+  it("não agrupa produtos distintos sem EAN", () => {
+    const grupos = agruparItensParaImportacao([
+      { nome: "Arroz 5kg", quantidade: 1 },
+      { nome: "Feijão 1kg", quantidade: 1 },
+    ]);
+    expect(grupos).toHaveLength(2);
+  });
+});
+
+describe("contarRepeticoes", () => {
+  it("conta ocorrências por identidade", () => {
+    const c = contarRepeticoes([
+      { catalogo_mestre_id: "c1", nome: "A" },
+      { catalogo_mestre_id: "c1", nome: "A" },
+      { nome: "Bolacha Maria" },
+    ]);
+    expect(c.get("cat:c1")).toBe(2);
+    expect(c.get(chaveItemFaltante({ nome: "bolacha maria" }))).toBe(1);
   });
 });

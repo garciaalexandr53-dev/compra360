@@ -17,6 +17,10 @@ import ConferenciaPedidos from "@/components/ConferenciaPedidos";
 import {
   buildCotacaoProdutoInsertFromItem,
   detectarSugestaoEquipe,
+  normalizarNomeItem,
+  agruparItensParaImportacao,
+  chaveItemFaltante,
+  contarRepeticoes,
   type PadraoEmbalagem,
 } from "@/lib/itensFaltantesImport";
 
@@ -199,6 +203,7 @@ const FuncionariosPage = () => {
   const canImport = !cotacaoAtivaLoja || !cotacaoTemPrecos;
   const pendentesImportaveis = canImport ? pendentes : [];
   const pendentesBloqueados = canImport ? [] : pendentes;
+  const repeticoesPendentes = contarRepeticoes(pendentes as any[]);
 
   const importarMutation = useMutation({
     mutationFn: async () => {
@@ -278,6 +283,7 @@ const FuncionariosPage = () => {
 
       // Link products to the active store's cotação
       const cotacaoId = cot?.id;
+      let agrupados = 0;
       if (cotacaoId) {
         const allLocalNames = localItemsToImport.map((i: any) => i.nome);
         const { data: matchedProds } = allLocalNames.length
@@ -287,45 +293,85 @@ const FuncionariosPage = () => {
               .in("nome", allLocalNames)
           : { data: [] as any[] };
 
+        // Produto local por nome normalizado (um só, evita duplicar cadastros homônimos)
+        const prodPorNome = new Map<string, any>();
+        for (const p of matchedProds || []) {
+          const k = normalizarNomeItem(p.nome);
+          if (!prodPorNome.has(k)) prodPorNome.set(k, p);
+        }
+
         const { data: existingCp } = await supabase
           .from("cotacao_produtos")
-          .select("produto_id, catalogo_mestre_id")
+          .select("id, produto_id, catalogo_mestre_id, nome, ean, quantidade")
           .eq("cotacao_id", cotacaoId);
-        const existingProdIds = new Set(
-          (existingCp || []).map((cp: any) => cp.produto_id).filter(Boolean),
-        );
-        const existingCatIds = new Set(
-          (existingCp || []).map((cp: any) => cp.catalogo_mestre_id).filter(Boolean),
-        );
+
+        // Mapa de identidade -> linha já existente na cotação
+        const existentes = new Map<string, { id: string; quantidade: number }>();
+        for (const cp of existingCp || []) {
+          const ref = { id: cp.id, quantidade: Math.max(1, Number(cp.quantidade) || 1) };
+          const chaves = [
+            cp.catalogo_mestre_id ? `cat:${cp.catalogo_mestre_id}` : null,
+            cp.ean?.trim() ? `ean:${cp.ean.trim()}` : null,
+            cp.produto_id ? `prod:${cp.produto_id}` : null,
+            cp.nome ? `nome:${normalizarNomeItem(cp.nome)}` : null,
+          ].filter(Boolean) as string[];
+          for (const k of chaves) if (!existentes.has(k)) existentes.set(k, ref);
+        }
 
         const cpInserts: any[] = [];
+        const cpUpdates: { id: string; quantidade: number }[] = [];
 
-        // Locais
-        for (const p of matchedProds || []) {
-          if (existingProdIds.has(p.id)) continue;
-          const item = localItemsToImport.find(
-            (i: any) => i.nome.toLowerCase().trim() === p.nome.toLowerCase().trim(),
-          );
-          if (!item) continue;
+        // Agrupa o lote inteiro: mesmo item registrado N vezes = 1 linha
+        const grupos = agruparItensParaImportacao<any>(itemsToImport);
+        agrupados = itemsToImport.length - grupos.length;
+
+        for (const grupo of grupos) {
+          const item = { ...grupo.principal, quantidade: grupo.quantidadeTotal };
+          const isCatalogo = !!item.catalogo_mestre_id;
+          const produtoLocal = isCatalogo
+            ? null
+            : prodPorNome.get(normalizarNomeItem(item.nome)) || null;
+
+          if (!isCatalogo && !produtoLocal) continue;
+
+          const chavesBusca = [
+            grupo.chave,
+            produtoLocal ? `prod:${produtoLocal.id}` : null,
+          ].filter(Boolean) as string[];
+          const existente = chavesBusca.map((k) => existentes.get(k)).find(Boolean);
+
+          if (existente) {
+            // Já está na cotação: soma a nova necessidade em vez de descartar
+            cpUpdates.push({
+              id: existente.id,
+              quantidade: existente.quantidade + grupo.quantidadeTotal,
+            });
+            continue;
+          }
+
           const cp = buildCotacaoProdutoInsertFromItem({
             cotacaoId,
             item,
-            produtoLocal: p,
+            produtoLocal,
             legacyResolveEmb: resolveEmbalagem,
             legacyResolveFator: resolveFator,
           });
-          if (cp) cpInserts.push(cp);
-        }
-
-        // Catálogo: snapshot direto, sem produto local
-        for (const item of catalogItems) {
-          if (existingCatIds.has(item.catalogo_mestre_id)) continue;
-          const cp = buildCotacaoProdutoInsertFromItem({ cotacaoId, item });
-          if (cp) cpInserts.push(cp);
+          if (!cp) continue;
+          cpInserts.push(cp);
+          // Impede que grupos com chaves diferentes (ex. ean vs nome) dupliquem
+          for (const k of chavesBusca) existentes.set(k, { id: "pending", quantidade: 0 });
+          if (cp.nome) existentes.set(`nome:${normalizarNomeItem(cp.nome)}`, { id: "pending", quantidade: 0 });
         }
 
         if (cpInserts.length) {
           await supabase.from("cotacao_produtos").insert(cpInserts);
+        }
+        for (const upd of cpUpdates) {
+          if (upd.id === "pending") continue;
+          await supabase
+            .from("cotacao_produtos")
+            .update({ quantidade: upd.quantidade })
+            .eq("id", upd.id);
         }
       }
 
@@ -336,9 +382,9 @@ const FuncionariosPage = () => {
         .in("id", ids);
       if (error) throw error;
 
-      return { total: newItems.length, dups: dupCount, createdNewCotacao };
+      return { total: newItems.length, dups: dupCount, agrupados, createdNewCotacao };
     },
-    onSuccess: ({ total, dups, createdNewCotacao }) => {
+    onSuccess: ({ total, dups, agrupados, createdNewCotacao }) => {
       queryClient.invalidateQueries({ queryKey: ["itens-faltantes"] });
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
@@ -348,10 +394,11 @@ const FuncionariosPage = () => {
       queryClient.invalidateQueries({ queryKey: ["cotacao-precos-count"] });
       queryClient.invalidateQueries({ queryKey: ["precos"] });
       const suffix = createdNewCotacao ? " Nova cotação criada automaticamente." : "";
-      const msg = dups > 0
-        ? `${total} itens importados! (${dups} duplicados ignorados)${suffix}`
-        : `${total} itens importados para o Banco de Produtos!${suffix}`;
-      toast.success(msg);
+      const partes: string[] = [];
+      if (agrupados > 0) partes.push(`${agrupados} agrupados por repetição`);
+      if (dups > 0) partes.push(`${dups} já no Banco de Produtos`);
+      const detalhe = partes.length ? ` (${partes.join(", ")})` : "";
+      toast.success(`${total} itens importados!${detalhe}${suffix}`);
       navigate("/dashboard");
     },
     onError: (e: any) => toast.error(e.message),
@@ -427,43 +474,56 @@ const FuncionariosPage = () => {
         if (cot?.id) {
           const { data: existingCp } = await supabase
             .from("cotacao_produtos")
-            .select("produto_id, catalogo_mestre_id")
+            .select("id, produto_id, catalogo_mestre_id, nome, ean, quantidade")
             .eq("cotacao_id", cot.id);
-          const existingProdIds = new Set(
-            (existingCp || []).map((cp: any) => cp.produto_id).filter(Boolean),
-          );
-          const existingCatIds = new Set(
-            (existingCp || []).map((cp: any) => cp.catalogo_mestre_id).filter(Boolean),
-          );
 
-          const cpInserts: any[] = [];
+          const existentes = new Map<string, { id: string; quantidade: number }>();
+          for (const cp of existingCp || []) {
+            const ref = { id: cp.id, quantidade: Math.max(1, Number(cp.quantidade) || 1) };
+            const chaves = [
+              cp.catalogo_mestre_id ? `cat:${cp.catalogo_mestre_id}` : null,
+              cp.ean?.trim() ? `ean:${cp.ean.trim()}` : null,
+              cp.produto_id ? `prod:${cp.produto_id}` : null,
+              cp.nome ? `nome:${normalizarNomeItem(cp.nome)}` : null,
+            ].filter(Boolean) as string[];
+            for (const k of chaves) if (!existentes.has(k)) existentes.set(k, ref);
+          }
 
-          if (isCatalogo) {
-            if (!existingCatIds.has(item.catalogo_mestre_id)) {
-              const cp = buildCotacaoProdutoInsertFromItem({ cotacaoId: cot.id, item });
-              if (cp) cpInserts.push(cp);
-            }
-          } else {
+          // Um único produto local correspondente (evita duplicar homônimos)
+          let produtoLocal: any = null;
+          if (!isCatalogo) {
             const { data: matchedProds } = await supabase
               .from("produtos")
               .select("id, nome, embalagem, fator_embalagem")
               .ilike("nome", item.nome.trim());
+            produtoLocal = (matchedProds || [])[0] || null;
+          }
 
-            for (const p of matchedProds || []) {
-              if (existingProdIds.has(p.id)) continue;
+          if (isCatalogo || produtoLocal) {
+            const chavesBusca = [
+              chaveItemFaltante(item),
+              produtoLocal ? `prod:${produtoLocal.id}` : null,
+            ].filter(Boolean) as string[];
+            const existente = chavesBusca.map((k) => existentes.get(k)).find(Boolean);
+
+            if (existente) {
+              // Já está na cotação: soma a quantidade em vez de duplicar
+              await supabase
+                .from("cotacao_produtos")
+                .update({
+                  quantidade: existente.quantidade + Math.max(1, Number(item.quantidade) || 1),
+                })
+                .eq("id", existente.id);
+            } else {
               const cp = buildCotacaoProdutoInsertFromItem({
                 cotacaoId: cot.id,
                 item,
-                produtoLocal: p,
+                produtoLocal,
                 legacyResolveEmb: resolveEmbalagem,
                 legacyResolveFator: resolveFator,
               });
-              if (cp) cpInserts.push(cp);
+              if (cp) await supabase.from("cotacao_produtos").insert([cp]);
             }
-          }
-
-          if (cpInserts.length) {
-            await supabase.from("cotacao_produtos").insert(cpInserts);
           }
         }
       }
@@ -834,6 +894,7 @@ const FuncionariosPage = () => {
               const divergente = !!sugestao?.divergente;
               const editando = editingId === item.id;
               const tempoRelativo = formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: ptBR });
+              const repeticoes = repeticoesPendentes.get(chaveItemFaltante(item)) || 1;
 
               return (
                 <div key={item.id} className={`flex items-start gap-2 px-4 py-3 border-b hover:bg-muted/30 transition-colors ${bloqueado ? 'opacity-50' : ''}`}>
@@ -845,6 +906,14 @@ const FuncionariosPage = () => {
                         ? <span className="text-[9px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">⛔ Fornecedor já respondeu</span>
                         : <span className="text-[9px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">✅ Disponível</span>
                       }
+                      {repeticoes > 1 && (
+                        <span
+                          className="text-[9px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0"
+                          title="Este produto aparece mais de uma vez na lista. Na importação as quantidades serão somadas em uma única linha."
+                        >
+                          🔁 {repeticoes}x na lista
+                        </span>
+                      )}
                       {divergente && (
                         <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
                           💡 Sugestão da equipe
