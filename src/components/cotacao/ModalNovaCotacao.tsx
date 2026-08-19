@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Clock } from "lucide-react";
+import { AlertTriangle, Clock, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { timeInputToTodayIso } from "@/lib/format";
 
@@ -14,9 +14,11 @@ interface ModalNovaCotacaoProps {
   onConfirm: (prazoIso: string | null) => void;
   loading?: boolean;
   lojaId?: string | null;
+  /** Itens da cotação atual que não receberam preço de nenhum fornecedor. */
+  semPrecoCount?: number;
 }
 
-const ModalNovaCotacao = ({ open, onOpenChange, novaCotacaoOpt, setNovaCotacaoOpt, onConfirm, loading, lojaId }: ModalNovaCotacaoProps) => {
+const ModalNovaCotacao = ({ open, onOpenChange, novaCotacaoOpt, setNovaCotacaoOpt, onConfirm, loading, lojaId, semPrecoCount = 0 }: ModalNovaCotacaoProps) => {
   const [prazoTime, setPrazoTime] = useState("18:00");
   const [semPrazo, setSemPrazo] = useState(false);
 
