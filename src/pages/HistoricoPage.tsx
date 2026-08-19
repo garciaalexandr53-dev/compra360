@@ -1627,7 +1627,12 @@ const HistoricoPage = () => {
             <div className="text-center py-16 text-muted-foreground text-sm">
               Sem cotações no histórico.
             </div>
+          ) : batchError ? (
+            <div className="text-center py-16 text-sm text-destructive px-4">
+              Não foi possível carregar os dados dos insights. Verifique sua conexão e tente novamente.
+            </div>
           ) : batchLoading || !batchDetails ? (
+
             <div className="space-y-3">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {Array.from({ length: 4 }).map((_, i) => (
