@@ -278,6 +278,7 @@ const FuncionariosPage = () => {
 
       // Link products to the active store's cotação
       const cotacaoId = cot?.id;
+      let agrupados = 0;
       if (cotacaoId) {
         const allLocalNames = localItemsToImport.map((i: any) => i.nome);
         const { data: matchedProds } = allLocalNames.length
@@ -287,45 +288,85 @@ const FuncionariosPage = () => {
               .in("nome", allLocalNames)
           : { data: [] as any[] };
 
+        // Produto local por nome normalizado (um só, evita duplicar cadastros homônimos)
+        const prodPorNome = new Map<string, any>();
+        for (const p of matchedProds || []) {
+          const k = normalizarNomeItem(p.nome);
+          if (!prodPorNome.has(k)) prodPorNome.set(k, p);
+        }
+
         const { data: existingCp } = await supabase
           .from("cotacao_produtos")
-          .select("produto_id, catalogo_mestre_id")
+          .select("id, produto_id, catalogo_mestre_id, nome, ean, quantidade")
           .eq("cotacao_id", cotacaoId);
-        const existingProdIds = new Set(
-          (existingCp || []).map((cp: any) => cp.produto_id).filter(Boolean),
-        );
-        const existingCatIds = new Set(
-          (existingCp || []).map((cp: any) => cp.catalogo_mestre_id).filter(Boolean),
-        );
+
+        // Mapa de identidade -> linha já existente na cotação
+        const existentes = new Map<string, { id: string; quantidade: number }>();
+        for (const cp of existingCp || []) {
+          const ref = { id: cp.id, quantidade: Math.max(1, Number(cp.quantidade) || 1) };
+          const chaves = [
+            cp.catalogo_mestre_id ? `cat:${cp.catalogo_mestre_id}` : null,
+            cp.ean?.trim() ? `ean:${cp.ean.trim()}` : null,
+            cp.produto_id ? `prod:${cp.produto_id}` : null,
+            cp.nome ? `nome:${normalizarNomeItem(cp.nome)}` : null,
+          ].filter(Boolean) as string[];
+          for (const k of chaves) if (!existentes.has(k)) existentes.set(k, ref);
+        }
 
         const cpInserts: any[] = [];
+        const cpUpdates: { id: string; quantidade: number }[] = [];
 
-        // Locais
-        for (const p of matchedProds || []) {
-          if (existingProdIds.has(p.id)) continue;
-          const item = localItemsToImport.find(
-            (i: any) => i.nome.toLowerCase().trim() === p.nome.toLowerCase().trim(),
-          );
-          if (!item) continue;
+        // Agrupa o lote inteiro: mesmo item registrado N vezes = 1 linha
+        const grupos = agruparItensParaImportacao<any>(itemsToImport);
+        agrupados = itemsToImport.length - grupos.length;
+
+        for (const grupo of grupos) {
+          const item = { ...grupo.principal, quantidade: grupo.quantidadeTotal };
+          const isCatalogo = !!item.catalogo_mestre_id;
+          const produtoLocal = isCatalogo
+            ? null
+            : prodPorNome.get(normalizarNomeItem(item.nome)) || null;
+
+          if (!isCatalogo && !produtoLocal) continue;
+
+          const chavesBusca = [
+            grupo.chave,
+            produtoLocal ? `prod:${produtoLocal.id}` : null,
+          ].filter(Boolean) as string[];
+          const existente = chavesBusca.map((k) => existentes.get(k)).find(Boolean);
+
+          if (existente) {
+            // Já está na cotação: soma a nova necessidade em vez de descartar
+            cpUpdates.push({
+              id: existente.id,
+              quantidade: existente.quantidade + grupo.quantidadeTotal,
+            });
+            continue;
+          }
+
           const cp = buildCotacaoProdutoInsertFromItem({
             cotacaoId,
             item,
-            produtoLocal: p,
+            produtoLocal,
             legacyResolveEmb: resolveEmbalagem,
             legacyResolveFator: resolveFator,
           });
-          if (cp) cpInserts.push(cp);
-        }
-
-        // Catálogo: snapshot direto, sem produto local
-        for (const item of catalogItems) {
-          if (existingCatIds.has(item.catalogo_mestre_id)) continue;
-          const cp = buildCotacaoProdutoInsertFromItem({ cotacaoId, item });
-          if (cp) cpInserts.push(cp);
+          if (!cp) continue;
+          cpInserts.push(cp);
+          // Impede que grupos com chaves diferentes (ex. ean vs nome) dupliquem
+          for (const k of chavesBusca) existentes.set(k, { id: "pending", quantidade: 0 });
+          if (cp.nome) existentes.set(`nome:${normalizarNomeItem(cp.nome)}`, { id: "pending", quantidade: 0 });
         }
 
         if (cpInserts.length) {
           await supabase.from("cotacao_produtos").insert(cpInserts);
+        }
+        for (const upd of cpUpdates) {
+          if (upd.id === "pending") continue;
+          await supabase
+            .from("cotacao_produtos")
+            .update({ quantidade: upd.quantidade })
+            .eq("id", upd.id);
         }
       }
 
@@ -336,7 +377,7 @@ const FuncionariosPage = () => {
         .in("id", ids);
       if (error) throw error;
 
-      return { total: newItems.length, dups: dupCount, createdNewCotacao };
+      return { total: newItems.length, dups: dupCount, agrupados, createdNewCotacao };
     },
     onSuccess: ({ total, dups, createdNewCotacao }) => {
       queryClient.invalidateQueries({ queryKey: ["itens-faltantes"] });
