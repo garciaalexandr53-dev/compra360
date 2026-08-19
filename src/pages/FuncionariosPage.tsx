@@ -203,6 +203,7 @@ const FuncionariosPage = () => {
   const canImport = !cotacaoAtivaLoja || !cotacaoTemPrecos;
   const pendentesImportaveis = canImport ? pendentes : [];
   const pendentesBloqueados = canImport ? [] : pendentes;
+  const repeticoesPendentes = contarRepeticoes(pendentes as any[]);
 
   const importarMutation = useMutation({
     mutationFn: async () => {
