@@ -22,7 +22,7 @@ import DashboardReposicao from "@/components/dashboard/DashboardReposicao";
 import SendQueueModal from "@/components/dashboard/SendQueueModal";
 import ConclusaoScreen from "@/components/dashboard/ConclusaoScreen";
 import ItensCarregadosBanner from "@/components/dashboard/ItensCarregadosBanner";
-import { filtrarItensSemPreco, buildCarryInserts, registrarCarry, lerCarry, limparCarry } from "@/lib/itensSemPreco";
+import { filtrarItensSemPreco, buildCarryInserts, registrarCarry } from "@/lib/itensSemPreco";
 import ImportErpModal from "@/components/ImportErpModal";
 import ModalFornecedores from "@/components/cotacao/ModalFornecedores";
 import ModalFornecedorSugestao from "@/components/cotacao/ModalFornecedorSugestao";

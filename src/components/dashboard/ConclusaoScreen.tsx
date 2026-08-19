@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle2, History, BarChart3, RefreshCw, X } from "lucide-react";
+import { CheckCircle2, History, BarChart3, RefreshCw, X, AlertCircle } from "lucide-react";
 import { formatBRL } from "@/lib/format";
 import { useNavigate } from "react-router-dom";
 import type { Tables } from "@/integrations/supabase/types";
@@ -17,6 +17,8 @@ interface PedidoResumo {
 interface Props {
   economyEstimate: number | null;
   pedidos: PedidoResumo[];
+  /** Nomes dos itens que não receberam preço de nenhum fornecedor. */
+  itensSemPreco?: string[];
   onNewCotacao: () => void;
   onDismiss: () => void;
 }
@@ -45,7 +47,7 @@ const AnimatedNumber = ({ value, duration = 1500 }: { value: number; duration?: 
   return <>{formatBRL(current)}</>;
 };
 
-const ConclusaoScreen = ({ economyEstimate, pedidos, onNewCotacao, onDismiss }: Props) => {
+const ConclusaoScreen = ({ economyEstimate, pedidos, itensSemPreco = [], onNewCotacao, onDismiss }: Props) => {
   const navigate = useNavigate();
   const [showIcon, setShowIcon] = useState(false);
   const [showTitle, setShowTitle] = useState(false);
@@ -120,6 +122,37 @@ const ConclusaoScreen = ({ economyEstimate, pedidos, onNewCotacao, onDismiss }: 
             </CardContent>
           </Card>
         </div>
+
+        {/* Itens sem preço */}
+        {itensSemPreco.length > 0 && (
+          <div className={`transition-all duration-500 ${showList ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+            <Card className="border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                      {itensSemPreco.length} ite{itensSemPreco.length === 1 ? "m ficou" : "ns ficaram"} sem preço
+                    </p>
+                    <p className="mt-0.5 text-xs text-amber-800/90 dark:text-amber-300/90">
+                      Nenhum fornecedor respondeu. {itensSemPreco.length === 1 ? "Ele não foi comprado" : "Eles não foram comprados"} e {itensSemPreco.length === 1 ? "será levado" : "serão levados"} para a próxima cotação.
+                    </p>
+                    <ul className="mt-2 space-y-1">
+                      {itensSemPreco.slice(0, 8).map((nome, i) => (
+                        <li key={i} className="truncate text-xs text-amber-900/90 dark:text-amber-200/90">• {nome}</li>
+                      ))}
+                    </ul>
+                    {itensSemPreco.length > 8 && (
+                      <p className="mt-1 text-xs text-amber-800/80 dark:text-amber-300/80">
+                        e mais {itensSemPreco.length - 8} ite{itensSemPreco.length - 8 === 1 ? "m" : "ns"}…
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Buttons */}
         <div className={`space-y-3 transition-all duration-500 ${showButtons ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
