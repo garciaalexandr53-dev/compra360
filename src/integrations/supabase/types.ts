@@ -628,6 +628,66 @@ export type Database = {
         }
         Relationships: []
       }
+      pagamentos_manuais: {
+        Row: {
+          ciclo: string
+          created_at: string
+          id: string
+          metodo: string
+          observacao: string | null
+          periodo_fim: string
+          periodo_inicio: string
+          plan_id: string
+          registrado_por: string | null
+          subscription_id: string | null
+          user_id: string
+          valor: number | null
+        }
+        Insert: {
+          ciclo: string
+          created_at?: string
+          id?: string
+          metodo: string
+          observacao?: string | null
+          periodo_fim: string
+          periodo_inicio: string
+          plan_id: string
+          registrado_por?: string | null
+          subscription_id?: string | null
+          user_id: string
+          valor?: number | null
+        }
+        Update: {
+          ciclo?: string
+          created_at?: string
+          id?: string
+          metodo?: string
+          observacao?: string | null
+          periodo_fim?: string
+          periodo_inicio?: string
+          plan_id?: string
+          registrado_por?: string | null
+          subscription_id?: string | null
+          user_id?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagamentos_manuais_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_manuais_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pedidos: {
         Row: {
           cotacao_id: string
@@ -847,42 +907,57 @@ export type Database = {
       subscriptions: {
         Row: {
           canceled_at: string | null
+          ciclo: string | null
           created_at: string
           current_period_end: string | null
           current_period_start: string | null
           id: string
+          metodo_pagamento: string | null
+          observacao: string | null
+          origem: string
           plan_id: string
           status: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           updated_at: string
           user_id: string
+          valor_pago: number | null
         }
         Insert: {
           canceled_at?: string | null
+          ciclo?: string | null
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
           id?: string
+          metodo_pagamento?: string | null
+          observacao?: string | null
+          origem?: string
           plan_id: string
           status?: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           updated_at?: string
           user_id: string
+          valor_pago?: number | null
         }
         Update: {
           canceled_at?: string | null
+          ciclo?: string | null
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
           id?: string
+          metodo_pagamento?: string | null
+          observacao?: string | null
+          origem?: string
           plan_id?: string
           status?: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           updated_at?: string
           user_id?: string
+          valor_pago?: number | null
         }
         Relationships: [
           {
@@ -1005,6 +1080,22 @@ export type Database = {
         }[]
       }
       admin_global_metrics: { Args: never; Returns: Json }
+      admin_list_assinaturas_manuais: {
+        Args: never
+        Returns: {
+          ciclo: string
+          current_period_end: string
+          dias_restantes: number
+          email: string
+          metodo_pagamento: string
+          plan_name: string
+          status: string
+          ultimo_pagamento_at: string
+          user_id: string
+          valor_pago: number
+          whatsapp: string
+        }[]
+      }
       admin_list_clientes: {
         Args: never
         Returns: {
@@ -1068,6 +1159,20 @@ export type Database = {
           total_count: number
         }[]
       }
+      admin_list_pagamentos_manuais: {
+        Args: { _user_id: string }
+        Returns: {
+          ciclo: string
+          created_at: string
+          id: string
+          metodo: string
+          observacao: string
+          periodo_fim: string
+          periodo_inicio: string
+          plan_name: string
+          valor: number
+        }[]
+      }
       admin_registrar_contato: {
         Args: {
           _canal: string
@@ -1076,6 +1181,18 @@ export type Database = {
           _user_id: string
         }
         Returns: string
+      }
+      admin_registrar_pagamento_manual: {
+        Args: {
+          _ciclo: string
+          _metodo?: string
+          _observacao?: string
+          _plan_name: string
+          _user_id: string
+          _valor?: number
+          _vencimento?: string
+        }
+        Returns: Json
       }
       admin_set_user_plan: {
         Args: { _plan_name: string; _user_id: string }
