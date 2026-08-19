@@ -33,6 +33,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
 import BackToLojaButton from "@/components/shared/BackToLojaButton";
+import { buildCarryInserts, registrarCarry, filtrarItensSemPreco } from "@/lib/itensSemPreco";
 
 type Fornecedor = Tables<"fornecedores">;
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
@@ -59,7 +60,7 @@ const CotacaoPage = () => {
   const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "manter_precos" | "zerar" | null>(null);
   const [legendVisible, setLegendVisible] = useState(false);
   const [filterAnomalies, setFilterAnomalies] = useState(false);
-  const [filterSemPreco, setFilterSemPreco] = useState(false);
+  const [filterSemPreco, setFilterSemPreco] = useState(searchParams.get("semPreco") === "1");
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
   const [selectedSuppliers, setSelectedSuppliers] = useState<Record<string, boolean>>({});
   const [aiAnalysisOpen, setAiAnalysisOpen] = useState(false);
@@ -432,6 +433,11 @@ const CotacaoPage = () => {
     });
   };
 
+  const semPrecoCount = useMemo(
+    () => cotacaoProdutos.filter((cp) => hasNoPrice(cp.id)).length,
+    [cotacaoProdutos, localPrices, fornecedores],
+  );
+
   const grandTotal = useMemo(() => {
     let total = 0;
     cotacaoProdutos.forEach((cp) => { const info = analyzePrices(cp.id); if (info.min && info.minVal !== null) total += info.minVal * (cp.quantidade || 1) * (cp.fator_embalagem || 1); });
@@ -598,7 +604,9 @@ const CotacaoPage = () => {
         // Auto-transfer items that had no price from any supplier
         const semPrecoItems = cotacaoProdutos.filter((cp) => hasNoPrice(cp.id));
         if (semPrecoItems.length > 0) {
-          await supabase.from("cotacao_produtos").insert(semPrecoItems.map((cp: any) => ({ cotacao_id: newCot.id, produto_id: cp.produto_id, catalogo_mestre_id: cp.catalogo_mestre_id ?? null, nome: getCotacaoNome(cp), ean: cp.ean ?? null, quantidade: cp.quantidade })) as any);
+          const inserts = buildCarryInserts(newCot.id, semPrecoItems.map((cp: any) => ({ ...cp, nome: getCotacaoNome(cp) })));
+          await supabase.from("cotacao_produtos").insert(inserts as any);
+          registrarCarry(newCot.id, semPrecoItems.length);
           toast.success(`Cotação zerada — ${semPrecoItems.length} item(ns) sem preço transferido(s) automaticamente!`);
         } else {
           toast.success("Cotação reiniciada — lista zerada!");
@@ -1032,7 +1040,7 @@ const CotacaoPage = () => {
       )}
 
       <ModalFornecedores open={supplierModalOpen} onOpenChange={setSupplierModalOpen} fornecedores={allFornecedores} selectedSuppliers={selectedSuppliers} onToggle={toggleSupplier} onSelectAll={selectAllSuppliers} onSave={saveSupplierSelection} />
-      <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} lojaId={lojaAtiva?.id} />
+      <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} lojaId={lojaAtiva?.id} semPrecoCount={semPrecoCount} />
       <ModalAiAnalise open={aiAnalysisOpen} onOpenChange={setAiAnalysisOpen} text={aiAnalysisText} loading={aiAnalysisLoading} onReanalisar={runAiAnalysis} />
       <ModalQtySugestao open={qtySuggestOpen} onOpenChange={setQtySuggestOpen} suggestions={qtySuggestions} loading={qtySuggestLoading} onApply={applyQtySuggestions} lojaNome={qtySuggestLojaNome} multiStore={qtySuggestMultiStore} />
       <ImportErpModal open={erpImportOpen} onOpenChange={setErpImportOpen} cotacaoId={cotacaoAtiva.id} />
