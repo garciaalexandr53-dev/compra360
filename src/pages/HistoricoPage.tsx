@@ -733,7 +733,7 @@ const HistoricoPage = () => {
   const batchIdsKey = batchIds.join(",");
   const needsBatchDetails = activeTab === "insights" || selectionMode;
 
-  const { data: batchDetails, isLoading: batchLoading } = useQuery({
+  const { data: batchDetails, isLoading: batchLoading, error: batchError } = useQuery({
     queryKey: ["historico-batch-details", batchIdsKey],
     enabled: needsBatchDetails && batchIds.length > 0,
     queryFn: async () => {
