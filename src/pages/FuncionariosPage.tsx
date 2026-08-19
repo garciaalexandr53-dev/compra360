@@ -383,7 +383,7 @@ const FuncionariosPage = () => {
 
       return { total: newItems.length, dups: dupCount, agrupados, createdNewCotacao };
     },
-    onSuccess: ({ total, dups, createdNewCotacao }) => {
+    onSuccess: ({ total, dups, agrupados, createdNewCotacao }) => {
       queryClient.invalidateQueries({ queryKey: ["itens-faltantes"] });
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-produtos"] });
@@ -393,10 +393,11 @@ const FuncionariosPage = () => {
       queryClient.invalidateQueries({ queryKey: ["cotacao-precos-count"] });
       queryClient.invalidateQueries({ queryKey: ["precos"] });
       const suffix = createdNewCotacao ? " Nova cotação criada automaticamente." : "";
-      const msg = dups > 0
-        ? `${total} itens importados! (${dups} duplicados ignorados)${suffix}`
-        : `${total} itens importados para o Banco de Produtos!${suffix}`;
-      toast.success(msg);
+      const partes: string[] = [];
+      if (agrupados > 0) partes.push(`${agrupados} agrupados por repetição`);
+      if (dups > 0) partes.push(`${dups} já no Banco de Produtos`);
+      const detalhe = partes.length ? ` (${partes.join(", ")})` : "";
+      toast.success(`${total} itens importados!${detalhe}${suffix}`);
       navigate("/dashboard");
     },
     onError: (e: any) => toast.error(e.message),
