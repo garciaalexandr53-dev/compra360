@@ -37,9 +37,23 @@ Hoje, nesse caminho, os itens sem preço **não aparecem em nenhum ponto**:
 
 7. **Testes** unitários do helper: item sem nenhum preço entra; preço nulo ou zero conta como sem preço; item com preço de qualquer fornecedor não entra; snapshot preservado.
 
+## Integração com a importação do app de Funcionários
+
+A cotação nova normalmente é montada importando os itens da aba Reposição. Verificado no código (`FuncionariosPage.tsx`): a importação já compara cada item do lote com as linhas que **já estão** na cotação, usando as chaves `catalogo_mestre_id` → `ean` → `produto_id` → nome normalizado, e nesse caso **soma a quantidade na linha existente** em vez de criar linha nova.
+
+Como os itens sem preço serão carregados preservando `catalogo_mestre_id`, `produto_id`, `ean` e nome, o encaixe é automático:
+
+- Item sem preço carregado **e** registrado de novo pela equipe → uma única linha, quantidades somadas (nada duplica).
+- Item sem preço carregado e **não** registrado de novo → permanece na cotação com a quantidade original.
+- Item novo da Reposição → entra normalmente como linha nova.
+
+Além disso, na lista de pendentes da Reposição, itens que já estão na nova cotação por falta de preço ganham o selo "já na cotação (sem preço)", para o comprador não achar que precisa registrar de novo.
+
 ## Detalhes técnicos
 
 - Critério de "sem preço": nenhuma linha em `precos` com `preco > 0` para aquele `cotacao_produto_id` — mesmo critério do `hasNoPrice` já usado em `CotacaoPage`.
 - O filtro "Sem preço" da matriz passa a poder ser ativado por parâmetro de URL (`?semPreco=1`) para o atalho do banner funcionar.
+- O selo "já na cotação" reaproveita as chaves de identidade de `itensFaltantesImport.ts`, sem query nova.
 - Nada muda na Análise, nos Pedidos, no Histórico ou no banco de dados (sem migração).
 - Layout verificado em 360px e desktop.
+
