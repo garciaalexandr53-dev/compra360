@@ -893,6 +893,7 @@ const FuncionariosPage = () => {
               const divergente = !!sugestao?.divergente;
               const editando = editingId === item.id;
               const tempoRelativo = formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: ptBR });
+              const repeticoes = repeticoesPendentes.get(chaveItemFaltante(item)) || 1;
 
               return (
                 <div key={item.id} className={`flex items-start gap-2 px-4 py-3 border-b hover:bg-muted/30 transition-colors ${bloqueado ? 'opacity-50' : ''}`}>
@@ -904,6 +905,14 @@ const FuncionariosPage = () => {
                         ? <span className="text-[9px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">⛔ Fornecedor já respondeu</span>
                         : <span className="text-[9px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">✅ Disponível</span>
                       }
+                      {repeticoes > 1 && (
+                        <span
+                          className="text-[9px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0"
+                          title="Este produto aparece mais de uma vez na lista. Na importação as quantidades serão somadas em uma única linha."
+                        >
+                          🔁 {repeticoes}x na lista
+                        </span>
+                      )}
                       {divergente && (
                         <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
                           💡 Sugestão da equipe
