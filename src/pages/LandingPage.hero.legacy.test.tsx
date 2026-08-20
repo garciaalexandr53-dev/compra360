@@ -47,9 +47,11 @@ describe("LandingPage — Hero não contém textos antigos", () => {
 
   it.each(TEXTOS_ANTIGOS)("não renderiza o texto antigo: %s", (texto) => {
     render(
-      <MemoryRouter>
-        <LandingPage />
-      </MemoryRouter>
+      <HelmetProvider>
+        <MemoryRouter>
+          <LandingPage />
+        </MemoryRouter>
+      </HelmetProvider>
     );
     expect(screen.queryByText(new RegExp(texto, "i"))).not.toBeInTheDocument();
   });
