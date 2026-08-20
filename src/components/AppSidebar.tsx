@@ -177,11 +177,15 @@ export function AppSidebar() {
         </SidebarGroup>
         <SidebarGroup>
           <SidebarGroupLabel>Mais</SidebarGroupLabel>
-          <SidebarGroupContent>{renderMenu(maisMenu)}</SidebarGroupContent>
+          <SidebarGroupContent>
+            {renderMenu(maisMenu)}
+            {renderHelpItem()}
+          </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter className="p-3 border-t border-sidebar-border space-y-2">
+
         {!collapsed && cotacaoAtiva && (
           <div className="bg-sidebar-accent/50 border border-sidebar-border rounded-lg p-2.5 text-center">
             <span className="text-[8.5px] text-sidebar-foreground/35 uppercase tracking-wider">Cotação ativa</span>
