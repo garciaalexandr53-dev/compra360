@@ -43,6 +43,11 @@ export function AppSidebar() {
   const isMobile = useIsMobile();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
+  const { nome } = useProfile();
+  const { plan } = useSubscription();
+
+  const suporteUrl = buildSuporteUrl({ nome, email: user?.email, plano: plan?.display_name, loja: lojaAtiva?.nome });
+
 
   const { data: isAdmin = false } = useQuery({
     queryKey: ["is-admin-sidebar", user?.id],
