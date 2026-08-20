@@ -49,6 +49,8 @@ Assim, trocar o número no futuro é uma edição em um lugar só.
 - Teste unitário para `buildSuporteUrl` (número normalizado, mensagem codificada, campos ausentes tratados).
 - Build verde. Verificação visual em 360px e desktop.
 
-## Antes de implementar
+## Observações
 
-Preciso do número de WhatsApp que receberá os contatos de suporte (com DDD). Se preferir, posso usar um placeholder e você troca depois.
+- Não altera a página de perfil, nem cobra cadastro de WhatsApp — quem clicar em "Ajuda" já sai com o número do suporte na mão.
+- Build verde. Verificação visual em 360px e desktop.
+
