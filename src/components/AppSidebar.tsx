@@ -131,6 +131,27 @@ export function AppSidebar() {
     </SidebarMenu>
   );
 
+  const renderHelpItem = () => (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton asChild>
+          <a
+            href={suporteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleNavClick}
+            className="hover:bg-sidebar-accent"
+            title="Falar com o suporte pelo WhatsApp"
+          >
+            <helpItem.icon className="h-4 w-4" />
+            {!collapsed && <span className="flex-1">{helpItem.title}</span>}
+          </a>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className={collapsed ? "p-2" : "px-4 py-6"}>
