@@ -356,7 +356,7 @@ export default function AdminPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-3 sm:grid-cols-7 w-full sm:w-auto sm:inline-flex">
+          <TabsList className="grid grid-cols-3 sm:grid-cols-7 h-auto w-full sm:w-auto sm:inline-flex">
             <TabsTrigger value="metricas">Métricas</TabsTrigger>
             <TabsTrigger value="alertas" className="gap-1.5">
               <AlertTriangle className="h-3.5 w-3.5" />
