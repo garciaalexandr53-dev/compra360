@@ -1,99 +1,49 @@
-Chat de suporte prioritário em-app (Pro/Business)
+Canal de suporte por WhatsApp para todos os planos
 
-Objetivo: transformar o item "Suporte prioritário" em um canal real dentro do app, com histórico de conversas, fácil para o cliente e gerenciável pelo administrador.
+Decisão: por enquanto o suporte será por WhatsApp, disponível em todos os planos (inclusive o Free). O chat em-app com histórico fica para quando a carteira de clientes crescer.
 
-O que será entregue:
+## O que muda para o cliente
 
-```text
-Cliente (Pro/Business)              Supabase                  Admin
-        |                              |                       |
-        |-- Abre chat flutuante ------>|                       |
-        |-- Envia mensagem ---------->|-- RLS: só suas msgs   |
-        |                              |-- Notifica por email  |--> Aba "Suporte"
-        |                              |                       |--> Responde
-        |<-- Vê resposta em tempo real |<----------------------|
-```
+1. Botão flutuante "Ajuda" no app (canto inferior direito, acima do menu inferior no mobile).
+   - Visível para qualquer usuário logado, independente do plano.
+   - Abre o WhatsApp do suporte com mensagem pré-preenchida contendo nome da loja, e-mail e plano atual — assim você já sabe quem está falando antes de responder.
+   - Respeita a safe-area do iPhone e não sobrepõe o `BottomNav`.
 
-Escopo:  
-- Vai substituir os textos "Suporte prioritário" e "Suporte por WhatsApp" por "Chat de suporte em-app" (landing page e modal de planos).  
-- Apenas clientes Pro e Business veem o botão de chat.  
-- Free fica sem chat (mantém o link para WhatsApp apenas se já existir, mas não vamos adicionar nada novo).  
-- Admin ganha uma aba "Suporte" no `/admin` para ler e responder.
+2. Link de suporte no rodapé da landing page ("Falar com o suporte") e no FAQ.
+   - Nova pergunta no FAQ: "Como falo com o suporte?" com resposta explicando que é por WhatsApp, em todos os planos.
 
-Tabelas no Lovable Cloud:
+3. Item "Ajuda / Suporte" no menu lateral (grupo "Mais") e no rodapé de "Meus dados", para quem preferir procurar pelo menu em vez do botão flutuante.
 
-1. `support_tickets` (uma conversa por cliente)
-   - `id` uuid PK
-   - `user_id` uuid → `auth.users(id)`
-   - `status` text: `aberto` | `respondido` | `resolvido` | `arquivado`
-   - `subject` text (opcional, resumo da primeira mensagem)
-   - `created_at`, `updated_at` timestamptz
-   - `GRANT` para `authenticated` e `service_role`; RLS ativo.
+## Textos dos planos
 
-2. `support_messages` (histórico de mensagens)
-   - `id` uuid PK
-   - `ticket_id` uuid → `support_tickets(id)`
-   - `sender_type` text: `cliente` | `admin`
-   - `message` text
-   - `created_at` timestamptz
-   - `GRANT` para `authenticated` e `service_role`; RLS ativo.
+Todos os planos passam a mostrar suporte, com diferenciação honesta de prioridade:
 
-Políticas RLS:
-- Usuário comum pode SELECT/INSERT apenas em tickets/mensagens onde `user_id = auth.uid()`.
-- Admin (`public.has_role(auth.uid(), 'admin')`) pode SELECT/UPDATE/INSERT em todos.
-- UPDATE de `status` apenas admin.
+- Gratuito: "Suporte por WhatsApp"
+- Pro: "Suporte por WhatsApp" (mantém)
+- Business: "Suporte prioritário por WhatsApp" (resposta na frente da fila)
 
-Frontend:
+Aplicado nos dois lugares onde os planos aparecem: a landing page e o modal de planos dentro do app.
 
-1. Novo componente `src/components/support/SupportChat.tsx`:
-   - Botão flutuante com ícone de chat no `AppLayout` (aparece só para Pro/Business).
-   - Janela expansível com lista de mensagens, campo de texto e botão enviar.
-   - Marca mensagens do admin à direita, do cliente à esquerda.
-   - Usa Supabase Realtime para atualizar novas respostas sem reload.
-   - Mobile: drawer/barra inferior adaptável; desktop: bubble lateral.
+## Onde fica o número
 
-2. Hook `src/hooks/useSupportTickets.ts`:
-   - Carrega o ticket aberto do usuário logado (ou cria um novo na primeira mensagem).
-   - Expõe `sendMessage`, `messages`, `isLoading`, `unreadCount`.
+Um único arquivo `src/lib/suporte.ts` guarda:
+- o número de WhatsApp do suporte;
+- o helper que monta a URL com a mensagem pré-preenchida (reaproveitando `buildWhatsAppUrl` de `src/lib/format.ts`, que já existe);
+- o texto padrão da mensagem.
 
-3. Atualização de textos:
-   - `src/pages/LandingPage.tsx`: Pro vira "Chat de suporte em-app"; Business vira "Suporte prioritário via chat".
-   - `src/components/PlanosModal.tsx`: Pro e Business usam a mesma nomenclatura.
+Assim, trocar o número no futuro é uma edição em um lugar só.
 
-4. Aba "Suporte" no admin:
-   - Novo componente `src/components/admin/SuporteTab.tsx`.
-   - Lista tickets ordenados por `updated_at` desc.
-   - Filtros rápidos: `abertos`, `respondidos`, `resolvidos`.
-   - Ao clicar, abre o ticket com campo de resposta.
-   - Botão para marcar como resolvido/arquivado.
-   - Badge com contagem de não respondidos.
+## Detalhes técnicos
 
-Backend:
+- Novo `src/lib/suporte.ts` com `SUPORTE_WHATSAPP` e `buildSuporteUrl({ nome, email, plano })`.
+- Novo `src/components/SuporteFlutuante.tsx`, montado no `AppLayout` junto ao `BottomNav`. Usa `useProfile` e `useSubscription` (já existentes) para compor a mensagem.
+- `src/pages/LandingPage.tsx`: adiciona a feature de suporte no plano Gratuito, ajusta o texto do Business, novo item no FAQ e link no rodapé.
+- `src/components/PlanosModal.tsx`: mesmas alterações de texto.
+- `src/components/AppSidebar.tsx`: item "Ajuda" no grupo "Mais" abrindo o WhatsApp em nova aba.
+- Nenhuma tabela nova, nenhuma Edge Function, nenhuma migração — o WhatsApp é um link externo.
+- Teste unitário para `buildSuporteUrl` (número normalizado, mensagem codificada, campos ausentes tratados).
+- Build verde. Verificação visual em 360px e desktop.
 
-1. Edge Function `notify-support`:
-   - Disparada por trigger (ou insert via function) quando uma mensagem de cliente é inserida.
-   - Envia email transacional para o administrador (usando `send-transactional-email` ou a fila de email já existente) com resumo e link para o admin.
-   - Não expõe nada para o cliente.
+## Antes de implementar
 
-2. Migration:
-   - Cria tabelas, índices (`support_tickets.user_id`, `support_messages.ticket_id`), políticas RLS e GRANTs.
-   - Garante `SET search_path = public` em funções SECURITY DEFINER se necessário.
-
-Segurança e limites:
-- Limite de 500 caracteres por mensagem.
-- Rate limit simples: máximo 1 mensagem a cada 3 segundos por usuário (validado no client + server).
-- Admin não pode se passar por cliente; `sender_type` é sempre `admin` nas respostas do admin.
-- Sem anexos no MVP.
-
-Testes e verificação:
-- Testes unitários para o hook de tickets e o componente de mensagens.
-- Verificação de RLS: usuário A não vê tickets do usuário B.
-- Teste de envio de email no sandbox (mock).
-- Build verde.
-- Mobile 360px e desktop 1280px.
-
-Não incluído neste plano:
-- Notificações push.
-- Upload de imagens/anexos.
-- Chat com IA automática.
-- Múltiplos atendentes/filas.
+Preciso do número de WhatsApp que receberá os contatos de suporte (com DDD). Se preferir, posso usar um placeholder e você troca depois.
