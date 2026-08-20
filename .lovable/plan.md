@@ -26,12 +26,17 @@ Aplicado nos dois lugares onde os planos aparecem: a landing page e o modal de p
 
 ## Onde fica o número
 
+O número do WhatsApp de suporte é **44 98448-3553**.
+
+## Onde fica o número
+
 Um único arquivo `src/lib/suporte.ts` guarda:
-- o número de WhatsApp do suporte;
+- o número de WhatsApp do suporte (44 98448-3553);
 - o helper que monta a URL com a mensagem pré-preenchida (reaproveitando `buildWhatsAppUrl` de `src/lib/format.ts`, que já existe);
 - o texto padrão da mensagem.
 
 Assim, trocar o número no futuro é uma edição em um lugar só.
+
 
 ## Detalhes técnicos
 
@@ -44,6 +49,8 @@ Assim, trocar o número no futuro é uma edição em um lugar só.
 - Teste unitário para `buildSuporteUrl` (número normalizado, mensagem codificada, campos ausentes tratados).
 - Build verde. Verificação visual em 360px e desktop.
 
-## Antes de implementar
+## Observações
 
-Preciso do número de WhatsApp que receberá os contatos de suporte (com DDD). Se preferir, posso usar um placeholder e você troca depois.
+- Não altera a página de perfil, nem cobra cadastro de WhatsApp — quem clicar em "Ajuda" já sai com o número do suporte na mão.
+- Build verde. Verificação visual em 360px e desktop.
+
