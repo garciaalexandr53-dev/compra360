@@ -151,7 +151,7 @@ function buildPlans(periodo: PeriodoLanding) {
     "Conferência de notas fiscais",
     "Distribuição inteligente por IA",
     "Relatórios executivos",
-    "Suporte prioritário",
+    "Suporte prioritário por WhatsApp",
   ];
 
   return [
@@ -163,7 +163,7 @@ function buildPlans(periodo: PeriodoLanding) {
       badge: null as string | null,
       oldPrice: null as string | null,
       subPrice: null as string | null,
-      features: ["Sem cartão de crédito", "1 loja", "Até 25 produtos por cotação", "Até 4 fornecedores por cotação", "1 cotação simultânea"],
+      features: ["Sem cartão de crédito", "1 loja", "Até 25 produtos por cotação", "Até 4 fornecedores por cotação", "1 cotação simultânea", "Suporte por WhatsApp"],
       cta: "Começar grátis",
       note: null as string | null,
     },
@@ -204,6 +204,7 @@ function buildPlans(periodo: PeriodoLanding) {
   ];
 }
 
+
 const faqItems = [
   { q: "Precisa instalar algum aplicativo?", a: "Não. Funciona direto no navegador do celular. Se quiser, pode salvar como app na tela inicial." },
   { q: "Os fornecedores precisam criar conta?", a: "Não. Eles recebem um link pelo WhatsApp e preenchem os preços sem instalar nada." },
@@ -211,8 +212,10 @@ const faqItems = [
   { q: "Funciona para meu tipo de negócio?", a: "Sim. Qualquer empresa que compra de fornecedores — supermercados, pet shops, farmácias, restaurantes, padarias e mais." },
   { q: "Isso realmente ajuda a economizar?", a: "Sim. Com os preços lado a lado você compra sempre do mais barato, sem esforço e sem achismo. Em uma única cotação de 99 itens com 11 fornecedores, um cliente economizou R$ 1.913." },
   { q: "Meus dados ficam seguros?", a: "Sim. Suas cotações e preços são privados e criptografados. Nenhum fornecedor vê o preço do concorrente." },
+  { q: "Como falo com o suporte?", a: "Nosso suporte é por WhatsApp e está disponível em todos os planos, inclusive o Gratuito. O Business tem atendimento prioritário, com resposta na frente da fila." },
   { q: "Posso cancelar quando quiser?", a: "Sim. Sem fidelidade, sem multa. Cancele quando quiser com um clique." },
 ];
+
 
 /* ── Demo Animado ── */
 function DemoAnimado() {
@@ -795,7 +798,7 @@ export default function LandingPage() {
               className="h-7 w-auto max-w-[140px] object-contain"
             />
           </div>
-          <div className="flex items-center gap-4 text-sm text-slate-500">
+          <div className="flex items-center gap-4 text-sm text-slate-500 flex-wrap justify-center">
             <a href="#como-funciona" className="hover:text-slate-300 transition-colors">Como funciona</a>
             <span>·</span>
             <a href="#planos" className="hover:text-slate-300 transition-colors">Planos</a>
@@ -803,10 +806,13 @@ export default function LandingPage() {
             <a href="#faq" className="hover:text-slate-300 transition-colors">FAQ</a>
             <span>·</span>
             <button onClick={goLogin} className="hover:text-slate-300 transition-colors">Entrar</button>
+            <span>·</span>
+            <a href="https://api.whatsapp.com/send?phone=5544984483553" target="_blank" rel="noopener noreferrer" className="hover:text-green-400 transition-colors">Falar com o suporte</a>
           </div>
           <p className="text-xs text-slate-600">© 2026 Compra360 · Todos os direitos reservados</p>
         </div>
       </footer>
+
     </div>
   );
 }

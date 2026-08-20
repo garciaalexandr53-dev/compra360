@@ -11,6 +11,7 @@ import { LojaSelector } from "@/components/LojaSelector";
 import { useTheme } from "@/hooks/useTheme";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import BottomNav from "@/components/BottomNav";
+import { SuporteFlutuante } from "@/components/SuporteFlutuante";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import BannerAviso from "@/components/BannerAviso";
 import ModalBoasVindas from "@/components/dashboard/ModalBoasVindas";
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const PriceNotificationListener = lazy(() => import("@/components/PriceNotificationListener"));
+
 
 export default function AppLayout() {
   const { user, loading, signOut } = useAuth();
@@ -126,9 +128,11 @@ export default function AppLayout() {
         </div>
       </div>
       <BottomNav />
+      <SuporteFlutuante />
       <Suspense fallback={null}>
         <PriceNotificationListener />
       </Suspense>
+
       <OnboardingWizard open={showOnboarding} onClose={() => setShowOnboarding(false)} />
       <ModalBoasVindas />
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>

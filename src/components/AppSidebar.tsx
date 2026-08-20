@@ -10,9 +10,12 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, Package, Users, TrendingUp, History, ClipboardCheck, Store, LayoutDashboard, Shield, UserCog, PackageOpen } from "lucide-react";
+import { BarChart3, Package, Users, TrendingUp, History, ClipboardCheck, Store, LayoutDashboard, Shield, UserCog, PackageOpen, MessageCircleQuestion } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { withAssetVersion } from "@/lib/assetVersion";
+import { buildSuporteUrl } from "@/lib/suporte";
+import { useProfile } from "@/hooks/useProfile";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const mainMenu = [
   { title: "Painel", url: "/dashboard", icon: LayoutDashboard, emoji: "🏠" },
@@ -30,6 +33,9 @@ const maisMenu = [
   { title: "Meus dados", url: "/perfil", icon: UserCog, emoji: "👤" },
 ];
 
+const helpItem = { title: "Ajuda", url: "__help__", icon: MessageCircleQuestion, emoji: "💬" };
+
+
 export function AppSidebar() {
   const { state, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
@@ -37,6 +43,11 @@ export function AppSidebar() {
   const isMobile = useIsMobile();
   const { lojaAtiva } = useLojaAtiva();
   const { user } = useAuth();
+  const { nome } = useProfile();
+  const { plan } = useSubscription();
+
+  const suporteUrl = buildSuporteUrl({ nome, email: user?.email, plano: plan?.display_name, loja: lojaAtiva?.nome });
+
 
   const { data: isAdmin = false } = useQuery({
     queryKey: ["is-admin-sidebar", user?.id],
@@ -120,6 +131,27 @@ export function AppSidebar() {
     </SidebarMenu>
   );
 
+  const renderHelpItem = () => (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton asChild>
+          <a
+            href={suporteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleNavClick}
+            className="hover:bg-sidebar-accent"
+            title="Falar com o suporte pelo WhatsApp"
+          >
+            <helpItem.icon className="h-4 w-4" />
+            {!collapsed && <span className="flex-1">{helpItem.title}</span>}
+          </a>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className={collapsed ? "p-2" : "px-4 py-6"}>
@@ -145,11 +177,15 @@ export function AppSidebar() {
         </SidebarGroup>
         <SidebarGroup>
           <SidebarGroupLabel>Mais</SidebarGroupLabel>
-          <SidebarGroupContent>{renderMenu(maisMenu)}</SidebarGroupContent>
+          <SidebarGroupContent>
+            {renderMenu(maisMenu)}
+            {renderHelpItem()}
+          </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter className="p-3 border-t border-sidebar-border space-y-2">
+
         {!collapsed && cotacaoAtiva && (
           <div className="bg-sidebar-accent/50 border border-sidebar-border rounded-lg p-2.5 text-center">
             <span className="text-[8.5px] text-sidebar-foreground/35 uppercase tracking-wider">Cotação ativa</span>
@@ -178,7 +214,20 @@ export function AppSidebar() {
             {!collapsed && <span>Admin</span>}
           </NavLink>
         )}
+        <a
+          href={suporteUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors ${
+            collapsed ? "justify-center" : ""
+          }`}
+          title="Falar com o suporte pelo WhatsApp"
+        >
+          <helpItem.icon className="h-3.5 w-3.5" />
+          {!collapsed && <span>Ajuda</span>}
+        </a>
       </SidebarFooter>
+
     </Sidebar>
   );
 }

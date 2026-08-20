@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import LandingPage from "./LandingPage";
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -27,37 +28,43 @@ describe("LandingPage — Hero sem IntersectionObserver", () => {
     expect(typeof globalThis.IntersectionObserver).toBe("undefined");
     expect(() =>
       render(
-        <MemoryRouter>
-          <LandingPage />
-        </MemoryRouter>
+        <HelmetProvider>
+          <MemoryRouter>
+            <LandingPage />
+          </MemoryRouter>
+        </HelmetProvider>
       )
     ).not.toThrow();
   });
 
   it("renderiza o h1 do Hero como fallback visível", () => {
     render(
-      <MemoryRouter>
-        <LandingPage />
-      </MemoryRouter>
+      <HelmetProvider>
+        <MemoryRouter>
+          <LandingPage />
+        </MemoryRouter>
+      </HelmetProvider>
     );
     const h1 = screen.getByRole("heading", { level: 1 });
     expect(h1.textContent?.trim()).toBe(
-      "Sua empresa pode estar pagando mais caro sem perceber."
+      "Compra360 — sistema de cotação de preços para supermercados"
     );
   });
 
   it("renderiza o subtítulo e parágrafo do Hero sem IntersectionObserver", () => {
     render(
-      <MemoryRouter>
-        <LandingPage />
-      </MemoryRouter>
+      <HelmetProvider>
+        <MemoryRouter>
+          <LandingPage />
+        </MemoryRouter>
+      </HelmetProvider>
     );
     expect(
       screen.getByText("Economize tempo e dinheiro nas compras da sua empresa")
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "O Compra360 reúne fornecedores em uma única tela para encontrar a melhor compra em minutos."
+        "Sua empresa pode estar pagando mais caro sem perceber. O Compra360 reúne fornecedores em uma única tela para encontrar a melhor compra em minutos."
       )
     ).toBeInTheDocument();
   });

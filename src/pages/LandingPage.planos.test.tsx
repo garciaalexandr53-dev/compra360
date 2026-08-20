@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within, fireEvent, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import LandingPage from "./LandingPage";
 
 // Mocks
@@ -43,9 +44,11 @@ function getPlanCardByName(name: RegExp): HTMLElement {
 
 function renderPage() {
   return render(
-    <MemoryRouter>
-      <LandingPage />
-    </MemoryRouter>,
+    <HelmetProvider>
+      <MemoryRouter>
+        <LandingPage />
+      </MemoryRouter>
+    </HelmetProvider>,
   );
 }
 

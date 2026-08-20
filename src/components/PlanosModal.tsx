@@ -27,6 +27,7 @@ const plans = [
       "Até 25 produtos por cotação",
       "Até 4 fornecedores por cotação",
       "1 cotação simultânea",
+      "Suporte por WhatsApp",
     ],
   },
   {
@@ -53,12 +54,13 @@ const plans = [
       "Cotações ativas ilimitadas",
       "Importação em massa (CSV/Excel)",
       "IA avançada completa",
-      "Suporte prioritário",
+      "Suporte prioritário por WhatsApp",
       "Conferência de pedidos",
       "Distribuição inteligente",
     ],
   },
 ];
+
 
 export default function PlanosModal({ open, onClose }: PlanosModalProps) {
   const { plan: currentPlan } = useSubscription();

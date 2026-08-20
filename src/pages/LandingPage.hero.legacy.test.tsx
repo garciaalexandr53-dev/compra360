@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import LandingPage from "./LandingPage";
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -46,9 +47,11 @@ describe("LandingPage — Hero não contém textos antigos", () => {
 
   it.each(TEXTOS_ANTIGOS)("não renderiza o texto antigo: %s", (texto) => {
     render(
-      <MemoryRouter>
-        <LandingPage />
-      </MemoryRouter>
+      <HelmetProvider>
+        <MemoryRouter>
+          <LandingPage />
+        </MemoryRouter>
+      </HelmetProvider>
     );
     expect(screen.queryByText(new RegExp(texto, "i"))).not.toBeInTheDocument();
   });
