@@ -57,7 +57,7 @@ describe("LandingPage — textos do Hero", () => {
     renderPage();
     const h1 = screen.getByRole("heading", { level: 1 });
     expect(h1.textContent?.trim()).toBe(
-      "Sua empresa pode estar pagando mais caro sem perceber."
+      "Compra360 — sistema de cotação de preços para supermercados"
     );
   });
 
@@ -65,7 +65,7 @@ describe("LandingPage — textos do Hero", () => {
     renderPage();
     expect(
       screen.getByText(
-        "O Compra360 reúne fornecedores em uma única tela para encontrar a melhor compra em minutos."
+        "Sua empresa pode estar pagando mais caro sem perceber. O Compra360 reúne fornecedores em uma única tela para encontrar a melhor compra em minutos."
       )
     ).toBeInTheDocument();
   });
