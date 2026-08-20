@@ -214,7 +214,20 @@ export function AppSidebar() {
             {!collapsed && <span>Admin</span>}
           </NavLink>
         )}
+        <a
+          href={suporteUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors ${
+            collapsed ? "justify-center" : ""
+          }`}
+          title="Falar com o suporte pelo WhatsApp"
+        >
+          <helpItem.icon className="h-3.5 w-3.5" />
+          {!collapsed && <span>Ajuda</span>}
+        </a>
       </SidebarFooter>
+
     </Sidebar>
   );
 }
