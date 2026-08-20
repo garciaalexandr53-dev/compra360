@@ -35,9 +35,11 @@ globalThis.IntersectionObserver = IOStub;
 
 function renderPage() {
   return render(
-    <MemoryRouter>
-      <LandingPage />
-    </MemoryRouter>
+    <HelmetProvider>
+      <MemoryRouter>
+        <LandingPage />
+      </MemoryRouter>
+    </HelmetProvider>
   );
 }
 
