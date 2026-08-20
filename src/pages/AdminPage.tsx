@@ -34,7 +34,9 @@ import EmailsTab from "@/components/admin/EmailsTab";
 import PagamentosTab from "@/components/admin/PagamentosTab";
 import ClienteDetalhesSheet from "@/components/admin/ClienteDetalhesSheet";
 import ContatosTab from "@/components/admin/ContatosTab";
+import CatalogoTab from "@/components/admin/CatalogoTab";
 import { MrrBreakdownCard, GrowthChart, ChurnRiskCard } from "@/components/admin/MetricasExtras";
+
 
 type GlobalMetrics = {
   total_usuarios: number;
@@ -354,7 +356,7 @@ export default function AdminPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full sm:w-auto sm:inline-flex">
+          <TabsList className="grid grid-cols-3 sm:grid-cols-7 h-auto w-full sm:w-auto sm:inline-flex">
             <TabsTrigger value="metricas">Métricas</TabsTrigger>
             <TabsTrigger value="alertas" className="gap-1.5">
               <AlertTriangle className="h-3.5 w-3.5" />
@@ -373,7 +375,12 @@ export default function AdminPage() {
               <Mail className="h-3.5 w-3.5" />
               E-mails
             </TabsTrigger>
+            <TabsTrigger value="catalogo" className="gap-1.5">
+              <Package className="h-3.5 w-3.5" />
+              Catálogo
+            </TabsTrigger>
           </TabsList>
+
 
           {/* MÉTRICAS */}
           <TabsContent value="metricas" className="space-y-6">
@@ -673,7 +680,13 @@ export default function AdminPage() {
           <TabsContent value="emails">
             <EmailsTab />
           </TabsContent>
+
+          {/* CATÁLOGO MESTRE */}
+          <TabsContent value="catalogo">
+            <CatalogoTab />
+          </TabsContent>
         </Tabs>
+
       </main>
 
       {/* Sheets de detalhes por métrica */}
