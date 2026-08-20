@@ -680,7 +680,13 @@ export default function AdminPage() {
           <TabsContent value="emails">
             <EmailsTab />
           </TabsContent>
+
+          {/* CATÁLOGO MESTRE */}
+          <TabsContent value="catalogo">
+            <CatalogoTab />
+          </TabsContent>
         </Tabs>
+
       </main>
 
       {/* Sheets de detalhes por métrica */}
