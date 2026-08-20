@@ -34,7 +34,9 @@ import EmailsTab from "@/components/admin/EmailsTab";
 import PagamentosTab from "@/components/admin/PagamentosTab";
 import ClienteDetalhesSheet from "@/components/admin/ClienteDetalhesSheet";
 import ContatosTab from "@/components/admin/ContatosTab";
+import CatalogoTab from "@/components/admin/CatalogoTab";
 import { MrrBreakdownCard, GrowthChart, ChurnRiskCard } from "@/components/admin/MetricasExtras";
+
 
 type GlobalMetrics = {
   total_usuarios: number;
