@@ -3,19 +3,22 @@ import { Button } from "@/components/ui/button";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { useAuth } from "@/hooks/useAuth";
 import { buildSuporteUrl } from "@/lib/suporte";
 
 export function SuporteFlutuante() {
-  const { nome, email } = useProfile();
+  const { user } = useAuth();
+  const { nome } = useProfile();
   const { plan } = useSubscription();
   const { lojaAtiva } = useLojaAtiva();
 
   const url = buildSuporteUrl({
     nome,
-    email,
+    email: user?.email,
     plano: plan?.display_name,
     loja: lojaAtiva?.nome,
   });
+
 
   return (
     <a
