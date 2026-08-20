@@ -99,7 +99,9 @@ Deno.serve(async (req) => {
       const priceId = item?.price?.id as string | undefined;
       const tier = resolveTier(productId, priceId);
       const status = mapStatus(sub.status);
-      if (status === "active" || status === "trialing") customersAtivos.add(customerId);
+      // Ativo, trial ou em atraso (past_due) mantêm a assinatura viva no Stripe.
+      // Não marcar como canceled quem está apenas com falta temporária de pagamento.
+      if (status === "active" || status === "trialing" || status === "past_due") customersAtivos.add(customerId);
 
       // Localiza a linha: por stripe_customer_id, senão pelo e-mail do customer
       let row: { id: string; user_id: string } | null = null;
