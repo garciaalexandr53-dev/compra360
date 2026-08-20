@@ -44,9 +44,11 @@ function getPlanCardByName(name: RegExp): HTMLElement {
 
 function renderPage() {
   return render(
-    <MemoryRouter>
-      <LandingPage />
-    </MemoryRouter>,
+    <HelmetProvider>
+      <MemoryRouter>
+        <LandingPage />
+      </MemoryRouter>
+    </HelmetProvider>,
   );
 }
 
