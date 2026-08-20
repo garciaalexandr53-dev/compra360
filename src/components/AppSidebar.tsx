@@ -10,9 +10,12 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, Package, Users, TrendingUp, History, ClipboardCheck, Store, LayoutDashboard, Shield, UserCog, PackageOpen } from "lucide-react";
+import { BarChart3, Package, Users, TrendingUp, History, ClipboardCheck, Store, LayoutDashboard, Shield, UserCog, PackageOpen, MessageCircleQuestion } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { withAssetVersion } from "@/lib/assetVersion";
+import { buildSuporteUrl } from "@/lib/suporte";
+import { useProfile } from "@/hooks/useProfile";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const mainMenu = [
   { title: "Painel", url: "/dashboard", icon: LayoutDashboard, emoji: "🏠" },
@@ -29,6 +32,9 @@ const maisMenu = [
   { title: "Histórico", url: "/historico", icon: History, emoji: "🕐" },
   { title: "Meus dados", url: "/perfil", icon: UserCog, emoji: "👤" },
 ];
+
+const helpItem = { title: "Ajuda", url: "__help__", icon: MessageCircleQuestion, emoji: "💬" };
+
 
 export function AppSidebar() {
   const { state, setOpenMobile } = useSidebar();
