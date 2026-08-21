@@ -1,10 +1,14 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, BarChart3, TrendingUp, MoreHorizontal, Package, Users, Store, ClipboardCheck, History, Shield, UserCog, PackageOpen } from "lucide-react";
+import { LayoutDashboard, BarChart3, TrendingUp, MoreHorizontal, Package, Users, Store, ClipboardCheck, History, Shield, UserCog, PackageOpen, MessageCircleQuestion } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useProfile } from "@/hooks/useProfile";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { buildSuporteUrl } from "@/lib/suporte";
 
 const tabs = [
   { label: "Painel", icon: LayoutDashboard, path: "/dashboard" },
@@ -22,6 +26,8 @@ const moreItems = [
   { label: "Histórico", icon: History, path: "/historico" },
   { label: "Meus dados", icon: UserCog, path: "/perfil" },
 ];
+
+const helpItem = { label: "Ajuda", icon: MessageCircleQuestion, path: "__help__" };
 
 export default function BottomNav() {
   const location = useLocation();
