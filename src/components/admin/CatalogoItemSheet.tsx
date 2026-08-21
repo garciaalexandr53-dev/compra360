@@ -23,9 +23,14 @@ export type CatalogoItem = {
   ativo: boolean;
 };
 
+/** Novo item pré-preenchido (ex.: a partir de um candidato). */
+export type CatalogoNovoComInicial = { modo: "novo"; inicial: Partial<CatalogoForm> };
+
+export type CatalogoSheetTarget = CatalogoItem | "novo" | CatalogoNovoComInicial | null;
+
 type Props = {
-  /** null = fechado; { } sem id = novo item */
-  item: CatalogoItem | "novo" | null;
+  /** null = fechado; "novo" ou { modo: "novo", inicial } = novo item */
+  item: CatalogoSheetTarget;
   onClose: () => void;
   onSaved: () => void;
 };
@@ -34,8 +39,11 @@ type Duplicata = { id: string; nome: string; ean: string | null; ativo: boolean;
 
 const emptyForm: CatalogoForm = { nome: "", ean: "", embalagem: "UNI", fator_embalagem: 1, ativo: true };
 
+const isNovoTarget = (item: CatalogoSheetTarget): boolean =>
+  item === "novo" || (!!item && typeof item === "object" && (item as CatalogoNovoComInicial).modo === "novo");
+
 export default function CatalogoItemSheet({ item, onClose, onSaved }: Props) {
-  const isNovo = item === "novo";
+  const isNovo = isNovoTarget(item);
   const [form, setForm] = useState<CatalogoForm>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -46,13 +54,22 @@ export default function CatalogoItemSheet({ item, onClose, onSaved }: Props) {
     if (!item) return;
     if (item === "novo") {
       setForm(emptyForm);
-    } else {
+    } else if ((item as CatalogoNovoComInicial).modo === "novo") {
+      const inicial = (item as CatalogoNovoComInicial).inicial || {};
       setForm({
-        nome: item.nome ?? "",
-        ean: item.ean ?? "",
-        embalagem: (item.embalagem || "UNI").toUpperCase(),
-        fator_embalagem: item.fator_embalagem || 1,
-        ativo: item.ativo,
+        ...emptyForm,
+        ...inicial,
+        embalagem: (inicial.embalagem || "UNI").toUpperCase(),
+        fator_embalagem: inicial.fator_embalagem && inicial.fator_embalagem > 0 ? inicial.fator_embalagem : 1,
+      });
+    } else {
+      const it = item as CatalogoItem;
+      setForm({
+        nome: it.nome ?? "",
+        ean: it.ean ?? "",
+        embalagem: (it.embalagem || "UNI").toUpperCase(),
+        fator_embalagem: it.fator_embalagem || 1,
+        ativo: it.ativo,
       });
     }
   }, [item]);

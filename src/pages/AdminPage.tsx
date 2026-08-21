@@ -17,7 +17,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Users, Store, Package, FileText, Send, ClipboardCheck, Loader2,
   Search, ShieldCheck, RefreshCw, ArrowLeft, AlertTriangle, TimerReset, Activity,
-  MessageCircle, Mail, X, Download, ChevronRight, FileSpreadsheet, CreditCard, History,
+  MessageCircle, Mail, X, Download, ChevronRight, FileSpreadsheet, CreditCard, History, PackagePlus,
 } from "lucide-react";
 import { buildClientesCsv, buildClientesXlsx, clientesFilename, clientesFilenameXlsx, downloadCsv, downloadXlsx } from "@/lib/adminExports";
 import { formatDate } from "@/lib/format";
@@ -36,6 +36,7 @@ import ClienteDetalhesSheet from "@/components/admin/ClienteDetalhesSheet";
 import ContatosTab from "@/components/admin/ContatosTab";
 import CatalogoTab from "@/components/admin/CatalogoTab";
 import HistoricoCatalogoTab from "@/components/admin/HistoricoCatalogoTab";
+import CandidatosTab from "@/components/admin/CandidatosTab";
 import { MrrBreakdownCard, GrowthChart, ChurnRiskCard } from "@/components/admin/MetricasExtras";
 
 
@@ -357,7 +358,7 @@ export default function AdminPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-3 sm:grid-cols-8 h-auto w-full sm:w-auto sm:inline-flex">
+          <TabsList className="grid grid-cols-3 sm:grid-cols-9 h-auto w-full sm:w-auto sm:inline-flex">
 
             <TabsTrigger value="metricas">Métricas</TabsTrigger>
             <TabsTrigger value="alertas" className="gap-1.5">
@@ -381,10 +382,15 @@ export default function AdminPage() {
               <Package className="h-3.5 w-3.5" />
               Catálogo
             </TabsTrigger>
+            <TabsTrigger value="candidatos" className="gap-1.5">
+              <PackagePlus className="h-3.5 w-3.5" />
+              Candidatos
+            </TabsTrigger>
             <TabsTrigger value="historico" className="gap-1.5">
               <History className="h-3.5 w-3.5" />
               Histórico
             </TabsTrigger>
+
           </TabsList>
 
 
@@ -692,7 +698,13 @@ export default function AdminPage() {
             <CatalogoTab />
           </TabsContent>
 
+          {/* CANDIDATOS AO CATÁLOGO MESTRE */}
+          <TabsContent value="candidatos">
+            <CandidatosTab />
+          </TabsContent>
+
           {/* HISTÓRICO DE ALTERAÇÕES DO CATÁLOGO */}
+
           <TabsContent value="historico">
             <HistoricoCatalogoTab />
           </TabsContent>
