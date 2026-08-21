@@ -1,10 +1,14 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, BarChart3, TrendingUp, MoreHorizontal, Package, Users, Store, ClipboardCheck, History, Shield, UserCog, PackageOpen } from "lucide-react";
+import { LayoutDashboard, BarChart3, TrendingUp, MoreHorizontal, Package, Users, Store, ClipboardCheck, History, Shield, UserCog, PackageOpen, MessageCircleQuestion } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useProfile } from "@/hooks/useProfile";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { buildSuporteUrl } from "@/lib/suporte";
 
 const tabs = [
   { label: "Painel", icon: LayoutDashboard, path: "/dashboard" },
@@ -23,11 +27,23 @@ const moreItems = [
   { label: "Meus dados", icon: UserCog, path: "/perfil" },
 ];
 
+const helpItem = { label: "Ajuda", icon: MessageCircleQuestion, path: "__help__" };
+
 export default function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
+  const { nome } = useProfile();
+  const { plan } = useSubscription();
+  const { lojaAtiva } = useLojaAtiva();
+
+  const suporteUrl = buildSuporteUrl({
+    nome,
+    email: user?.email,
+    plano: plan?.display_name,
+    loja: lojaAtiva?.nome,
+  });
 
   const { data: isAdmin = false } = useQuery({
     queryKey: ["is-admin-bottomnav", user?.id],
@@ -49,15 +65,27 @@ export default function BottomNav() {
 
   const isActive = (path: string) => {
     if (path === "__more__") return items.some((i) => location.pathname.startsWith(i.path));
+    if (path === "__help__") return false;
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
 
   const handleTap = (path: string) => {
     if (path === "__more__") {
       setMoreOpen(true);
+    } else if (path === "__help__") {
+      window.open(suporteUrl, "_blank", "noopener,noreferrer");
     } else {
       navigate(path);
     }
+  };
+
+  const handleMoreItemTap = (path: string) => {
+    if (path === "__help__") {
+      window.open(suporteUrl, "_blank", "noopener,noreferrer");
+    } else {
+      navigate(path);
+    }
+    setMoreOpen(false);
   };
 
   return (
@@ -95,10 +123,7 @@ export default function BottomNav() {
               return (
                 <button
                   key={item.path}
-                  onClick={() => {
-                    navigate(item.path);
-                    setMoreOpen(false);
-                  }}
+                  onClick={() => handleMoreItemTap(item.path)}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors ${
                     active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"
                   }`}
@@ -108,6 +133,17 @@ export default function BottomNav() {
                 </button>
               );
             })}
+            <a
+              href={suporteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setMoreOpen(false)}
+              className="flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors text-muted-foreground hover:bg-muted"
+              title="Falar com o suporte pelo WhatsApp"
+            >
+              <helpItem.icon className="h-5 w-5" />
+              <span className="text-xs font-medium">{helpItem.label}</span>
+            </a>
           </div>
         </SheetContent>
       </Sheet>
