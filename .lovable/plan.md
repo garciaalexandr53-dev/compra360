@@ -40,6 +40,6 @@ Nenhum botão de editar, excluir ou reverter nesta aba.
 - Leitura direta via client Supabase com `.select(..., { count: "exact" })`, `.order("alterado_em", { ascending: false })` e `.range()`; TanStack Query com `placeholderData` para paginação suave. A policy de leitura por `is_admin()` já cobre o acesso.
 - Busca por nome sobre JSONB: filtro `or("dados_depois->>nome.ilike.%termo%,dados_antes->>nome.ilike.%termo%")`.
 - Período: `gte("alterado_em", <iso>)`.
-- E-mails: `auth.users` não é acessível pelo client, e o plano não cria nada no banco. O mapa `user_id → e-mail` vem da RPC existente `admin_list_clientes` (já usada na aba Clientes), cacheada por query própria; autores fora dessa lista caem no UUID abreviado.
+- E-mails: `auth.users` não é acessível pelo client, e o plano não cria nada no banco. Resolução em cascata — `user.id` do `useAuth` (mostra "Você", cobre o próprio admin que edita o catálogo), depois o mapa `user_id → e-mail` da RPC existente `admin_list_clientes` (já usada na aba Clientes, cacheada em query própria), senão UUID abreviado.
 - Diff e formatação de valores em um helper puro novo (`src/lib/catalogoLog.ts`) com testes unitários: campos alterados, ignorar `id`, INSERT/DELETE, formatação de booleanos e nulos.
 - Verificação visual com Playwright em 360px e desktop.
