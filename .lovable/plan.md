@@ -31,10 +31,10 @@ Abre o `CatalogoItemSheet` já existente em modo novo item, pré-preenchido com 
 
 ## Detalhes técnicos
 
-- Migração: `admin_list_candidatos_catalogo()` SECURITY DEFINER, `SET search_path = public`, com guarda `if not is_admin() then raise exception`. Une:
+- Migração: `admin_list_candidatos_catalogo()` SECURITY DEFINER, `SET search_path = public`, com a guarda obrigatória no início do corpo: `if not public.is_admin() then raise exception 'forbidden'; end if;` — sem ela qualquer usuário autenticado leria produtos de todos os clientes. Une:
   - `itens_faltantes` com `ean is not null` e `catalogo_mestre_id is null`
   - `produtos` com `ean` não vazio
-  ambos excluindo EANs já presentes em `catalogo_mestre`; agrupa por EAN retornando `ean, nome` (mais recente), `embalagem`, `fator_embalagem`, `origens text[]`, `ocorrencias int`, `ultimo_em timestamptz`. `grant execute` para `authenticated`.
+  ambos excluindo EANs já presentes em `catalogo_mestre` e aceitando somente EANs válidos — `length(regexp_replace(ean,'\D','','g')) in (8,12,13,14)` — para não deixar digitação errada entrar na fila. Agrupa pelo EAN normalizado (só dígitos) retornando `ean, nome` (mais recente), `embalagem`, `fator_embalagem`, `origens text[]`, `ocorrencias int`, `ultimo_em timestamptz`. `grant execute` para `authenticated`.
 - `CatalogoItemSheet` recebe um novo formato de prop para "novo com valores iniciais" (ex.: `{ modo: "novo", inicial: {...} }`), mantendo compatível o uso atual em `CatalogoTab` — sem duplicar formulário nem validações.
 - Novo `src/components/admin/CandidatosTab.tsx` + `TabsTrigger`/`TabsContent` em `src/pages/AdminPage.tsx` (grid da `TabsList` passa a 9 colunas no desktop, mantendo 3 por linha no mobile).
 - TanStack Query com invalidação da query de candidatos após salvar; embalagem normalizada via `@/lib/embalagem` / `embalagemFatores`.
