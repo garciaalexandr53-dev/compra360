@@ -790,7 +790,7 @@ const AppFuncionariosPublic = () => {
       {activeTab === "conferencia" ? (
         <div className="p-4 flex-1 space-y-3">
           {faixaLojaCard}
-          <ConferenciaPedidos lojaId={selectedLojaId || null} />
+          <ConferenciaPedidos lojaId={selectedLojaId || null} modoPublico />
         </div>
       ) : activeTab === "enviados" ? (
         <div className="flex-1 overflow-y-auto p-4">

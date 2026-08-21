@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Check, CheckCheck, AlertTriangle, ChevronRight, Minus, Plus, ArrowLeft, Package, Camera, Loader2, XCircle, AlertCircle, Filter } from "lucide-react";
+import { Check, CheckCheck, AlertTriangle, ChevronRight, Minus, Plus, ArrowLeft, Package, Camera, Loader2, XCircle, AlertCircle, Filter, Store } from "lucide-react";
 import { formatBRL } from "@/lib/format";
 import { getCotacaoNome, getCotacaoEmbalagem } from "@/lib/buscaProdutos";
 import { normalizarLinhaNf, descreverConversao } from "@/lib/ocrUnidade";
@@ -107,10 +107,14 @@ const clearProgress = () => {
 interface ConferenciaPedidosProps {
   /** Quando informado (app público sem login), pedidos e itens vêm por RPC restrita a esta loja. */
   lojaId?: string | null;
+  /** App público sem login — nunca consulta tabelas diretamente. */
+  modoPublico?: boolean;
 }
 
-const ConferenciaPedidos = ({ lojaId }: ConferenciaPedidosProps = {}) => {
-  const isPublico = !!lojaId;
+const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosProps = {}) => {
+  const isPublico = modoPublico || !!lojaId;
+  const semLoja = isPublico && !lojaId;
+
   const [selectedPedido, setSelectedPedido] = useState<PedidoWithDetails | null>(null);
   const [items, setItems] = useState<ConferenciaItem[]>([]);
   const [nome, setNome] = useState("");
@@ -235,11 +239,13 @@ const ConferenciaPedidos = ({ lojaId }: ConferenciaPedidosProps = {}) => {
   };
 
   // Fetch pedidos with status 'enviado'
-  const { data: pedidos = [], isLoading } = useQuery({
+  const { data: pedidos = [], isLoading, refetch: refetchPedidos } = useQuery({
     queryKey: ["pedidos-enviados-public", lojaId ?? "gestor"],
+    enabled: !semLoja,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     queryFn: async () => {
+
       if (isPublico) {
         // App público (sem login): RPC restrita à loja do link.
         const { data, error } = await supabase.rpc("get_pedidos_conferencia_publico", {
@@ -274,6 +280,18 @@ const ConferenciaPedidos = ({ lojaId }: ConferenciaPedidosProps = {}) => {
       }));
     },
   });
+
+  // iOS/PWA: ao voltar de background o "focus" não dispara — revalida no visibilitychange.
+  useEffect(() => {
+    if (semLoja) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refetchPedidos();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [semLoja, refetchPedidos]);
+
+
 
   // Restore progress on mount
   useEffect(() => {
@@ -501,7 +519,22 @@ const ConferenciaPedidos = ({ lojaId }: ConferenciaPedidosProps = {}) => {
   };
 
 
+  // App público aberto sem loja definida (ex.: ícone da tela inicial sem ?loja=)
+  if (semLoja) {
+    return (
+      <div className="flex flex-col items-center justify-center py-14 px-6 text-center">
+        <Store className="h-10 w-10 text-muted-foreground/40 mb-3" />
+        <h2 className="text-base font-bold mb-1">Abra pelo link da sua loja</h2>
+        <p className="text-sm text-muted-foreground max-w-xs">
+          A conferência mostra os pedidos da sua unidade. Abra o link de reposição enviado pelo seu gerente uma vez —
+          depois disso o aplicativo lembra a loja neste aparelho.
+        </p>
+      </div>
+    );
+  }
+
   // Done screen
+
   if (conferenciaDone) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
