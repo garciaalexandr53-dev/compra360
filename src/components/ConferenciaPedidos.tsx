@@ -239,11 +239,13 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
   };
 
   // Fetch pedidos with status 'enviado'
-  const { data: pedidos = [], isLoading } = useQuery({
+  const { data: pedidos = [], isLoading, refetch: refetchPedidos } = useQuery({
     queryKey: ["pedidos-enviados-public", lojaId ?? "gestor"],
+    enabled: !semLoja,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     queryFn: async () => {
+
       if (isPublico) {
         // App público (sem login): RPC restrita à loja do link.
         const { data, error } = await supabase.rpc("get_pedidos_conferencia_publico", {
