@@ -104,7 +104,13 @@ const clearProgress = () => {
   }
 };
 
-const ConferenciaPedidos = () => {
+interface ConferenciaPedidosProps {
+  /** Quando informado (app público sem login), pedidos e itens vêm por RPC restrita a esta loja. */
+  lojaId?: string | null;
+}
+
+const ConferenciaPedidos = ({ lojaId }: ConferenciaPedidosProps = {}) => {
+  const isPublico = !!lojaId;
   const [selectedPedido, setSelectedPedido] = useState<PedidoWithDetails | null>(null);
   const [items, setItems] = useState<ConferenciaItem[]>([]);
   const [nome, setNome] = useState("");
@@ -230,8 +236,27 @@ const ConferenciaPedidos = () => {
 
   // Fetch pedidos with status 'enviado'
   const { data: pedidos = [], isLoading } = useQuery({
-    queryKey: ["pedidos-enviados-public"],
+    queryKey: ["pedidos-enviados-public", lojaId ?? "gestor"],
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
+      if (isPublico) {
+        // App público (sem login): RPC restrita à loja do link.
+        const { data, error } = await supabase.rpc("get_pedidos_conferencia_publico", {
+          _loja_id: lojaId,
+        } as never);
+        if (error) throw error;
+        return ((data || []) as any[]).map((p) => ({
+          id: p.id,
+          numero: p.numero,
+          fornecedor: p.fornecedor_nome || "Fornecedor",
+          fornecedor_id: p.fornecedor_id,
+          total: p.total || 0,
+          created_at: p.created_at,
+          loja_id: p.loja_id || null,
+        }));
+      }
+
       const { data: pedidosData, error } = await supabase
         .from("pedidos")
         .select("id, numero, total, created_at, fornecedor_id, loja_id, fornecedores(nome)")
@@ -280,6 +305,30 @@ const ConferenciaPedidos = () => {
       setItems(progress.items);
       setNome(progress.nome);
       setSelectedPedido({ ...pedido, items: progress.items });
+      return;
+    }
+
+    if (isPublico) {
+      const { data, error } = await supabase.rpc("get_pedido_itens_publico", {
+        _loja_id: lojaId,
+        _pedido_id: pedido.id,
+      } as never);
+      if (error) {
+        toast.error("Não foi possível carregar os itens deste pedido");
+        return;
+      }
+      const publicItems: ConferenciaItem[] = ((data || []) as any[]).map((it) => ({
+        produto_nome: it.produto_nome || "Produto",
+        embalagem: it.embalagem || "UNI",
+        fator: it.fator_embalagem || 1,
+        quantidade_pedida: Number(it.quantidade) || 1,
+        quantidade_recebida: Number(it.quantidade) || 1,
+        preco_cotado: Number(it.preco) || 0,
+        preco_nf: Number(it.preco) || 0,
+      }));
+      setItems(publicItems);
+      setSelectedPedido({ ...pedido, items: publicItems });
+      saveProgress(pedido.id, publicItems, nome);
       return;
     }
 
