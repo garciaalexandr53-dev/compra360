@@ -17,7 +17,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Users, Store, Package, FileText, Send, ClipboardCheck, Loader2,
   Search, ShieldCheck, RefreshCw, ArrowLeft, AlertTriangle, TimerReset, Activity,
-  MessageCircle, Mail, X, Download, ChevronRight, FileSpreadsheet, CreditCard, History,
+  MessageCircle, Mail, X, Download, ChevronRight, FileSpreadsheet, CreditCard, History, PackagePlus,
 } from "lucide-react";
 import { buildClientesCsv, buildClientesXlsx, clientesFilename, clientesFilenameXlsx, downloadCsv, downloadXlsx } from "@/lib/adminExports";
 import { formatDate } from "@/lib/format";
