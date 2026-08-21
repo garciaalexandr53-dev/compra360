@@ -1766,10 +1766,11 @@ const HistoricoPage = () => {
                                 </span>
                               </td>
                               <td className="px-3 py-2 text-center">{f.vitorias}</td>
-                              <td className="px-3 py-2 text-center text-muted-foreground">{f.totalCotacoes}</td>
+                              <td className="px-3 py-2 text-center text-muted-foreground">{f.itensCotados || "—"}</td>
                               <td className="px-3 py-2 text-right text-muted-foreground">
-                                {f.taxa.toFixed(0)}%
+                                {f.taxa != null ? `${f.taxa.toFixed(0)}%` : "—"}
                               </td>
+
                               <td className="px-3 py-2 text-right font-mono font-semibold text-primary">
                                 {formatBRL(f.totalGanho)}
                               </td>
