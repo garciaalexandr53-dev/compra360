@@ -1126,6 +1126,18 @@ export type Database = {
           whatsapp: string
         }[]
       }
+      admin_list_candidatos_catalogo: {
+        Args: never
+        Returns: {
+          ean: string
+          embalagem: string
+          fator_embalagem: number
+          nome: string
+          ocorrencias: number
+          origens: string[]
+          ultimo_em: string
+        }[]
+      }
       admin_list_clientes: {
         Args: never
         Returns: {
