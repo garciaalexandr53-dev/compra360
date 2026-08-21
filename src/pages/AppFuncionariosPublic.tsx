@@ -270,21 +270,20 @@ const AppFuncionariosPublic = () => {
     return () => window.clearTimeout(timeout);
   }, [productSearch]);
 
+  // Só a loja do link (ou já vinculada ao aparelho) é consultada — nunca a lista geral.
   const { data: lojas = [] } = useQuery({
-    queryKey: ["lojas-public", lojaFromUrl ? selectedLojaId : "all"],
+    queryKey: ["lojas-public", selectedLojaId],
+    enabled: !!selectedLojaId,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_lojas_public", {
-        _loja_id: lojaFromUrl ? selectedLojaId || undefined : undefined,
+        _loja_id: selectedLojaId,
       });
       if (error) throw error;
       return (data || []) as { id: string; nome: string }[];
     },
   });
-
-  useEffect(() => {
-    if (urlLojaId || selectedLojaId || lojas.length !== 1) return;
-    setSelectedLojaId(lojas[0].id);
-  }, [lojas, selectedLojaId, urlLojaId]);
 
   const {
     data: produtosData,
