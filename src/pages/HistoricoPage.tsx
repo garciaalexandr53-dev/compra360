@@ -905,10 +905,29 @@ const HistoricoPage = () => {
     return computeKPIs(insightsFilteredCotacoes, insightRowsForInsights, economia);
   }, [insightsFilteredCotacoes, insightRowsForInsights, consolidated, insightsCotIdSet]);
 
+  // Items each supplier quoted with a valid price (> 0) — denominator of the win rate.
+  const itensCotadosPorFornecedor = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const [cotId, det] of consolidated.perCotacao) {
+      if (!insightsCotIdSet.has(cotId)) continue;
+      for (const r of det.rows) {
+        const seen = new Set<string>();
+        for (const p of r.allPrecos || []) {
+          const nome = p?.fornecedores?.nome;
+          if (!nome || Number(p.preco) <= 0 || seen.has(nome)) continue;
+          seen.add(nome);
+          map.set(nome, (map.get(nome) || 0) + 1);
+        }
+      }
+    }
+    return map;
+  }, [consolidated, insightsCotIdSet]);
+
   const fornecedorRanking = useMemo(
-    () => buildFornecedorRanking(insightRowsForInsights),
-    [insightRowsForInsights]
+    () => buildFornecedorRanking(insightRowsForInsights, itensCotadosPorFornecedor),
+    [insightRowsForInsights, itensCotadosPorFornecedor]
   );
+
   const produtoVariacao = useMemo(
     () => buildProdutoVariacao(insightRowsForInsights),
     [insightRowsForInsights]
@@ -1665,7 +1684,12 @@ const HistoricoPage = () => {
                   <div className="text-base md:text-lg font-bold text-green-600 dark:text-green-400 mt-1 break-words">
                     {formatBRL(kpis.economiaEstimada)}
                   </div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5">vs. média dos preços recebidos</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">
+                    {kpis.totalGeral > 0
+                      ? `${((kpis.economiaEstimada / kpis.totalGeral) * 100).toFixed(1).replace(".", ",")}% de economia · vs. média dos preços recebidos`
+                      : "vs. média dos preços recebidos"}
+                  </div>
+
                 </div>
                 <div className="bg-card border rounded-xl p-3 shadow-sm">
                   <div className="flex items-center gap-1 text-[10px] uppercase text-muted-foreground tracking-wide">
@@ -1700,10 +1724,11 @@ const HistoricoPage = () => {
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="max-w-[260px] text-xs">
-                      <strong>Taxa de vitória</strong> = vitórias do fornecedor ÷ cotações em que participou × 100.
-                      Ex: ganhou 8 itens em 2 cotações onde participou ⇒ 8/2 = 400% (média de itens por cotação).
+                      <strong>Taxa</strong> = itens vencidos ÷ itens em que o fornecedor cotou (com preço) × 100.
+                      Ex: cotou 40 itens e venceu 24 ⇒ 60% dos itens que cotou.
                       Use junto com "Vitórias" e "Total ganho" para julgar competitividade.
                     </TooltipContent>
+
                   </Tooltip>
                   <span className="text-[11px] text-muted-foreground ml-auto">
                     Por valor total ganho
@@ -1723,7 +1748,7 @@ const HistoricoPage = () => {
                             <th className="px-3 py-2 text-left font-semibold w-12">#</th>
                             <th className="px-3 py-2 text-left font-semibold">Fornecedor</th>
                             <th className="px-3 py-2 text-center font-semibold">Vitórias</th>
-                            <th className="px-3 py-2 text-center font-semibold">Cotações</th>
+                            <th className="px-3 py-2 text-center font-semibold">Itens cotados</th>
                             <th className="px-3 py-2 text-right font-semibold">Taxa</th>
                             <th className="px-3 py-2 text-right font-semibold">Total ganho</th>
                           </tr>
@@ -1741,10 +1766,11 @@ const HistoricoPage = () => {
                                 </span>
                               </td>
                               <td className="px-3 py-2 text-center">{f.vitorias}</td>
-                              <td className="px-3 py-2 text-center text-muted-foreground">{f.totalCotacoes}</td>
+                              <td className="px-3 py-2 text-center text-muted-foreground">{f.itensCotados || "—"}</td>
                               <td className="px-3 py-2 text-right text-muted-foreground">
-                                {f.taxa.toFixed(0)}%
+                                {f.taxa != null ? `${f.taxa.toFixed(0)}%` : "—"}
                               </td>
+
                               <td className="px-3 py-2 text-right font-mono font-semibold text-primary">
                                 {formatBRL(f.totalGanho)}
                               </td>
@@ -1767,8 +1793,11 @@ const HistoricoPage = () => {
                                 <span className="text-sm font-semibold truncate">{f.nome}</span>
                               </div>
                               <div className="text-[10px] text-muted-foreground ml-6">
-                                {f.vitorias} vitória(s) · {f.totalCotacoes} cotação(ões) · {f.taxa.toFixed(0)}%
+                                {f.vitorias} vitória(s)
+                                {f.itensCotados > 0 && ` · ${f.itensCotados} itens cotados`}
+                                {f.taxa != null && ` · ${f.taxa.toFixed(0)}% dos itens que cotou`}
                               </div>
+
                             </div>
                             <div className="text-right shrink-0">
                               <div className="font-mono font-bold text-sm text-primary">

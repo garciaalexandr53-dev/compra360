@@ -44,10 +44,13 @@ export interface FornecedorRanking {
   nome: string;
   vitorias: number;
   totalCotacoes: number;
+  /** Number of items the supplier quoted with a valid price (> 0) in the period. */
+  itensCotados: number;
   totalGanho: number;
-  /** wins / totalCotacoes * 100 */
-  taxa: number;
+  /** vitorias / itensCotados * 100, capped at 100. null when itensCotados is unknown. */
+  taxa: number | null;
 }
+
 
 export interface ProdutoVariacao {
   produto: string;
@@ -88,8 +91,13 @@ export function computeKPIs(
 
 /**
  * Ranking of suppliers by number of wins (cheapest price chosen) and total awarded.
+ * `itensCotadosPorFornecedor` maps a supplier name to how many items it quoted with a
+ * valid price (> 0); it's the denominator of the win rate. When absent, `taxa` is null.
  */
-export function buildFornecedorRanking(rows: InsightRow[]): FornecedorRanking[] {
+export function buildFornecedorRanking(
+  rows: InsightRow[],
+  itensCotadosPorFornecedor?: Map<string, number>
+): FornecedorRanking[] {
   // Track wins (rows where this supplier is the winner — every row in InsightRow is a win)
   // Track totalCotacoes participation by counting unique cotacaoIds the supplier appeared on.
   const winsByForn = new Map<string, { wins: number; total: number; cotacoes: Set<string> }>();
@@ -104,15 +112,20 @@ export function buildFornecedorRanking(rows: InsightRow[]): FornecedorRanking[] 
     e.cotacoes.add(r.cotacaoId);
   }
   return Array.from(winsByForn.entries())
-    .map(([nome, e]) => ({
-      nome,
-      vitorias: e.wins,
-      totalCotacoes: e.cotacoes.size,
-      totalGanho: e.total,
-      taxa: e.cotacoes.size > 0 ? (e.wins / e.cotacoes.size) * 100 : 0,
-    }))
+    .map(([nome, e]) => {
+      const itensCotados = itensCotadosPorFornecedor?.get(nome) ?? 0;
+      return {
+        nome,
+        vitorias: e.wins,
+        totalCotacoes: e.cotacoes.size,
+        itensCotados,
+        totalGanho: e.total,
+        taxa: itensCotados > 0 ? Math.min(100, (e.wins / itensCotados) * 100) : null,
+      };
+    })
     .sort((a, b) => b.totalGanho - a.totalGanho);
 }
+
 
 /**
  * Per-product variation across cotações: min/max/avg of the winning unit price,
