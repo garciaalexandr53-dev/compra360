@@ -1793,8 +1793,11 @@ const HistoricoPage = () => {
                                 <span className="text-sm font-semibold truncate">{f.nome}</span>
                               </div>
                               <div className="text-[10px] text-muted-foreground ml-6">
-                                {f.vitorias} vitória(s) · {f.totalCotacoes} cotação(ões) · {f.taxa.toFixed(0)}%
+                                {f.vitorias} vitória(s)
+                                {f.itensCotados > 0 && ` · ${f.itensCotados} itens cotados`}
+                                {f.taxa != null && ` · ${f.taxa.toFixed(0)}% dos itens que cotou`}
                               </div>
+
                             </div>
                             <div className="text-right shrink-0">
                               <div className="font-mono font-bold text-sm text-primary">
