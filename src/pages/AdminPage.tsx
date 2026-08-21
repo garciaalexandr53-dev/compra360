@@ -691,6 +691,11 @@ export default function AdminPage() {
           <TabsContent value="catalogo">
             <CatalogoTab />
           </TabsContent>
+
+          {/* HISTÓRICO DE ALTERAÇÕES DO CATÁLOGO */}
+          <TabsContent value="historico">
+            <HistoricoCatalogoTab />
+          </TabsContent>
         </Tabs>
 
       </main>
