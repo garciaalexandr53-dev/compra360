@@ -104,7 +104,13 @@ const clearProgress = () => {
   }
 };
 
-const ConferenciaPedidos = () => {
+interface ConferenciaPedidosProps {
+  /** Quando informado (app público sem login), pedidos e itens vêm por RPC restrita a esta loja. */
+  lojaId?: string | null;
+}
+
+const ConferenciaPedidos = ({ lojaId }: ConferenciaPedidosProps = {}) => {
+  const isPublico = !!lojaId;
   const [selectedPedido, setSelectedPedido] = useState<PedidoWithDetails | null>(null);
   const [items, setItems] = useState<ConferenciaItem[]>([]);
   const [nome, setNome] = useState("");
