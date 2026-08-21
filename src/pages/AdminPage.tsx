@@ -35,6 +35,7 @@ import PagamentosTab from "@/components/admin/PagamentosTab";
 import ClienteDetalhesSheet from "@/components/admin/ClienteDetalhesSheet";
 import ContatosTab from "@/components/admin/ContatosTab";
 import CatalogoTab from "@/components/admin/CatalogoTab";
+import HistoricoCatalogoTab from "@/components/admin/HistoricoCatalogoTab";
 import { MrrBreakdownCard, GrowthChart, ChurnRiskCard } from "@/components/admin/MetricasExtras";
 
 
