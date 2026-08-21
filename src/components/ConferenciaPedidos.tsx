@@ -308,6 +308,30 @@ const ConferenciaPedidos = ({ lojaId }: ConferenciaPedidosProps = {}) => {
       return;
     }
 
+    if (isPublico) {
+      const { data, error } = await supabase.rpc("get_pedido_itens_publico", {
+        _loja_id: lojaId,
+        _pedido_id: pedido.id,
+      } as never);
+      if (error) {
+        toast.error("Não foi possível carregar os itens deste pedido");
+        return;
+      }
+      const publicItems: ConferenciaItem[] = ((data || []) as any[]).map((it) => ({
+        produto_nome: it.produto_nome || "Produto",
+        embalagem: it.embalagem || "UNI",
+        fator: it.fator_embalagem || 1,
+        quantidade_pedida: Number(it.quantidade) || 1,
+        quantidade_recebida: Number(it.quantidade) || 1,
+        preco_cotado: Number(it.preco) || 0,
+        preco_nf: Number(it.preco) || 0,
+      }));
+      setItems(publicItems);
+      setSelectedPedido({ ...pedido, items: publicItems });
+      saveProgress(pedido.id, publicItems, nome);
+      return;
+    }
+
     const { data: pedidoFull } = await supabase
       .from("pedidos")
       .select("cotacao_id")
