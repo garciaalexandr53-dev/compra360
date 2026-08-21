@@ -49,20 +49,32 @@ describe("historicoInsights", () => {
     expect(k.economiaEstimada).toBe(50);
   });
 
-  it("buildFornecedorRanking ordena por total ganho e calcula taxa", () => {
+  it("buildFornecedorRanking ordena por total ganho e calcula taxa sobre itens cotados", () => {
     const rows = [
       row({ cotacaoId: "1", fornecedor: "A", total: 100 }),
       row({ cotacaoId: "1", fornecedor: "B", total: 50 }),
       row({ cotacaoId: "2", fornecedor: "A", total: 200 }),
     ];
-    const r = buildFornecedorRanking(rows);
+    const r = buildFornecedorRanking(rows, new Map([["A", 4], ["B", 2]]));
     expect(r[0].nome).toBe("A");
     expect(r[0].vitorias).toBe(2);
     expect(r[0].totalCotacoes).toBe(2);
-    expect(r[0].taxa).toBe(100);
+    expect(r[0].itensCotados).toBe(4);
+    expect(r[0].taxa).toBe(50);
     expect(r[0].totalGanho).toBe(300);
     expect(r[1].nome).toBe("B");
+    expect(r[1].taxa).toBe(50);
   });
+
+  it("buildFornecedorRanking limita a taxa a 100% e devolve null sem denominador", () => {
+    const rows = [
+      row({ cotacaoId: "1", fornecedor: "A", total: 100 }),
+      row({ cotacaoId: "2", fornecedor: "A", total: 100 }),
+    ];
+    expect(buildFornecedorRanking(rows, new Map([["A", 1]]))[0].taxa).toBe(100);
+    expect(buildFornecedorRanking(rows)[0].taxa).toBeNull();
+  });
+
 
   it("buildProdutoVariacao calcula min/max/médio/variação%", () => {
     const rows = [
