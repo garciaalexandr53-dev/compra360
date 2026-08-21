@@ -44,10 +44,13 @@ export interface FornecedorRanking {
   nome: string;
   vitorias: number;
   totalCotacoes: number;
+  /** Number of items the supplier quoted with a valid price (> 0) in the period. */
+  itensCotados: number;
   totalGanho: number;
-  /** wins / totalCotacoes * 100 */
-  taxa: number;
+  /** vitorias / itensCotados * 100, capped at 100. null when itensCotados is unknown. */
+  taxa: number | null;
 }
+
 
 export interface ProdutoVariacao {
   produto: string;
