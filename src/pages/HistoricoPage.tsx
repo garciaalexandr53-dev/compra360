@@ -905,10 +905,29 @@ const HistoricoPage = () => {
     return computeKPIs(insightsFilteredCotacoes, insightRowsForInsights, economia);
   }, [insightsFilteredCotacoes, insightRowsForInsights, consolidated, insightsCotIdSet]);
 
+  // Items each supplier quoted with a valid price (> 0) — denominator of the win rate.
+  const itensCotadosPorFornecedor = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const [cotId, det] of consolidated.perCotacao) {
+      if (!insightsCotIdSet.has(cotId)) continue;
+      for (const r of det.rows) {
+        const seen = new Set<string>();
+        for (const p of r.allPrecos || []) {
+          const nome = p?.fornecedores?.nome;
+          if (!nome || Number(p.preco) <= 0 || seen.has(nome)) continue;
+          seen.add(nome);
+          map.set(nome, (map.get(nome) || 0) + 1);
+        }
+      }
+    }
+    return map;
+  }, [consolidated, insightsCotIdSet]);
+
   const fornecedorRanking = useMemo(
-    () => buildFornecedorRanking(insightRowsForInsights),
-    [insightRowsForInsights]
+    () => buildFornecedorRanking(insightRowsForInsights, itensCotadosPorFornecedor),
+    [insightRowsForInsights, itensCotadosPorFornecedor]
   );
+
   const produtoVariacao = useMemo(
     () => buildProdutoVariacao(insightRowsForInsights),
     [insightRowsForInsights]
