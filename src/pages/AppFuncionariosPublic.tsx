@@ -573,9 +573,6 @@ const AppFuncionariosPublic = () => {
   const selectedLojaName = lojas.find((loja) => loja.id === selectedLojaId)?.nome || "";
   const isSearchingProducts = productSearch.trim() !== debouncedProductSearch;
 
-  // A loja NUNCA é escolhida pelo funcionário: vem do link recebido
-  // (ou da loja já vinculada a este aparelho em acessos anteriores).
-  const lojaSelector = null;
 
   const faixaLojaCard = selectedLojaName ? (
     <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5">
@@ -797,7 +794,6 @@ const AppFuncionariosPublic = () => {
         </div>
       ) : activeTab === "enviados" ? (
         <div className="flex-1 overflow-y-auto p-4">
-          {lojaSelector}
 
           {faixaLojaCard && <div className="mb-3">{faixaLojaCard}</div>}
 
@@ -977,7 +973,6 @@ const AppFuncionariosPublic = () => {
 
       ) : (
         <div className="flex flex-col flex-1">
-          {lojaSelector}
 
           {/* Contexto da loja em destaque */}
           {faixaLoja}
