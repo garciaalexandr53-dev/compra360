@@ -671,6 +671,28 @@ const AppFuncionariosPublic = () => {
     );
   }
 
+  // Sem loja no link nem vinculada a este aparelho: nunca listar lojas — orientar.
+  if (!selectedLojaId) {
+    return (
+      <div className="min-h-[100dvh] bg-background flex items-center justify-center p-6">
+        <Sonner />
+        <div className="max-w-sm text-center space-y-3">
+          <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <MapPin className="h-6 w-6 text-primary" />
+          </div>
+          <h1 className="text-lg font-bold">Abra pelo link da sua loja</h1>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Este app precisa saber para qual loja você está registrando os itens. Abra o link de
+            reposição enviado pelo seu gerente no WhatsApp.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Depois de abrir pelo link uma vez, o ícone na tela inicial já volta direto para a sua loja.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col">
       <Sonner />
