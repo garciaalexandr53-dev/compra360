@@ -127,7 +127,6 @@ export default function AppLayout() {
         </div>
       </div>
       <BottomNav />
-      <SuporteFlutuante />
       <Suspense fallback={null}>
         <PriceNotificationListener />
       </Suspense>
