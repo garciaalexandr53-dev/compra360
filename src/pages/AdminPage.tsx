@@ -698,7 +698,13 @@ export default function AdminPage() {
             <CatalogoTab />
           </TabsContent>
 
+          {/* CANDIDATOS AO CATÁLOGO MESTRE */}
+          <TabsContent value="candidatos">
+            <CandidatosTab />
+          </TabsContent>
+
           {/* HISTÓRICO DE ALTERAÇÕES DO CATÁLOGO */}
+
           <TabsContent value="historico">
             <HistoricoCatalogoTab />
           </TabsContent>
