@@ -1283,6 +1283,29 @@ export type Database = {
           nome: string
         }[]
       }
+      get_pedido_itens_publico: {
+        Args: { _loja_id: string; _pedido_id: string }
+        Returns: {
+          cotacao_produto_id: string
+          embalagem: string
+          fator_embalagem: number
+          preco: number
+          produto_nome: string
+          quantidade: number
+        }[]
+      }
+      get_pedidos_conferencia_publico: {
+        Args: { _loja_id: string }
+        Returns: {
+          created_at: string
+          fornecedor_id: string
+          fornecedor_nome: string
+          id: string
+          loja_id: string
+          numero: number
+          total: number
+        }[]
+      }
       get_produtos_for_loja: {
         Args: {
           _limit?: number
