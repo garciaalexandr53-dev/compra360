@@ -1684,7 +1684,12 @@ const HistoricoPage = () => {
                   <div className="text-base md:text-lg font-bold text-green-600 dark:text-green-400 mt-1 break-words">
                     {formatBRL(kpis.economiaEstimada)}
                   </div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5">vs. média dos preços recebidos</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">
+                    {kpis.totalGeral > 0
+                      ? `${((kpis.economiaEstimada / kpis.totalGeral) * 100).toFixed(1).replace(".", ",")}% de economia · vs. média dos preços recebidos`
+                      : "vs. média dos preços recebidos"}
+                  </div>
+
                 </div>
                 <div className="bg-card border rounded-xl p-3 shadow-sm">
                   <div className="flex items-center gap-1 text-[10px] uppercase text-muted-foreground tracking-wide">
