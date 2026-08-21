@@ -519,7 +519,22 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
   };
 
 
+  // App público aberto sem loja definida (ex.: ícone da tela inicial sem ?loja=)
+  if (semLoja) {
+    return (
+      <div className="flex flex-col items-center justify-center py-14 px-6 text-center">
+        <Store className="h-10 w-10 text-muted-foreground/40 mb-3" />
+        <h2 className="text-base font-bold mb-1">Abra pelo link da sua loja</h2>
+        <p className="text-sm text-muted-foreground max-w-xs">
+          A conferência mostra os pedidos da sua unidade. Abra o link de reposição enviado pelo seu gerente uma vez —
+          depois disso o aplicativo lembra a loja neste aparelho.
+        </p>
+      </div>
+    );
+  }
+
   // Done screen
+
   if (conferenciaDone) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
