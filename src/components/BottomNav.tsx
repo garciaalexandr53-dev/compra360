@@ -123,10 +123,7 @@ export default function BottomNav() {
               return (
                 <button
                   key={item.path}
-                  onClick={() => {
-                    navigate(item.path);
-                    setMoreOpen(false);
-                  }}
+                  onClick={() => handleMoreItemTap(item.path)}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors ${
                     active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"
                   }`}
@@ -136,6 +133,17 @@ export default function BottomNav() {
                 </button>
               );
             })}
+            <a
+              href={suporteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setMoreOpen(false)}
+              className="flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors text-muted-foreground hover:bg-muted"
+              title="Falar com o suporte pelo WhatsApp"
+            >
+              <helpItem.icon className="h-5 w-5" />
+              <span className="text-xs font-medium">{helpItem.label}</span>
+            </a>
           </div>
         </SheetContent>
       </Sheet>
