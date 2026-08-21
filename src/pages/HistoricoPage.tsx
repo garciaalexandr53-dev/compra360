@@ -1748,7 +1748,7 @@ const HistoricoPage = () => {
                             <th className="px-3 py-2 text-left font-semibold w-12">#</th>
                             <th className="px-3 py-2 text-left font-semibold">Fornecedor</th>
                             <th className="px-3 py-2 text-center font-semibold">Vitórias</th>
-                            <th className="px-3 py-2 text-center font-semibold">Cotações</th>
+                            <th className="px-3 py-2 text-center font-semibold">Itens cotados</th>
                             <th className="px-3 py-2 text-right font-semibold">Taxa</th>
                             <th className="px-3 py-2 text-right font-semibold">Total ganho</th>
                           </tr>
