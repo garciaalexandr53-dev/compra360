@@ -77,6 +77,36 @@ export type Database = {
         }
         Relationships: []
       }
+      catalogo_mestre_log: {
+        Row: {
+          acao: string
+          alterado_em: string
+          alterado_por: string | null
+          catalogo_mestre_id: string | null
+          dados_antes: Json | null
+          dados_depois: Json | null
+          id: string
+        }
+        Insert: {
+          acao: string
+          alterado_em?: string
+          alterado_por?: string | null
+          catalogo_mestre_id?: string | null
+          dados_antes?: Json | null
+          dados_depois?: Json | null
+          id?: string
+        }
+        Update: {
+          acao?: string
+          alterado_em?: string
+          alterado_por?: string | null
+          catalogo_mestre_id?: string | null
+          dados_antes?: Json | null
+          dados_depois?: Json | null
+          id?: string
+        }
+        Relationships: []
+      }
       categorias: {
         Row: {
           created_at: string
