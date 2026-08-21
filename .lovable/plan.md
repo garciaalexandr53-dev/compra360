@@ -9,7 +9,7 @@ Nova aba somente leitura ao lado de "Catálogo", com o mesmo gate de admin já a
   - Data/hora no formato brasileiro (dd/mm/aaaa HH:mm).
   - Ação com badge colorido: Criado (verde), Editado (azul), Removido (vermelho).
   - Nome do item: `dados_depois->>'nome'`, com fallback para `dados_antes->>'nome'` (caso de DELETE).
-  - Quem alterou: e-mail quando resolvido; UUID abreviado (8 primeiros caracteres) quando não; "Sistema" quando `alterado_por` for nulo.
+  - Quem alterou, nesta ordem: "Você" quando `alterado_por` é o usuário logado; e-mail quando resolvido no mapa; UUID abreviado (8 primeiros caracteres) quando não; "Sistema" quando `alterado_por` for nulo.
 - Desktop: tabela. Mobile 360px: cards empilhados com data/ação na primeira linha, nome em destaque e autor abaixo.
 - Estado vazio explicando que as alterações do catálogo mestre aparecerão ali.
 
