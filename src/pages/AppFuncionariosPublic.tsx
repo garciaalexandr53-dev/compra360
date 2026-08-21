@@ -6,7 +6,6 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -294,6 +293,8 @@ const AppFuncionariosPublic = () => {
   } = useInfiniteQuery({
     queryKey: ["produtos-public", debouncedProductSearch, selectedLojaId],
     initialPageParam: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
     queryFn: async ({ pageParam }) => {
       const offset = pageParam * PRODUCT_PAGE_SIZE;
       const searchTerms = debouncedProductSearch.toLowerCase().split(/\s+/).filter(Boolean);
@@ -389,6 +390,8 @@ const AppFuncionariosPublic = () => {
   const { data: enviadosRaw = [], isLoading: enviadosLoading } = useQuery({
     queryKey: ["itens-enviados", selectedLojaId],
     enabled: !!selectedLojaId,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase.rpc(
         "get_itens_enviados_publico" as never,
@@ -600,8 +603,8 @@ const AppFuncionariosPublic = () => {
       toast.error("Adicione pelo menos um item!");
       return;
     }
-    if (!lojaFromUrl && lojas.length > 1 && !selectedLojaId) {
-      toast.error("Selecione a loja!");
+    if (!selectedLojaId) {
+      toast.error("Abra o app pelo link da sua loja!");
       return;
     }
 
@@ -621,7 +624,7 @@ const AppFuncionariosPublic = () => {
           ean: item.ean ?? null,
           catalogo_mestre_id: item.catalogoMestreId ?? null,
           registrado_por: "Funcionário" + lojaLabel,
-          loja_id: selectedLojaId || (lojas.length === 1 ? lojas[0].id : null),
+          loja_id: selectedLojaId,
         };
       });
 
@@ -629,8 +632,7 @@ const AppFuncionariosPublic = () => {
       if (error) throw error;
 
       setSent(true);
-      const lojaDoEnvio = selectedLojaId || (lojas.length === 1 ? lojas[0].id : "");
-      if (lojaDoEnvio) limparRascunho(lojaDoEnvio);
+      limparRascunho(selectedLojaId);
       queryClient.invalidateQueries({ queryKey: ["itens-enviados", selectedLojaId] });
       const lojaMsg = selectedLojaName ? ` para ${selectedLojaName}` : "";
       toast.success(`${items.length} itens enviados${lojaMsg}!`);
