@@ -34,6 +34,16 @@ export default function BottomNav() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
+  const { nome } = useProfile();
+  const { plan } = useSubscription();
+  const { lojaAtiva } = useLojaAtiva();
+
+  const suporteUrl = buildSuporteUrl({
+    nome,
+    email: user?.email,
+    plano: plan?.display_name,
+    loja: lojaAtiva?.nome,
+  });
 
   const { data: isAdmin = false } = useQuery({
     queryKey: ["is-admin-bottomnav", user?.id],
@@ -55,15 +65,27 @@ export default function BottomNav() {
 
   const isActive = (path: string) => {
     if (path === "__more__") return items.some((i) => location.pathname.startsWith(i.path));
+    if (path === "__help__") return false;
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
 
   const handleTap = (path: string) => {
     if (path === "__more__") {
       setMoreOpen(true);
+    } else if (path === "__help__") {
+      window.open(suporteUrl, "_blank", "noopener,noreferrer");
     } else {
       navigate(path);
     }
+  };
+
+  const handleMoreItemTap = (path: string) => {
+    if (path === "__help__") {
+      window.open(suporteUrl, "_blank", "noopener,noreferrer");
+    } else {
+      navigate(path);
+    }
+    setMoreOpen(false);
   };
 
   return (
