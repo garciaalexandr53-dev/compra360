@@ -1724,10 +1724,11 @@ const HistoricoPage = () => {
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="max-w-[260px] text-xs">
-                      <strong>Taxa de vitória</strong> = vitórias do fornecedor ÷ cotações em que participou × 100.
-                      Ex: ganhou 8 itens em 2 cotações onde participou ⇒ 8/2 = 400% (média de itens por cotação).
+                      <strong>Taxa</strong> = itens vencidos ÷ itens em que o fornecedor cotou (com preço) × 100.
+                      Ex: cotou 40 itens e venceu 24 ⇒ 60% dos itens que cotou.
                       Use junto com "Vitórias" e "Total ganho" para julgar competitividade.
                     </TooltipContent>
+
                   </Tooltip>
                   <span className="text-[11px] text-muted-foreground ml-auto">
                     Por valor total ganho
