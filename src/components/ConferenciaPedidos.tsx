@@ -281,6 +281,18 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
     },
   });
 
+  // iOS/PWA: ao voltar de background o "focus" não dispara — revalida no visibilitychange.
+  useEffect(() => {
+    if (semLoja) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refetchPedidos();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [semLoja, refetchPedidos]);
+
+
+
   // Restore progress on mount
   useEffect(() => {
     if (pedidos.length === 0) return;
