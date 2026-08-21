@@ -382,10 +382,15 @@ export default function AdminPage() {
               <Package className="h-3.5 w-3.5" />
               Catálogo
             </TabsTrigger>
+            <TabsTrigger value="candidatos" className="gap-1.5">
+              <PackagePlus className="h-3.5 w-3.5" />
+              Candidatos
+            </TabsTrigger>
             <TabsTrigger value="historico" className="gap-1.5">
               <History className="h-3.5 w-3.5" />
               Histórico
             </TabsTrigger>
+
           </TabsList>
 
 
