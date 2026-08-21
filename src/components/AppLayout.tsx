@@ -11,7 +11,6 @@ import { LojaSelector } from "@/components/LojaSelector";
 import { useTheme } from "@/hooks/useTheme";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import BottomNav from "@/components/BottomNav";
-import { SuporteFlutuante } from "@/components/SuporteFlutuante";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import BannerAviso from "@/components/BannerAviso";
 import ModalBoasVindas from "@/components/dashboard/ModalBoasVindas";
