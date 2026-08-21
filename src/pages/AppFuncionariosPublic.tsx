@@ -571,28 +571,9 @@ const AppFuncionariosPublic = () => {
   const selectedLojaName = lojas.find((loja) => loja.id === selectedLojaId)?.nome || "";
   const isSearchingProducts = productSearch.trim() !== debouncedProductSearch;
 
-  const lojaSelector = !lojaFromUrl && lojas.length > 1 ? (
-    <div className="px-4 pt-3">
-      <div className="rounded-xl border bg-card p-3 space-y-2">
-        <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-          <Store className="h-3.5 w-3.5" />
-          Loja
-        </label>
-        <Select value={selectedLojaId || undefined} onValueChange={setSelectedLojaId}>
-          <SelectTrigger className="h-11">
-            <SelectValue placeholder="Selecione a loja" />
-          </SelectTrigger>
-          <SelectContent>
-            {lojas.map((loja) => (
-              <SelectItem key={loja.id} value={loja.id}>
-                {loja.nome}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-  ) : null;
+  // A loja NUNCA é escolhida pelo funcionário: vem do link recebido
+  // (ou da loja já vinculada a este aparelho em acessos anteriores).
+  const lojaSelector = null;
 
   const faixaLojaCard = selectedLojaName ? (
     <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5">
