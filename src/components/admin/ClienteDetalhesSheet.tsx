@@ -34,6 +34,7 @@ type Detalhes = {
   last_sign_in_at: string | null;
   telefone: string | null;
   subscription_started_at: string | null;
+  current_period_end: string | null;
   subscription_created_at: string | null;
   plan_price_monthly: number | null;
 };
@@ -364,7 +365,7 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
         userId={cliente.user_id}
         email={cliente.email}
         planoAtual={cliente.plan_name}
-        vencimentoAtual={cliente.trial_end}
+        vencimentoAtual={detalhes?.current_period_end ?? cliente.trial_end}
       />
     </Sheet>
   );
