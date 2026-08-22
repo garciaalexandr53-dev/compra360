@@ -34,6 +34,7 @@ type Detalhes = {
   last_sign_in_at: string | null;
   telefone: string | null;
   subscription_started_at: string | null;
+  current_period_end: string | null;
   subscription_created_at: string | null;
   plan_price_monthly: number | null;
 };
