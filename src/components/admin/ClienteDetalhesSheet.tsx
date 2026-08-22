@@ -365,7 +365,7 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
         userId={cliente.user_id}
         email={cliente.email}
         planoAtual={cliente.plan_name}
-        vencimentoAtual={cliente.trial_end}
+        vencimentoAtual={detalhes?.current_period_end ?? cliente.trial_end}
       />
     </Sheet>
   );
