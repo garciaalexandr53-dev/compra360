@@ -322,7 +322,7 @@ export default function PagamentoManualDialog({
           </Button>
           <Button
             onClick={() => registrar.mutate()}
-            disabled={registrar.isPending || !userId || !vencimento}
+            disabled={registrar.isPending || !userId || !vencimento || (jaPagoAlem30 && !confirmado)}
             className="w-full sm:w-auto"
           >
             {registrar.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
