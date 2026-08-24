@@ -12,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2, HandCoins, History } from "lucide-react";
+import { Loader2, HandCoins, History, AlertTriangle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { formatBRL, formatDate } from "@/lib/format";
 
@@ -91,6 +92,17 @@ export default function PagamentoManualDialog({
   }, [open, planoAtual, vencimentoAtual]);
 
   const sugestao = useMemo(() => calcularVencimento(ciclo, vencimentoAtual), [ciclo, vencimentoAtual]);
+
+  // Já pago por mais de 30 dias? Avisar antes de encadear outro período.
+  const jaPagoAlem30 = useMemo(() => {
+    if (!vencimentoAtual) return false;
+    const dias = (new Date(vencimentoAtual).getTime() - Date.now()) / 86400000;
+    return dias > 30;
+  }, [vencimentoAtual]);
+  const [confirmado, setConfirmado] = useState(false);
+  useEffect(() => {
+    if (open) setConfirmado(false);
+  }, [open]);
 
   const { data: historico, isLoading: loadingHistorico } = useQuery({
     queryKey: ["admin-pagamentos-manuais", userId],
@@ -241,6 +253,27 @@ export default function PagamentoManualDialog({
             />
           </div>
 
+          {jaPagoAlem30 && (
+            <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-900 dark:text-amber-200">
+                  Este cliente já está pago até <strong>{formatDate(vencimentoAtual!)}</strong>.
+                  Registrar outro pagamento vai estender para{" "}
+                  <strong>{vencimento ? formatDate(new Date(`${vencimento}T12:00:00`).toISOString()) : "—"}</strong>.
+                </p>
+              </div>
+              <label className="flex items-start gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={confirmado}
+                  onCheckedChange={(v) => setConfirmado(v === true)}
+                  className="mt-0.5"
+                />
+                <span>Confirmo que é um novo pagamento recebido.</span>
+              </label>
+            </div>
+          )}
+
           <div className="rounded-md border bg-muted/30 p-3">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <History className="h-3.5 w-3.5" />
@@ -289,7 +322,7 @@ export default function PagamentoManualDialog({
           </Button>
           <Button
             onClick={() => registrar.mutate()}
-            disabled={registrar.isPending || !userId || !vencimento}
+            disabled={registrar.isPending || !userId || !vencimento || (jaPagoAlem30 && !confirmado)}
             className="w-full sm:w-auto"
           >
             {registrar.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
