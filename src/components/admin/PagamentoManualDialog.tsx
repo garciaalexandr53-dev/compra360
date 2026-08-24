@@ -92,6 +92,17 @@ export default function PagamentoManualDialog({
 
   const sugestao = useMemo(() => calcularVencimento(ciclo, vencimentoAtual), [ciclo, vencimentoAtual]);
 
+  // Já pago por mais de 30 dias? Avisar antes de encadear outro período.
+  const jaPagoAlem30 = useMemo(() => {
+    if (!vencimentoAtual) return false;
+    const dias = (new Date(vencimentoAtual).getTime() - Date.now()) / 86400000;
+    return dias > 30;
+  }, [vencimentoAtual]);
+  const [confirmado, setConfirmado] = useState(false);
+  useEffect(() => {
+    if (open) setConfirmado(false);
+  }, [open]);
+
   const { data: historico, isLoading: loadingHistorico } = useQuery({
     queryKey: ["admin-pagamentos-manuais", userId],
     enabled: open && !!userId,
