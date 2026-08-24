@@ -84,6 +84,35 @@ serve(async (req) => {
     }
     log("User authenticated", { userId: user.id, email: user.email });
 
+    // Assinatura manual (Pix/transferência) não existe no Stripe: respeitar e sair.
+    const { data: manualSub } = await supabaseClient
+      .from("subscriptions")
+      .select("status, current_period_end, plans(name)")
+      .eq("user_id", user.id)
+      .eq("origem", "manual")
+      .in("status", ["active", "trialing"])
+      .order("current_period_end", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (
+      manualSub?.current_period_end &&
+      new Date(manualSub.current_period_end as string).getTime() > Date.now()
+    ) {
+      const manualPlan = (manualSub as { plans?: { name?: string } }).plans?.name ?? "unknown";
+      log("Manual subscription active — skipping Stripe", { plan: manualPlan });
+      return new Response(
+        JSON.stringify({
+          subscribed: true,
+          plan: manualPlan,
+          tier: manualPlan,
+          origem: "manual",
+          subscription_end: manualSub.current_period_end,
+          is_trial: manualSub.status === "trialing",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
