@@ -148,6 +148,7 @@ serve(async (req) => {
         .from("subscriptions")
         .update({ status: "canceled", updated_at: new Date().toISOString() })
         .eq("user_id", user.id)
+        .neq("origem", "manual")
         .in("status", ["active", "trialing"]);
 
       return new Response(
