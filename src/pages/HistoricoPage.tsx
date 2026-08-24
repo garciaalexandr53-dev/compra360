@@ -1689,7 +1689,7 @@ const HistoricoPage = () => {
                       <div className="text-xs font-semibold text-green-600 dark:text-green-400">
                         {((kpis.economiaEstimada / kpis.totalGeral) * 100)
                           .toFixed(1)
-                          .replace(".", ",")} de economia
+                          .replace(".", ",")}% de economia
                       </div>
                     )}
                     <div className="text-[10px] text-muted-foreground">
