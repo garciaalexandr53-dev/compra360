@@ -12,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2, HandCoins, History } from "lucide-react";
+import { Loader2, HandCoins, History, AlertTriangle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { formatBRL, formatDate } from "@/lib/format";
 
