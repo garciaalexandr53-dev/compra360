@@ -252,6 +252,27 @@ export default function PagamentoManualDialog({
             />
           </div>
 
+          {jaPagoAlem30 && (
+            <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-900 dark:text-amber-200">
+                  Este cliente já está pago até <strong>{formatDate(vencimentoAtual!)}</strong>.
+                  Registrar outro pagamento vai estender para{" "}
+                  <strong>{vencimento ? formatDate(new Date(`${vencimento}T12:00:00`).toISOString()) : "—"}</strong>.
+                </p>
+              </div>
+              <label className="flex items-start gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={confirmado}
+                  onCheckedChange={(v) => setConfirmado(v === true)}
+                  className="mt-0.5"
+                />
+                <span>Confirmo que é um novo pagamento recebido.</span>
+              </label>
+            </div>
+          )}
+
           <div className="rounded-md border bg-muted/30 p-3">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <History className="h-3.5 w-3.5" />
