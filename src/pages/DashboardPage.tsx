@@ -372,7 +372,7 @@ const DashboardPage = () => {
     queryKey: ["economy-estimate", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id && respostaCount > 1,
     queryFn: async () => {
-      const { data: cps } = await supabase.from("cotacao_produtos").select("id, quantidade").eq("cotacao_id", cotacaoAtiva!.id);
+      const { data: cps } = await supabase.from("cotacao_produtos").select("id, quantidade, fator_embalagem").eq("cotacao_id", cotacaoAtiva!.id);
       if (!cps?.length) return null;
       const cpIds = cps.map(cp => cp.id);
       const { data: precos } = await supabase.from("precos").select("cotacao_produto_id, preco").in("cotacao_produto_id", cpIds).not("preco", "is", null);
@@ -382,7 +382,8 @@ const DashboardPage = () => {
       for (const cp of cps) {
         const cpPrecos = precos.filter(p => p.cotacao_produto_id === cp.id).map(p => Number(p.preco)).filter(v => v > 0);
         if (cpPrecos.length < 2) continue;
-        const qty = cp.quantidade || 1;
+        // Mesma base das telas de Análise e Insights: quantidade × fator de embalagem.
+        const qty = (cp.quantidade || 1) * (cp.fator_embalagem || 1);
         const media = cpPrecos.reduce((a, n) => a + n, 0) / cpPrecos.length;
         totalMin += Math.min(...cpPrecos) * qty;
         totalMedia += media * qty;
