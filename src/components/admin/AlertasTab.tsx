@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import {
   Cliente, getDiasTrialRestantes, getDiasSemUso, getDiasDesdeCadastro, getSaudeCliente,
-  SituacaoCliente,
+  SituacaoCliente, getNomeExibicao,
 } from "@/lib/adminHelpers";
 import { formatDate } from "@/lib/format";
 import {
