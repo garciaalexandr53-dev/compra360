@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import {
   Cliente, getDiasTrialRestantes, getSaudeCliente, normalizarWhatsAppCliente, PLAN_COLORS,
-  MOTIVO_LABEL, MotivoContato,
+  MOTIVO_LABEL, MotivoContato, getNomeExibicao,
 } from "@/lib/adminHelpers";
 
 import { formatBRL, formatDate } from "@/lib/format";
@@ -135,7 +135,7 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
 
   if (!cliente) return null;
 
-  const nome = cliente.loja_principal || cliente.email;
+  const nome = getNomeExibicao(cliente);
   const telefoneDisplay = detalhes?.telefone || cliente.whatsapp || null;
   const temCotacao = (cliente.total_cotacoes || 0) > 0;
 
@@ -176,7 +176,9 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
           <div className="px-5 py-5 space-y-6">
             {/* IDENTIFICAÇÃO */}
             <Secao titulo="Identificação">
-              <Info icon={<Building2 className="h-3.5 w-3.5" />} label="Loja"
+              <Info icon={<Users className="h-3.5 w-3.5" />} label="Responsável"
+                value={cliente.nome_contato || "—"} />
+              <Info icon={<Building2 className="h-3.5 w-3.5" />} label="Empresa"
                 value={cliente.loja_principal || "—"} />
               <Info icon={<IdCard className="h-3.5 w-3.5" />} label="CNPJ"
                 value={cliente.cnpj || "—"} />
