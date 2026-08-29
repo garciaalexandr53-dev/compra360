@@ -92,6 +92,28 @@ export function getSaudeCliente(c: Cliente): SaudeCliente {
   };
 }
 
+/**
+ * Nome de exibição do cliente no painel: nome da pessoa → empresa → e-mail.
+ */
+export function getNomeExibicao(c: Pick<Cliente, "nome_contato" | "loja_principal" | "email">): string {
+  const pessoal = c.nome_contato?.trim();
+  if (pessoal) return pessoal;
+  const loja = c.loja_principal?.trim();
+  if (loja) return loja;
+  return c.email;
+}
+
+/**
+ * Primeiro nome para saudações: primeiro nome da pessoa → empresa → prefixo do e-mail.
+ */
+export function getPrimeiroNome(c: Pick<Cliente, "nome_contato" | "loja_principal" | "email">): string {
+  const pessoal = c.nome_contato?.trim();
+  if (pessoal) return pessoal.split(" ")[0] || pessoal;
+  const loja = c.loja_principal?.trim();
+  if (loja) return loja;
+  return c.email.split("@")[0];
+}
+
 export function getDiasTrialRestantes(trialEnd: string | null): number | null {
   if (!trialEnd) return null;
   const diff = new Date(trialEnd).getTime() - Date.now();
