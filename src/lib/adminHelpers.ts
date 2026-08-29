@@ -10,7 +10,7 @@ export type Cliente = {
   cnpj: string | null;
   whatsapp: string | null;
   /** Nome pessoal do responsável (perfil). */
-  nome_contato: string | null;
+  nome_contato?: string | null;
   total_lojas: number;
   total_produtos: number;
   total_produtos_inativos: number;
