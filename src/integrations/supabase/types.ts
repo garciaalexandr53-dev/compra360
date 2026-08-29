@@ -1145,6 +1145,7 @@ export type Database = {
           created_at: string
           email: string
           loja_principal: string
+          nome_contato: string
           plan_name: string
           plan_status: string
           total_cotacoes: number
