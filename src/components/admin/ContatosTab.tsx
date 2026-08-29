@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader2, MessageCircle, Mail, X, Search } from "lucide-react";
 import { formatDate } from "@/lib/format";
-import { Cliente, MOTIVO_LABEL, MotivoContato } from "@/lib/adminHelpers";
+import { Cliente, MOTIVO_LABEL, MotivoContato, getNomeExibicao } from "@/lib/adminHelpers";
 
 type ContatoRow = {
   id: string;
@@ -77,7 +77,7 @@ export default function ContatosTab({ clientes, onSelectCliente }: Props) {
   const clientesOrdenados = useMemo(
     () =>
       [...(clientes || [])].sort((a, b) =>
-        (a.loja_principal || a.email).localeCompare(b.loja_principal || b.email),
+        getNomeExibicao(a).localeCompare(getNomeExibicao(b)),
       ),
     [clientes],
   );
@@ -104,8 +104,8 @@ export default function ContatosTab({ clientes, onSelectCliente }: Props) {
             <SelectContent className="max-h-72">
               <SelectItem value="todos">Todos os clientes</SelectItem>
               {clientesOrdenados.map((c) => (
-                <SelectItem key={c.user_id} value={c.user_id}>
-                  {c.loja_principal || c.email}
+              <SelectItem key={c.user_id} value={c.user_id}>
+                  {getNomeExibicao(c)}{c.nome_contato && c.loja_principal ? ` — ${c.loja_principal}` : ""}
                 </SelectItem>
               ))}
             </SelectContent>

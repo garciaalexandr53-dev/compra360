@@ -68,3 +68,65 @@ describe("situacaoParaMotivo", () => {
     expect(situacaoParaMotivo(null)).toBe("manual");
   });
 });
+
+import { getNomeExibicao, getPrimeiroNome, getMensagem } from "./adminHelpers";
+
+const base = {
+  email: "contato@mercado.com",
+  loja_principal: "Mercado Olímpico",
+  nome_contato: null as string | null,
+};
+
+describe("getNomeExibicao", () => {
+  it("usa o nome da pessoa quando existe", () => {
+    expect(getNomeExibicao({ ...base, nome_contato: "Carlos Silva" })).toBe("Carlos Silva");
+  });
+  it("cai para a empresa quando não há nome pessoal", () => {
+    expect(getNomeExibicao(base)).toBe("Mercado Olímpico");
+    expect(getNomeExibicao({ ...base, nome_contato: "  " })).toBe("Mercado Olímpico");
+  });
+  it("cai para o e-mail sem empresa nem nome", () => {
+    expect(getNomeExibicao({ ...base, loja_principal: null })).toBe("contato@mercado.com");
+  });
+});
+
+describe("getPrimeiroNome", () => {
+  it("retorna só o primeiro nome da pessoa", () => {
+    expect(getPrimeiroNome({ ...base, nome_contato: "Ana Maria Souza" })).toBe("Ana");
+  });
+  it("usa a empresa inteira quando não há nome pessoal", () => {
+    expect(getPrimeiroNome(base)).toBe("Mercado Olímpico");
+  });
+  it("usa o prefixo do e-mail como último recurso", () => {
+    expect(getPrimeiroNome({ ...base, loja_principal: null })).toBe("contato");
+  });
+});
+
+describe("getMensagem saudação", () => {
+  const cliente = {
+    ...base,
+    user_id: "u1",
+    created_at: "2026-08-01",
+    cnpj: null,
+    whatsapp: null,
+    total_lojas: 1,
+    total_produtos: 0,
+    total_produtos_inativos: 0,
+    total_fornecedores: 0,
+    total_cotacoes: 0,
+    total_pedidos: 0,
+    plan_name: "free",
+    plan_status: "active",
+    trial_end: null,
+    ultima_cotacao_at: null,
+  };
+  it("cumprimenta pelo primeiro nome da pessoa", () => {
+    const m = getMensagem("boas_vindas", { ...cliente, nome_contato: "Fernanda Costa" });
+    expect(m.whatsapp).toContain("Olá Fernanda!");
+    expect(m.email).toContain("Olá Fernanda,");
+  });
+  it("sem nome pessoal, usa a empresa como antes", () => {
+    const m = getMensagem("boas_vindas", cliente);
+    expect(m.whatsapp).toContain("Olá Mercado Olímpico!");
+  });
+});

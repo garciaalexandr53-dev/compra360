@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import {
   Cliente, getDiasTrialRestantes, getDiasSemUso, getDiasDesdeCadastro, getSaudeCliente,
-  SituacaoCliente,
+  SituacaoCliente, getNomeExibicao,
 } from "@/lib/adminHelpers";
 import { formatDate } from "@/lib/format";
 import {
@@ -83,8 +83,10 @@ export default function AlertasTab({ clientes, onContatar }: Props) {
                   <CardContent className="p-3">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="min-w-0 flex-1">
-                        <div className="font-medium text-sm truncate">{c.loja_principal || c.email}</div>
-                        <div className="text-xs text-muted-foreground truncate">{c.email}</div>
+                        <div className="font-medium text-sm truncate">{getNomeExibicao(c)}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {c.nome_contato && c.loja_principal ? `${c.loja_principal} · ${c.email}` : c.email}
+                        </div>
                       </div>
                       <Badge
                         variant="outline"
@@ -138,8 +140,10 @@ export default function AlertasTab({ clientes, onContatar }: Props) {
                   <CardContent className="p-3">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="min-w-0 flex-1">
-                        <div className="font-medium text-sm truncate">{c.loja_principal || c.email}</div>
-                        <div className="text-xs text-muted-foreground truncate">{c.email}</div>
+                        <div className="font-medium text-sm truncate">{getNomeExibicao(c)}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {c.nome_contato && c.loja_principal ? `${c.loja_principal} · ${c.email}` : c.email}
+                        </div>
                       </div>
                       <Badge variant="outline" className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30">
                         {dias !== null ? `${dias}d sem uso` : `${diasCadastro}d sem cotar`}
@@ -170,8 +174,10 @@ export default function AlertasTab({ clientes, onContatar }: Props) {
                 <CardContent className="p-3">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-sm truncate">{c.loja_principal || c.email}</div>
-                      <div className="text-xs text-muted-foreground truncate">{c.email}</div>
+                      <div className="font-medium text-sm truncate">{getNomeExibicao(c)}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {c.nome_contato && c.loja_principal ? `${c.loja_principal} · ${c.email}` : c.email}
+                      </div>
                       <div className="text-[10px] text-muted-foreground mt-0.5">Cadastro: {formatDate(c.created_at)}</div>
                     </div>
                   </div>

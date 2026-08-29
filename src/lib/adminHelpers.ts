@@ -9,6 +9,8 @@ export type Cliente = {
   loja_principal: string | null;
   cnpj: string | null;
   whatsapp: string | null;
+  /** Nome pessoal do responsável (perfil). */
+  nome_contato?: string | null;
   total_lojas: number;
   total_produtos: number;
   total_produtos_inativos: number;
@@ -90,6 +92,28 @@ export function getSaudeCliente(c: Cliente): SaudeCliente {
   };
 }
 
+/**
+ * Nome de exibição do cliente no painel: nome da pessoa → empresa → e-mail.
+ */
+export function getNomeExibicao(c: Pick<Cliente, "nome_contato" | "loja_principal" | "email">): string {
+  const pessoal = c.nome_contato?.trim();
+  if (pessoal) return pessoal;
+  const loja = c.loja_principal?.trim();
+  if (loja) return loja;
+  return c.email;
+}
+
+/**
+ * Primeiro nome para saudações: primeiro nome da pessoa → empresa → prefixo do e-mail.
+ */
+export function getPrimeiroNome(c: Pick<Cliente, "nome_contato" | "loja_principal" | "email">): string {
+  const pessoal = c.nome_contato?.trim();
+  if (pessoal) return pessoal.split(" ")[0] || pessoal;
+  const loja = c.loja_principal?.trim();
+  if (loja) return loja;
+  return c.email.split("@")[0];
+}
+
 export function getDiasTrialRestantes(trialEnd: string | null): number | null {
   if (!trialEnd) return null;
   const diff = new Date(trialEnd).getTime() - Date.now();
@@ -137,7 +161,7 @@ export type MensagemContato = {
 };
 
 export function getMensagem(situacao: SituacaoCliente, c: Cliente): MensagemContato {
-  const nome = (c.loja_principal || c.email.split("@")[0]).trim();
+  const nome = getPrimeiroNome(c);
   const diasTrial = getDiasTrialRestantes(c.trial_end) ?? 0;
 
   switch (situacao) {
