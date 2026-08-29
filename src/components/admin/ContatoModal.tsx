@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Cliente, SituacaoCliente, detectarSituacao, getMensagem,
-  normalizarWhatsAppCliente, MotivoContato, situacaoParaMotivo,
+  normalizarWhatsAppCliente, MotivoContato, situacaoParaMotivo, getNomeExibicao,
 } from "@/lib/adminHelpers";
 
 const emailSchema = z.string().trim().email("E-mail inválido").max(255);
@@ -211,7 +211,7 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
     <Dialog open={!!cliente} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Contatar {cliente.loja_principal || cliente.email}</DialogTitle>
+          <DialogTitle>Contatar {getNomeExibicao(cliente)}</DialogTitle>
           <DialogDescription className={`flex items-center gap-2 ${info.color}`}>
             {info.icon}
             {info.label}
