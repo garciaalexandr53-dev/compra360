@@ -161,7 +161,7 @@ export type MensagemContato = {
 };
 
 export function getMensagem(situacao: SituacaoCliente, c: Cliente): MensagemContato {
-  const nome = (c.loja_principal || c.email.split("@")[0]).trim();
+  const nome = getPrimeiroNome(c);
   const diasTrial = getDiasTrialRestantes(c.trial_end) ?? 0;
 
   switch (situacao) {
