@@ -23,7 +23,7 @@ import { buildClientesCsv, buildClientesXlsx, clientesFilename, clientesFilename
 import { formatDate } from "@/lib/format";
 import {
   Cliente, getDiasSemUso, getDiasTrialRestantes, getSaudeCliente, PLAN_COLORS, SituacaoCliente,
-  MotivoContato, situacaoParaMotivo,
+  MotivoContato, situacaoParaMotivo, getNomeExibicao,
 } from "@/lib/adminHelpers";
 
 
@@ -228,6 +228,7 @@ export default function AdminPage() {
         const matchText =
           c.email?.toLowerCase().includes(q) ||
           c.loja_principal?.toLowerCase().includes(q) ||
+          c.nome_contato?.toLowerCase().includes(q) ||
           c.cnpj?.toLowerCase().includes(q);
         if (!matchText) return false;
       }
@@ -629,12 +630,14 @@ export default function AdminPage() {
                             />
                             <div className="flex-1 min-w-0">
                               <div className="text-sm font-medium truncate">
-                                {c.loja_principal || c.email}
+                                {getNomeExibicao(c)}
                               </div>
                               <div className="text-xs text-muted-foreground truncate">
-                                {c.ultima_cotacao_at
-                                  ? `Última cotação: ${formatDate(c.ultima_cotacao_at)}`
-                                  : "Sem cotação"}
+                                {c.nome_contato
+                                  ? (c.loja_principal ? `${c.loja_principal} · ${c.email}` : c.email)
+                                  : c.ultima_cotacao_at
+                                    ? `Última cotação: ${formatDate(c.ultima_cotacao_at)}`
+                                    : "Sem cotação"}
                               </div>
                             </div>
                             <Badge
