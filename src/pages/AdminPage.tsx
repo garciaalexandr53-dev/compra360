@@ -634,7 +634,7 @@ export default function AdminPage() {
                               </div>
                               <div className="text-xs text-muted-foreground truncate">
                                 {c.nome_contato
-                                  ? (c.loja_principal ? `${c.loja_principal} · ${c.email}` : c.email)
+                                  ? `${c.loja_principal ? `${c.loja_principal} · ` : ""}${c.ultima_cotacao_at ? `Última cotação: ${formatDate(c.ultima_cotacao_at)}` : "Sem cotação"}`
                                   : c.ultima_cotacao_at
                                     ? `Última cotação: ${formatDate(c.ultima_cotacao_at)}`
                                     : "Sem cotação"}
