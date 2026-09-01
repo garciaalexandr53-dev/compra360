@@ -4,7 +4,6 @@ import * as React from 'npm:react@18.3.1'
 
 import {
   Body,
-  Button,
   Container,
   Head,
   Heading,
@@ -15,6 +14,7 @@ import {
   Section,
   Text,
 } from 'npm:@react-email/components@0.0.22'
+import { BulletproofButton } from '../BulletproofButton.tsx'
 
 interface SignupEmailProps {
   siteName: string
@@ -54,9 +54,9 @@ export const SignupEmail = ({
           clicando no botão abaixo:
         </Text>
         <Section style={{ textAlign: 'center' as const }}>
-          <Button style={button} href={confirmationUrl}>
+          <BulletproofButton href={confirmationUrl} label="Confirmar email">
             Confirmar email
-          </Button>
+          </BulletproofButton>
         </Section>
         <Text style={footer}>
           Se você não criou esta conta, pode ignorar este email com segurança.
@@ -90,16 +90,6 @@ const text = {
   margin: '0 0 24px',
 }
 const link = { color: 'hsl(174, 78%, 26%)', textDecoration: 'underline' }
-const button = {
-  backgroundColor: 'hsl(174, 78%, 26%)',
-  color: '#ffffff',
-  fontSize: '15px',
-  fontWeight: 600,
-  borderRadius: '8px',
-  padding: '14px 28px',
-  textDecoration: 'none',
-  display: 'inline-block',
-}
 const footer = {
   fontSize: '12px',
   color: 'hsl(221, 16%, 60%)',
