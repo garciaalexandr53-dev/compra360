@@ -14,7 +14,7 @@ interface WelcomeProps {
   name?: string
 }
 
-const WelcomeEmail = ({ name }: WelcomeProps) => (
+export const WelcomeEmail = ({ name }: WelcomeProps) => (
   <Html lang="pt-BR" dir="ltr">
     <Head />
     <Preview>Bem-vindo ao {SITE_NAME}!</Preview>

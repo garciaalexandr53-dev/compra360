@@ -6,8 +6,8 @@ import * as React from 'npm:react@18.3.1'
  *
  * O `<Button>` do React Email gera uma `<a>` com `background-color` em inline style.
  * O Outlook (motor Word) ignora `background-color` em `<a>`, então o botão aparece
- * como texto puro. Esta implementação usa uma `<table>` com `bgcolor` no `<td>`
- * (atributo HTML respeitado pelo Outlook), garantindo um bloco preenchido e
+ * como texto puro. Esta implementação usa uma `<table>` com o atributo HTML
+ * `bgcolor` no `<td>` (respeitado pelo Outlook), garantindo um bloco preenchido e
  * clicável em todos os clientes. Clientes modernos honram `border-radius`.
  */
 interface BulletproofButtonProps {
@@ -23,12 +23,12 @@ const FONT_STACK =
   '"Sora", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
 
 export function BulletproofButton({ href, children, label }: BulletproofButtonProps) {
-  const cellStyle: React.CSSProperties = {
+  const cellStyle = {
     backgroundColor: BTN_BG,
     borderRadius: '8px',
-  }
+  } as React.CSSProperties
 
-  const linkStyle: React.CSSProperties = {
+  const linkStyle = {
     backgroundColor: BTN_BG,
     backgroundImage: `linear-gradient(${BTN_BG}, ${BTN_BORDER})`,
     borderBottom: `2px solid ${BTN_BORDER}`,
@@ -40,11 +40,16 @@ export function BulletproofButton({ href, children, label }: BulletproofButtonPr
     fontWeight: 600,
     lineHeight: '120%',
     padding: '14px 32px',
-    textAlign: 'center' as const,
+    textAlign: 'center',
     textDecoration: 'none',
+    // Propriedades mso-* específicas do Outlook (não existem em CSSProperties)
     msoPaddingAlt: '0px',
     msoLineHeightRule: 'exactly',
-  }
+  } as React.CSSProperties
+
+  // `bgcolor` é um atributo HTML legado (lowercase) que o React repassa para o DOM
+  // e que o Outlook honra — diferente de `background-color` em <a>, que é ignorado.
+  const bgcolorAttr = { bgcolor: BTN_BG } as Record<string, string>
 
   return (
     <table
@@ -57,7 +62,7 @@ export function BulletproofButton({ href, children, label }: BulletproofButtonPr
     >
       <tbody>
         <tr>
-          <td align="center" bgColor={BTN_BG} style={cellStyle}>
+          <td align="center" {...bgcolorAttr} style={cellStyle}>
             <a href={href} style={linkStyle} target="_blank" aria-label={label}>
               {children}
             </a>
