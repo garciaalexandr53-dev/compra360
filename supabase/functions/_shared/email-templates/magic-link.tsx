@@ -4,7 +4,6 @@ import * as React from 'npm:react@18.3.1'
 
 import {
   Body,
-  Button,
   Container,
   Head,
   Heading,
@@ -14,6 +13,7 @@ import {
   Section,
   Text,
 } from 'npm:@react-email/components@0.0.22'
+import { BulletproofButton } from '../BulletproofButton.tsx'
 
 interface MagicLinkEmailProps {
   siteName: string
@@ -41,9 +41,9 @@ export const MagicLinkEmail = ({
           alguns minutos.
         </Text>
         <Section style={{ textAlign: 'center' as const }}>
-          <Button style={button} href={confirmationUrl}>
+          <BulletproofButton href={confirmationUrl} label={`Entrar no ${siteName}`}>
             Entrar no {siteName}
-          </Button>
+          </BulletproofButton>
         </Section>
         <Text style={footer}>
           Se você não solicitou este link, pode ignorar este email com
@@ -76,16 +76,6 @@ const text = {
   color: 'hsl(221, 16%, 47%)',
   lineHeight: '1.6',
   margin: '0 0 24px',
-}
-const button = {
-  backgroundColor: 'hsl(174, 78%, 26%)',
-  color: '#ffffff',
-  fontSize: '15px',
-  fontWeight: 600,
-  borderRadius: '8px',
-  padding: '14px 28px',
-  textDecoration: 'none',
-  display: 'inline-block',
 }
 const footer = {
   fontSize: '12px',
