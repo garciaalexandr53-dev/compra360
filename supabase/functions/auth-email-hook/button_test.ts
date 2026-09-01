@@ -2,7 +2,7 @@ import { assertEquals } from 'jsr:@std/assert@0.226.0'
 import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { SignupEmail } from '../_shared/email-templates/signup.tsx'
-import { WelcomeEmailTemplate } from '../_shared/transactional-email-templates/welcome.tsx'
+import { WelcomeEmail } from '../_shared/transactional-email-templates/welcome.tsx'
 
 Deno.test('signup email renders bulletproof button with bgcolor', async () => {
   const html = await renderAsync(
@@ -35,7 +35,7 @@ Deno.test('signup plain text keeps link label and url', async () => {
 
 Deno.test('welcome email renders bulletproof button with bgcolor', async () => {
   const html = await renderAsync(
-    React.createElement(WelcomeEmailTemplate, { name: 'João' })
+    React.createElement(WelcomeEmail, { name: 'João' })
   )
   assertContains(html, 'bgcolor="#0F766C"')
   assertContains(html, 'Acessar o painel')
