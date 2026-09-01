@@ -90,16 +90,6 @@ const text = {
   margin: '0 0 24px',
 }
 const link = { color: 'hsl(174, 78%, 26%)', textDecoration: 'underline' }
-const button = {
-  backgroundColor: 'hsl(174, 78%, 26%)',
-  color: '#ffffff',
-  fontSize: '15px',
-  fontWeight: 600,
-  borderRadius: '8px',
-  padding: '14px 28px',
-  textDecoration: 'none',
-  display: 'inline-block',
-}
 const footer = {
   fontSize: '12px',
   color: 'hsl(221, 16%, 60%)',
