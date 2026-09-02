@@ -107,7 +107,22 @@ export function exportCotacaoToExcel(
     XLSX.utils.book_append_sheet(wb, ws, "Pedidos por fornecedor");
   }
 
+  // Sheet: Itens sem preço (nenhum fornecedor cotou)
+  const semPreco = rows.filter((r) => r.precoUnit == null);
+  if (semPreco.length) {
+    const data: any[][] = [
+      ["Itens sem preço — nenhum fornecedor informou preço, não entraram em nenhum pedido"],
+      [],
+      ["Item", "Embalagem", "Fator", "Quantidade"],
+      ...semPreco.map((r) => [r.nome, r.embalagem, r.fator, r.qtd]),
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws["!cols"] = [{ wch: 40 }, { wch: 14 }, { wch: 8 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, ws, "Itens sem preço");
+  }
+
   // Sheet 3: Todos os preços
+
   const precosData: any[][] = [["Produto", "Fornecedor", "Preço", "Vencedor?"]];
   for (const r of rows) {
     if (!r.allPrecos.length) {
