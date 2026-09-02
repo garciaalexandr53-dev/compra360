@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,30 @@ import CandidatosTab from "@/components/admin/CandidatosTab";
 import { MrrBreakdownCard, GrowthChart, ChurnRiskCard } from "@/components/admin/MetricasExtras";
 
 
+type AdminNavItem = { value: string; label: string; icon: React.ComponentType<{ className?: string }> };
+
+const NAV_GROUPS: { label: string; items: AdminNavItem[] }[] = [
+  { label: "Visão geral", items: [
+    { value: "metricas", label: "Métricas", icon: Activity },
+    { value: "alertas", label: "Alertas", icon: AlertTriangle },
+  ]},
+  { label: "Clientes", items: [
+    { value: "clientes", label: "Clientes", icon: Users },
+    { value: "contatos", label: "Contatos", icon: MessageCircle },
+  ]},
+  { label: "Financeiro", items: [
+    { value: "pagamentos", label: "Pagamentos", icon: CreditCard },
+  ]},
+  { label: "Comunicação", items: [
+    { value: "emails", label: "E-mails", icon: Mail },
+  ]},
+  { label: "Catálogo", items: [
+    { value: "catalogo", label: "Catálogo", icon: Package },
+    { value: "candidatos", label: "Candidatos", icon: PackagePlus },
+    { value: "historico", label: "Histórico", icon: History },
+  ]},
+];
+
 type GlobalMetrics = {
   total_usuarios: number;
   usuarios_7d: number;
@@ -66,7 +90,16 @@ export default function AdminPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("metricas");
+  const [activeTab, setActiveTabRaw] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return window.localStorage.getItem("admin-tab") || "metricas";
+    }
+    return "metricas";
+  });
+  const setActiveTab = (v: string) => {
+    setActiveTabRaw(v);
+    try { window.localStorage.setItem("admin-tab", v); } catch {}
+  };
   const [scrollToSection, setScrollToSection] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filtroPlano, setFiltroPlano] = useState<"todos" | "free" | "business" | "pro">("todos");
