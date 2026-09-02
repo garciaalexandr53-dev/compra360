@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,30 @@ import CandidatosTab from "@/components/admin/CandidatosTab";
 import { MrrBreakdownCard, GrowthChart, ChurnRiskCard } from "@/components/admin/MetricasExtras";
 
 
+type AdminNavItem = { value: string; label: string; icon: React.ComponentType<{ className?: string }> };
+
+const NAV_GROUPS: { label: string; items: AdminNavItem[] }[] = [
+  { label: "Visão geral", items: [
+    { value: "metricas", label: "Métricas", icon: Activity },
+    { value: "alertas", label: "Alertas", icon: AlertTriangle },
+  ]},
+  { label: "Clientes", items: [
+    { value: "clientes", label: "Clientes", icon: Users },
+    { value: "contatos", label: "Contatos", icon: MessageCircle },
+  ]},
+  { label: "Financeiro", items: [
+    { value: "pagamentos", label: "Pagamentos", icon: CreditCard },
+  ]},
+  { label: "Comunicação", items: [
+    { value: "emails", label: "E-mails", icon: Mail },
+  ]},
+  { label: "Catálogo", items: [
+    { value: "catalogo", label: "Catálogo", icon: Package },
+    { value: "candidatos", label: "Candidatos", icon: PackagePlus },
+    { value: "historico", label: "Histórico", icon: History },
+  ]},
+];
+
 type GlobalMetrics = {
   total_usuarios: number;
   usuarios_7d: number;
@@ -66,7 +90,16 @@ export default function AdminPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("metricas");
+  const [activeTab, setActiveTabRaw] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return window.localStorage.getItem("admin-tab") || "metricas";
+    }
+    return "metricas";
+  });
+  const setActiveTab = (v: string) => {
+    setActiveTabRaw(v);
+    try { window.localStorage.setItem("admin-tab", v); } catch {}
+  };
   const [scrollToSection, setScrollToSection] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filtroPlano, setFiltroPlano] = useState<"todos" | "free" | "business" | "pro">("todos");
@@ -358,45 +391,70 @@ export default function AdminPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-3 sm:grid-cols-9 h-auto w-full sm:w-auto sm:inline-flex">
+        <div className="flex gap-6 items-start">
+          {/* Sidebar — desktop */}
+          <aside className="hidden md:block w-56 shrink-0 sticky top-20 self-start">
+            <nav className="space-y-4">
+              {NAV_GROUPS.map((group) => (
+                <div key={group.label}>
+                  <p className="px-2 mb-1 text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-wider">
+                    {group.label}
+                  </p>
+                  <div className="space-y-0.5">
+                    {group.items.map((item) => {
+                      const ativo = activeTab === item.value;
+                      return (
+                        <button
+                          key={item.value}
+                          type="button"
+                          onClick={() => setActiveTab(item.value)}
+                          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm transition-colors ${
+                            ativo
+                              ? "bg-primary/10 text-primary font-medium"
+                              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                          }`}
+                        >
+                          <item.icon className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </nav>
+          </aside>
 
-            <TabsTrigger value="metricas">Métricas</TabsTrigger>
-            <TabsTrigger value="alertas" className="gap-1.5">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              Alertas
-            </TabsTrigger>
-            <TabsTrigger value="clientes">Clientes</TabsTrigger>
-            <TabsTrigger value="pagamentos" className="gap-1.5">
-              <CreditCard className="h-3.5 w-3.5" />
-              Pagamentos
-            </TabsTrigger>
-            <TabsTrigger value="contatos" className="gap-1.5">
-              <MessageCircle className="h-3.5 w-3.5" />
-              Contatos
-            </TabsTrigger>
-            <TabsTrigger value="emails" className="gap-1.5">
-              <Mail className="h-3.5 w-3.5" />
-              E-mails
-            </TabsTrigger>
-            <TabsTrigger value="catalogo" className="gap-1.5">
-              <Package className="h-3.5 w-3.5" />
-              Catálogo
-            </TabsTrigger>
-            <TabsTrigger value="candidatos" className="gap-1.5">
-              <PackagePlus className="h-3.5 w-3.5" />
-              Candidatos
-            </TabsTrigger>
-            <TabsTrigger value="historico" className="gap-1.5">
-              <History className="h-3.5 w-3.5" />
-              Histórico
-            </TabsTrigger>
+          <div className="flex-1 min-w-0 w-full">
+            {/* Chip bar — mobile */}
+            <div className="md:hidden -mx-4 px-4 sticky top-14 z-10 bg-background/95 backdrop-blur border-b mb-3 pt-1 pb-2">
+              <div className="flex gap-1.5 overflow-x-auto">
+                {NAV_GROUPS.flatMap((g) => g.items).map((item) => {
+                  const ativo = activeTab === item.value;
+                  return (
+                    <button
+                      key={item.value}
+                      type="button"
+                      onClick={() => setActiveTab(item.value)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap shrink-0 transition-colors ${
+                        ativo
+                          ? "bg-primary text-primary-foreground font-medium"
+                          : "bg-muted text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <item.icon className="h-3.5 w-3.5" />
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-          </TabsList>
-
-
+            {/* CONTEÚDO */}
+            <section className="min-w-0 space-y-6">
           {/* MÉTRICAS */}
-          <TabsContent value="metricas" className="space-y-6">
+          {activeTab === "metricas" && (
+          <div className="space-y-6">
             {loadingMetrics ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -474,10 +532,12 @@ export default function AdminPage() {
                 </div>
               </>
             ) : null}
-          </TabsContent>
+          </div>
+          )}
 
           {/* ALERTAS */}
-          <TabsContent value="alertas">
+          {activeTab === "alertas" && (
+            <>
             {loadingClientes ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -488,10 +548,12 @@ export default function AdminPage() {
                 onContatar={(c, situacao, canal) => abrirContato(c, situacao, canal)}
               />
             )}
-          </TabsContent>
+            </>
+          )}
 
           {/* CLIENTES */}
-          <TabsContent value="clientes" className="space-y-4">
+          {activeTab === "clientes" && (
+          <div className="space-y-4">
             <div className="space-y-3">
               {/* Busca + contador + exports */}
               <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
@@ -673,15 +735,16 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             )}
-          </TabsContent>
+          </div>
+          )}
 
           {/* PAGAMENTOS */}
-          <TabsContent value="pagamentos">
+          {activeTab === "pagamentos" && (
             <PagamentosTab />
-          </TabsContent>
+          )}
 
           {/* CONTATOS */}
-          <TabsContent value="contatos">
+          {activeTab === "contatos" && (
             <ContatosTab
               clientes={clientes}
               onSelectCliente={(userId) => {
@@ -689,29 +752,31 @@ export default function AdminPage() {
                 if (c) setClienteDetalhe(c);
               }}
             />
-          </TabsContent>
+          )}
 
           {/* E-MAILS */}
-          <TabsContent value="emails">
+          {activeTab === "emails" && (
             <EmailsTab />
-          </TabsContent>
+          )}
 
           {/* CATÁLOGO MESTRE */}
-          <TabsContent value="catalogo">
+          {activeTab === "catalogo" && (
             <CatalogoTab />
-          </TabsContent>
+          )}
 
           {/* CANDIDATOS AO CATÁLOGO MESTRE */}
-          <TabsContent value="candidatos">
+          {activeTab === "candidatos" && (
             <CandidatosTab />
-          </TabsContent>
+          )}
 
           {/* HISTÓRICO DE ALTERAÇÕES DO CATÁLOGO */}
 
-          <TabsContent value="historico">
+          {activeTab === "historico" && (
             <HistoricoCatalogoTab />
-          </TabsContent>
-        </Tabs>
+          )}
+            </section>
+          </div>
+        </div>
 
       </main>
 
