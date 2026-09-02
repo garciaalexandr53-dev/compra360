@@ -1426,9 +1426,17 @@ const HistoricoPage = () => {
                           <div className="p-3 md:p-4 space-y-4">
                             {/* Tabela principal */}
                             <div>
-                              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-1">
-                                Resumo do pedido
+                              <div className="flex flex-wrap items-center justify-between gap-2 mb-2 px-1">
+                                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                  Resumo do pedido
+                                </div>
+                                {itensSemPreco.length > 0 && (
+                                  <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-2 py-0.5">
+                                    {itensSemPreco.length} sem preço
+                                  </span>
+                                )}
                               </div>
+
                               <div className="border rounded-lg overflow-hidden bg-background">
                                 <ScrollArea className="max-h-[460px]">
                                   <table className="w-full text-xs md:text-sm">
