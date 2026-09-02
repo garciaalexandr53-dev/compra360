@@ -532,10 +532,11 @@ export default function AdminPage() {
                 </div>
               </>
             ) : null}
-          </TabsContent>
+          </div>
+          )}
 
           {/* ALERTAS */}
-          <TabsContent value="alertas">
+          {activeTab === "alertas" && (
             {loadingClientes ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -546,10 +547,11 @@ export default function AdminPage() {
                 onContatar={(c, situacao, canal) => abrirContato(c, situacao, canal)}
               />
             )}
-          </TabsContent>
+          )}
 
           {/* CLIENTES */}
-          <TabsContent value="clientes" className="space-y-4">
+          {activeTab === "clientes" && (
+          <div className="space-y-4">
             <div className="space-y-3">
               {/* Busca + contador + exports */}
               <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
@@ -731,15 +733,16 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             )}
-          </TabsContent>
+          </div>
+          )}
 
           {/* PAGAMENTOS */}
-          <TabsContent value="pagamentos">
+          {activeTab === "pagamentos" && (
             <PagamentosTab />
-          </TabsContent>
+          )}
 
           {/* CONTATOS */}
-          <TabsContent value="contatos">
+          {activeTab === "contatos" && (
             <ContatosTab
               clientes={clientes}
               onSelectCliente={(userId) => {
@@ -747,29 +750,31 @@ export default function AdminPage() {
                 if (c) setClienteDetalhe(c);
               }}
             />
-          </TabsContent>
+          )}
 
           {/* E-MAILS */}
-          <TabsContent value="emails">
+          {activeTab === "emails" && (
             <EmailsTab />
-          </TabsContent>
+          )}
 
           {/* CATÁLOGO MESTRE */}
-          <TabsContent value="catalogo">
+          {activeTab === "catalogo" && (
             <CatalogoTab />
-          </TabsContent>
+          )}
 
           {/* CANDIDATOS AO CATÁLOGO MESTRE */}
-          <TabsContent value="candidatos">
+          {activeTab === "candidatos" && (
             <CandidatosTab />
-          </TabsContent>
+          )}
 
           {/* HISTÓRICO DE ALTERAÇÕES DO CATÁLOGO */}
 
-          <TabsContent value="historico">
+          {activeTab === "historico" && (
             <HistoricoCatalogoTab />
-          </TabsContent>
-        </Tabs>
+          )}
+            </section>
+          </div>
+        </div>
 
       </main>
 
