@@ -107,7 +107,22 @@ export function exportCotacaoToExcel(
     XLSX.utils.book_append_sheet(wb, ws, "Pedidos por fornecedor");
   }
 
+  // Sheet: Itens sem preço (nenhum fornecedor cotou)
+  const semPreco = rows.filter((r) => r.precoUnit == null);
+  if (semPreco.length) {
+    const data: any[][] = [
+      ["Itens sem preço — nenhum fornecedor informou preço, não entraram em nenhum pedido"],
+      [],
+      ["Item", "Embalagem", "Fator", "Quantidade"],
+      ...semPreco.map((r) => [r.nome, r.embalagem, r.fator, r.qtd]),
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws["!cols"] = [{ wch: 40 }, { wch: 14 }, { wch: 8 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, ws, "Itens sem preço");
+  }
+
   // Sheet 3: Todos os preços
+
   const precosData: any[][] = [["Produto", "Fornecedor", "Preço", "Vencedor?"]];
   for (const r of rows) {
     if (!r.allPrecos.length) {
@@ -241,7 +256,40 @@ export async function exportCotacaoToPdf(
     }
   }
 
+  // Itens sem preço
+  const semPrecoPdf = rows.filter((r) => r.precoUnit == null);
+  if (semPrecoPdf.length) {
+    let cursor = ((doc as any).lastAutoTable?.finalY ?? y) + 18;
+    if (cursor > 700) {
+      doc.addPage();
+      cursor = 40;
+    }
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Itens sem preço (${semPrecoPdf.length})`, 36, cursor);
+    cursor += 12;
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(110);
+    doc.text(
+      "Nenhum fornecedor informou preço para estes itens, então eles não entraram em nenhum pedido.",
+      36,
+      cursor
+    );
+    doc.setTextColor(0);
+    autoTable(doc, {
+      startY: cursor + 8,
+      head: [["Item", "Embal.", "Fator", "Qtd"]],
+      body: semPrecoPdf.map((r) => [r.nome, r.embalagem, `×${r.fator}`, String(r.qtd)]),
+      styles: { fontSize: 8.5, cellPadding: 3.5 },
+      headStyles: { fillColor: [150, 70, 40], textColor: 255 },
+      columnStyles: { 0: { cellWidth: 260 }, 2: { halign: "center" }, 3: { halign: "center" } },
+      margin: { left: 36, right: 36 },
+    });
+  }
+
   // Footer page numbers
+
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
@@ -284,6 +332,16 @@ export function printCotacao(
       <div class="pf-h"><span>${escapeHtml(g.fornecedor)}</span><span class="mono b">${formatBRL(g.total)}</span></div>
       <ul>${g.itens.map((it) => `<li><span>${escapeHtml(it.nome)} <small>(${it.qtd})</small></span><span class="mono">${formatBRL(it.total || 0)}</span></li>`).join("")}</ul>
     </div>`).join("");
+
+  const semPrecoPrint = rows.filter((r) => r.precoUnit == null);
+  const semPrecoHtml = semPrecoPrint.map((r) => `
+    <tr>
+      <td>${escapeHtml(r.nome)}</td>
+      <td class="c">${escapeHtml(r.embalagem)}</td>
+      <td class="c">×${r.fator}</td>
+      <td class="c">${r.qtd}</td>
+    </tr>`).join("");
+
 
   w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"/>
 <title>${escapeHtml(meta.nome)} — Compra360</title>
@@ -334,6 +392,14 @@ export function printCotacao(
   </table>
 
   ${pedidos.length ? `<h2>Pedidos por fornecedor</h2>${pedidosHtml}` : ""}
+
+  ${semPrecoPrint.length ? `<h2>Itens sem preço (${semPrecoPrint.length})</h2>
+  <div class="meta" style="margin-bottom:6px">Nenhum fornecedor informou preço para estes itens, então eles não entraram em nenhum pedido.</div>
+  <table>
+    <thead><tr><th>Item</th><th>Embal.</th><th>Fator</th><th>Qtd</th></tr></thead>
+    <tbody>${semPrecoHtml}</tbody>
+  </table>` : ""}
+
 
   <script>window.onload=()=>{setTimeout(()=>window.print(),300)}</script>
 </body></html>`);
