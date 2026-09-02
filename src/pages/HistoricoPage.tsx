@@ -720,6 +720,9 @@ const HistoricoPage = () => {
   const tableRows = expandedCotacao ? buildTableRows() : [];
   const pedidosByFornecedor = expandedCotacao ? buildPedidosByFornecedor() : [];
   const totalGeral = tableRows.reduce((acc, r) => acc + (r.total || 0), 0);
+  // Items nobody priced: they never entered any pedido.
+  const itensSemPreco = tableRows.filter((r) => r.precoUnit == null);
+
 
   // ---------- BATCH detalhes para Insights / Consolidado ----------
   // Loaded only when the user opens the Insights tab or enables Selection mode,
