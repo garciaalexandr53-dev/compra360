@@ -300,55 +300,58 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
         </ScrollArea>
 
         {/* AÇÕES */}
-        <div className="border-t bg-card px-5 py-3 flex flex-wrap gap-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="border-t bg-card px-5 py-3 grid grid-cols-2 sm:flex sm:flex-wrap gap-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <Button
             size="sm"
             variant="outline"
-            className="flex-1 min-w-[120px]"
+            className="min-w-0 sm:flex-1"
             onClick={() => onContatar(cliente, "whatsapp")}
             disabled={!whatsappOk}
             title={whatsappOk ? "Enviar WhatsApp" : "Sem número válido"}
           >
-            <MessageCircle className="h-4 w-4 text-emerald-600" />
-            WhatsApp
+            <MessageCircle className="h-4 w-4 text-emerald-600 shrink-0" />
+            <span className="truncate">WhatsApp</span>
           </Button>
           <Button
             size="sm"
             variant="outline"
-            className="flex-1 min-w-[120px]"
+            className="min-w-0 sm:flex-1"
             onClick={() => onContatar(cliente, "email")}
             disabled={!cliente.email}
           >
-            <Mail className="h-4 w-4 text-blue-600" />
-            Email
+            <Mail className="h-4 w-4 text-blue-600 shrink-0" />
+            <span className="truncate">Email</span>
           </Button>
           <Button
             size="sm"
             variant="default"
-            className="flex-1 min-w-[140px]"
+            className="min-w-0 sm:flex-1"
             onClick={() => onAlterarPlano(cliente)}
           >
-            <Pencil className="h-4 w-4" />
-            Alterar plano
+            <Pencil className="h-4 w-4 shrink-0" />
+            <span className="truncate">Alterar plano</span>
           </Button>
           <Button
             size="sm"
             variant="outline"
-            className="flex-1 min-w-[180px]"
+            className="min-w-0 sm:flex-1"
             onClick={() => setPagamentoOpen(true)}
+            title="Registrar pagamento manual"
+            aria-label="Registrar pagamento manual"
           >
-            <HandCoins className="h-4 w-4 text-primary" />
-            Registrar pagamento manual
+            <HandCoins className="h-4 w-4 text-primary shrink-0" />
+            <span className="truncate sm:hidden">Pagamento manual</span>
+            <span className="hidden sm:inline truncate">Registrar pagamento manual</span>
           </Button>
           {onExcluir && (
             <Button
               size="sm"
               variant="outline"
-              className="flex-1 min-w-[140px] text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+              className="col-span-2 min-w-0 sm:flex-1 text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
               onClick={() => onExcluir(cliente)}
             >
-              <Trash2 className="h-4 w-4" />
-              Excluir cliente
+              <Trash2 className="h-4 w-4 shrink-0" />
+              <span className="truncate">Excluir cliente</span>
             </Button>
           )}
         </div>
