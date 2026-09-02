@@ -383,6 +383,14 @@ export function printCotacao(
 
   ${pedidos.length ? `<h2>Pedidos por fornecedor</h2>${pedidosHtml}` : ""}
 
+  ${semPrecoPrint.length ? `<h2>Itens sem preço (${semPrecoPrint.length})</h2>
+  <div class="meta" style="margin-bottom:6px">Nenhum fornecedor informou preço para estes itens, então eles não entraram em nenhum pedido.</div>
+  <table>
+    <thead><tr><th>Item</th><th>Embal.</th><th>Fator</th><th>Qtd</th></tr></thead>
+    <tbody>${semPrecoHtml}</tbody>
+  </table>` : ""}
+
+
   <script>window.onload=()=>{setTimeout(()=>window.print(),300)}</script>
 </body></html>`);
   w.document.close();
