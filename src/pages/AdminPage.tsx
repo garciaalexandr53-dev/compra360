@@ -537,6 +537,7 @@ export default function AdminPage() {
 
           {/* ALERTAS */}
           {activeTab === "alertas" && (
+            <>
             {loadingClientes ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -547,6 +548,7 @@ export default function AdminPage() {
                 onContatar={(c, situacao, canal) => abrirContato(c, situacao, canal)}
               />
             )}
+            </>
           )}
 
           {/* CLIENTES */}
