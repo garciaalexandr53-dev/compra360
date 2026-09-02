@@ -1,43 +1,54 @@
-# Itens sem preço: tornar visíveis e listáveis
+# 1. Correção urgente: relatório da cotação perde preços (Rexona Active Emotion)
 
-## Por que você não encontrou
+## O que aconteceu (verificado no banco)
 
-Hoje (verificado no código) os itens sem preço só aparecem em três lugares, todos discretos ou fora do caminho:
+O item **Desodorante Rexona Aerosol Active Emotion** da cotação de 02/09 **recebeu 8 preços** (DEYCON R$ 13,25 até MARTINS R$ 15,57, mais um R$ 0,00 do WALLMART). Ele **não** é um item sem preço.
 
-- um botão pequeno "Sem preço (N)" na barra de filtros dentro da matriz da cotação (`CotacaoPage`);
-- um bloco na tela de conclusão, que só aparece logo depois de enviar todos os pedidos;
-- um banner no Painel, só depois de criar a próxima cotação.
+O problema está no relatório: a cotação de 02/09 tem **235 itens e 1.192 linhas de preço**, e a consulta que monta o detalhe/relatório da cotação no Histórico busca todos os preços de uma vez, sem paginação. O backend devolve no máximo **1.000 linhas por consulta** — as ~192 linhas restantes ficam de fora, e os itens que caíram nesse corte aparecem com "—" no fornecedor, no preço e no total.
 
-Nas telas onde você realmente fecha a compra — **Análise de preços**, **Resumo** e **Pedidos** — não existe nenhuma menção a itens sem preço. E em nenhum ponto existe uma lista completa dos nomes que possa ser lida, exportada ou enviada. Com 50+ itens, o filtro na matriz também não ajuda: ele apenas esconde as outras linhas.
+Isso explica exatamente o que você viu: a aba **Buscar Item** usa uma consulta paginada e em blocos (mostra os preços corretamente), enquanto o **relatório/PDF da cotação** usa a consulta sem paginação (mostra "—").
+
+Outros itens afetados na mesma cotação, todos com preço no banco e "—" no relatório: Goiabada Lata 600g (4 preços), Mistura Condensada Mococa 395g (9 preços), Rexona Clinical M Clean (5), Red Aplle Acropole 55g (2), Colgate Lum White Carvão 60g (7), Palha de Aço Brillo (3), Aperol 750ml (1). Consequência: o **TOTAL GERAL do relatório está subestimado**.
+
+## Correção
+
+- A consulta de detalhe da cotação passa a carregar os preços **em blocos de ~200 itens, com paginação completa** — exatamente o mesmo padrão já usado na aba Buscar Item e na lista de cotações. O mesmo tratamento vale para a leitura dos itens da cotação, para não haver corte quando uma cotação passar de 1.000 linhas.
+- Nada muda na aparência do relatório: mesmas colunas, mesma ordem, mesmo Excel/PDF/impressão. O que muda é que os itens deixam de aparecer como "—" e o total volta a fechar.
+- Verificar depois da correção, na cotação de 02/09: Rexona Active Emotion sai com DEYCON R$ 13,25, e o TOTAL GERAL sobe em relação aos R$ 25.831,21 exibidos hoje.
+- Itens realmente sem nenhum preço (ex.: Querosene Petrus 1lt, Axe Gold Temptation) continuam corretamente como "—".
+
+### Detalhes técnicos
+
+- `src/pages/HistoricoPage.tsx`, query `cotacao-details-v2`: trocar o `supabase.from("precos").select(...).in("cotacao_produto_id", cpIds)` único por laço em blocos com `fetchAllRows` (`src/lib/supabaseHelpers.ts`), mantendo `*, fornecedores(id, nome)`; idem para `cotacao_produtos`.
+- Sem migração de banco, sem alteração em `historicoExports.ts`, sem mudança de layout.
+
+# 2. Depois: itens sem preço mais visíveis
+
+## Por que hoje é difícil achar
+
+Os itens sem preço só aparecem em três lugares discretos: o chip "Sem preço (N)" dentro da matriz da cotação, um bloco na tela de conclusão e um banner no Painel após criar a próxima cotação. Nas telas de fechamento (Análise, Resumo, Pedidos) não há nenhuma menção, e não existe uma lista completa que possa ser lida ou exportada.
 
 ## O que será feito
 
-### 1. Uma lista de verdade (novo modal "Itens sem preço")
+### Um modal único "Itens sem preço"
 
-Um único modal reutilizável, com:
-- título com a contagem ("52 itens sem preço nesta cotação");
-- explicação em uma linha: nenhum fornecedor respondeu preço para estes itens; eles não entram nos pedidos e são levados automaticamente para a próxima cotação;
-- lista completa e rolável com nome, quantidade e embalagem de cada item;
-- campo de busca dentro da lista (útil com 50+ itens);
-- botões **Copiar lista**, **Exportar Excel** e **Ver na cotação** (abre a matriz já filtrada).
+- título com a contagem;
+- explicação: nenhum fornecedor respondeu; não entram nos pedidos e são levados para a próxima cotação;
+- lista completa e rolável (nome, quantidade, embalagem) com busca interna;
+- botões **Copiar lista**, **Exportar Excel** e **Ver na cotação** (matriz já filtrada).
 
-### 2. Pontos de acesso claros
+### Pontos de acesso
 
-- **Análise de preços**: card de alerta no topo, ao lado do total da compra — "52 itens sem preço" com botão "Ver itens".
-- **Resumo**: mesma linha de alerta, com o mesmo botão.
-- **Pedidos**: aviso acima da lista de pedidos, deixando claro que esses itens não estão em nenhum pedido.
-- **Cotação (matriz)**: o chip "Sem preço (52)" continua filtrando, e ganha ao lado um link "ver lista" que abre o modal.
-- **Tela de conclusão**: o bloco atual passa a ter "Ver todos os 52 itens" abrindo o mesmo modal, em vez de mostrar só os 8 primeiros.
+- **Análise de preços** e **Resumo**: alerta no topo com botão "Ver itens".
+- **Pedidos**: aviso deixando claro que esses itens não estão em nenhum pedido.
+- **Cotação (matriz)**: o chip "Sem preço (N)" ganha ao lado um link "ver lista".
+- **Tela de conclusão**: "Ver todos os N itens" em vez de listar só os 8 primeiros.
+- **Histórico**: mesma contagem e mesmo modal na cotação finalizada.
 
-### 3. Histórico
+### Detalhes técnicos
 
-Na cotação já finalizada, dentro do Histórico, a mesma contagem e o mesmo modal — para você conseguir revisar depois, como agora.
-
-## Detalhes técnicos
-
-- Critério único de "sem preço" já existente: nenhuma linha em `precos` com `preco > 0` para o `cotacao_produto_id` (`filtrarItensSemPreco` em `src/lib/itensSemPreco.ts`). Nenhuma regra nova, nenhuma migração de banco.
-- Novo componente `src/components/cotacao/ItensSemPrecoDialog.tsx` (lista + busca + copiar + exportar), consumido por `AnalisePage`, `ResumoPage`, `PedidosPage`, `CotacaoPage`, `ConclusaoScreen` e `HistoricoPage`.
-- Exportação Excel via o `xlsx` já usado no projeto; colunas: Produto, EAN, Quantidade, Embalagem.
-- Onde a página já carrega `cotacao_produtos` e `precos`, a lista é derivada em memória (sem query nova). No Histórico, reaproveita o carregamento em lote já existente.
-- Nenhuma alteração no cálculo de economia, nos cenários, nos pedidos ou no carregamento automático dos itens para a próxima cotação.
+- Critério único já existente: nenhuma linha em `precos` com `preco > 0` (`filtrarItensSemPreco` em `src/lib/itensSemPreco.ts`). Sem migração.
+- Novo `src/components/cotacao/ItensSemPrecoDialog.tsx`, consumido por `AnalisePage`, `ResumoPage`, `PedidosPage`, `CotacaoPage`, `ConclusaoScreen` e `HistoricoPage`.
+- Exportação com o `xlsx` já usado no projeto: Produto, EAN, Quantidade, Embalagem.
+- Listas derivadas em memória onde a página já carrega `cotacao_produtos` e `precos`.
 - Layout verificado em 360px e desktop.
