@@ -333,6 +333,16 @@ export function printCotacao(
       <ul>${g.itens.map((it) => `<li><span>${escapeHtml(it.nome)} <small>(${it.qtd})</small></span><span class="mono">${formatBRL(it.total || 0)}</span></li>`).join("")}</ul>
     </div>`).join("");
 
+  const semPrecoPrint = rows.filter((r) => r.precoUnit == null);
+  const semPrecoHtml = semPrecoPrint.map((r) => `
+    <tr>
+      <td>${escapeHtml(r.nome)}</td>
+      <td class="c">${escapeHtml(r.embalagem)}</td>
+      <td class="c">×${r.fator}</td>
+      <td class="c">${r.qtd}</td>
+    </tr>`).join("");
+
+
   w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"/>
 <title>${escapeHtml(meta.nome)} — Compra360</title>
 <style>
