@@ -256,7 +256,40 @@ export async function exportCotacaoToPdf(
     }
   }
 
+  // Itens sem preço
+  const semPrecoPdf = rows.filter((r) => r.precoUnit == null);
+  if (semPrecoPdf.length) {
+    let cursor = ((doc as any).lastAutoTable?.finalY ?? y) + 18;
+    if (cursor > 700) {
+      doc.addPage();
+      cursor = 40;
+    }
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Itens sem preço (${semPrecoPdf.length})`, 36, cursor);
+    cursor += 12;
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(110);
+    doc.text(
+      "Nenhum fornecedor informou preço para estes itens, então eles não entraram em nenhum pedido.",
+      36,
+      cursor
+    );
+    doc.setTextColor(0);
+    autoTable(doc, {
+      startY: cursor + 8,
+      head: [["Item", "Embal.", "Fator", "Qtd"]],
+      body: semPrecoPdf.map((r) => [r.nome, r.embalagem, `×${r.fator}`, String(r.qtd)]),
+      styles: { fontSize: 8.5, cellPadding: 3.5 },
+      headStyles: { fillColor: [150, 70, 40], textColor: 255 },
+      columnStyles: { 0: { cellWidth: 260 }, 2: { halign: "center" }, 3: { halign: "center" } },
+      margin: { left: 36, right: 36 },
+    });
+  }
+
   // Footer page numbers
+
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
