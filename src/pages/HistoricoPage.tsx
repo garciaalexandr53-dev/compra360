@@ -505,20 +505,25 @@ const HistoricoPage = () => {
     queryKey: ["cotacao-details-v2", expandedCotacao],
     enabled: !!expandedCotacao,
     queryFn: async () => {
-      const { data: cps, error: cpErr } = await supabase
-        .from("cotacao_produtos")
-        .select("*, produtos(nome, embalagem)")
-        .eq("cotacao_id", expandedCotacao!);
-      if (cpErr) throw cpErr;
+      // Paginated: a cotação can exceed the 1000-row cap on items and prices.
+      const cps = await fetchAllRows<any>(
+        "cotacao_produtos",
+        "*, produtos(nome, embalagem)",
+        (q) => q.eq("cotacao_id", expandedCotacao!),
+      );
 
       const cpIds = (cps || []).map((cp: any) => cp.id);
-      let precos: any[] = [];
-      if (cpIds.length) {
-        const { data: p } = await supabase
-          .from("precos")
-          .select("*, fornecedores(id, nome)")
-          .in("cotacao_produto_id", cpIds);
-        precos = p || [];
+      // Chunk the id list to avoid overly long request URLs, and paginate each chunk.
+      const CHUNK = 200;
+      const precos: any[] = [];
+      for (let i = 0; i < cpIds.length; i += CHUNK) {
+        const slice = cpIds.slice(i, i + CHUNK);
+        const rows = await fetchAllRows<any>(
+          "precos",
+          "*, fornecedores(id, nome)",
+          (q) => q.in("cotacao_produto_id", slice),
+        );
+        precos.push(...rows);
       }
 
       const { data: pedidos } = await supabase
@@ -527,6 +532,7 @@ const HistoricoPage = () => {
         .eq("cotacao_id", expandedCotacao!);
 
       return { produtos: cps || [], precos, pedidos: pedidos || [] };
+
     },
   });
 
