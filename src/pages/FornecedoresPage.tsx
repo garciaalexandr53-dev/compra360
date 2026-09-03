@@ -3,6 +3,7 @@ import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchPrecosByCpIds } from "@/lib/supabaseHelpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -87,7 +88,7 @@ const FornecedoresPage = () => {
       const { data: cps } = await supabase.from("cotacao_produtos").select("id").eq("cotacao_id", cotacaoAtiva!.id);
       if (!cps?.length) return new Set<string>();
       const cpIds = cps.map((cp) => cp.id);
-      const { data: precos } = await supabase.from("precos").select("fornecedor_id").in("cotacao_produto_id", cpIds).not("preco", "is", null);
+      const precos = await fetchPrecosByCpIds<{ fornecedor_id: string }>(cpIds, "fornecedor_id", (q) => q.not("preco", "is", null));
       return new Set((precos || []).map((p) => p.fornecedor_id));
     },
   });
@@ -99,7 +100,7 @@ const FornecedoresPage = () => {
       const { data: cps } = await supabase.from("cotacao_produtos").select("id").eq("cotacao_id", cotacaoAtiva!.id);
       if (!cps?.length) return {};
       const cpIds = cps.map((cp) => cp.id);
-      const { data: precos } = await supabase.from("precos").select("fornecedor_id").in("cotacao_produto_id", cpIds).not("preco", "is", null);
+      const precos = await fetchPrecosByCpIds<{ fornecedor_id: string }>(cpIds, "fornecedor_id", (q) => q.not("preco", "is", null));
       const counts: Record<string, number> = {};
       (precos || []).forEach((p) => { counts[p.fornecedor_id] = (counts[p.fornecedor_id] || 0) + 1; });
       return counts;

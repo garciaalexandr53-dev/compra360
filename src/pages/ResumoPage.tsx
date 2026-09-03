@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchPrecosByCpIds } from "@/lib/supabaseHelpers";
 import { formatBRL } from "@/lib/format";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
@@ -73,9 +74,7 @@ const ResumoPage = () => {
     queryFn: async () => {
       const cpIds = cotacaoProdutos.map((cp: any) => cp.id);
       if (!cpIds.length) return [];
-      const { data, error } = await supabase.from("precos").select("*").in("cotacao_produto_id", cpIds);
-      if (error) throw error;
-      return data || [];
+      return await fetchPrecosByCpIds<{ id: string; cotacao_produto_id: string; fornecedor_id: string; preco: number | null }>(cpIds);
     },
   });
 

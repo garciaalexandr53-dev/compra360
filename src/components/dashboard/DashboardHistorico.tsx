@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchPrecosByCpIds } from "@/lib/supabaseHelpers";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronDown, ChevronUp, History, Trophy, MessageSquare, Star } from "lucide-react";
@@ -31,7 +32,7 @@ const DashboardHistorico = () => {
       const { data: cps } = await supabase.from("cotacao_produtos").select("id, cotacao_id").in("cotacao_id", cotIds);
       if (!cps?.length) return null;
       const cpIds = cps.map(cp => cp.id);
-      const { data: precos } = await supabase.from("precos").select("cotacao_produto_id, fornecedor_id, preco").in("cotacao_produto_id", cpIds).not("preco", "is", null);
+      const precos = await fetchPrecosByCpIds<{ cotacao_produto_id: string; fornecedor_id: string; preco: number | null }>(cpIds, "cotacao_produto_id, fornecedor_id, preco", (q) => q.not("preco", "is", null));
       if (!precos?.length) return null;
       const byCP: Record<string, { fornecedor_id: string; preco: number }[]> = {};
       for (const p of precos) {
@@ -62,7 +63,7 @@ const DashboardHistorico = () => {
         const { data: cps } = await supabase.from("cotacao_produtos").select("id").eq("cotacao_id", cot.id);
         if (!cps?.length) continue;
         const cpIds = cps.map(cp => cp.id);
-        const { data: precos } = await supabase.from("precos").select("fornecedor_id").in("cotacao_produto_id", cpIds).not("preco", "is", null);
+        const precos = await fetchPrecosByCpIds<{ fornecedor_id: string }>(cpIds, "fornecedor_id", (q) => q.not("preco", "is", null));
         if (precos) totalRespondentes += new Set(precos.map(p => p.fornecedor_id)).size;
       }
       return (totalRespondentes / cots.length).toFixed(1);
