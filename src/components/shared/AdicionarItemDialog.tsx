@@ -86,6 +86,7 @@ export const AdicionarItemDialog = ({
   const handleEmbalagemChange = (sigla: string) => {
     setEmbalagem(sigla);
     setFator(String(sigla === padrao.embalagem ? padrao.fator : fatorPadraoDe(sigla)));
+    setEmbalagemAberta(false);
   };
 
   const voltarAoPadrao = () => {
