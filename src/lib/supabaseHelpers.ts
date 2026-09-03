@@ -35,6 +35,50 @@ export async function fetchAllRows<T = Record<string, unknown>>(
 }
 
 /**
+ * Fetches rows from `precos` for a list of cotacao_produto ids.
+ * Chunks the ids (short URLs) and paginates each chunk (no 1000-row cap).
+ */
+export async function fetchPrecosByCpIds<T = Record<string, unknown>>(
+  cpIds: string[],
+  selectColumns = "*",
+  extraFilters?: (query: any) => any,
+  chunkSize = 200
+): Promise<T[]> {
+  if (!cpIds.length) return [];
+  const out: T[] = [];
+  for (let i = 0; i < cpIds.length; i += chunkSize) {
+    const chunk = cpIds.slice(i, i + chunkSize);
+    const rows = await fetchAllRows<T>("precos", selectColumns, (q) => {
+      const withIn = q.in("cotacao_produto_id", chunk);
+      return extraFilters ? extraFilters(withIn) : withIn;
+    });
+    out.push(...rows);
+  }
+  return out;
+}
+
+/**
+ * Fetches rows from `cotacao_produtos` for one or more cotação ids, paginated.
+ */
+export async function fetchCotacaoProdutos<T = Record<string, unknown>>(
+  cotacaoIds: string[],
+  selectColumns = "*",
+  chunkSize = 200
+): Promise<T[]> {
+  if (!cotacaoIds.length) return [];
+  const out: T[] = [];
+  for (let i = 0; i < cotacaoIds.length; i += chunkSize) {
+    const chunk = cotacaoIds.slice(i, i + chunkSize);
+    const rows = await fetchAllRows<T>("cotacao_produtos", selectColumns, (q) =>
+      q.in("cotacao_id", chunk)
+    );
+    out.push(...rows);
+  }
+  return out;
+}
+
+
+/**
  * Fetches all product names for duplicate checking.
  * Returns a Set of lowercase trimmed names.
  */
