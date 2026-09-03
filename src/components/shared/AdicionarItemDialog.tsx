@@ -180,23 +180,45 @@ export const AdicionarItemDialog = ({
 
         {/* 2. Embalagem */}
         <div className="space-y-2">
-          <label className="text-sm font-medium">Embalagem</label>
-          <div className="flex flex-wrap gap-2">
-            {EMBALAGENS_DIALOG.map((emb) => (
+          <div className="flex items-center justify-between gap-2">
+            <label className="text-sm font-medium">Embalagem</label>
+            {!embalagemAberta && (
               <button
-                key={emb}
                 type="button"
-                onClick={() => handleEmbalagemChange(emb)}
-                className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                  embalagem === emb
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "border-border text-muted-foreground hover:border-primary/50"
-                }`}
+                onClick={() => setEmbalagemAberta(true)}
+                className="text-xs font-medium text-primary underline underline-offset-2"
               >
-                {emb}
+                Alterar
               </button>
-            ))}
+            )}
           </div>
+
+          {!embalagemAberta ? (
+            <button
+              type="button"
+              onClick={() => setEmbalagemAberta(true)}
+              className="px-3 py-1.5 rounded-full text-sm border bg-primary text-primary-foreground border-primary"
+            >
+              {embalagem}
+            </button>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {EMBALAGENS_DIALOG.map((emb) => (
+                <button
+                  key={emb}
+                  type="button"
+                  onClick={() => handleEmbalagemChange(emb)}
+                  className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                    embalagem === emb
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border text-muted-foreground hover:border-primary/50"
+                  }`}
+                >
+                  {emb}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 3. Fator */}
