@@ -60,6 +60,7 @@ export const AdicionarItemDialog = ({
   quantidadeInicial = 1,
   badge = null,
   origemPadrao = "cadastro",
+  ultimaCompra = null,
 }: AdicionarItemDialogProps) => {
   const open = !!produto;
   const [embalagem, setEmbalagem] = useState<string>("UNI");
