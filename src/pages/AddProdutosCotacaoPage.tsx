@@ -60,6 +60,14 @@ const AddProdutosCotacaoPage = () => {
     ean?: string | null;
   } | null>(null);
 
+  const { ultimaCompra: ultimaCompraAdd } = useUltimaCompra({
+    lojaId: lojaAtiva?.id ?? null,
+    catalogoMestreId: dialogItem?.catalogoMestreId ?? null,
+    ean: dialogItem?.ean ?? null,
+    nome: dialogItem?.nome ?? null,
+    enabled: !!dialogItem,
+  });
+
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
 

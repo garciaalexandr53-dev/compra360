@@ -105,6 +105,15 @@ const ProdutosPage = () => {
   // Diálogo unificado — carrega ProdutoHibrido (local ou catálogo) + metadados de exibição
   const [dialogState, setDialogState] = useState<{ produto: ProdutoHibrido; subtitulo?: string | null } | null>(null);
 
+  const { ultimaCompra: ultimaCompraProdutos } = useUltimaCompra({
+    lojaId: lojaAtiva?.id ?? null,
+    catalogoMestreId:
+      dialogState?.produto.fonte === "catalogo" ? dialogState.produto.id : null,
+    ean: dialogState?.produto.ean ?? null,
+    nome: dialogState?.produto.nome ?? null,
+    enabled: !!dialogState,
+  });
+
 
   // Sheet de opções do produto (editar / excluir)
   const [sheetProduto, setSheetProduto] = useState<Produto | null>(null);
