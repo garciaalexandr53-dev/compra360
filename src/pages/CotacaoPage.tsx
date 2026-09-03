@@ -788,11 +788,11 @@ const CotacaoPage = () => {
       await queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
       await queryClient.invalidateQueries({ queryKey: ["precos"] });
       toast.success(
-        `${pendingIds.length} fornecedor(es) removido(s) da cotação. Você já pode fechar.`
+        `${pendingIds.length} fornecedor(es) removido(s). Seguindo para a análise da cotação.`
       );
       setSkipPendingOpen(false);
-      // Abre o modal de fechar/nova cotação
-      setNovaCotacaoOpen(true);
+      // Segue para a próxima etapa do fluxo (análise)
+      navigate("/analise");
     } catch (e: any) {
       toast.error(e.message || "Erro ao remover fornecedores pendentes");
     } finally {
@@ -905,9 +905,9 @@ const CotacaoPage = () => {
             size="sm"
             variant="outline"
             className="text-xs h-7 border-green-500/40 text-green-700 dark:text-green-300 hover:bg-green-500/10"
-            onClick={() => setNovaCotacaoOpen(true)}
+            onClick={() => navigate("/analise")}
           >
-            Fechar agora
+            Fechar e analisar
           </Button>
         </div>
       )}
