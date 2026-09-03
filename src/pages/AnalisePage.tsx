@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchPrecosByCpIds } from "@/lib/supabaseHelpers";
 import { formatBRL, formatNumber, buildWhatsAppUrl } from "@/lib/format";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
@@ -123,7 +124,7 @@ const AnalisePage = () => {
     queryFn: async () => {
       const cpIds = cotacaoProdutos.map((cp: any) => cp.id);
       if (!cpIds.length) return [];
-      const { data, error } = await supabase.from("precos").select("*").in("cotacao_produto_id", cpIds);
+      const data = await fetchPrecosByCpIds<Preco>(cpIds);
       if (error) throw error;
       return data || [];
     },

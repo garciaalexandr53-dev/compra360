@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchPrecosByCpIds } from "@/lib/supabaseHelpers";
 import { formatBRL, formatNumber, formatDate, buildWhatsAppUrl } from "@/lib/format";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -89,7 +90,7 @@ const PedidosPage = () => {
     queryFn: async () => {
       const cpIds = cotacaoProdutos.map((cp: any) => cp.id);
       if (!cpIds.length) return [];
-      const { data, error } = await supabase.from("precos").select("*").in("cotacao_produto_id", cpIds);
+      const data = await fetchPrecosByCpIds<Preco>(cpIds);
       if (error) throw error;
       return data || [];
     },

@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import logoCompra360 from "/compra360-icon.png";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchPrecosByCpIds } from "@/lib/supabaseHelpers";
 import { NavLink, useLocation } from "react-router-dom";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
@@ -90,7 +91,7 @@ export function AppSidebar() {
       const cpIds = await supabase.from("cotacao_produtos").select("id").eq("cotacao_id", cotacaoAtiva!.id);
       if (!cpIds.data?.length) return 0;
       const ids = cpIds.data.map((cp) => cp.id);
-      const { data } = await supabase.from("precos").select("fornecedor_id").in("cotacao_produto_id", ids).not("preco", "is", null);
+      const data = await fetchPrecosByCpIds<{ fornecedor_id: string }>(ids, "fornecedor_id", (q) => q.not("preco", "is", null));
       if (!data) return 0;
       return new Set(data.map((p) => p.fornecedor_id)).size;
     },
