@@ -65,6 +65,7 @@ export const AdicionarItemDialog = ({
   const open = !!produto;
   const [embalagem, setEmbalagem] = useState<string>("UNI");
   const [fator, setFator] = useState<string>("1");
+  const [embalagemAberta, setEmbalagemAberta] = useState(false);
   const [qtd, setQtd] = useState<string>(String(quantidadeInicial));
   const [padrao, setPadrao] = useState<{ embalagem: string; fator: number }>({
     embalagem: "UNI",
