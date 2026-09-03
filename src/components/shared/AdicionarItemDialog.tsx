@@ -34,6 +34,13 @@ interface AdicionarItemDialogProps {
   badge?: string | null;
   /** Origem do valor padrão exibido na indicação de ajuste. */
   origemPadrao?: "catalogo" | "cadastro";
+  /** Última compra do item nesta loja — exibida como sugestão (não preenche sozinha). */
+  ultimaCompra?: {
+    quantidade: number;
+    embalagem: string | null;
+    fator: number | null;
+    pedidoEm: string;
+  } | null;
 }
 
 /**
