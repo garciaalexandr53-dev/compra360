@@ -13,6 +13,7 @@ import { ClipboardList, Package, Store, MapPin, Plus, Minus, Send } from "lucide
 import ConferenciaPedidos from "@/components/ConferenciaPedidos";
 import { FATOR_PADRAO } from "@/lib/embalagemFatores";
 import AdicionarItemDialog from "@/components/shared/AdicionarItemDialog";
+import { useUltimaCompra } from "@/hooks/useUltimaCompra";
 import SearchInputComScanner from "@/components/shared/SearchInputComScanner";
 
 interface ItemEntry {
@@ -1240,6 +1241,7 @@ const AppFuncionariosPublic = () => {
               }
             : null
         }
+        ultimaCompra={ultimaCompraFunc}
         origemPadrao={dialogProduct?.fonte === "catalogo" ? "catalogo" : "cadastro"}
         badge={dialogProduct?.fonte === "catalogo" ? "Catálogo" : undefined}
         onCancelar={() => setDialogProduct(null)}

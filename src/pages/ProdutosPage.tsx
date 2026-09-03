@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
 import CatalogoBaseModal from "@/components/CatalogoBaseModal";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { useUltimaCompra } from "@/hooks/useUltimaCompra";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
@@ -1051,6 +1052,7 @@ const ProdutosPage = () => {
               }
             : null
         }
+        ultimaCompra={ultimaCompraProdutos}
         origemPadrao={dialogState?.produto.fonte === "catalogo" ? "catalogo" : "cadastro"}
         badge={dialogState?.produto.fonte === "catalogo" ? "Catálogo" : null}
         onCancelar={() => setDialogState(null)}
