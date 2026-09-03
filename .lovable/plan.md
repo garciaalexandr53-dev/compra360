@@ -22,7 +22,7 @@ Ao tocar em "Alterar":
 - As 9 opções aparecem no mesmo lugar (UNI, CX, DZ, ½DZ, DP, FD, KG, PCT, LT), como já são hoje.
 - Escolher uma opção aplica e volta a colapsar automaticamente, com o fator recalculado como já acontece.
 
-Abre expandido automaticamente quando o item não tem embalagem definida (cai em UNI por padrão), para não esconder uma escolha que provavelmente precisa ser feita.
+Sempre abre colapsado, inclusive quando a embalagem resolvida é UNI (seja definida como UNI ou fallback). O chip mostra a embalagem atual e o usuário toca em "Alterar" só quando precisa mudar.
 
 ## Detalhes de comportamento
 
