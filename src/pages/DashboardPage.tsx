@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchPrecosByCpIds } from "@/lib/supabaseHelpers";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -65,11 +66,7 @@ const DashboardPage = () => {
         .in("cotacao_id", cotIds);
       if (!cps?.length) return { totalProdutos: 0, economiaTotal: 0 };
       const cpIds = cps.map((c) => c.id);
-      const { data: precos } = await supabase
-        .from("precos")
-        .select("cotacao_produto_id, preco")
-        .in("cotacao_produto_id", cpIds)
-        .not("preco", "is", null);
+      const precos = await fetchPrecosByCpIds<{ cotacao_produto_id: string; preco: number | null }>(cpIds, "cotacao_produto_id, preco", (q) => q.not("preco", "is", null));
       const precosByCp = new Map<string, number[]>();
       (precos || []).forEach((p) => {
         const v = Number(p.preco);
@@ -246,7 +243,7 @@ const DashboardPage = () => {
       if (!cps?.length) return { counts: new Map<string, number>(), semItens: new Set<string>() };
       const cpIds = cps.map(cp => cp.id);
       const totalProducts = cpIds.length;
-      const { data } = await supabase.from("precos").select("fornecedor_id, preco").in("cotacao_produto_id", cpIds).not("preco", "is", null);
+      const data = await fetchPrecosByCpIds<{ fornecedor_id: string; preco: number | null }>(cpIds, "fornecedor_id, preco", (q) => q.not("preco", "is", null));
       const counts = new Map<string, number>();
       const zeroCounts = new Map<string, number>();
       const totalCounts = new Map<string, number>();
@@ -291,7 +288,7 @@ const DashboardPage = () => {
       const { data: cps } = await supabase.from("cotacao_produtos").select("id").eq("cotacao_id", cotacaoAtiva!.id);
       if (!cps?.length) return new Set<string>();
       const cpIds = cps.map(cp => cp.id);
-      const { data } = await supabase.from("precos").select("fornecedor_id").in("cotacao_produto_id", cpIds).not("preco", "is", null);
+      const data = await fetchPrecosByCpIds<{ fornecedor_id: string }>(cpIds, "fornecedor_id", (q) => q.not("preco", "is", null));
       return new Set((data || []).map(p => p.fornecedor_id));
     },
   });
@@ -359,10 +356,7 @@ const DashboardPage = () => {
         .select("id, produto_id, catalogo_mestre_id, nome, ean, quantidade, tipo_embalagem, fator_embalagem")
         .eq("cotacao_id", cotacaoAtiva!.id);
       if (!cps?.length) return [];
-      const { data: precos } = await supabase
-        .from("precos")
-        .select("cotacao_produto_id, preco")
-        .in("cotacao_produto_id", cps.map((cp) => cp.id));
+      const precos = await fetchPrecosByCpIds<{ cotacao_produto_id: string; preco: number | null }>(cps.map((cp) => cp.id), "cotacao_produto_id, preco");
       return filtrarItensSemPreco(cps as any[], (precos || []) as any[]);
     },
   });
@@ -375,7 +369,7 @@ const DashboardPage = () => {
       const { data: cps } = await supabase.from("cotacao_produtos").select("id, quantidade, fator_embalagem").eq("cotacao_id", cotacaoAtiva!.id);
       if (!cps?.length) return null;
       const cpIds = cps.map(cp => cp.id);
-      const { data: precos } = await supabase.from("precos").select("cotacao_produto_id, preco").in("cotacao_produto_id", cpIds).not("preco", "is", null);
+      const precos = await fetchPrecosByCpIds<{ cotacao_produto_id: string; preco: number | null }>(cpIds, "cotacao_produto_id, preco", (q) => q.not("preco", "is", null));
       if (!precos?.length) return null;
       
       let totalMin = 0, totalMedia = 0;
@@ -471,7 +465,7 @@ const DashboardPage = () => {
           
           if (novaCotacaoOpt === "manter_precos" && insertedCps?.length) {
             const oldIds = oldCps.map(cp => cp.id);
-            const { data: oldPrecos } = await supabase.from("precos").select("*").in("cotacao_produto_id", oldIds);
+            const oldPrecos = await fetchPrecosByCpIds<any>(oldIds);
             if (oldPrecos?.length) {
               const cpMap = new Map(oldCps.map((old, i) => [old.id, insertedCps[i]?.id]));
               const newPrecos = oldPrecos.filter(p => cpMap.has(p.cotacao_produto_id)).map(p => ({

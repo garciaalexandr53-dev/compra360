@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchPrecosByCpIds, fetchCotacaoProdutos } from "@/lib/supabaseHelpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -169,8 +170,7 @@ const CotacaoPage = () => {
     queryKey: ["cotacao-produtos", cotacaoAtiva?.id],
     enabled: !!cotacaoAtiva?.id,
     queryFn: async () => {
-      const { data, error } = await supabase.from("cotacao_produtos").select("*, produtos(*, categorias(nome))").eq("cotacao_id", cotacaoAtiva!.id);
-      if (error) throw error;
+      const data = await fetchCotacaoProdutos<any>([cotacaoAtiva!.id], "*, produtos(*, categorias(nome))");
       return (data || []).map((cp: any) => ({ id: cp.id, produto_id: cp.produto_id, catalogo_mestre_id: cp.catalogo_mestre_id ?? null, cotacao_id: cp.cotacao_id, quantidade: cp.quantidade, fator_embalagem: cp.fator_embalagem ?? 1, tipo_embalagem: cp.tipo_embalagem ?? null, nome: cp.nome ?? null, ean: cp.ean ?? null, produto: cp.produtos })) as CotacaoProduto[];
     },
   });
@@ -181,9 +181,7 @@ const CotacaoPage = () => {
     queryFn: async () => {
       const cpIds = cotacaoProdutos.map((cp) => cp.id);
       if (!cpIds.length) return [];
-      const { data, error } = await supabase.from("precos").select("*").in("cotacao_produto_id", cpIds);
-      if (error) throw error;
-      return data as Preco[];
+      return await fetchPrecosByCpIds<Preco>(cpIds);
     },
   });
 

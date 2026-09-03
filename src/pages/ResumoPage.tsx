@@ -74,9 +74,7 @@ const ResumoPage = () => {
     queryFn: async () => {
       const cpIds = cotacaoProdutos.map((cp: any) => cp.id);
       if (!cpIds.length) return [];
-      const data = await fetchPrecosByCpIds<Preco>(cpIds);
-      if (error) throw error;
-      return data || [];
+      return await fetchPrecosByCpIds<Preco>(cpIds);
     },
   });
 
