@@ -80,6 +80,7 @@ export const AdicionarItemDialog = ({
     setFator(String(fatorInicial));
     setQtd(String(quantidadeInicial));
     setPadrao({ embalagem: emb, fator: fatorInicial });
+    setEmbalagemAberta(false);
   }, [produto, quantidadeInicial]);
 
   const handleEmbalagemChange = (sigla: string) => {
