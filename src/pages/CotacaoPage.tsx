@@ -905,9 +905,9 @@ const CotacaoPage = () => {
             size="sm"
             variant="outline"
             className="text-xs h-7 border-green-500/40 text-green-700 dark:text-green-300 hover:bg-green-500/10"
-            onClick={() => setNovaCotacaoOpen(true)}
+            onClick={() => navigate("/analise")}
           >
-            Fechar agora
+            Fechar e analisar
           </Button>
         </div>
       )}
