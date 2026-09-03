@@ -131,6 +131,7 @@ export const AdicionarItemDialog = ({
     setEmbalagem(ultimaEmb);
     setFator(String(ultimaFator));
     setQtd(String(ultimaQtd));
+    setEmbalagemAberta(false);
   };
 
 
