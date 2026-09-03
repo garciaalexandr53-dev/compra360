@@ -152,6 +152,28 @@ export const AdicionarItemDialog = ({
           )}
         </DialogHeader>
 
+        {ultimaCompra && (
+          <div className="-mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg bg-muted/60 px-3 py-2">
+            <p className="text-xs text-muted-foreground">
+              Último pedido:{" "}
+              <span className="font-semibold text-foreground">
+                {ultimaQtd} {ultimaEmb}
+              </span>
+              {ultimaFator > 1 && <> ({ultimaQtd * ultimaFator} un)</>}
+              {ultimaData && <> · {ultimaData}</>}
+            </p>
+            <button
+              type="button"
+              onClick={usarUltimaCompra}
+              className="ml-auto text-xs font-semibold text-primary underline underline-offset-2"
+            >
+              Usar
+            </button>
+          </div>
+        )}
+
+
+
         {/* 2. Embalagem */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Embalagem</label>
