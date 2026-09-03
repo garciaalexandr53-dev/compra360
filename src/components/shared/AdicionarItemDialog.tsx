@@ -112,6 +112,26 @@ export const AdicionarItemDialog = ({
   const ajustado =
     embalagem !== padrao.embalagem || (!fatorInvalido && fatorParsed !== padrao.fator);
 
+  const ultimaEmb = matchEmbalagem(ultimaCompra?.embalagem ?? null);
+  const ultimaQtd = ultimaCompra ? Math.max(1, Math.round(ultimaCompra.quantidade)) : 0;
+  const ultimaFator =
+    ultimaCompra?.fator && ultimaCompra.fator > 0 ? ultimaCompra.fator : fatorPadraoDe(ultimaEmb);
+  const ultimaData = ultimaCompra
+    ? new Date(ultimaCompra.pedidoEm).toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+      })
+    : "";
+
+  const usarUltimaCompra = () => {
+    if (!ultimaCompra) return;
+    setEmbalagem(ultimaEmb);
+    setFator(String(ultimaFator));
+    setQtd(String(ultimaQtd));
+  };
+
+
+
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onCancelar(); }}>
