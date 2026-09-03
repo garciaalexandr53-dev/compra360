@@ -1350,6 +1350,20 @@ export type Database = {
           nome: string
         }[]
       }
+      get_ultima_compra_item: {
+        Args: {
+          _catalogo_mestre_id?: string
+          _ean?: string
+          _loja_id: string
+          _nome?: string
+        }
+        Returns: {
+          fator_embalagem: number
+          pedido_em: string
+          quantidade: number
+          tipo_embalagem: string
+        }[]
+      }
       get_user_plan: { Args: { _user_id?: string }; Returns: Json }
       has_role: {
         Args: {
