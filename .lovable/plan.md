@@ -32,7 +32,7 @@ Sempre abre colapsado, inclusive quando a embalagem resolvida é UNI (seja defin
 
 ## Detalhes técnicos
 
-- Apenas `src/components/shared/AdicionarItemDialog.tsx`: novo estado local `embalagemAberta`, reiniciado no `useEffect` que já roda por produto (aberto quando `produto.embalagem` é vazio/não reconhecido).
+- Apenas `src/components/shared/AdicionarItemDialog.tsx`: novo estado local `embalagemAberta`, iniciado como `false` no `useEffect` que já roda por produto (sempre colapsado, inclusive UNI).
 - `handleEmbalagemChange` passa a fechar a lista após a seleção; `usarUltimaCompra` mantém fechada.
 - Sem mudanças de props, de contratos com as três páginas, de queries ou de banco.
 - Layout mantém o chip e o link na mesma linha com `flex-wrap`, testado em 360px e desktop.
