@@ -34,6 +34,13 @@ interface AdicionarItemDialogProps {
   badge?: string | null;
   /** Origem do valor padrão exibido na indicação de ajuste. */
   origemPadrao?: "catalogo" | "cadastro";
+  /** Última compra do item nesta loja — exibida como sugestão (não preenche sozinha). */
+  ultimaCompra?: {
+    quantidade: number;
+    embalagem: string | null;
+    fator: number | null;
+    pedidoEm: string;
+  } | null;
 }
 
 /**
@@ -53,6 +60,7 @@ export const AdicionarItemDialog = ({
   quantidadeInicial = 1,
   badge = null,
   origemPadrao = "cadastro",
+  ultimaCompra = null,
 }: AdicionarItemDialogProps) => {
   const open = !!produto;
   const [embalagem, setEmbalagem] = useState<string>("UNI");
@@ -104,6 +112,26 @@ export const AdicionarItemDialog = ({
   const ajustado =
     embalagem !== padrao.embalagem || (!fatorInvalido && fatorParsed !== padrao.fator);
 
+  const ultimaEmb = matchEmbalagem(ultimaCompra?.embalagem ?? null);
+  const ultimaQtd = ultimaCompra ? Math.max(1, Math.round(ultimaCompra.quantidade)) : 0;
+  const ultimaFator =
+    ultimaCompra?.fator && ultimaCompra.fator > 0 ? ultimaCompra.fator : fatorPadraoDe(ultimaEmb);
+  const ultimaData = ultimaCompra
+    ? new Date(ultimaCompra.pedidoEm).toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+      })
+    : "";
+
+  const usarUltimaCompra = () => {
+    if (!ultimaCompra) return;
+    setEmbalagem(ultimaEmb);
+    setFator(String(ultimaFator));
+    setQtd(String(ultimaQtd));
+  };
+
+
+
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onCancelar(); }}>
@@ -123,6 +151,28 @@ export const AdicionarItemDialog = ({
             <p className="text-xs text-muted-foreground">{produto.subtitulo}</p>
           )}
         </DialogHeader>
+
+        {ultimaCompra && (
+          <div className="-mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg bg-muted/60 px-3 py-2">
+            <p className="text-xs text-muted-foreground">
+              Último pedido:{" "}
+              <span className="font-semibold text-foreground">
+                {ultimaQtd} {ultimaEmb}
+              </span>
+              {ultimaFator > 1 && <> ({ultimaQtd * ultimaFator} un)</>}
+              {ultimaData && <> · {ultimaData}</>}
+            </p>
+            <button
+              type="button"
+              onClick={usarUltimaCompra}
+              className="ml-auto text-xs font-semibold text-primary underline underline-offset-2"
+            >
+              Usar
+            </button>
+          </div>
+        )}
+
+
 
         {/* 2. Embalagem */}
         <div className="space-y-2">

@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import ImportProdutosModal from "@/components/ImportProdutosModal";
 import CatalogoBaseModal from "@/components/CatalogoBaseModal";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { useUltimaCompra } from "@/hooks/useUltimaCompra";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
@@ -103,6 +104,15 @@ const ProdutosPage = () => {
 
   // Diálogo unificado — carrega ProdutoHibrido (local ou catálogo) + metadados de exibição
   const [dialogState, setDialogState] = useState<{ produto: ProdutoHibrido; subtitulo?: string | null } | null>(null);
+
+  const { ultimaCompra: ultimaCompraProdutos } = useUltimaCompra({
+    lojaId: lojaAtiva?.id ?? null,
+    catalogoMestreId:
+      dialogState?.produto.fonte === "catalogo" ? dialogState.produto.id : null,
+    ean: dialogState?.produto.ean ?? null,
+    nome: dialogState?.produto.nome ?? null,
+    enabled: !!dialogState,
+  });
 
 
   // Sheet de opções do produto (editar / excluir)
@@ -1051,6 +1061,7 @@ const ProdutosPage = () => {
               }
             : null
         }
+        ultimaCompra={ultimaCompraProdutos}
         origemPadrao={dialogState?.produto.fonte === "catalogo" ? "catalogo" : "cadastro"}
         badge={dialogState?.produto.fonte === "catalogo" ? "Catálogo" : null}
         onCancelar={() => setDialogState(null)}

@@ -13,6 +13,7 @@ import { ClipboardList, Package, Store, MapPin, Plus, Minus, Send } from "lucide
 import ConferenciaPedidos from "@/components/ConferenciaPedidos";
 import { FATOR_PADRAO } from "@/lib/embalagemFatores";
 import AdicionarItemDialog from "@/components/shared/AdicionarItemDialog";
+import { useUltimaCompra } from "@/hooks/useUltimaCompra";
 import SearchInputComScanner from "@/components/shared/SearchInputComScanner";
 
 interface ItemEntry {
@@ -241,6 +242,15 @@ const AppFuncionariosPublic = () => {
       window.history.replaceState({}, "", `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}`);
     }
   }, [selectedLojaId]);
+
+  const { ultimaCompra: ultimaCompraFunc } = useUltimaCompra({
+    lojaId: selectedLojaId || null,
+    catalogoMestreId: dialogProduct?.catalogoMestreId ?? null,
+    ean: dialogProduct?.ean ?? null,
+    nome: dialogProduct?.nome ?? null,
+    enabled: !!dialogProduct,
+  });
+
 
   // Recupera a lista pendente daquela loja (uma vez por loja).
   useEffect(() => {
@@ -1240,6 +1250,7 @@ const AppFuncionariosPublic = () => {
               }
             : null
         }
+        ultimaCompra={ultimaCompraFunc}
         origemPadrao={dialogProduct?.fonte === "catalogo" ? "catalogo" : "cadastro"}
         badge={dialogProduct?.fonte === "catalogo" ? "Catálogo" : undefined}
         onCancelar={() => setDialogProduct(null)}

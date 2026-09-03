@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { useUltimaCompra } from "@/hooks/useUltimaCompra";
 import { useAuth } from "@/hooks/useAuth";
 import { useProdutosHibrido } from "@/hooks/useProdutosHibrido";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,14 @@ const AddProdutosCotacaoPage = () => {
     catalogoMestreId?: string;
     ean?: string | null;
   } | null>(null);
+
+  const { ultimaCompra: ultimaCompraAdd } = useUltimaCompra({
+    lojaId: lojaAtiva?.id ?? null,
+    catalogoMestreId: dialogItem?.catalogoMestreId ?? null,
+    ean: dialogItem?.ean ?? null,
+    nome: dialogItem?.nome ?? null,
+    enabled: !!dialogItem,
+  });
 
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -476,6 +485,7 @@ const AddProdutosCotacaoPage = () => {
           fator: dialogItem.fator,
           subtitulo: !dialogItem.catalogoMestreId && dialogItem.produtoId ? "Produto existente no banco" : null,
         } : null}
+        ultimaCompra={ultimaCompraAdd}
         onConfirmar={handleDialogConfirm}
         onCancelar={() => setDialogItem(null)}
         badge={dialogItem?.catalogoMestreId ? "Catálogo" : null}
