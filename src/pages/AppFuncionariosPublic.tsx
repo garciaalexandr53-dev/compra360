@@ -138,14 +138,6 @@ const AppFuncionariosPublic = () => {
   const [dialogQtd, setDialogQtd] = useState("1");
   const [dialogEmbal, setDialogEmbal] = useState("UNI");
   const [dialogFator, setDialogFator] = useState("1");
-
-  const { ultimaCompra: ultimaCompraFunc } = useUltimaCompra({
-    lojaId: selectedLojaId || null,
-    catalogoMestreId: dialogProduct?.catalogoMestreId ?? null,
-    ean: dialogProduct?.ean ?? null,
-    nome: dialogProduct?.nome ?? null,
-    enabled: !!dialogProduct,
-  });
   const [filtroEnviados, setFiltroEnviados] = useState<"7" | "30" | "90">("30");
   const [buscaEnviados, setBuscaEnviados] = useState("");
   const [frequentesAberto, setFrequentesAberto] = useState(true);
@@ -250,6 +242,15 @@ const AppFuncionariosPublic = () => {
       window.history.replaceState({}, "", `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}`);
     }
   }, [selectedLojaId]);
+
+  const { ultimaCompra: ultimaCompraFunc } = useUltimaCompra({
+    lojaId: selectedLojaId || null,
+    catalogoMestreId: dialogProduct?.catalogoMestreId ?? null,
+    ean: dialogProduct?.ean ?? null,
+    nome: dialogProduct?.nome ?? null,
+    enabled: !!dialogProduct,
+  });
+
 
   // Recupera a lista pendente daquela loja (uma vez por loja).
   useEffect(() => {
