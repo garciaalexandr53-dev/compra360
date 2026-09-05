@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -72,8 +72,19 @@ export const AdicionarItemDialog = ({
     fator: 1,
   });
 
+  // Assinatura estável: os pais recriam o objeto `produto` a cada render
+  // (inclusive quando a consulta de última compra resolve), então o reset
+  // precisa depender dos valores, não da identidade do objeto — senão o que
+  // o usuário digitou seria descartado no meio da digitação.
+  const produtoKey = produto
+    ? `${produto.nome}|${produto.embalagem ?? ""}|${produto.fator ?? ""}|${quantidadeInicial}`
+    : null;
+  const ultimaKeyAplicada = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!produto) return;
+    if (!produto || !produtoKey) return;
+    if (ultimaKeyAplicada.current === produtoKey) return;
+    ultimaKeyAplicada.current = produtoKey;
     const emb = matchEmbalagem(produto.embalagem);
     const fatorInicial = resolveFatorInicial(emb, produto.fator ?? null);
     setEmbalagem(emb);
@@ -81,7 +92,11 @@ export const AdicionarItemDialog = ({
     setQtd(String(quantidadeInicial));
     setPadrao({ embalagem: emb, fator: fatorInicial });
     setEmbalagemAberta(false);
-  }, [produto, quantidadeInicial]);
+  }, [produtoKey]);
+
+  useEffect(() => {
+    if (!produto) ultimaKeyAplicada.current = null;
+  }, [produto]);
 
   const handleEmbalagemChange = (sigla: string) => {
     setEmbalagem(sigla);
