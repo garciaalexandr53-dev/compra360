@@ -24,6 +24,12 @@ beforeEach(() => {
 
 const produto = { nome: "Produto Teste", embalagem: "UNI", fator: 1 };
 
+const selecionarEmbalagem = (sigla: string) => {
+  const alterar = screen.queryByRole("button", { name: "Alterar" });
+  if (alterar) fireEvent.click(alterar);
+  fireEvent.click(screen.getByRole("button", { name: sigla }));
+};
+
 const setViewport = (width: number) => {
   Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: width });
   Object.defineProperty(window, "innerHeight", { writable: true, configurable: true, value: 800 });
@@ -39,16 +45,16 @@ describe("AdicionarItemDialog — fator UI", () => {
     const [fatorInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
     expect(fatorInput.value).toBe(String(FATOR_PADRAO.UNI)); // 1
 
-    fireEvent.click(screen.getByRole("button", { name: "CX" }));
+    selecionarEmbalagem("CX");
     expect(fatorInput.value).toBe(String(FATOR_PADRAO.CX)); // 12
 
-    fireEvent.click(screen.getByRole("button", { name: "DP" }));
+    selecionarEmbalagem("DP");
     expect(fatorInput.value).toBe(String(FATOR_PADRAO.DP)); // 12
 
-    fireEvent.click(screen.getByRole("button", { name: "½DZ" }));
+    selecionarEmbalagem("½DZ");
     expect(fatorInput.value).toBe(String(FATOR_PADRAO["½DZ"])); // 6
 
-    fireEvent.click(screen.getByRole("button", { name: "FD" }));
+    selecionarEmbalagem("FD");
     expect(fatorInput.value).toBe(String(FATOR_PADRAO.FD)); // 6
   });
 
@@ -62,7 +68,7 @@ describe("AdicionarItemDialog — fator UI", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "CX" }));
+    selecionarEmbalagem("CX");
     // 2 CX = 24 unidades
     expect(screen.getByText(/24 unidades/i)).toBeInTheDocument();
     expect(screen.getByText(/2 CX/i)).toBeInTheDocument();
@@ -72,7 +78,7 @@ describe("AdicionarItemDialog — fator UI", () => {
     render(
       <AdicionarItemDialog produto={produto} onConfirmar={vi.fn()} onCancelar={vi.fn()} />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "DP" }));
+    selecionarEmbalagem("DP");
     const [fatorInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
     fireEvent.change(fatorInput, { target: { value: "" } });
     fireEvent.blur(fatorInput);
@@ -96,7 +102,7 @@ describe("AdicionarItemDialog — seletores robustos e recálculo", () => {
     render(
       <AdicionarItemDialog produto={produto} onConfirmar={vi.fn()} onCancelar={vi.fn()} />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "CX" }));
+    selecionarEmbalagem("CX");
     const [, qtdInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
 
     fireEvent.change(qtdInput, { target: { value: "5" } });
@@ -119,7 +125,7 @@ describe("AdicionarItemDialog — fechamento descarta estado", () => {
     );
 
     // Altera embalagem (fator vira 12) e quantidade
-    fireEvent.click(screen.getByRole("button", { name: "CX" }));
+    selecionarEmbalagem("CX");
     const [fatorInput, qtdInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
     fireEvent.change(qtdInput, { target: { value: "9" } });
     expect(fatorInput.value).toBe("12");
@@ -167,7 +173,8 @@ describe("AdicionarItemDialog — responsivo", () => {
     );
 
     expect(screen.getByText("Produto Teste")).toBeInTheDocument();
-    // Todas as 9 embalagens visíveis
+    // Ao abrir a lista, todas as 9 embalagens ficam visíveis
+    fireEvent.click(screen.getByRole("button", { name: "Alterar" }));
     ["UNI", "CX", "DZ", "½DZ", "DP", "FD", "KG", "PCT", "LT"].forEach((emb) => {
       expect(screen.getByRole("button", { name: emb })).toBeInTheDocument();
     });
@@ -221,7 +228,7 @@ describe("AdicionarItemDialog — validação", () => {
       <AdicionarItemDialog produto={produto} onConfirmar={onConfirmar} onCancelar={vi.fn()} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "CX" }));
+    selecionarEmbalagem("CX");
     const [fatorInput, qtdInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
 
     // Esvazia o fator e dispara blur — fallback restaura FATOR_PADRAO.CX
@@ -320,22 +327,22 @@ describe("AdicionarItemDialog — troca rápida de embalagem", () => {
     const [fatorInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
 
     // Sequência rápida UNI → CX → UNI → CX → UNI
-    fireEvent.click(screen.getByRole("button", { name: "CX" }));
+    selecionarEmbalagem("CX");
     expect(fatorInput.value).toBe(String(FATOR_PADRAO.CX));
     expect(screen.getByText(/3 CX/i)).toBeInTheDocument();
     expect(screen.getByText(/36 unidades/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "UNI" }));
+    selecionarEmbalagem("UNI");
     expect(fatorInput.value).toBe(String(FATOR_PADRAO.UNI));
     expect(screen.getByText(/3 UNI/i)).toBeInTheDocument();
     // fator 1 não exibe "= N unidades"
     expect(screen.queryByText(/unidades/i)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "CX" }));
+    selecionarEmbalagem("CX");
     expect(fatorInput.value).toBe(String(FATOR_PADRAO.CX));
     expect(screen.getByText(/36 unidades/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "UNI" }));
+    selecionarEmbalagem("UNI");
     expect(fatorInput.value).toBe("1");
     expect(screen.queryByText(/unidades/i)).not.toBeInTheDocument();
   });
@@ -348,7 +355,7 @@ describe("AdicionarItemDialog — comportamento de Enter", () => {
       <AdicionarItemDialog produto={produto} onConfirmar={onConfirmar} onCancelar={vi.fn()} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "CX" }));
+    selecionarEmbalagem("CX");
     const [, qtdInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
     fireEvent.change(qtdInput, { target: { value: "4" } });
     fireEvent.keyDown(qtdInput, { key: "Enter" });
@@ -372,5 +379,31 @@ describe("AdicionarItemDialog — comportamento de Enter", () => {
     fireEvent.change(qtdInput, { target: { value: "" } });
     fireEvent.keyDown(qtdInput, { key: "Enter" });
     expect(onConfirmar).not.toHaveBeenCalled();
+  });
+});
+
+describe("AdicionarItemDialog — estabilidade do estado", () => {
+  it("mantém quantidade/embalagem quando o pai re-renderiza com novo objeto produto", () => {
+    const { rerender } = render(
+      <AdicionarItemDialog produto={{ ...produto }} onConfirmar={vi.fn()} onCancelar={vi.fn()} />,
+    );
+
+    selecionarEmbalagem("CX");
+    const [fatorInput, qtdInput] = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    fireEvent.change(qtdInput, { target: { value: "12" } });
+
+    // Pai re-renderiza (ex.: consulta de última compra resolvendo) criando
+    // um novo objeto com os mesmos valores — nada deve ser descartado.
+    rerender(
+      <AdicionarItemDialog
+        produto={{ ...produto }}
+        onConfirmar={vi.fn()}
+        onCancelar={vi.fn()}
+        ultimaCompra={{ quantidade: 3, embalagem: "CX", fator: 12, pedidoEm: "2026-08-26" }}
+      />,
+    );
+
+    expect(qtdInput.value).toBe("12");
+    expect(fatorInput.value).toBe(String(FATOR_PADRAO.CX));
   });
 });
