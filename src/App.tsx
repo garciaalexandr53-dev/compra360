@@ -24,6 +24,7 @@ function retryImport(factory: () => Promise<any>, retries = 1): Promise<any> {
 const LandingPage = lazy(() => retryImport(() => import("./pages/LandingPage")));
 const AppLayout = lazy(() => retryImport(() => import("./components/AppLayout")));
 const LoginPage = lazy(() => retryImport(() => import("./pages/LoginPage")));
+const EmailConfirmadoPage = lazy(() => retryImport(() => import("./pages/EmailConfirmadoPage")));
 const CotacaoPage = lazy(() => retryImport(() => import("./pages/CotacaoPage")));
 const ProdutosPage = lazy(() => retryImport(() => import("./pages/ProdutosPage")));
 const FornecedoresPage = lazy(() => retryImport(() => import("./pages/FornecedoresPage")));

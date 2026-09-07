@@ -23,12 +23,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      maybeSendWelcome(session?.user ?? null);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      maybeSendWelcome(session?.user ?? null);
     });
 
     return () => subscription.unsubscribe();
@@ -40,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, whatsapp?: string, redirectTo?: string) => {
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -49,20 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
 
-    if (!error && data?.user?.id) {
-      // Fire-and-forget welcome email; never block signup UX
-      supabase.functions
-        .invoke('send-transactional-email', {
-          body: {
-            templateName: 'welcome',
-            recipientEmail: email,
-            idempotencyKey: `welcome-${data.user.id}`,
-            templateData: {},
-          },
-        })
-        .catch((e) => console.warn('welcome email failed', e));
-    }
-
+    // O e-mail de boas-vindas é enviado somente depois que o e-mail é confirmado
+    // (ver maybeSendWelcome).
     return { error };
   };
 
