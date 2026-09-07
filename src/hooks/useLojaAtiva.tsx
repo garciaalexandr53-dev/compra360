@@ -7,6 +7,9 @@ interface Loja {
   id: string;
   nome: string;
   endereco: string | null;
+  cidade: string | null;
+  uf: string | null;
+  cep: string | null;
   cnpj: string | null;
   razao_social: string | null;
   inscricao_estadual: string | null;
