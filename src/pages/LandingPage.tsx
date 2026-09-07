@@ -408,6 +408,7 @@ export default function LandingPage() {
   if (user) return null;
 
   const goLogin = () => navigate("/login");
+  const goSignup = () => navigate("/login?cadastro=1");
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
