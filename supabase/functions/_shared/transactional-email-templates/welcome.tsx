@@ -61,3 +61,4 @@ const container = { padding: '32px 28px', maxWidth: '560px' }
 const h1 = { fontSize: '24px', fontWeight: 'bold' as const, color: 'hsl(174, 78%, 26%)', margin: '0 0 20px', textAlign: 'center' as const }
 const text = { fontSize: '15px', color: 'hsl(221, 16%, 47%)', lineHeight: '1.6', margin: '0 0 24px' }
 const footer = { fontSize: '12px', color: 'hsl(221, 16%, 60%)', margin: '32px 0 0', textAlign: 'center' as const }
+const footerLink = { color: 'hsl(174, 78%, 26%)', textDecoration: 'underline' }
