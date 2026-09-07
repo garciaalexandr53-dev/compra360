@@ -45,7 +45,7 @@ interface AdicionarItemDialogProps {
 
 /**
  * Diálogo unificado de adicionar item.
- * Ordem: Nome → Embalagem → Fator → Quantidade → Total → Botões.
+ * Ordem: Nome → Embalagem → Fator → Quantidade → Total → Último pedido → Botões.
  * Usado por ProdutosPage e AppFuncionariosPublic.
  *
  * Embalagem e fator são SEMPRE editáveis. O valor de origem (catálogo mestre ou
@@ -171,28 +171,6 @@ export const AdicionarItemDialog = ({
           )}
         </DialogHeader>
 
-        {ultimaCompra && (
-          <div className="-mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg bg-muted/60 px-3 py-2">
-            <p className="text-xs text-muted-foreground">
-              Último pedido:{" "}
-              <span className="font-semibold text-foreground">
-                {ultimaQtd} {ultimaEmb}
-              </span>
-              {ultimaFator > 1 && <> ({ultimaQtd * ultimaFator} un)</>}
-              {ultimaData && <> · {ultimaData}</>}
-            </p>
-            <button
-              type="button"
-              onClick={usarUltimaCompra}
-              className="ml-auto text-xs font-semibold text-primary underline underline-offset-2"
-            >
-              Usar
-            </button>
-          </div>
-        )}
-
-
-
         {/* 2. Embalagem */}
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
@@ -236,29 +214,31 @@ export const AdicionarItemDialog = ({
           )}
         </div>
 
-        {/* 3. Fator */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Fator (un/embalagem)</label>
-          <Input
-            type="number"
-            inputMode="numeric"
-            min={1}
-            value={fator}
-            onFocus={(e) => e.target.select()}
-            onChange={(e) => setFator(e.target.value.replace(/\D/g, ""))}
-            onBlur={() => {
-              const val = fator.trim();
-              if (!val || val === "0") {
-                setFator(
-                  String(
-                    embalagem === padrao.embalagem ? padrao.fator : fatorPadraoDe(embalagem),
-                  ),
-                );
-              }
-            }}
-            className="h-10 text-center text-base"
-            aria-invalid={fatorInvalido}
-          />
+        {/* 3. Fator — rótulo à esquerda, input à direita */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-3">
+            <label className="text-sm font-medium">Fator (un/embalagem)</label>
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={fator}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => setFator(e.target.value.replace(/\D/g, ""))}
+              onBlur={() => {
+                const val = fator.trim();
+                if (!val || val === "0") {
+                  setFator(
+                    String(
+                      embalagem === padrao.embalagem ? padrao.fator : fatorPadraoDe(embalagem),
+                    ),
+                  );
+                }
+              }}
+              className="h-10 w-24 text-center text-base"
+              aria-invalid={fatorInvalido}
+            />
+          </div>
           {fatorInvalido && (
             <p role="alert" className="text-xs text-destructive">
               Informe um fator válido (maior que zero)
@@ -281,22 +261,22 @@ export const AdicionarItemDialog = ({
           )}
         </div>
 
-
-
-        {/* 4. Quantidade */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Quantidade do pedido</label>
-          <Input
-            type="number"
-            inputMode="numeric"
-            placeholder="Ex: 10"
-            value={qtd}
-            onFocus={(e) => e.target.select()}
-            onChange={(e) => setQtd(e.target.value.replace(/\D/g, ""))}
-            onKeyDown={(e) => { if (e.key === "Enter") confirmar(); }}
-            className="h-14 text-center text-2xl font-bold"
-            autoFocus
-          />
+        {/* 4. Quantidade — rótulo à esquerda, input à direita */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-3">
+            <label className="text-sm font-medium">Quantidade do pedido</label>
+            <Input
+              type="number"
+              inputMode="numeric"
+              placeholder="Ex: 10"
+              value={qtd}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => setQtd(e.target.value.replace(/\D/g, ""))}
+              onKeyDown={(e) => { if (e.key === "Enter") confirmar(); }}
+              className="h-10 w-24 text-center text-lg font-bold"
+              autoFocus
+            />
+          </div>
         </div>
 
         {/* 5. Total calculado */}
@@ -316,7 +296,28 @@ export const AdicionarItemDialog = ({
           )}
         </p>
 
-        {/* 6. Botões */}
+        {/* 6. Último pedido (sugestão) — acima dos botões */}
+        {ultimaCompra && (
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg bg-muted/60 px-3 py-2">
+            <p className="text-xs text-muted-foreground">
+              Último pedido:{" "}
+              <span className="font-semibold text-foreground">
+                {ultimaQtd} {ultimaEmb}
+              </span>
+              {ultimaFator > 1 && <> ({ultimaQtd * ultimaFator} un)</>}
+              {ultimaData && <> · {ultimaData}</>}
+            </p>
+            <button
+              type="button"
+              onClick={usarUltimaCompra}
+              className="ml-auto text-xs font-semibold text-primary underline underline-offset-2"
+            >
+              Usar
+            </button>
+          </div>
+        )}
+
+        {/* 7. Botões */}
         <DialogFooter className="flex-row gap-2 sm:gap-2">
           <Button
             variant="outline"
