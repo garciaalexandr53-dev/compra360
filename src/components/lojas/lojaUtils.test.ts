@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isLojaAtiva, getDisplayName, formatCNPJ } from "./lojaUtils";
+import { isLojaAtiva, getDisplayName, formatCNPJ, formatCEP, formatUF, formatCidadeUF } from "./lojaUtils";
 
 describe("isLojaAtiva", () => {
   it("retorna true quando o id da loja coincide com o id ativo", () => {
