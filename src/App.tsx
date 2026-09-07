@@ -24,6 +24,7 @@ function retryImport(factory: () => Promise<any>, retries = 1): Promise<any> {
 const LandingPage = lazy(() => retryImport(() => import("./pages/LandingPage")));
 const AppLayout = lazy(() => retryImport(() => import("./components/AppLayout")));
 const LoginPage = lazy(() => retryImport(() => import("./pages/LoginPage")));
+const EmailConfirmadoPage = lazy(() => retryImport(() => import("./pages/EmailConfirmadoPage")));
 const CotacaoPage = lazy(() => retryImport(() => import("./pages/CotacaoPage")));
 const ProdutosPage = lazy(() => retryImport(() => import("./pages/ProdutosPage")));
 const FornecedoresPage = lazy(() => retryImport(() => import("./pages/FornecedoresPage")));
@@ -58,6 +59,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Suspense fallback={<LandingSkeleton />}><LandingPage /></Suspense>} />
                 <Route path="/login" element={<Suspense fallback={null}><LoginPage /></Suspense>} />
+                <Route path="/email-confirmado" element={<Suspense fallback={null}><EmailConfirmadoPage /></Suspense>} />
                 <Route path="/fornecedor/:token" element={<Suspense fallback={null}><FornecedorCotacaoPage /></Suspense>} />
                 <Route path="/reposicao" element={<Suspense fallback={<RouteFallback />}><AppFuncionariosPublic /></Suspense>} />
                 <Route path="/app-funcionarios" element={<Navigate to={`/reposicao${window.location.search}`} replace />} />

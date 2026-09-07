@@ -132,7 +132,7 @@ const LoginPage = () => {
 
     if (isSignUp) {
       const digits = whatsapp.replace(/\D/g, "");
-      const { error } = await signUp(email, password, digits, `${window.location.origin}${afterLogin}`);
+      const { error } = await signUp(email, password, digits, `${window.location.origin}/email-confirmado`);
       if (error) {
         toast.error(translateAuthError(error.message));
       } else {
