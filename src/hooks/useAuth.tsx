@@ -13,6 +13,30 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const WELCOME_SENT_PREFIX = 'welcome-email-enviado:';
+
+/** Envia o e-mail de boas-vindas apenas depois que o e-mail foi confirmado. */
+function maybeSendWelcome(user: User | null) {
+  if (!user?.id || !user.email || !user.email_confirmed_at) return;
+  const key = `${WELCOME_SENT_PREFIX}${user.id}`;
+  try {
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, '1');
+  } catch {
+    /* ignore */
+  }
+  supabase.functions
+    .invoke('send-transactional-email', {
+      body: {
+        templateName: 'welcome',
+        recipientEmail: user.email,
+        idempotencyKey: `welcome-${user.id}`,
+        templateData: {},
+      },
+    })
+    .catch((e) => console.warn('welcome email failed', e));
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
