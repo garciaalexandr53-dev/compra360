@@ -7,11 +7,22 @@ export const formatCNPJ = (value: string) => {
     .replace(/(\d{4})(\d)/, "$1-$2");
 };
 
+export const formatCEP = (value: string) => {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  return digits.replace(/^(\d{5})(\d)/, "$1-$2");
+};
+
+export const formatUF = (value: string) =>
+  value.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase();
+
 export interface Loja {
   id: string;
   nome: string;
   nome_fantasia: string | null;
   endereco: string | null;
+  cidade: string | null;
+  uf: string | null;
+  cep: string | null;
   cnpj: string | null;
   razao_social: string | null;
   inscricao_estadual: string | null;
@@ -23,6 +34,9 @@ export interface LojaForm {
   nome: string;
   nome_fantasia: string;
   endereco: string;
+  cidade: string;
+  uf: string;
+  cep: string;
   cnpj: string;
   razao_social: string;
   inscricao_estadual: string;
@@ -32,10 +46,20 @@ export const emptyLojaForm: LojaForm = {
   nome: "",
   nome_fantasia: "",
   endereco: "",
+  cidade: "",
+  uf: "",
+  cep: "",
   cnpj: "",
   razao_social: "",
   inscricao_estadual: "",
 };
+
+/**
+ * "Cidade - UF" quando houver ambos; apenas o que existir caso contrário.
+ */
+export function formatCidadeUF(loja: Pick<Loja, "cidade" | "uf">): string {
+  return [loja.cidade?.trim(), loja.uf?.trim()].filter(Boolean).join(" - ");
+}
 
 export interface LojaMetrics {
   produtosAtivos: number;

@@ -621,6 +621,8 @@ export type Database = {
       }
       lojas: {
         Row: {
+          cep: string | null
+          cidade: string | null
           cnpj: string | null
           created_at: string
           endereco: string | null
@@ -630,9 +632,12 @@ export type Database = {
           nome_fantasia: string | null
           razao_social: string | null
           telefone: string | null
+          uf: string | null
           user_id: string | null
         }
         Insert: {
+          cep?: string | null
+          cidade?: string | null
           cnpj?: string | null
           created_at?: string
           endereco?: string | null
@@ -642,9 +647,12 @@ export type Database = {
           nome_fantasia?: string | null
           razao_social?: string | null
           telefone?: string | null
+          uf?: string | null
           user_id?: string | null
         }
         Update: {
+          cep?: string | null
+          cidade?: string | null
           cnpj?: string | null
           created_at?: string
           endereco?: string | null
@@ -654,6 +662,7 @@ export type Database = {
           nome_fantasia?: string | null
           razao_social?: string | null
           telefone?: string | null
+          uf?: string | null
           user_id?: string | null
         }
         Relationships: []

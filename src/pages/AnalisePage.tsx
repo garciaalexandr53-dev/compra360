@@ -347,6 +347,9 @@ const AnalisePage = () => {
       if ((lojaAtiva as any).cnpj) billingParts.push(`📄 *CNPJ:* ${(lojaAtiva as any).cnpj}`);
       if ((lojaAtiva as any).inscricao_estadual) billingParts.push(`📋 *IE:* ${(lojaAtiva as any).inscricao_estadual}`);
       if (lojaAtiva.endereco) billingParts.push(`📍 *Endereço:* ${lojaAtiva.endereco}`);
+      const cidadeUf = [(lojaAtiva as any).cidade, (lojaAtiva as any).uf].filter(Boolean).join(" - ");
+      if (cidadeUf) billingParts.push(`\u{1F3D9}\u{FE0F} *Cidade:* ${cidadeUf}`);
+      if ((lojaAtiva as any).cep) billingParts.push(`\u{1F3F7}\u{FE0F} *CEP:* ${(lojaAtiva as any).cep}`);
     }
     const billingBlock = billingParts.length > 0 ? `\n-----\n*DADOS PARA FATURAMENTO:*\n${billingParts.join("\n")}\n` : "";
     let msg = `📋 *PEDIDO DE COMPRA - COMPRA360*${pedidoNumero ? ` #${pedidoNumero}` : ""}\n-----\n📦 *Fornecedor:* ${f.nome}\n📅 *Data:* ${date}\n📝 *Itens:* ${items.length}${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}${billingBlock}\n-----\n`;
@@ -1196,6 +1199,8 @@ const AnalisePage = () => {
                       {(lojaAtiva as any).razao_social && <div><span className="text-muted-foreground">Razão Social:</span> {(lojaAtiva as any).razao_social}</div>}
                       {(lojaAtiva as any).inscricao_estadual && <div><span className="text-muted-foreground">IE:</span> {(lojaAtiva as any).inscricao_estadual}</div>}
                       {lojaAtiva.endereco && <div className="col-span-2"><span className="text-muted-foreground">Endereço:</span> {lojaAtiva.endereco}</div>}
+                      {((lojaAtiva as any).cidade || (lojaAtiva as any).uf) && <div><span className="text-muted-foreground">Cidade:</span> {[(lojaAtiva as any).cidade, (lojaAtiva as any).uf].filter(Boolean).join(" - ")}</div>}
+                      {(lojaAtiva as any).cep && <div><span className="text-muted-foreground">CEP:</span> {(lojaAtiva as any).cep}</div>}
                     </div>
                   </div>
                 )}

@@ -192,6 +192,9 @@ const PedidosPage = () => {
       if ((lojaAtiva as any).cnpj) billingParts.push(`📄 *CNPJ:* ${(lojaAtiva as any).cnpj}`);
       if ((lojaAtiva as any).inscricao_estadual) billingParts.push(`📋 *IE:* ${(lojaAtiva as any).inscricao_estadual}`);
       if (lojaAtiva.endereco) billingParts.push(`📍 *Endereço:* ${lojaAtiva.endereco}`);
+      const cidadeUf = [(lojaAtiva as any).cidade, (lojaAtiva as any).uf].filter(Boolean).join(" - ");
+      if (cidadeUf) billingParts.push(`\u{1F3D9}\u{FE0F} *Cidade:* ${cidadeUf}`);
+      if ((lojaAtiva as any).cep) billingParts.push(`\u{1F3F7}\u{FE0F} *CEP:* ${(lojaAtiva as any).cep}`);
     }
     const billingBlock = billingParts.length > 0 ? `\n-----\n*DADOS PARA FATURAMENTO:*\n${billingParts.join("\n")}\n` : "";
     let msg = `📋 *PEDIDO DE COMPRA - COMPRA360*${pedidoNumero ? ` #${pedidoNumero}` : ""}\n-----\n📦 *Fornecedor:* ${f.nome}\n📅 *Data:* ${date}\n📝 *Itens:* ${items.length}${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}${billingBlock}\n-----\n`;

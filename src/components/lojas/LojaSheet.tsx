@@ -151,6 +151,9 @@ export default function LojaSheet({
               <DataRow label="CNPJ" value={loja.cnpj} />
               <DataRow label="Insc. Estadual" value={loja.inscricao_estadual} />
               <DataRow label="Endereço" value={loja.endereco} />
+              <DataRow label="Cidade" value={loja.cidade} />
+              <DataRow label="Estado" value={loja.uf} />
+              <DataRow label="CEP" value={loja.cep} />
             </div>
           </section>
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isLojaAtiva, getDisplayName, formatCNPJ } from "./lojaUtils";
+import { isLojaAtiva, getDisplayName, formatCNPJ, formatCEP, formatUF, formatCidadeUF } from "./lojaUtils";
 
 describe("isLojaAtiva", () => {
   it("retorna true quando o id da loja coincide com o id ativo", () => {
@@ -45,5 +45,31 @@ describe("formatCNPJ", () => {
 
   it("ignora caracteres não numéricos", () => {
     expect(formatCNPJ("abc12.345/678")).toBe("12.345.678");
+  });
+});
+
+describe("formatCEP", () => {
+  it("aplica máscara 00000-000", () => {
+    expect(formatCEP("05127174")).toBe("05127-174");
+  });
+  it("ignora caracteres não numéricos e limita a 8 dígitos", () => {
+    expect(formatCEP("abc0512717499")).toBe("05127-174");
+  });
+});
+
+describe("formatUF", () => {
+  it("mantém 2 letras em maiúsculas", () => {
+    expect(formatUF("sp")).toBe("SP");
+    expect(formatUF("s1p2x")).toBe("SP");
+  });
+});
+
+describe("formatCidadeUF", () => {
+  it("junta cidade e UF", () => {
+    expect(formatCidadeUF({ cidade: "São Paulo", uf: "SP" })).toBe("São Paulo - SP");
+  });
+  it("usa só o que existir", () => {
+    expect(formatCidadeUF({ cidade: "São Paulo", uf: null })).toBe("São Paulo");
+    expect(formatCidadeUF({ cidade: null, uf: null })).toBe("");
   });
 });

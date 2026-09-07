@@ -1,0 +1,4 @@
+ALTER TABLE public.lojas
+  ADD COLUMN IF NOT EXISTS cidade text,
+  ADD COLUMN IF NOT EXISTS uf text,
+  ADD COLUMN IF NOT EXISTS cep text;

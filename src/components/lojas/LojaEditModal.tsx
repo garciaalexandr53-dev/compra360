@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { LojaForm, formatCNPJ } from "./lojaUtils";
+import { LojaForm, formatCNPJ, formatCEP, formatUF } from "./lojaUtils";
 
 interface Props {
   open: boolean;
@@ -73,6 +73,38 @@ export default function LojaEditModal({ open, onOpenChange, editing, form, setFo
               value={form.endereco}
               onChange={(e) => setForm({ ...form, endereco: e.target.value })}
               placeholder="Ex: Rua Principal, 100"
+              maxLength={200}
+            />
+          </div>
+          <div className="grid grid-cols-[1fr_auto] gap-3">
+            <div>
+              <Label>Cidade *</Label>
+              <Input
+                value={form.cidade}
+                onChange={(e) => setForm({ ...form, cidade: e.target.value })}
+                placeholder="Ex: São Paulo"
+                maxLength={100}
+              />
+            </div>
+            <div className="w-20">
+              <Label>UF</Label>
+              <Input
+                value={form.uf}
+                onChange={(e) => setForm({ ...form, uf: formatUF(e.target.value) })}
+                placeholder="SP"
+                maxLength={2}
+                className="uppercase"
+              />
+            </div>
+          </div>
+          <div>
+            <Label>CEP</Label>
+            <Input
+              value={form.cep}
+              onChange={(e) => setForm({ ...form, cep: formatCEP(e.target.value) })}
+              placeholder="00000-000"
+              inputMode="numeric"
+              maxLength={9}
             />
           </div>
         </div>
@@ -80,7 +112,11 @@ export default function LojaEditModal({ open, onOpenChange, editing, form, setFo
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button
             onClick={onSave}
-            disabled={saving || (!form.nome_fantasia.trim() && !form.nome.trim())}
+            disabled={
+              saving ||
+              (!form.nome_fantasia.trim() && !form.nome.trim()) ||
+              !form.cidade.trim()
+            }
           >
             {saving ? "Salvando..." : "Salvar"}
           </Button>
