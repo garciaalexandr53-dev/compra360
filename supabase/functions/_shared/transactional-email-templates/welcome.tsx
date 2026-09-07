@@ -9,6 +9,9 @@ import type { TemplateEntry } from './registry.ts'
 const SITE_NAME = 'Compra360'
 const SITE_URL = 'https://compra360app.com.br'
 const LOGO_URL = 'https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada/logo-completa.png'
+const SUPORTE_URL =
+  'https://api.whatsapp.com/send?phone=5544984483553&text=' +
+  encodeURIComponent('Olá! Sou usuário do Compra360 e preciso de ajuda.')
 
 interface WelcomeProps {
   name?: string
