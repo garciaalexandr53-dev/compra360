@@ -12,13 +12,14 @@ Ajuste de layout no `AdicionarItemDialog` (usado em 3 pontos: App Funcionários 
 │ Embalagem                      Alterar   │
 │ [ CX ]                                   │
 ├──────────────────────────────────────────┤
-│ Fator (un/embalagem)  Quantidade pedido  │
-│ [ 12 ]               [ 1 ]              │
-│ ⚠ fator inválido / "Ajustado... Voltar"  │
+│ Fator (un/embalagem)            [ 12 ]    │
+│ ⚠ fator inválido / "Ajustado... Voltar"   │
+├──────────────────────────────────────────┤
+│ Quantidade do pedido            [ 1 ]    │
 ├──────────────────────────────────────────┤
 │ 1 CX = 12 unidades                       │
 ├──────────────────────────────────────────┤
-│ Último pedido: 1 CX (12 un) · 18/08  Usar│   ← movida para cá
+│ Último pedido: 1 CX (12 un) · 18/08  Usar│  ← movida para cá
 ├──────────────────────────────────────────┤
 │ [ Cancelar ]        [ Adicionar ]         │
 └──────────────────────────────────────────┘
