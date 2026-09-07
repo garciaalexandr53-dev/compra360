@@ -304,13 +304,6 @@ const DashboardPage = () => {
     },
   });
 
-  const { data: pedidosPendentes = 0 } = useQuery({
-    queryKey: ["pedidos-pendentes"],
-    queryFn: async () => {
-      const { count } = await supabase.from("pedidos").select("*", { count: "exact", head: true }).eq("status", "enviado");
-      return count || 0;
-    },
-  });
 
   // Last finalized quote (for state 1)
   const { data: lastCotacao } = useQuery({
