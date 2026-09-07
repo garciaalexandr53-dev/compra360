@@ -33,7 +33,13 @@ export const WelcomeEmail = ({ name }: WelcomeProps) => (
           <BulletproofButton href={`${SITE_URL}/dashboard`} label="Acessar o painel">Acessar o painel</BulletproofButton>
         </Section>
         <Text style={footer}>
-          Precisa de ajuda? Responda este e-mail que nossa equipe vai te atender.
+          Precisa de ajuda? Fale com a nossa equipe no{' '}
+          <Link href={SUPORTE_URL} style={footerLink}>
+            WhatsApp
+          </Link>
+          .
+          <br />
+          (esta caixa de e-mail não recebe respostas)
         </Text>
       </Container>
     </Body>
