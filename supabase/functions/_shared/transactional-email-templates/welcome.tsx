@@ -1,7 +1,7 @@
 /// <reference types="npm:@types/react@18.3.1" />
 import * as React from 'npm:react@18.3.1'
 import {
-  Body, Container, Head, Heading, Html, Img, Preview, Section, Text,
+  Body, Container, Head, Heading, Html, Img, Link, Preview, Section, Text,
 } from 'npm:@react-email/components@0.0.22'
 import { BulletproofButton } from '../BulletproofButton.tsx'
 import type { TemplateEntry } from './registry.ts'
@@ -9,6 +9,9 @@ import type { TemplateEntry } from './registry.ts'
 const SITE_NAME = 'Compra360'
 const SITE_URL = 'https://compra360app.com.br'
 const LOGO_URL = 'https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada/logo-completa.png'
+const SUPORTE_URL =
+  'https://api.whatsapp.com/send?phone=5544984483553&text=' +
+  encodeURIComponent('Olá! Sou usuário do Compra360 e preciso de ajuda.')
 
 interface WelcomeProps {
   name?: string
@@ -33,7 +36,13 @@ export const WelcomeEmail = ({ name }: WelcomeProps) => (
           <BulletproofButton href={`${SITE_URL}/dashboard`} label="Acessar o painel">Acessar o painel</BulletproofButton>
         </Section>
         <Text style={footer}>
-          Precisa de ajuda? Responda este e-mail que nossa equipe vai te atender.
+          Precisa de ajuda? Fale com a nossa equipe no{' '}
+          <Link href={SUPORTE_URL} style={footerLink}>
+            WhatsApp
+          </Link>
+          .
+          <br />
+          (esta caixa de e-mail não recebe respostas)
         </Text>
       </Container>
     </Body>
@@ -52,3 +61,4 @@ const container = { padding: '32px 28px', maxWidth: '560px' }
 const h1 = { fontSize: '24px', fontWeight: 'bold' as const, color: 'hsl(174, 78%, 26%)', margin: '0 0 20px', textAlign: 'center' as const }
 const text = { fontSize: '15px', color: 'hsl(221, 16%, 47%)', lineHeight: '1.6', margin: '0 0 24px' }
 const footer = { fontSize: '12px', color: 'hsl(221, 16%, 60%)', margin: '32px 0 0', textAlign: 'center' as const }
+const footerLink = { color: 'hsl(174, 78%, 26%)', textDecoration: 'underline' }
