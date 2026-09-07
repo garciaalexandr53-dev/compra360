@@ -408,6 +408,7 @@ export default function LandingPage() {
   if (user) return null;
 
   const goLogin = () => navigate("/login");
+  const goSignup = () => navigate("/login?cadastro=1");
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
@@ -436,7 +437,7 @@ export default function LandingPage() {
             <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white px-2 sm:px-3" onClick={goLogin}>
               Entrar
             </Button>
-            <Button size="sm" className="bg-emerald-500 hover:bg-emerald-400 text-white hover:scale-105 transition-all px-2.5 sm:px-3 whitespace-nowrap" onClick={goLogin}>
+            <Button size="sm" className="bg-emerald-500 hover:bg-emerald-400 text-white hover:scale-105 transition-all px-2.5 sm:px-3 whitespace-nowrap" onClick={goSignup}>
               Começar grátis
             </Button>
           </div>
@@ -467,7 +468,7 @@ export default function LandingPage() {
               <Button
                 size="lg"
                 className="bg-emerald-500 hover:bg-emerald-400 text-white text-base px-8 h-12 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:scale-105 transition-all duration-200"
-                onClick={goLogin}
+                onClick={goSignup}
               >
                 Começar grátis agora <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
@@ -727,7 +728,7 @@ export default function LandingPage() {
                 )}
                 <Button
                   className="w-full rounded-lg py-3 px-6 font-medium bg-emerald-500 hover:bg-emerald-400 text-white hover:scale-105 transition-all"
-                  onClick={goLogin}
+                  onClick={goSignup}
                 >
                   {plan.cta}
                 </Button>
@@ -772,7 +773,7 @@ export default function LandingPage() {
           <Button
             size="lg"
             className="bg-emerald-500 hover:bg-emerald-400 text-white text-base px-8 h-12 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:scale-105 transition-all duration-200"
-            onClick={goLogin}
+            onClick={goSignup}
           >
             Começar a economizar agora <ArrowRight className="ml-1 h-4 w-4" />
           </Button>

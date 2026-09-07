@@ -13,17 +13,17 @@ import Seo from "@/components/Seo";
 
 
 const LoginPage = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(searchParams.get("cadastro") === "1");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const { signIn, signUp, user } = useAuth();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const rawNext = searchParams.get("next") ?? "";
   const nextPath = /^\/(?!\/)/.test(rawNext) ? rawNext : "";
   const afterLogin = nextPath || "/dashboard";
