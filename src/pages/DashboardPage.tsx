@@ -304,13 +304,6 @@ const DashboardPage = () => {
     },
   });
 
-  const { data: pedidosPendentes = 0 } = useQuery({
-    queryKey: ["pedidos-pendentes"],
-    queryFn: async () => {
-      const { count } = await supabase.from("pedidos").select("*", { count: "exact", head: true }).eq("status", "enviado");
-      return count || 0;
-    },
-  });
 
   // Last finalized quote (for state 1)
   const { data: lastCotacao } = useQuery({
@@ -758,14 +751,6 @@ const DashboardPage = () => {
                   )}
                 </CardContent>
               </Card>
-            )}
-
-            {/* Pedidos aguardando confirmação */}
-            {pedidosPendentes > 0 && (
-              <button onClick={() => navigate("/analise")} className="w-full flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg text-left hover:shadow-sm transition-shadow">
-                <Clock className="h-4 w-4 text-blue-600 shrink-0" />
-                <span className="text-sm text-blue-800 dark:text-blue-300">{pedidosPendentes} pedido(s) aguardando confirmação</span>
-              </button>
             )}
           </div>
         )}
