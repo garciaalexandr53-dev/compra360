@@ -1,43 +1,47 @@
-# Remover o seletor de loja duplicado na tela inicial do Dashboard
+# Um único seletor de loja no Dashboard (no lugar do card "1 Selecionar loja")
 
-## O que está acontecendo (verificado no código)
+## Situação atual (verificado no código)
 
-No `/dashboard` o cliente com mais de uma loja vê **dois seletores de loja** ao mesmo tempo:
+No `/dashboard`, o cliente com mais de uma loja vê **dois seletores** ao mesmo tempo na tela inicial:
 
-1. **Cabeçalho** (`src/components/AppLayout.tsx`, linha 91): `{!isLojas && <LojaSelector />}` — sempre visível no header, ao lado do título "Compra360".
-2. **Card "1 Selecionar loja"** (`src/pages/DashboardPage.tsx`, linhas 673–721): aparece **apenas** no estado inicial do dashboard (`state === 1`, quando não há cotação ativa na loja) e quando `lojas.length > 1`.
+1. **Cabeçalho** (`src/components/AppLayout.tsx`, linha 91): `<LojaSelector />` ao lado do título "Compra360".
+2. **Card "1 Selecionar loja"** (`src/pages/DashboardPage.tsx`, linhas 673–721): aparece só no estado inicial (`state === 1`, sem cotação ativa) e quando `lojas.length > 1`.
 
-Ou seja, a duplicação acontece somente na tela inicial de "Vamos começar uma nova cotação!".
+A cotação ativa é buscada **por loja** (`DashboardPage.tsx`, linhas 183–186: `.eq("loja_id", lojaAtiva.id)`), então trocar a loja é o que permite manter **cotações simultâneas, uma por loja** — esse comportamento precisa continuar funcionando.
 
-## Cotações simultâneas continuam funcionando
+## Solução aprovada
 
-A cotação ativa é buscada **por loja** (`DashboardPage.tsx`, linha 183–186: `queryKey: ["cotacao-ativa", lojaAtiva?.id]` com `.eq("loja_id", lojaAtiva.id)`). Isso significa que o seletor do cabeçalho é justamente o que permite:
+Excluir o card "1 Selecionar loja" e colocar o seletor (o mesmo `LojaSelector` do cabeçalho) **no lugar dele**, dentro da tela inicial. Resultado: um único seletor de loja em cada situação, nunca dois.
 
-- Ter uma cotação em andamento em cada loja ao mesmo tempo;
-- Trocar de loja no cabeçalho e cair no dashboard daquela loja — que pode estar no estado inicial (pronto para começar nova cotação) enquanto a outra loja segue com cotação ativa.
+### Comportamento por situação
 
-Por isso o seletor do cabeçalho **não** será removido dos estados com cotação ativa (2 a 5). Ele é essencial ali.
+- **Dashboard, estado inicial (sem cotação ativa):** o seletor aparece no corpo da tela, na posição do antigo passo 1 (estilizado para a largura total, como um campo do formulário). O cabeçalho **não** mostra o seletor nesse caso.
+- **Dashboard, com cotação ativa (estados 2–5):** o seletor fica no cabeçalho, como hoje, permitindo trocar de loja para continuar/iniciar cotação em outra unidade.
+- **Demais páginas (Cotação, Produtos, Fornecedores, Análise, etc.):** seletor no cabeçalho, sem mudança.
+- **Cliente com uma única loja:** nada aparece (o `LojaSelector` já se oculta quando `lojas.length <= 1`).
 
 ## O que será feito
 
-1. Em `src/pages/DashboardPage.tsx`, expor o estado atual do dashboard para o layout, de forma que o cabeçalho saiba quando o card "1 Selecionar loja" está sendo exibido. Implementação mais simples e sem prop drilling: um pequeno contexto/estado compartilhado — na prática, o `DashboardPage` sinaliza "seletor próprio ativo" enquanto `state === 1 && lojas.length > 1`.
-2. Em `src/components/AppLayout.tsx`, esconder o `LojaSelector` do cabeçalho apenas quando essa sinalização estiver ativa. Nos demais casos (`state` 2–5, ou cliente com uma única loja, ou qualquer outra página) o cabeçalho continua exatamente como hoje.
-3. Nada muda no card "1 Selecionar loja": ele segue sendo o seletor na tela inicial.
-
-### Alternativa mais simples (se preferir menos código)
-
-Manter o cabeçalho intocado e, em vez disso, **remover o card "1 Selecionar loja"** do estado inicial, deixando só o seletor do cabeçalho como ponto único de troca de loja em todo o sistema. Isso elimina a duplicação com uma mudança menor e sem estado compartilhado, mas o fluxo guiado perde o passo 1 (o passo "Adicionar produtos" passaria a ser o único). Podemos seguir por aqui se você achar melhor.
+1. `src/pages/DashboardPage.tsx`:
+   - Remover o Card "Selecionar loja" (linhas 673–721) e os estados `lojaStepOpen` / `lojaConfirmed` usados só por ele.
+   - No lugar, renderizar `<LojaSelector />` em uma linha própria dentro do bloco do estado 1 (sem wrapper de card), ocupando a largura total.
+   - Ajustar a numeração do passo "Adicionar produtos": como o passo 1 some como card, exibir o número apenas quando houver seletor visível (multi-loja), mantendo a lógica atual de `lojas.length > 1`.
+   - Sinalizar para o cabeçalho quando a tela inicial com seletor próprio está visível (`state === 1 && lojas.length > 1`).
+2. `src/lib/dashboardHeaderStore.ts` (novo, ~20 linhas): mini-store com `useSyncExternalStore` para o `DashboardPage` avisar o `AppLayout` que o seletor deve sumir do cabeçalho (o Dashboard é filho do layout, então contexto comum não serve para comunicar filho → cabeçalho).
+3. `src/components/AppLayout.tsx`: subscrever o store e esconder o `LojaSelector` do cabeçalho apenas quando a sinalização estiver ativa.
+4. Sem alteração de queries, mutations, RLS, banco ou regra de negócio.
 
 ## Detalhes técnicos
 
-- Arquivos: `src/components/AppLayout.tsx` e `src/pages/DashboardPage.tsx`.
-- Apenas condição de renderização e um sinal de estado; nenhuma query, mutation, RLS, tabela ou regra de negócio alterada.
-- A numeração dos passos ("1 Selecionar loja" / "2 Adicionar produtos") permanece como está.
+- Arquivos: `src/pages/DashboardPage.tsx`, `src/components/AppLayout.tsx`, novo `src/lib/dashboardHeaderStore.ts`.
+- O `LojaSelector` recebe uma variação de estilo (largura total) via prop opcional ou classe de container; o seletor do cabeçalho das outras páginas permanece com a aparência atual.
+- A troca de loja continua chamando `setLojaAtivaId` — cotações simultâneas por loja não são afetadas.
 
 ## Verificação
 
-- Typecheck e testes (`vitest run`) sem regressões.
-- Playwright (desktop e 360px) com conta de **mais de uma loja** logada:
-  - `/dashboard` em estado inicial: cabeçalho sem o dropdown de loja; card "1 Selecionar loja" funcional.
-  - `/dashboard` com cotação ativa: dropdown do cabeçalho presente e trocando de loja corretamente, permitindo abrir/continuar cotação em outra loja.
+- Typecheck e `vitest run` sem regressões.
+- Playwright (desktop e 360px), conta com **duas ou mais lojas**:
+  - `/dashboard` inicial: nenhum dropdown no cabeçalho; seletor aparece na posição do antigo passo 1 e troca de loja funciona.
+  - `/dashboard` com cotação ativa: dropdown presente no cabeçalho; trocar de loja leva ao estado da outra loja.
   - `/cotacao`, `/produtos`, `/fornecedores`: seletor do cabeçalho inalterado.
+  - Conta com **uma loja**: nada aparece em nenhuma tela.
