@@ -452,18 +452,33 @@ const CotacaoPage = () => {
   }, [cotacaoProdutos, search, filterAnomalies, filterSemPreco, localPrices, fornecedores]);
 
   // ── Supplier progress ──
+  // "Respondeu" = tem qualquer preço registrado (inclusive 0 = "Sem itens"),
+  // mesmo critério usado no Painel.
+  const respostaInfo = useMemo(() => {
+    const registrados = new Map<string, number>();
+    const zeros = new Map<string, number>();
+    precos.forEach((p) => {
+      if (p.preco === null || p.preco === undefined) return;
+      registrados.set(p.fornecedor_id, (registrados.get(p.fornecedor_id) || 0) + 1);
+      if (Number(p.preco) === 0) zeros.set(p.fornecedor_id, (zeros.get(p.fornecedor_id) || 0) + 1);
+    });
+    const semItens = new Set<string>();
+    registrados.forEach((total, fId) => {
+      if (total > 0 && zeros.get(fId) === total) semItens.add(fId);
+    });
+    return { respondeuSet: new Set(registrados.keys()), semItens };
+  }, [precos]);
+
+  const supplierHasResponded = (fId: string) => respostaInfo.respondeuSet.has(fId);
+
   const supplierProgress = useMemo(() => {
     const total = fornecedores.length;
-    const responded = fornecedores.filter((f) =>
-      precos.some((p) => p.fornecedor_id === f.id && p.preco !== null && p.preco > 0)
-    ).length;
+    const responded = fornecedores.filter((f) => respostaInfo.respondeuSet.has(f.id)).length;
     return { total, responded, percent: total > 0 ? Math.round((responded / total) * 100) : 0 };
-  }, [fornecedores, precos]);
-
-  const supplierHasResponded = (fId: string) =>
-    precos.some((p) => p.fornecedor_id === fId && p.preco !== null && p.preco > 0);
+  }, [fornecedores, respostaInfo]);
 
   const supplierStatus = (fId: string): FornecedorVisualStatus => {
+    if (respostaInfo.semItens.has(fId)) return "sem_itens";
     if (supplierHasResponded(fId)) return "respondeu";
     if (visualizadoMap.get(fId)) return "visualizou";
     return "nao_visualizou";
@@ -473,8 +488,8 @@ const CotacaoPage = () => {
     !!cotacaoAtiva && supplierProgress.total > 0 && supplierProgress.responded === supplierProgress.total;
 
   const pendingFornecedores = useMemo(
-    () => fornecedores.filter((f) => !supplierHasResponded(f.id)),
-    [fornecedores, precos]
+    () => fornecedores.filter((f) => !respostaInfo.respondeuSet.has(f.id)),
+    [fornecedores, respostaInfo]
   );
   const someRespondedAndCanSkip =
     !!cotacaoAtiva &&
