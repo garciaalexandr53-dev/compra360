@@ -814,6 +814,29 @@ export default function LandingPage() {
         </div>
       </footer>
 
+      {/* ── Botão flutuante de WhatsApp ── */}
+      <a
+        href={`https://wa.me/5544984483553?text=${encodeURIComponent(
+          "Olá! Quero saber mais sobre o Compra360."
+        )}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Falar com o suporte pelo WhatsApp"
+        className="fixed bottom-4 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] shadow-lg shadow-emerald-900/30 transition-transform duration-200 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        style={{
+          bottom: "calc(1rem + env(safe-area-inset-bottom))",
+          right: "calc(1rem + env(safe-area-inset-right))",
+        }}
+      >
+        <svg
+          viewBox="0 0 32 32"
+          aria-hidden="true"
+          className="h-8 w-8 fill-white"
+        >
+          <path d="M16.003 3C9.376 3 4 8.376 4 15.003c0 2.118.553 4.186 1.604 6.012L4 29l8.184-1.564a11.97 11.97 0 0 0 3.819.624h.001C22.63 28.06 28 22.684 28 15.997 28 9.376 22.63 3 16.003 3zm0 21.79h-.001a9.96 9.96 0 0 1-3.18-.52l-.228-.072-4.854.927.936-4.73-.15-.243a9.92 9.92 0 0 1-1.522-5.275c0-5.488 4.467-9.954 9.954-9.954 2.66 0 5.158 1.037 7.034 2.918a9.88 9.88 0 0 1 2.918 7.037c0 5.488-4.466 9.954-9.953 9.954zm5.466-7.453c-.3-.15-1.773-.875-2.047-.974-.274-.1-.474-.15-.674.15-.2.3-.773.974-.948 1.174-.175.2-.35.225-.65.075-.3-.15-1.265-.467-2.41-1.488-.89-.794-1.49-1.775-1.665-2.075-.175-.3-.018-.462.131-.61.135-.134.3-.35.45-.525.15-.175.2-.3.3-.5.1-.2.05-.375-.025-.525-.075-.15-.674-1.624-.923-2.222-.243-.583-.49-.504-.674-.513l-.574-.01c-.2 0-.525.075-.8.375s-1.05 1.024-1.05 2.498 1.075 2.897 1.225 3.097c.15.2 2.114 3.227 5.118 4.523.715.31 1.273.495 1.708.633.717.228 1.37.196 1.887.119.575-.086 1.773-.725 2.023-1.425.25-.7.25-1.3.175-1.425-.075-.125-.275-.2-.575-.35z" />
+        </svg>
+      </a>
+
     </div>
   );
 }

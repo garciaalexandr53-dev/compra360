@@ -1,5 +1,9 @@
 // Helpers compartilhados pelo Painel Administrativo
 import { PLAN_PRICES } from "@/lib/planPrices";
+import { SUPORTE_WHATSAPP } from "@/lib/suporte";
+
+/** Link de WhatsApp da equipe de suporte (usado nos e-mails de prospecção). */
+const WHATSAPP_SUPORTE_URL = `https://wa.me/55${SUPORTE_WHATSAPP}`;
 
 
 export type Cliente = {
@@ -183,7 +187,7 @@ export function getMensagem(situacao: SituacaoCliente, c: Cliente): MensagemCont
       return {
         assunto: "Seu trial do Compra360 expira em 7 dias",
         whatsapp: `Olá ${nome}! Seu período de teste do Compra360 termina em ${diasTrial} dias 🗓️ Espero que esteja gostando! Quer continuar com acesso completo? Me chama que te passo as opções.`,
-        email: `Olá ${nome},\n\nSeu período de teste gratuito encerra em ${diasTrial} dias. Para continuar sem interrupção:\n\n- Pro: ${PLAN_PRICES.pro.display}${PLAN_PRICES.pro.note} — IA completa + importação em massa + suporte WhatsApp\n- Business: ${PLAN_PRICES.business.display}${PLAN_PRICES.business.note} (promocional, de ${PLAN_PRICES.business.originalDisplay}) — múltiplas lojas + distribuição inteligente\n\nResponda este email ou me chame no WhatsApp.\n\nAbraço,\nAlexandre — Compra360`,
+        email: `Olá ${nome},\n\nSeu período de teste gratuito encerra em ${diasTrial} dias. Para continuar sem interrupção:\n\n- Pro: ${PLAN_PRICES.pro.display}${PLAN_PRICES.pro.note} — IA completa + importação em massa + suporte WhatsApp\n- Business: ${PLAN_PRICES.business.display}${PLAN_PRICES.business.note} (promocional, de ${PLAN_PRICES.business.originalDisplay}) — múltiplas lojas + distribuição inteligente\n\nMe chame no WhatsApp para definir o plano ideal: ${WHATSAPP_SUPORTE_URL}\n\nAbraço,\nAlexandre — Compra360`,
       };
 
     case "trial_3d":
@@ -197,7 +201,7 @@ export function getMensagem(situacao: SituacaoCliente, c: Cliente): MensagemCont
       return {
         assunto: "Bem-vindo ao Compra360!",
         whatsapp: `Olá ${nome}! 👋 Bem-vindo ao Compra360! Sou o Alexandre e estou aqui para te ajudar a tirar o máximo proveito da plataforma. Qualquer dúvida no setup, me chama! 🚀`,
-        email: `Olá ${nome},\n\nSeja bem-vindo ao Compra360!\n\nEstou aqui para te ajudar a configurar seu primeiro fluxo de cotação. Em 10 minutos a gente deixa tudo pronto.\n\nMe chama no WhatsApp ou responde este email quando puder.\n\nAbraço,\nAlexandre — Compra360`,
+        email: `Olá ${nome},\n\nSeja bem-vindo ao Compra360!\n\nEstou aqui para te ajudar a configurar seu primeiro fluxo de cotação. Em 10 minutos a gente deixa tudo pronto.\n\nPara qualquer dúvida, me chame no WhatsApp: ${WHATSAPP_SUPORTE_URL}\n\nAbraço,\nAlexandre — Compra360`,
       };
   }
 }
