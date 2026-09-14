@@ -1,6 +1,6 @@
-import { CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, MinusCircle } from "lucide-react";
 
-export type FornecedorVisualStatus = "respondeu" | "visualizou" | "nao_visualizou";
+export type FornecedorVisualStatus = "respondeu" | "sem_itens" | "visualizou" | "nao_visualizou";
 
 interface Props {
   status: FornecedorVisualStatus;
@@ -13,6 +13,11 @@ const cfg: Record<FornecedorVisualStatus, { icon: typeof Eye; label: string; cls
     icon: CheckCircle2,
     label: "Respondeu",
     cls: "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-300 dark:border-green-900",
+  },
+  sem_itens: {
+    icon: MinusCircle,
+    label: "Sem itens",
+    cls: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-200 dark:border-orange-900",
   },
   visualizou: {
     icon: Eye,
