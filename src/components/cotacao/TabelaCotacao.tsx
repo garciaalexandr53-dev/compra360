@@ -151,14 +151,32 @@ const TabelaCotacao = ({
               <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-10">Fator</th>
               <th className="px-1 py-2 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border w-16">Qt</th>
               {fornecedores.map((f) => {
-                const hasPrice = supplierHasResponded(f.id);
+                const respState = supplierResponseState(f.id);
+                const dotCls =
+                  respState === "respondeu"
+                    ? "bg-green-500"
+                    : respState === "sem_itens"
+                    ? "bg-orange-500"
+                    : "bg-muted-foreground/30";
+                const respLabel =
+                  respState === "respondeu"
+                    ? "Respondeu"
+                    : respState === "sem_itens"
+                    ? "Sem itens"
+                    : "Aguardando resposta";
+                const respTextCls =
+                  respState === "respondeu"
+                    ? "text-green-600 dark:text-green-400"
+                    : respState === "sem_itens"
+                    ? "text-orange-600 dark:text-orange-400"
+                    : "text-muted-foreground";
                 return (
                   <th key={f.id} className="px-1 py-2 text-center text-[9px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border whitespace-nowrap min-w-[80px]">
                     {isReviewMode ? (
                       <Popover>
                         <PopoverTrigger asChild>
                           <button className="flex items-center justify-center gap-1 w-full hover:text-foreground transition-colors">
-                            <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${hasPrice ? "bg-green-500" : "bg-muted-foreground/30"}`} />
+                            <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotCls}`} />
                             <span className="truncate max-w-[70px]">{f.nome}</span>
                           </button>
                         </PopoverTrigger>
@@ -175,16 +193,16 @@ const TabelaCotacao = ({
                             </p>
                           )}
                           <div className="mt-2 pt-2 border-t">
-                            <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${hasPrice ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
-                              <span className={`w-2 h-2 rounded-full ${hasPrice ? "bg-green-500" : "bg-muted-foreground/30"}`} />
-                              {hasPrice ? "Respondeu" : "Aguardando resposta"}
+                            <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${respTextCls}`}>
+                              <span className={`w-2 h-2 rounded-full ${dotCls}`} />
+                              {respLabel}
                             </span>
                           </div>
                         </PopoverContent>
                       </Popover>
                     ) : (
                       <div className="flex items-center justify-center gap-1">
-                        <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${hasPrice ? "bg-green-500" : "bg-muted-foreground/30"}`} />
+                        <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotCls}`} />
                         <span className="truncate max-w-[70px]">{f.nome}</span>
                       </div>
                     )}
