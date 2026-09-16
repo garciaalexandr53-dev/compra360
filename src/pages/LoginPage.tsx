@@ -233,7 +233,7 @@ const LoginPage = () => {
               </div>
             )}
             <Button type="submit" className="w-full bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] hover:opacity-90" disabled={loading}>
-              {loading ? "Aguarde..." : isSignUp ? "Criar Conta" : "Entrar"}
+              {loading ? "Aguarde..." : isRecuperar ? "Enviar link de nova senha" : isSignUp ? "Criar Conta" : "Entrar"}
             </Button>
           </form>
 
@@ -271,9 +271,17 @@ const LoginPage = () => {
             <button
               type="button"
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => {
+                if (isRecuperar) {
+                  setIsRecuperar(false);
+                  return;
+                }
+                setIsSignUp(!isSignUp);
+              }}
             >
-              {isSignUp ? "Já tem conta? Entre aqui" : "Não tem conta? Cadastre-se"}
+              {isRecuperar
+                ? "Voltar para entrar"
+                : isSignUp ? "Já tem conta? Entre aqui" : "Não tem conta? Cadastre-se"}
             </button>
           </div>
 
