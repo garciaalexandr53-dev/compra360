@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import { Download } from "lucide-react";
@@ -19,6 +20,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [isSignUp, setIsSignUp] = useState(searchParams.get("cadastro") === "1");
+  const [isRecuperar, setIsRecuperar] = useState(searchParams.get("recuperar") === "1");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -120,6 +122,21 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isRecuperar) {
+      setLoading(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      setLoading(false);
+      if (error) {
+        toast.error(translateAuthError(error.message));
+      } else {
+        toast.success("Enviamos um link para você criar uma nova senha. Confira seu email.");
+        setIsRecuperar(false);
+      }
+      return;
+    }
+
     if (isSignUp) {
       const wppError = validateWhatsapp(whatsapp);
       if (wppError) {
@@ -166,10 +183,12 @@ const LoginPage = () => {
             />
           </div>
           <h1 className="text-lg font-semibold text-foreground">
-            {isSignUp ? "Criar conta no Compra360" : "Entrar no Compra360"}
+            {isRecuperar ? "Recuperar senha" : isSignUp ? "Criar conta no Compra360" : "Entrar no Compra360"}
           </h1>
           <CardDescription>
-            {isSignUp ? "Crie sua conta" : "Entre com sua conta para continuar"}
+            {isRecuperar
+              ? "Informe seu email para receber o link de nova senha"
+              : isSignUp ? "Crie sua conta" : "Entre com sua conta para continuar"}
           </CardDescription>
         </CardHeader>
 
@@ -182,13 +201,26 @@ const LoginPage = () => {
                 value={email} onChange={(e) => setEmail(e.target.value)} required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password" type="password" placeholder="••••••••"
-                value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
-              />
-            </div>
+            {!isRecuperar && (
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password" type="password" placeholder="••••••••"
+                  value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
+                />
+              </div>
+            )}
+            {!isSignUp && !isRecuperar && (
+              <div className="text-right -mt-1">
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                  onClick={() => setIsRecuperar(true)}
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
+            )}
             {isSignUp && (
               <div className="space-y-2">
                 <Label htmlFor="whatsapp">WhatsApp (com DDD) *</Label>
@@ -201,7 +233,7 @@ const LoginPage = () => {
               </div>
             )}
             <Button type="submit" className="w-full bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))] hover:opacity-90" disabled={loading}>
-              {loading ? "Aguarde..." : isSignUp ? "Criar Conta" : "Entrar"}
+              {loading ? "Aguarde..." : isRecuperar ? "Enviar link de nova senha" : isSignUp ? "Criar Conta" : "Entrar"}
             </Button>
           </form>
 
@@ -239,9 +271,17 @@ const LoginPage = () => {
             <button
               type="button"
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => {
+                if (isRecuperar) {
+                  setIsRecuperar(false);
+                  return;
+                }
+                setIsSignUp(!isSignUp);
+              }}
             >
-              {isSignUp ? "Já tem conta? Entre aqui" : "Não tem conta? Cadastre-se"}
+              {isRecuperar
+                ? "Voltar para entrar"
+                : isSignUp ? "Já tem conta? Entre aqui" : "Não tem conta? Cadastre-se"}
             </button>
           </div>
 
