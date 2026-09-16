@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Building2, IdCard, Mail, Phone, Calendar, LogIn, CreditCard, Activity, Clock,
-  Store, Package, Users, FileText, Send, Loader2, MessageCircle, Pencil, CheckCircle2, XCircle, History, Trash2, HandCoins,
+  Store, Package, Users, FileText, Send, Loader2, MessageCircle, Pencil, CheckCircle2, XCircle, History, Trash2, HandCoins, AtSign,
 } from "lucide-react";
 import {
   Cliente, getDiasTrialRestantes, getSaudeCliente, normalizarWhatsAppCliente, PLAN_COLORS,
@@ -20,6 +20,7 @@ import {
 import { formatBRL, formatDate } from "@/lib/format";
 import { useIsMobile } from "@/hooks/use-mobile";
 import PagamentoManualDialog from "./PagamentoManualDialog";
+import AlterarEmailDialog from "./AlterarEmailDialog";
 
 interface Props {
   cliente: Cliente | null;
@@ -70,6 +71,7 @@ function formatUnix(ts: number | null | undefined): string {
 
 export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onAlterarPlano, onExcluir }: Props) {
   const [pagamentoOpen, setPagamentoOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
   const isMobile = useIsMobile();
   const open = !!cliente;
 
@@ -343,6 +345,17 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
             <span className="truncate sm:hidden">Pagamento manual</span>
             <span className="hidden sm:inline truncate">Registrar pagamento manual</span>
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="col-span-2 min-w-0 sm:flex-1"
+            onClick={() => setEmailOpen(true)}
+            disabled={!cliente.email}
+            title="Alterar e-mail de acesso"
+          >
+            <AtSign className="h-4 w-4 text-primary shrink-0" />
+            <span className="truncate">Alterar e-mail</span>
+          </Button>
           {onExcluir && (
             <Button
               size="sm"
@@ -371,6 +384,13 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
         email={cliente.email}
         planoAtual={cliente.plan_name}
         vencimentoAtual={detalhes?.current_period_end ?? cliente.trial_end}
+      />
+
+      <AlterarEmailDialog
+        open={emailOpen}
+        onOpenChange={setEmailOpen}
+        userId={cliente.user_id}
+        emailAtual={cliente.email}
       />
     </Sheet>
   );
