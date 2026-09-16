@@ -345,6 +345,17 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
             <span className="truncate sm:hidden">Pagamento manual</span>
             <span className="hidden sm:inline truncate">Registrar pagamento manual</span>
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="col-span-2 min-w-0 sm:flex-1"
+            onClick={() => setEmailOpen(true)}
+            disabled={!cliente.email}
+            title="Alterar e-mail de acesso"
+          >
+            <AtSign className="h-4 w-4 text-primary shrink-0" />
+            <span className="truncate">Alterar e-mail</span>
+          </Button>
           {onExcluir && (
             <Button
               size="sm"
@@ -373,6 +384,13 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
         email={cliente.email}
         planoAtual={cliente.plan_name}
         vencimentoAtual={detalhes?.current_period_end ?? cliente.trial_end}
+      />
+
+      <AlterarEmailDialog
+        open={emailOpen}
+        onOpenChange={setEmailOpen}
+        userId={cliente.user_id}
+        emailAtual={cliente.email}
       />
     </Sheet>
   );
