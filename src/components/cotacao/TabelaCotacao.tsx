@@ -88,8 +88,13 @@ const TabelaCotacao = ({
   const [deleteConfirm, setDeleteConfirm] = useState<{ cpId: string; nome: string } | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const supplierHasResponded = (fId: string) =>
-    precos.some((p) => p.fornecedor_id === fId && p.preco !== null && p.preco > 0);
+  // "Respondeu" = qualquer preço registrado (inclusive 0 = marcou "Sem itens"),
+  // alinhado ao critério do Dashboard/CotacaoPage.
+  const supplierResponseState = (fId: string): "respondeu" | "sem_itens" | "pendente" => {
+    const regs = precos.filter((p) => p.fornecedor_id === fId && p.preco !== null);
+    if (regs.length === 0) return "pendente";
+    return regs.every((p) => p.preco === 0) ? "sem_itens" : "respondeu";
+  };
 
   const handleDeleteClick = (cpId: string, nome: string) => {
     setDeleteConfirm({ cpId, nome });
