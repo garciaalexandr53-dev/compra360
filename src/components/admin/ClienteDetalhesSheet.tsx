@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Building2, IdCard, Mail, Phone, Calendar, LogIn, CreditCard, Activity, Clock,
-  Store, Package, Users, FileText, Send, Loader2, MessageCircle, Pencil, CheckCircle2, XCircle, History, Trash2, HandCoins, AtSign,
+  Store, Package, Users, FileText, Send, Loader2, MessageCircle, Pencil, CheckCircle2, XCircle, History, Trash2, HandCoins, AtSign, KeyRound,
 } from "lucide-react";
 import {
   Cliente, getDiasTrialRestantes, getSaudeCliente, normalizarWhatsAppCliente, PLAN_COLORS,
@@ -21,6 +21,7 @@ import { formatBRL, formatDate } from "@/lib/format";
 import { useIsMobile } from "@/hooks/use-mobile";
 import PagamentoManualDialog from "./PagamentoManualDialog";
 import AlterarEmailDialog from "./AlterarEmailDialog";
+import SenhaClienteDialog from "./SenhaClienteDialog";
 
 interface Props {
   cliente: Cliente | null;
@@ -72,6 +73,7 @@ function formatUnix(ts: number | null | undefined): string {
 export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onAlterarPlano, onExcluir }: Props) {
   const [pagamentoOpen, setPagamentoOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
+  const [senhaOpen, setSenhaOpen] = useState(false);
   const isMobile = useIsMobile();
   const open = !!cliente;
 
@@ -356,6 +358,17 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
             <AtSign className="h-4 w-4 text-primary shrink-0" />
             <span className="truncate">Alterar e-mail</span>
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="col-span-2 min-w-0 sm:flex-1"
+            onClick={() => setSenhaOpen(true)}
+            disabled={!cliente.email}
+            title="Redefinir senha do cliente"
+          >
+            <KeyRound className="h-4 w-4 text-primary shrink-0" />
+            <span className="truncate">Senha</span>
+          </Button>
           {onExcluir && (
             <Button
               size="sm"
@@ -389,6 +402,13 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
       <AlterarEmailDialog
         open={emailOpen}
         onOpenChange={setEmailOpen}
+        userId={cliente.user_id}
+        emailAtual={cliente.email}
+      />
+
+      <SenhaClienteDialog
+        open={senhaOpen}
+        onOpenChange={setSenhaOpen}
         userId={cliente.user_id}
         emailAtual={cliente.email}
       />
