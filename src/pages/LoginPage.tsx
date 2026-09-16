@@ -183,10 +183,12 @@ const LoginPage = () => {
             />
           </div>
           <h1 className="text-lg font-semibold text-foreground">
-            {isSignUp ? "Criar conta no Compra360" : "Entrar no Compra360"}
+            {isRecuperar ? "Recuperar senha" : isSignUp ? "Criar conta no Compra360" : "Entrar no Compra360"}
           </h1>
           <CardDescription>
-            {isSignUp ? "Crie sua conta" : "Entre com sua conta para continuar"}
+            {isRecuperar
+              ? "Informe seu email para receber o link de nova senha"
+              : isSignUp ? "Crie sua conta" : "Entre com sua conta para continuar"}
           </CardDescription>
         </CardHeader>
 
@@ -199,13 +201,26 @@ const LoginPage = () => {
                 value={email} onChange={(e) => setEmail(e.target.value)} required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password" type="password" placeholder="••••••••"
-                value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
-              />
-            </div>
+            {!isRecuperar && (
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password" type="password" placeholder="••••••••"
+                  value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
+                />
+              </div>
+            )}
+            {!isSignUp && !isRecuperar && (
+              <div className="text-right -mt-1">
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                  onClick={() => setIsRecuperar(true)}
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
+            )}
             {isSignUp && (
               <div className="space-y-2">
                 <Label htmlFor="whatsapp">WhatsApp (com DDD) *</Label>
