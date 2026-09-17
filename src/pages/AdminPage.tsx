@@ -799,9 +799,13 @@ export default function AdminPage() {
       />
 
 
-      {/* Detalhes do cliente */}
+      {/* Detalhes do cliente — sempre com os dados mais recentes da lista (ex.: e-mail recém-alterado) */}
       <ClienteDetalhesSheet
-        cliente={clienteDetalhe}
+        cliente={
+          clienteDetalhe
+            ? clientes?.find((c) => c.user_id === clienteDetalhe.user_id) ?? clienteDetalhe
+            : null
+        }
         onClose={() => setClienteDetalhe(null)}
         onContatar={(c, canal) => {
           setClienteDetalhe(null);
