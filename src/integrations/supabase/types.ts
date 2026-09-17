@@ -1110,6 +1110,10 @@ export type Database = {
           observacao: string
         }[]
       }
+      admin_get_fornecedor_detalhes: {
+        Args: { _fornecedor_id: string }
+        Returns: Json
+      }
       admin_get_ultimos_contatos: {
         Args: never
         Returns: {
@@ -1211,6 +1215,28 @@ export type Database = {
           total_count: number
         }[]
       }
+      admin_list_fornecedores: {
+        Args: { _limit?: number; _offset?: number; _search?: string }
+        Returns: {
+          cidade: string
+          cliente_email: string
+          cliente_empresa: string
+          cliente_nome: string
+          created_at: string
+          duplicado: boolean
+          email: string
+          id: string
+          lojas_vinculadas: number
+          nome: string
+          pedido_minimo: number
+          prazo_pagamento: string
+          representante: string
+          telefone: string
+          total_count: number
+          uf: string
+          user_id: string
+        }[]
+      }
       admin_list_pagamentos_manuais: {
         Args: { _user_id: string }
         Returns: {
@@ -1248,6 +1274,19 @@ export type Database = {
       }
       admin_set_user_plan: {
         Args: { _plan_name: string; _user_id: string }
+        Returns: Json
+      }
+      admin_update_fornecedor: {
+        Args: {
+          _email?: string
+          _fornecedor_id: string
+          _nome: string
+          _observacoes?: string
+          _pedido_minimo?: number
+          _prazo_pagamento?: string
+          _representante?: string
+          _telefone?: string
+        }
         Returns: Json
       }
       check_trial_eligibility: {

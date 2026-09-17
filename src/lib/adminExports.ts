@@ -196,3 +196,64 @@ export function alertasTrialsFilename(now: Date = new Date()): string {
 export function alertasChurnFilename(now: Date = new Date()): string {
   return `alertas_churn_${todayFileSuffix(now)}.csv`;
 }
+
+/* ---------- Fornecedores (Painel Admin) ---------- */
+
+export interface FornecedorAdmin {
+  id: string;
+  nome: string;
+  representante: string | null;
+  telefone: string | null;
+  email: string | null;
+  pedido_minimo: number | null;
+  prazo_pagamento: string | null;
+  created_at: string;
+  user_id: string | null;
+  cliente_nome: string | null;
+  cliente_empresa: string | null;
+  cliente_email: string | null;
+  cidade: string | null;
+  uf: string | null;
+  lojas_vinculadas: number;
+  duplicado: boolean;
+  total_count?: number;
+}
+
+/** Normaliza o nome do fornecedor para comparação (minúsculas, sem acentos e espaços extras). */
+export function normalizarNomeFornecedor(nome: string): string {
+  return nome
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export const FORNECEDORES_HEADER = [
+  "Fornecedor", "Representante", "Telefone", "E-mail", "Pedido mínimo",
+  "Prazo de pagamento", "Cliente", "Empresa", "Cidade/UF", "Lojas vinculadas", "Cadastrado em",
+];
+
+export function fornecedorRow(f: FornecedorAdmin): unknown[] {
+  return [
+    f.nome,
+    f.representante || "",
+    f.telefone || "",
+    f.email || "",
+    f.pedido_minimo ?? "",
+    f.prazo_pagamento || "",
+    f.cliente_nome || f.cliente_email || "",
+    f.cliente_empresa || "",
+    f.cidade && f.uf ? `${f.cidade}/${f.uf}` : f.cidade || f.uf || "",
+    f.lojas_vinculadas ?? 0,
+    formatDateBR(f.created_at),
+  ];
+}
+
+export function buildFornecedoresXlsx(fornecedores: FornecedorAdmin[]): XLSX.WorkBook {
+  return buildXlsx(FORNECEDORES_HEADER, fornecedores.map(fornecedorRow), "Fornecedores");
+}
+
+export function fornecedoresFilenameXlsx(now: Date = new Date()): string {
+  return `fornecedores_compra360_${todayFileSuffix(now)}.xlsx`;
+}
