@@ -18,6 +18,7 @@ import {
   Users, Store, Package, FileText, Send, ClipboardCheck, Loader2,
   Search, ShieldCheck, RefreshCw, ArrowLeft, AlertTriangle, TimerReset, Activity,
   MessageCircle, Mail, X, Download, ChevronRight, FileSpreadsheet, CreditCard, History, PackagePlus,
+  Truck,
 } from "lucide-react";
 import { buildClientesCsv, buildClientesXlsx, clientesFilename, clientesFilenameXlsx, downloadCsv, downloadXlsx } from "@/lib/adminExports";
 import { formatDate } from "@/lib/format";
@@ -37,6 +38,7 @@ import ContatosTab from "@/components/admin/ContatosTab";
 import CatalogoTab from "@/components/admin/CatalogoTab";
 import HistoricoCatalogoTab from "@/components/admin/HistoricoCatalogoTab";
 import CandidatosTab from "@/components/admin/CandidatosTab";
+import FornecedoresTab from "@/components/admin/FornecedoresTab";
 import { MrrBreakdownCard, GrowthChart, ChurnRiskCard } from "@/components/admin/MetricasExtras";
 
 
@@ -49,6 +51,7 @@ const NAV_GROUPS: { label: string; items: AdminNavItem[] }[] = [
   ]},
   { label: "Clientes", items: [
     { value: "clientes", label: "Clientes", icon: Users },
+    { value: "fornecedores", label: "Fornecedores", icon: Truck },
     { value: "contatos", label: "Contatos", icon: MessageCircle },
   ]},
   { label: "Financeiro", items: [
