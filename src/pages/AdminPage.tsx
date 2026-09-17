@@ -757,6 +757,11 @@ export default function AdminPage() {
             />
           )}
 
+          {/* FORNECEDORES DE TODOS OS CLIENTES */}
+          {activeTab === "fornecedores" && (
+            <FornecedoresTab />
+          )}
+
           {/* E-MAILS */}
           {activeTab === "emails" && (
             <EmailsTab />
