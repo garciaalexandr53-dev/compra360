@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.validar_item_faltante_publico() FROM PUBLIC;
