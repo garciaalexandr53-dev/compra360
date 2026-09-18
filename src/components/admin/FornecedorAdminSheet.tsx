@@ -9,7 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, MessageCircle, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate, formatDateTime, buildWhatsAppUrl } from "@/lib/format";
+import { TIPOS_FORNECEDOR, PASTAS_FORNECEDOR } from "@/lib/adminHelpers";
 import type { FornecedorAdmin } from "@/lib/adminExports";
 
 type Detalhes = {
@@ -85,6 +87,8 @@ export default function FornecedorAdminSheet({
       pedido_minimo: detalhes.pedido_minimo != null ? String(detalhes.pedido_minimo) : "",
       prazo_pagamento: detalhes.prazo_pagamento ?? "",
       observacoes: detalhes.observacoes ?? "",
+      tipo_fornecedor: detalhes.tipo_fornecedor ?? "",
+      pasta: detalhes.pasta ?? [],
     });
   }, [detalhes?.id, detalhes]);
 
@@ -112,6 +116,8 @@ export default function FornecedorAdminSheet({
       _pedido_minimo: pedidoMinimo,
       _prazo_pagamento: form.prazo_pagamento.trim() || null,
       _observacoes: form.observacoes.trim() || null,
+      _tipo_fornecedor: form.tipo_fornecedor || null,
+      _pasta: form.tipo_fornecedor === "especializado" && form.pasta.length ? form.pasta : null,
     });
     setSalvando(false);
 
