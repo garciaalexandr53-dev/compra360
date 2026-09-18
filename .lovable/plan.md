@@ -8,7 +8,7 @@ Na ficha lateral do fornecedor, no bloco de dados de contato:
 
 - **Tipo de fornecedor** — lista com três opções: Geral, Bebidas, Especializado. Começa vazio ("Não definido") enquanto ninguém escolher.
 - **Pastas** — só aparece quando o tipo escolhido é "Especializado". Permite marcar várias pastas ao mesmo tempo, mostradas como etiquetas selecionáveis:
-  Frios e Laticínios · Carnes · Hortifruti · Padaria · Limpeza · Higiene e Beleza · Mercearia · Bebidas · Congelados · Pet
+  Frios e Laticínios · Carnes · Hortifruti · Padaria · Limpeza · Higiene e Beleza · Mercearia · Congelados · Pet
 
 Se o tipo for trocado de "Especializado" para outro, as pastas marcadas são limpas ao salvar.
 
