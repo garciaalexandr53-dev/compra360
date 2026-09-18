@@ -17,13 +17,21 @@ function isRateLimited(error: unknown): boolean {
   return error instanceof Error && error.message.includes('429')
 }
 
-// Check if an error is a forbidden (403) response, which means emails are
-// disabled for this project. Retrying won't help — move straight to DLQ.
+// Check if an error is a forbidden (403) response.
 function isForbidden(error: unknown): boolean {
   if (error && typeof error === 'object' && 'status' in error) {
     return (error as { status: number }).status === 403
   }
   return error instanceof Error && error.message.includes('403')
+}
+
+// Only a project-level "emails disabled" 403 means retrying is pointless for
+// the whole batch. Other 403s (e.g. recipient_mismatch) are specific to one
+// message and must not halt the queue or silently drop other recipients.
+function isEmailsDisabled(error: unknown): boolean {
+  if (!isForbidden(error)) return false
+  const msg = (error instanceof Error ? error.message : String(error)).toLowerCase()
+  return msg.includes('emails_disabled') || msg.includes('emails disabled')
 }
 
 // Extract Retry-After seconds from a structured EmailAPIError, or default to 60s.
@@ -324,15 +332,19 @@ Deno.serve(async (req) => {
           )
         }
 
-        // 403 means emails are disabled for this project — retrying won't help.
-        // Move straight to DLQ and stop processing the rest of the batch.
-        if (isForbidden(error)) {
+        // Project-level "emails disabled" 403 — retrying won't help for any
+        // message. Move to DLQ and stop processing the rest of the batch.
+        if (isEmailsDisabled(error)) {
           await moveToDlq(supabase, queue, msg, 'Emails disabled for this project')
           return new Response(
             JSON.stringify({ processed: totalProcessed, stopped: 'emails_disabled' }),
             { headers: { 'Content-Type': 'application/json' } }
           )
         }
+
+        // Any other 403 is specific to this message (e.g. recipient_mismatch):
+        // record the failure so it follows the normal retry budget, and keep
+        // processing the remaining messages in the batch.
 
         // Log non-429 failures to track real retry attempts.
         await supabase.from('email_send_log').insert({

@@ -1215,28 +1215,56 @@ export type Database = {
           total_count: number
         }[]
       }
-      admin_list_fornecedores: {
-        Args: { _limit?: number; _offset?: number; _search?: string }
-        Returns: {
-          cidade: string
-          cliente_email: string
-          cliente_empresa: string
-          cliente_nome: string
-          created_at: string
-          duplicado: boolean
-          email: string
-          id: string
-          lojas_vinculadas: number
-          nome: string
-          pedido_minimo: number
-          prazo_pagamento: string
-          representante: string
-          telefone: string
-          total_count: number
-          uf: string
-          user_id: string
-        }[]
-      }
+      admin_list_fornecedores:
+        | {
+            Args: { _limit?: number; _offset?: number; _search?: string }
+            Returns: {
+              cidade: string
+              cliente_email: string
+              cliente_empresa: string
+              cliente_nome: string
+              created_at: string
+              duplicado: boolean
+              email: string
+              id: string
+              lojas_vinculadas: number
+              nome: string
+              pedido_minimo: number
+              prazo_pagamento: string
+              representante: string
+              telefone: string
+              total_count: number
+              uf: string
+              user_id: string
+            }[]
+          }
+        | {
+            Args: {
+              _filtro?: string
+              _limit?: number
+              _offset?: number
+              _search?: string
+            }
+            Returns: {
+              cidade: string
+              cliente_email: string
+              cliente_empresa: string
+              cliente_nome: string
+              created_at: string
+              duplicado: boolean
+              email: string
+              id: string
+              lojas_vinculadas: number
+              nome: string
+              pedido_minimo: number
+              prazo_pagamento: string
+              representante: string
+              telefone: string
+              total_count: number
+              uf: string
+              user_id: string
+            }[]
+          }
       admin_list_pagamentos_manuais: {
         Args: { _user_id: string }
         Returns: {

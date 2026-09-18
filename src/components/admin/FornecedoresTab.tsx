@@ -25,7 +25,7 @@ const FILTROS: { key: Filtro; label: string }[] = [
   { key: "duplicados", label: "Duplicados" },
 ];
 
-function aplicaFiltro(itens: FornecedorAdmin[], filtro: Filtro): FornecedorAdmin[] {
+export function aplicaFiltro(itens: FornecedorAdmin[], filtro: Filtro): FornecedorAdmin[] {
   if (filtro === "sem_whatsapp") return itens.filter((f) => !f.telefone?.trim());
   if (filtro === "sem_email") return itens.filter((f) => !f.email?.trim());
   if (filtro === "duplicados") return itens.filter((f) => f.duplicado);
@@ -52,12 +52,13 @@ export default function FornecedoresTab() {
   }, [termoInput]);
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["admin-fornecedores", termo, page],
+    queryKey: ["admin-fornecedores", termo, filtro, page],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_list_fornecedores", {
         _search: termo || null,
         _limit: PAGE_SIZE,
         _offset: page * PAGE_SIZE,
+        _filtro: filtro,
       });
       if (error) throw error;
       const rows = (data || []) as FornecedorAdmin[];
@@ -66,7 +67,7 @@ export default function FornecedoresTab() {
     placeholderData: (prev) => prev,
   });
 
-  const itens = useMemo(() => aplicaFiltro(data?.itens || [], filtro), [data, filtro]);
+  const itens = useMemo(() => data?.itens ?? [], [data]);
   const total = data?.total || 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -81,15 +82,15 @@ export default function FornecedoresTab() {
           _search: termo || null,
           _limit: 500,
           _offset: offset,
+          _filtro: filtro,
         });
         if (error) throw error;
         const rows = (data || []) as FornecedorAdmin[];
         todos.push(...rows);
         if (rows.length < 500) break;
       }
-      const filtrados = aplicaFiltro(todos, filtro);
-      downloadXlsx(fornecedoresFilenameXlsx(), buildFornecedoresXlsx(filtrados));
-      toast({ title: "Planilha gerada", description: `${filtrados.length} fornecedor(es) exportado(s).` });
+      downloadXlsx(fornecedoresFilenameXlsx(), buildFornecedoresXlsx(todos));
+      toast({ title: "Planilha gerada", description: `${todos.length} fornecedor(es) exportado(s).` });
     } catch (e) {
       toast({
         title: "Erro ao exportar",
@@ -103,9 +104,7 @@ export default function FornecedoresTab() {
 
   const contador = isLoading
     ? "Carregando…"
-    : filtro === "todos"
-      ? `${total.toLocaleString("pt-BR")} ${total === 1 ? "fornecedor" : "fornecedores"}`
-      : `${itens.length} de ${data?.itens.length ?? 0} nesta página`;
+    : `${total.toLocaleString("pt-BR")} ${total === 1 ? "fornecedor" : "fornecedores"}`;
 
   return (
     <div className="space-y-4">
@@ -142,7 +141,7 @@ export default function FornecedoresTab() {
               key={f.key}
               size="sm"
               variant={filtro === f.key ? "default" : "outline"}
-              onClick={() => setFiltro(f.key)}
+              onClick={() => { setFiltro(f.key); setPage(0); }}
               className="h-8 text-xs"
             >
               {f.label}
