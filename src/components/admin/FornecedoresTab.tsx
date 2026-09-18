@@ -141,7 +141,7 @@ export default function FornecedoresTab() {
               key={f.key}
               size="sm"
               variant={filtro === f.key ? "default" : "outline"}
-              onClick={() => setFiltro(f.key)}
+              onClick={() => { setFiltro(f.key); setPage(0); }}
               className="h-8 text-xs"
             >
               {f.label}
