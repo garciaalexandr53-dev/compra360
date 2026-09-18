@@ -477,10 +477,12 @@ export type Database = {
           id: string
           nome: string
           observacoes: string | null
+          pasta: string[] | null
           pedido_minimo: number | null
           prazo_pagamento: string | null
           representante: string | null
           telefone: string | null
+          tipo_fornecedor: string | null
           token: string
           updated_at: string
           user_id: string | null
@@ -491,10 +493,12 @@ export type Database = {
           id?: string
           nome: string
           observacoes?: string | null
+          pasta?: string[] | null
           pedido_minimo?: number | null
           prazo_pagamento?: string | null
           representante?: string | null
           telefone?: string | null
+          tipo_fornecedor?: string | null
           token?: string
           updated_at?: string
           user_id?: string | null
@@ -505,10 +509,12 @@ export type Database = {
           id?: string
           nome?: string
           observacoes?: string | null
+          pasta?: string[] | null
           pedido_minimo?: number | null
           prazo_pagamento?: string | null
           representante?: string | null
           telefone?: string | null
+          tipo_fornecedor?: string | null
           token?: string
           updated_at?: string
           user_id?: string | null
