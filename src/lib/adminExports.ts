@@ -1,7 +1,10 @@
 // Helpers de exportação CSV/Excel para o Painel Administrativo
 // Padrão Brasil: UTF-8, separador ";", datas DD/MM/AAAA, vírgula decimal
 import * as XLSX from "xlsx";
-import { Cliente, getDiasSemUso, getDiasTrialRestantes, getSaudeCliente } from "@/lib/adminHelpers";
+import {
+  Cliente, getDiasSemUso, getDiasTrialRestantes, getSaudeCliente,
+  pastasLabel, tipoFornecedorLabel,
+} from "@/lib/adminHelpers";
 
 const CSV_SEP = ";";
 
@@ -216,6 +219,8 @@ export interface FornecedorAdmin {
   uf: string | null;
   lojas_vinculadas: number;
   duplicado: boolean;
+  tipo_fornecedor?: string | null;
+  pasta?: string[] | null;
   total_count?: number;
 }
 
@@ -232,6 +237,7 @@ export function normalizarNomeFornecedor(nome: string): string {
 export const FORNECEDORES_HEADER = [
   "Fornecedor", "Representante", "Telefone", "E-mail", "Pedido mínimo",
   "Prazo de pagamento", "Cliente", "Empresa", "Cidade/UF", "Lojas vinculadas", "Cadastrado em",
+  "Tipo", "Pastas",
 ];
 
 export function fornecedorRow(f: FornecedorAdmin): unknown[] {
@@ -247,6 +253,8 @@ export function fornecedorRow(f: FornecedorAdmin): unknown[] {
     f.cidade && f.uf ? `${f.cidade}/${f.uf}` : f.cidade || f.uf || "",
     f.lojas_vinculadas ?? 0,
     formatDateBR(f.created_at),
+    tipoFornecedorLabel(f.tipo_fornecedor),
+    pastasLabel(f.pasta),
   ];
 }
 

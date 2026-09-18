@@ -9,7 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, MessageCircle, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate, formatDateTime, buildWhatsAppUrl } from "@/lib/format";
+import { TIPOS_FORNECEDOR, PASTAS_FORNECEDOR } from "@/lib/adminHelpers";
 import type { FornecedorAdmin } from "@/lib/adminExports";
 
 type Detalhes = {
@@ -21,6 +23,8 @@ type Detalhes = {
   pedido_minimo?: number | null;
   prazo_pagamento?: string | null;
   observacoes?: string | null;
+  tipo_fornecedor?: string | null;
+  pasta?: string[] | null;
   created_at?: string;
   cliente_nome?: string | null;
   cliente_empresa?: string | null;
@@ -39,12 +43,17 @@ type Form = {
   pedido_minimo: string;
   prazo_pagamento: string;
   observacoes: string;
+  tipo_fornecedor: string;
+  pasta: string[];
 };
 
 const VAZIO: Form = {
   nome: "", representante: "", telefone: "", email: "",
   pedido_minimo: "", prazo_pagamento: "", observacoes: "",
+  tipo_fornecedor: "", pasta: [],
 };
+
+const SEM_TIPO = "__sem_tipo__";
 
 export default function FornecedorAdminSheet({
   fornecedor, onClose, onSaved,
@@ -78,6 +87,8 @@ export default function FornecedorAdminSheet({
       pedido_minimo: detalhes.pedido_minimo != null ? String(detalhes.pedido_minimo) : "",
       prazo_pagamento: detalhes.prazo_pagamento ?? "",
       observacoes: detalhes.observacoes ?? "",
+      tipo_fornecedor: detalhes.tipo_fornecedor ?? "",
+      pasta: detalhes.pasta ?? [],
     });
   }, [detalhes?.id, detalhes]);
 
@@ -105,6 +116,8 @@ export default function FornecedorAdminSheet({
       _pedido_minimo: pedidoMinimo,
       _prazo_pagamento: form.prazo_pagamento.trim() || null,
       _observacoes: form.observacoes.trim() || null,
+      _tipo_fornecedor: form.tipo_fornecedor || null,
+      _pasta: form.tipo_fornecedor === "especializado" && form.pasta.length ? form.pasta : null,
     });
     setSalvando(false);
 
@@ -197,6 +210,59 @@ export default function FornecedorAdminSheet({
                   <Input id="forn-prazo" value={form.prazo_pagamento} onChange={(e) => setForm({ ...form, prazo_pagamento: e.target.value })} />
                 </div>
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="forn-tipo">Tipo de fornecedor</Label>
+                <Select
+                  value={form.tipo_fornecedor || SEM_TIPO}
+                  onValueChange={(v) =>
+                    setForm((prev) => {
+                      const tipo = v === SEM_TIPO ? "" : v;
+                      return { ...prev, tipo_fornecedor: tipo, pasta: tipo === "especializado" ? prev.pasta : [] };
+                    })
+                  }
+                >
+                  <SelectTrigger id="forn-tipo"><SelectValue placeholder="Não definido" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={SEM_TIPO}>Não definido</SelectItem>
+                    {TIPOS_FORNECEDOR.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {form.tipo_fornecedor === "especializado" && (
+                <div className="space-y-1.5">
+                  <Label>Pastas atendidas</Label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {PASTAS_FORNECEDOR.map((p) => {
+                      const ativo = form.pasta.includes(p);
+                      return (
+                        <Button
+                          key={p}
+                          type="button"
+                          size="sm"
+                          variant={ativo ? "default" : "outline"}
+                          aria-pressed={ativo}
+                          className="h-7 text-xs"
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              pasta: ativo ? prev.pasta.filter((x) => x !== p) : [...prev.pasta, p],
+                            }))
+                          }
+                        >
+                          {p}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  {form.pasta.length === 0 && (
+                    <p className="text-[11px] text-muted-foreground">Nenhuma pasta selecionada.</p>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-1.5">
                 <Label htmlFor="forn-obs">Observações</Label>
                 <Textarea id="forn-obs" rows={3} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
