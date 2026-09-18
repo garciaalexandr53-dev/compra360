@@ -52,12 +52,13 @@ export default function FornecedoresTab() {
   }, [termoInput]);
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["admin-fornecedores", termo, page],
+    queryKey: ["admin-fornecedores", termo, filtro, page],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_list_fornecedores", {
         _search: termo || null,
         _limit: PAGE_SIZE,
         _offset: page * PAGE_SIZE,
+        _filtro: filtro,
       });
       if (error) throw error;
       const rows = (data || []) as FornecedorAdmin[];
@@ -66,7 +67,7 @@ export default function FornecedoresTab() {
     placeholderData: (prev) => prev,
   });
 
-  const itens = useMemo(() => aplicaFiltro(data?.itens || [], filtro), [data, filtro]);
+  const itens = useMemo(() => data?.itens ?? [], [data]);
   const total = data?.total || 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
