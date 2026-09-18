@@ -25,7 +25,7 @@ const FILTROS: { key: Filtro; label: string }[] = [
   { key: "duplicados", label: "Duplicados" },
 ];
 
-function aplicaFiltro(itens: FornecedorAdmin[], filtro: Filtro): FornecedorAdmin[] {
+export function aplicaFiltro(itens: FornecedorAdmin[], filtro: Filtro): FornecedorAdmin[] {
   if (filtro === "sem_whatsapp") return itens.filter((f) => !f.telefone?.trim());
   if (filtro === "sem_email") return itens.filter((f) => !f.email?.trim());
   if (filtro === "duplicados") return itens.filter((f) => f.duplicado);
