@@ -252,3 +252,36 @@ export function situacaoParaMotivo(situacao: SituacaoCliente | null | undefined)
 }
 
 
+/* ---------- Tipo e pastas do fornecedor (Painel Admin) ---------- */
+
+export type TipoFornecedor = "geral" | "bebidas" | "especializado";
+
+export const TIPOS_FORNECEDOR: { value: TipoFornecedor; label: string }[] = [
+  { value: "geral", label: "Geral" },
+  { value: "bebidas", label: "Bebidas" },
+  { value: "especializado", label: "Especializado" },
+];
+
+export const PASTAS_FORNECEDOR: string[] = [
+  "Frios e Laticínios",
+  "Carnes",
+  "Hortifruti",
+  "Padaria",
+  "Limpeza",
+  "Higiene e Beleza",
+  "Mercearia",
+  "Congelados",
+  "Pet",
+];
+
+/** Rótulo legível do tipo do fornecedor ("" quando não definido). */
+export function tipoFornecedorLabel(tipo: string | null | undefined): string {
+  if (!tipo) return "";
+  return TIPOS_FORNECEDOR.find((t) => t.value === tipo)?.label ?? tipo;
+}
+
+/** Pastas em texto único, separadas por vírgula. */
+export function pastasLabel(pasta: string[] | null | undefined): string {
+  if (!pasta?.length) return "";
+  return pasta.join(", ");
+}
