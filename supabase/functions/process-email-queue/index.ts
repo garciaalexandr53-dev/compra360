@@ -332,15 +332,19 @@ Deno.serve(async (req) => {
           )
         }
 
-        // 403 means emails are disabled for this project — retrying won't help.
-        // Move straight to DLQ and stop processing the rest of the batch.
-        if (isForbidden(error)) {
+        // Project-level "emails disabled" 403 — retrying won't help for any
+        // message. Move to DLQ and stop processing the rest of the batch.
+        if (isEmailsDisabled(error)) {
           await moveToDlq(supabase, queue, msg, 'Emails disabled for this project')
           return new Response(
             JSON.stringify({ processed: totalProcessed, stopped: 'emails_disabled' }),
             { headers: { 'Content-Type': 'application/json' } }
           )
         }
+
+        // Any other 403 is specific to this message (e.g. recipient_mismatch):
+        // record the failure so it follows the normal retry budget, and keep
+        // processing the remaining messages in the batch.
 
         // Log non-429 failures to track real retry attempts.
         await supabase.from('email_send_log').insert({
