@@ -234,7 +234,13 @@ export default function FornecedoresTab() {
                     <span>·</span>
                     <span>{localizacao(f)}</span>
                     {f.duplicado && <Badge variant="secondary" className="text-[10px] py-0">Duplicado</Badge>}
+                    {f.tipo_fornecedor && (
+                      <Badge variant="outline" className="text-[10px] py-0">{tipoFornecedorLabel(f.tipo_fornecedor)}</Badge>
+                    )}
                   </div>
+                  {pastasLabel(f.pasta) && (
+                    <p className="text-[11px] text-muted-foreground break-words">{pastasLabel(f.pasta)}</p>
+                  )}
                   <div className="flex items-center justify-between border-t pt-2 gap-2">
                     <span className="text-[11px] text-muted-foreground truncate">
                       {f.cliente_empresa || f.cliente_nome || f.cliente_email || "—"}

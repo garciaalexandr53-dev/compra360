@@ -52,6 +52,25 @@ describe("export de fornecedores", () => {
     expect(fornecedorRow({ ...base, cidade: null })[8]).toBe("PR");
   });
 
+  it("inclui tipo e pastas no final da linha", () => {
+    const semTipo = fornecedorRow(base);
+    expect(semTipo[11]).toBe("");
+    expect(semTipo[12]).toBe("");
+
+    const geral = fornecedorRow({ ...base, tipo_fornecedor: "geral" });
+    expect(geral[11]).toBe("Geral");
+    expect(geral[12]).toBe("");
+
+    const espec = fornecedorRow({
+      ...base, tipo_fornecedor: "especializado", pasta: ["Carnes", "Hortifruti"],
+    });
+    expect(espec[11]).toBe("Especializado");
+    expect(espec[12]).toBe("Carnes, Hortifruti");
+
+    const uma = fornecedorRow({ ...base, tipo_fornecedor: "especializado", pasta: ["Padaria"] });
+    expect(uma[12]).toBe("Padaria");
+  });
+
   it("nome do arquivo tem a data", () => {
     expect(fornecedoresFilenameXlsx(new Date(2026, 8, 17))).toMatch(/^fornecedores_compra360_.*\.xlsx$/);
   });
