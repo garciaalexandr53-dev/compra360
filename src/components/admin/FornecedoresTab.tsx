@@ -82,15 +82,15 @@ export default function FornecedoresTab() {
           _search: termo || null,
           _limit: 500,
           _offset: offset,
+          _filtro: filtro,
         });
         if (error) throw error;
         const rows = (data || []) as FornecedorAdmin[];
         todos.push(...rows);
         if (rows.length < 500) break;
       }
-      const filtrados = aplicaFiltro(todos, filtro);
-      downloadXlsx(fornecedoresFilenameXlsx(), buildFornecedoresXlsx(filtrados));
-      toast({ title: "Planilha gerada", description: `${filtrados.length} fornecedor(es) exportado(s).` });
+      downloadXlsx(fornecedoresFilenameXlsx(), buildFornecedoresXlsx(todos));
+      toast({ title: "Planilha gerada", description: `${todos.length} fornecedor(es) exportado(s).` });
     } catch (e) {
       toast({
         title: "Erro ao exportar",
