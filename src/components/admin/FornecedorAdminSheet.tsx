@@ -211,6 +211,59 @@ export default function FornecedorAdminSheet({
                 </div>
               </div>
               <div className="space-y-1.5">
+                <Label htmlFor="forn-tipo">Tipo de fornecedor</Label>
+                <Select
+                  value={form.tipo_fornecedor || SEM_TIPO}
+                  onValueChange={(v) =>
+                    setForm((prev) => {
+                      const tipo = v === SEM_TIPO ? "" : v;
+                      return { ...prev, tipo_fornecedor: tipo, pasta: tipo === "especializado" ? prev.pasta : [] };
+                    })
+                  }
+                >
+                  <SelectTrigger id="forn-tipo"><SelectValue placeholder="Não definido" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={SEM_TIPO}>Não definido</SelectItem>
+                    {TIPOS_FORNECEDOR.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {form.tipo_fornecedor === "especializado" && (
+                <div className="space-y-1.5">
+                  <Label>Pastas atendidas</Label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {PASTAS_FORNECEDOR.map((p) => {
+                      const ativo = form.pasta.includes(p);
+                      return (
+                        <Button
+                          key={p}
+                          type="button"
+                          size="sm"
+                          variant={ativo ? "default" : "outline"}
+                          aria-pressed={ativo}
+                          className="h-7 text-xs"
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              pasta: ativo ? prev.pasta.filter((x) => x !== p) : [...prev.pasta, p],
+                            }))
+                          }
+                        >
+                          {p}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  {form.pasta.length === 0 && (
+                    <p className="text-[11px] text-muted-foreground">Nenhuma pasta selecionada.</p>
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
                 <Label htmlFor="forn-obs">Observações</Label>
                 <Textarea id="forn-obs" rows={3} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
               </div>
