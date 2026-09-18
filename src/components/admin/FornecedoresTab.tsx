@@ -104,9 +104,7 @@ export default function FornecedoresTab() {
 
   const contador = isLoading
     ? "Carregando…"
-    : filtro === "todos"
-      ? `${total.toLocaleString("pt-BR")} ${total === 1 ? "fornecedor" : "fornecedores"}`
-      : `${itens.length} de ${data?.itens.length ?? 0} nesta página`;
+    : `${total.toLocaleString("pt-BR")} ${total === 1 ? "fornecedor" : "fornecedores"}`;
 
   return (
     <div className="space-y-4">
