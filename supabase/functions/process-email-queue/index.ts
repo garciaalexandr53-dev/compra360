@@ -17,13 +17,21 @@ function isRateLimited(error: unknown): boolean {
   return error instanceof Error && error.message.includes('429')
 }
 
-// Check if an error is a forbidden (403) response, which means emails are
-// disabled for this project. Retrying won't help — move straight to DLQ.
+// Check if an error is a forbidden (403) response.
 function isForbidden(error: unknown): boolean {
   if (error && typeof error === 'object' && 'status' in error) {
     return (error as { status: number }).status === 403
   }
   return error instanceof Error && error.message.includes('403')
+}
+
+// Only a project-level "emails disabled" 403 means retrying is pointless for
+// the whole batch. Other 403s (e.g. recipient_mismatch) are specific to one
+// message and must not halt the queue or silently drop other recipients.
+function isEmailsDisabled(error: unknown): boolean {
+  if (!isForbidden(error)) return false
+  const msg = (error instanceof Error ? error.message : String(error)).toLowerCase()
+  return msg.includes('emails_disabled') || msg.includes('emails disabled')
 }
 
 // Extract Retry-After seconds from a structured EmailAPIError, or default to 60s.
