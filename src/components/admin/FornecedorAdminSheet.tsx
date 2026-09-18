@@ -21,6 +21,8 @@ type Detalhes = {
   pedido_minimo?: number | null;
   prazo_pagamento?: string | null;
   observacoes?: string | null;
+  tipo_fornecedor?: string | null;
+  pasta?: string[] | null;
   created_at?: string;
   cliente_nome?: string | null;
   cliente_empresa?: string | null;
@@ -39,12 +41,17 @@ type Form = {
   pedido_minimo: string;
   prazo_pagamento: string;
   observacoes: string;
+  tipo_fornecedor: string;
+  pasta: string[];
 };
 
 const VAZIO: Form = {
   nome: "", representante: "", telefone: "", email: "",
   pedido_minimo: "", prazo_pagamento: "", observacoes: "",
+  tipo_fornecedor: "", pasta: [],
 };
+
+const SEM_TIPO = "__sem_tipo__";
 
 export default function FornecedorAdminSheet({
   fornecedor, onClose, onSaved,
