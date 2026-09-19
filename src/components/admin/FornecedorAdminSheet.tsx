@@ -84,7 +84,7 @@ export default function FornecedorAdminSheet({
     setForm({
       nome: detalhes.nome ?? "",
       representante: detalhes.representante ?? "",
-      telefone: maskTelefone(detalhes.telefone ?? ""),
+      telefone: formatTelefone(detalhes.telefone ?? ""),
       email: detalhes.email ?? "",
       pedido_minimo: detalhes.pedido_minimo != null ? String(detalhes.pedido_minimo) : "",
       prazo_pagamento: detalhes.prazo_pagamento ?? "",
