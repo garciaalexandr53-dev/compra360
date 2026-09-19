@@ -281,9 +281,17 @@ const FornecedoresPage = () => {
           <span className="text-xs text-muted-foreground">
             {fornecedores.length} fornecedor{fornecedores.length !== 1 ? "es" : ""}
           </span>
-          <Button size="sm" onClick={openAdd}>
-            <Plus className="h-4 w-4 mr-1" /> Novo Fornecedor
-          </Button>
+          <div className="flex items-center gap-2">
+            {sugestoes.length > 0 && (
+              <Button size="sm" variant="outline" onClick={abrirSugestoes}>
+                <MapPin className="h-4 w-4 mr-1" /> Sugestões da região
+                <span className="ml-1 text-[10px] font-semibold text-primary">{sugestoes.length} disponíveis</span>
+              </Button>
+            )}
+            <Button size="sm" onClick={openAdd}>
+              <Plus className="h-4 w-4 mr-1" /> Novo Fornecedor
+            </Button>
+          </div>
         </div>
       </div>
 
