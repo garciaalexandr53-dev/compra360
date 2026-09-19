@@ -322,6 +322,22 @@ const FornecedoresPage = () => {
                   + Adicionar primeiro fornecedor
                 </Button>
               )}
+              {!searchTerm && fornecedores.length === 0 && sugestoes.length > 0 && (
+                <div className="mx-auto max-w-sm rounded-lg border border-primary/30 bg-primary/5 p-4 text-left space-y-2">
+                  <p className="text-sm text-foreground">
+                    Encontramos <strong>{sugestoes.length}</strong> fornecedor{sugestoes.length === 1 ? "" : "es"} que
+                    atende{sugestoes.length === 1 ? "" : "m"} em {cidadeLabel}. Quer adicioná-los?
+                  </p>
+                  <Button size="sm" onClick={abrirSugestoes}>
+                    <MapPin className="h-4 w-4 mr-1" /> Ver sugestões da região
+                  </Button>
+                </div>
+              )}
+              {!searchTerm && !lojaAtiva?.cidade && (
+                <p className="text-xs">
+                  Preencha a cidade da sua loja em <strong>Lojas</strong> para receber sugestões de fornecedores da região.
+                </p>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
