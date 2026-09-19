@@ -74,6 +74,25 @@ const FornecedoresPage = () => {
     },
   });
 
+  const { data: sugestoes = [] } = useQuery({
+    queryKey: ["sugestoes-regiao", lojaAtiva?.id],
+    enabled: !!lojaAtiva?.id && !!lojaAtiva?.cidade,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("sugerir_fornecedores_por_cidade", { _loja_id: lojaAtiva!.id });
+      if (error) throw error;
+      return (data || []) as SugestaoFornecedor[];
+    },
+  });
+
+  const cidadeLabel = lojaAtiva?.cidade
+    ? `${formatNomeLoja(lojaAtiva.cidade)}${lojaAtiva.uf ? ` - ${lojaAtiva.uf.toUpperCase()}` : ""}`
+    : "";
+
+  const abrirSugestoes = () => {
+    if (!checkLimit("max_fornecedores", fornecedores.length, "Faça upgrade para cadastrar mais fornecedores.")) return;
+    setSugestoesOpen(true);
+  };
+
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
