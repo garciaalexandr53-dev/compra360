@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal, X, Phone, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal, X, Phone, CheckCircle2, Clock, AlertCircle, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
 import { maskTelefone, formatTelefone } from "@/lib/masks";
