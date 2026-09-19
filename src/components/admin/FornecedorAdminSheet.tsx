@@ -174,7 +174,7 @@ export default function FornecedorAdminSheet({
                 <div className="flex flex-wrap gap-1.5">
                   {detalhes.lojas.map((l) => (
                     <Badge key={l.id} variant="secondary" className="text-[11px]">
-                      {l.nome}{l.cidade ? ` · ${l.cidade}${l.uf ? `/${l.uf}` : ""}` : ""}
+                      {formatNomeLoja(l.nome)}{l.cidade ? ` · ${l.cidade}${l.uf ? `/${l.uf}` : ""}` : ""}
                     </Badge>
                   ))}
                 </div>

@@ -40,6 +40,7 @@ import PrazoCountdownBadge from "@/components/dashboard/PrazoCountdownBadge";
 import PrazoEditableBadge from "@/components/dashboard/PrazoEditableBadge";
 import WhatsAppRequiredModal from "@/components/dashboard/WhatsAppRequiredModal";
 import { Flame } from "lucide-react";
+import { formatNomeLoja } from "@/lib/masks";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -685,7 +686,7 @@ const DashboardPage = () => {
                         <span className="text-xs text-muted-foreground">Escolha a loja para esta cotação</span>
                       )}
                       {!lojaStepOpen && lojaConfirmed && lojaAtiva && (
-                        <span className="text-xs text-muted-foreground truncate">{lojaAtiva.nome}</span>
+                        <span className="text-xs text-muted-foreground truncate">{formatNomeLoja(lojaAtiva.nome)}</span>
                       )}
                     </div>
                     {lojaConfirmed && <CheckCircle2 className="h-4 w-4 text-green-500 ml-auto shrink-0" />}
@@ -709,7 +710,7 @@ const DashboardPage = () => {
                             }`}
                           >
                             <Store className="h-4 w-4 shrink-0" />
-                            <span className="truncate">{loja.nome}</span>
+                            <span className="truncate">{formatNomeLoja(loja.nome)}</span>
                             {lojaConfirmed && lojaAtiva?.id === loja.id && <CheckCircle2 className="h-4 w-4 text-primary ml-auto shrink-0" />}
                           </button>
                         ))}

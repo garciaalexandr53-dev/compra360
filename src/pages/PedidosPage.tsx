@@ -188,7 +188,7 @@ const PedidosPage = () => {
     // Build billing info from active store
     const billingParts: string[] = [];
     if (lojaAtiva) {
-      if (lojaAtiva.nome) billingParts.push(`🏪 *Loja:* ${lojaAtiva.nome}`);
+      if (lojaAtiva.nome) billingParts.push(`🏪 *Loja:* ${formatNomeLoja(lojaAtiva.nome)}`);
       if ((lojaAtiva as any).razao_social) billingParts.push(`🏢 *Razão Social:* ${(lojaAtiva as any).razao_social}`);
       if ((lojaAtiva as any).cnpj) billingParts.push(`📄 *CNPJ:* ${(lojaAtiva as any).cnpj}`);
       if ((lojaAtiva as any).inscricao_estadual) billingParts.push(`📋 *IE:* ${(lojaAtiva as any).inscricao_estadual}`);

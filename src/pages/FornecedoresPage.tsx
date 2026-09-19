@@ -223,7 +223,7 @@ const FornecedoresPage = () => {
 
   const getLojaNames = (fId: string) => {
     const lojaIds = fornecedorLojas.filter((fl: any) => fl.fornecedor_id === fId).map((fl: any) => fl.loja_id);
-    return lojas.filter((l: any) => lojaIds.includes(l.id)).map((l: any) => l.nome);
+    return lojas.filter((l: any) => lojaIds.includes(l.id)).map((l: any) => formatNomeLoja(l.nome));
   };
 
   const filteredFornecedores = fornecedores.filter((f) =>

@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { maskTelefone, maskCNPJ, isTelefoneValido, isCNPJValido } from "@/lib/masks";
+import { formatNomeLoja } from "@/lib/masks";
 
 interface ProfileForm {
   nome: string;
@@ -126,7 +127,7 @@ export default function PerfilPage() {
         const { error: lojaError } = await supabase
           .from("lojas")
           .update({
-            nome: loja.nome.trim(),
+            nome: formatNomeLoja(loja.nome),
             cnpj: loja.cnpj.replace(/\D/g, "") || null,
             razao_social: loja.razao_social.trim() || null,
             inscricao_estadual: loja.inscricao_estadual.trim() || null,
@@ -228,7 +229,7 @@ export default function PerfilPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">
-                Dados da loja {lojaAtiva ? `— ${lojaAtiva.nome}` : ""}
+                Dados da loja {lojaAtiva ? `— ${formatNomeLoja(lojaAtiva.nome)}` : ""}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
