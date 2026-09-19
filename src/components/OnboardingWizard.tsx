@@ -60,6 +60,8 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   // Step 1 - Loja
   const [lojaNome, setLojaNome] = useState("");
   const [lojaCnpj, setLojaCnpj] = useState("");
+  const [lojaCidade, setLojaCidade] = useState("");
+  const [lojaUf, setLojaUf] = useState("");
 
   // Step 2 - Fornecedores (múltiplos)
   const [fornecedores, setFornecedores] = useState<FornecedorDraft[]>([emptyFornecedor()]);
@@ -121,6 +123,8 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
 
         const { data: lojaData, error } = await supabase.from("lojas").insert({
           nome: lojaNome.trim(),
+          cidade: lojaCidade.trim(),
+          uf: lojaUf.trim() ? lojaUf.trim().toUpperCase() : null,
           cnpj: cnpjDigits.length === 14 ? cnpjDigits : null,
           user_id: user?.id,
         }).select("id").single();
