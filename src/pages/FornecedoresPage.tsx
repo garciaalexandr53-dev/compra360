@@ -569,6 +569,19 @@ const FornecedoresPage = () => {
         </DialogContent>
       </Dialog>
 
+      <SugestoesRegiaoDialog
+        open={sugestoesOpen}
+        onOpenChange={setSugestoesOpen}
+        sugestoes={sugestoes}
+        lojaId={lojaAtiva?.id ?? null}
+        cidadeLabel={cidadeLabel}
+        onAdded={() => {
+          queryClient.invalidateQueries({ queryKey: ["fornecedores"] });
+          queryClient.invalidateQueries({ queryKey: ["fornecedor-lojas"] });
+          queryClient.invalidateQueries({ queryKey: ["sugestoes-regiao"] });
+        }}
+      />
+
       <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
   );
