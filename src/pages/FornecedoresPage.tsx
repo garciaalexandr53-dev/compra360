@@ -186,7 +186,7 @@ const FornecedoresPage = () => {
   const openEdit = (f: Fornecedor) => {
     setEditingId(f.id);
     setForm({
-      nome: f.nome, representante: f.representante || "", telefone: f.telefone || "",
+      nome: f.nome, representante: f.representante || "", telefone: maskTelefone(f.telefone || ""),
       email: f.email || "", pedido_minimo: f.pedido_minimo?.toString() || "",
       prazo_pagamento: (f as any).prazo_pagamento || "", observacoes: f.observacoes || "",
     });
@@ -456,7 +456,7 @@ const FornecedoresPage = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Representante</Label><Input placeholder="Nome" value={form.representante} onChange={(e) => setForm({ ...form, representante: e.target.value })} /></div>
-              <div><Label>Telefone / WhatsApp</Label><Input placeholder="(00) 00000-0000" value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} /></div>
+              <div><Label>Telefone / WhatsApp</Label><Input inputMode="tel" placeholder="(00) 00000-0000" value={form.telefone} onChange={(e) => setForm({ ...form, telefone: maskTelefone(e.target.value) })} /></div>
             </div>
             <div><Label>E-mail</Label><Input type="email" placeholder="email@empresa.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
             <div>
