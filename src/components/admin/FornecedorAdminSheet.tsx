@@ -12,6 +12,7 @@ import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate, formatDateTime, buildWhatsAppUrl } from "@/lib/format";
 import { TIPOS_FORNECEDOR, PASTAS_FORNECEDOR } from "@/lib/adminHelpers";
+import { maskTelefone } from "@/lib/masks";
 import type { FornecedorAdmin } from "@/lib/adminExports";
 
 type Detalhes = {
@@ -82,7 +83,7 @@ export default function FornecedorAdminSheet({
     setForm({
       nome: detalhes.nome ?? "",
       representante: detalhes.representante ?? "",
-      telefone: detalhes.telefone ?? "",
+      telefone: maskTelefone(detalhes.telefone ?? ""),
       email: detalhes.email ?? "",
       pedido_minimo: detalhes.pedido_minimo != null ? String(detalhes.pedido_minimo) : "",
       prazo_pagamento: detalhes.prazo_pagamento ?? "",
@@ -194,7 +195,13 @@ export default function FornecedorAdminSheet({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="forn-tel">Telefone / WhatsApp</Label>
-                <Input id="forn-tel" value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} />
+                <Input
+                  id="forn-tel"
+                  inputMode="tel"
+                  placeholder="(00) 00000-0000"
+                  value={form.telefone}
+                  onChange={(e) => setForm({ ...form, telefone: maskTelefone(e.target.value) })}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="forn-email">E-mail</Label>

@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal, X, Phone, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
+import { maskTelefone, formatTelefone } from "@/lib/masks";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import BackToLojaButton from "@/components/shared/BackToLojaButton";
 import { useFeatureCheck } from "@/components/FeatureGate";
@@ -185,7 +186,7 @@ const FornecedoresPage = () => {
   const openEdit = (f: Fornecedor) => {
     setEditingId(f.id);
     setForm({
-      nome: f.nome, representante: f.representante || "", telefone: f.telefone || "",
+      nome: f.nome, representante: f.representante || "", telefone: maskTelefone(f.telefone || ""),
       email: f.email || "", pedido_minimo: f.pedido_minimo?.toString() || "",
       prazo_pagamento: (f as any).prazo_pagamento || "", observacoes: f.observacoes || "",
     });
@@ -325,7 +326,7 @@ const FornecedoresPage = () => {
                             className="flex items-center gap-1 text-xs text-primary hover:underline"
                             onClick={(e) => { e.stopPropagation(); window.open(`tel:${f.telefone}`); }}
                           >
-                            <Phone className="h-3 w-3" /> {f.telefone}
+                            <Phone className="h-3 w-3" /> {formatTelefone(f.telefone)}
                           </span>
                         )}
                         {lojaNames.length > 0 ? lojaNames.map((name, i) => (
@@ -455,7 +456,7 @@ const FornecedoresPage = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Representante</Label><Input placeholder="Nome" value={form.representante} onChange={(e) => setForm({ ...form, representante: e.target.value })} /></div>
-              <div><Label>Telefone / WhatsApp</Label><Input placeholder="(00) 00000-0000" value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} /></div>
+              <div><Label>Telefone / WhatsApp</Label><Input inputMode="tel" placeholder="(00) 00000-0000" value={form.telefone} onChange={(e) => setForm({ ...form, telefone: maskTelefone(e.target.value) })} /></div>
             </div>
             <div><Label>E-mail</Label><Input type="email" placeholder="email@empresa.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
             <div>

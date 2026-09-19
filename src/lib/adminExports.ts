@@ -1,6 +1,7 @@
 // Helpers de exportação CSV/Excel para o Painel Administrativo
 // Padrão Brasil: UTF-8, separador ";", datas DD/MM/AAAA, vírgula decimal
 import * as XLSX from "xlsx";
+import { formatTelefone } from "./masks";
 import {
   Cliente, getDiasSemUso, getDiasTrialRestantes, getSaudeCliente,
   pastasLabel, tipoFornecedorLabel,
@@ -244,7 +245,7 @@ export function fornecedorRow(f: FornecedorAdmin): unknown[] {
   return [
     f.nome,
     f.representante || "",
-    f.telefone || "",
+    formatTelefone(f.telefone),
     f.email || "",
     f.pedido_minimo ?? "",
     f.prazo_pagamento || "",

@@ -11,6 +11,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { formatBRL, formatDate, buildWhatsAppUrl } from "@/lib/format";
 import { tipoFornecedorLabel, pastasLabel } from "@/lib/adminHelpers";
+import { formatTelefone } from "@/lib/masks";
 import {
   FornecedorAdmin, buildFornecedoresXlsx, fornecedoresFilenameXlsx, downloadXlsx,
 } from "@/lib/adminExports";
@@ -193,7 +194,7 @@ export default function FornecedoresTab() {
                       {f.email && <p className="text-[11px] text-muted-foreground break-all">{f.email}</p>}
                     </td>
                     <td className="px-3 py-2">{f.representante || "—"}</td>
-                    <td className="px-3 py-2">{f.telefone || "—"}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{formatTelefone(f.telefone) || "—"}</td>
                     <td className="px-3 py-2 text-right">{f.pedido_minimo ? formatBRL(Number(f.pedido_minimo)) : "—"}</td>
                     <td className="px-3 py-2">{f.prazo_pagamento || "—"}</td>
                     <td className="px-3 py-2">
@@ -220,7 +221,7 @@ export default function FornecedoresTab() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium leading-tight break-words">{f.nome}</p>
                       <p className="text-[11px] text-muted-foreground break-words">
-                        {f.representante || "sem representante"} · {f.telefone || "sem telefone"}
+                        {f.representante || "sem representante"} · {formatTelefone(f.telefone) || "sem telefone"}
                       </p>
                     </div>
                     <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => setDetalhe(f)} aria-label="Abrir ficha do fornecedor">

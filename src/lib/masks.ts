@@ -8,6 +8,21 @@ export function maskTelefone(value: string): string {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
+/**
+ * Formata um telefone já salvo para exibição padronizada pt-BR.
+ * Aceita qualquer formato de entrada e normaliza para (44) 99944-7117.
+ * Remove o prefixo 55 (Brasil) quando presente. Se não for possível
+ * identificar um telefone válido, devolve o texto original.
+ */
+export function formatTelefone(value: string | null | undefined): string {
+  if (!value) return "";
+  let d = value.replace(/\D/g, "");
+  if ((d.length === 12 || d.length === 13) && d.startsWith("55")) d = d.slice(2);
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return value.trim();
+}
+
 export function maskCNPJ(value: string): string {
   const d = value.replace(/\D/g, "").slice(0, 14);
   if (d.length <= 2) return d;
