@@ -12,6 +12,7 @@ import { Store, Truck, Package, Sparkles, ArrowLeft, ArrowRight, Check, X, Plus,
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/hooks/useAuth";
 import { getDeviceFingerprint } from "@/lib/fingerprint";
+import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
 interface OnboardingWizardProps {
   open: boolean;
@@ -144,7 +145,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
 
         const inserts = validForn.map((f) => ({
           nome: f.nome.trim(),
-          representante: f.representante.trim() || null,
+          representante: formatNomePessoa(f.representante) || null,
           telefone: f.telefone.trim() || null,
           email: f.email.trim() || null,
           pedido_minimo: f.pedido_minimo ? parseFloat(f.pedido_minimo.replace(",", ".")) : null,

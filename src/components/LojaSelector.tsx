@@ -1,6 +1,7 @@
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Store } from "lucide-react";
+import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
 export function LojaSelector() {
   const { lojaAtiva, lojas, setLojaAtivaId } = useLojaAtiva();
@@ -17,7 +18,7 @@ export function LojaSelector() {
 
         <SelectContent>
           {lojas.map((l) => (
-            <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
+            <SelectItem key={l.id} value={l.id}>{formatNomeLoja(l.nome)}</SelectItem>
           ))}
         </SelectContent>
       </Select>

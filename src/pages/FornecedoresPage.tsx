@@ -18,6 +18,7 @@ import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase
 import BackToLojaButton from "@/components/shared/BackToLojaButton";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
+import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -197,7 +198,7 @@ const FornecedoresPage = () => {
   const handleSave = async () => {
     if (!form.nome.trim()) { toast.error("Digite o nome do fornecedor"); return; }
     await saveMutation.mutateAsync({
-      nome: form.nome.trim().toUpperCase(), representante: form.representante.trim() || null,
+      nome: formatNomeEmpresa(form.nome), representante: formatNomePessoa(form.representante) || null,
       telefone: form.telefone.trim() || null, email: form.email.trim() || null,
       pedido_minimo: parseFloat(form.pedido_minimo) || 0, prazo_pagamento: form.prazo_pagamento.trim() || null,
       observacoes: form.observacoes.trim() || null,
@@ -306,9 +307,9 @@ const FornecedoresPage = () => {
                     {/* Header do card */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-foreground text-sm">{f.nome}</div>
+                        <div className="font-bold text-foreground text-sm">{formatNomeEmpresa(f.nome)}</div>
                         {f.representante && (
-                          <div className="text-xs text-muted-foreground mt-0.5">{f.representante}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">{formatNomePessoa(f.representante)}</div>
                         )}
                       </div>
                       {f.pedido_minimo && f.pedido_minimo > 0 && (

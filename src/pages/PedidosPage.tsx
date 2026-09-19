@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
+import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -362,7 +363,7 @@ const PedidosPage = () => {
                   <div><span className="text-muted-foreground">Fornecedor:</span> <strong>{receiptFornecedor.nome}</strong></div>
                   <div><span className="text-muted-foreground">Data:</span> <strong>{new Date().toLocaleDateString("pt-BR")}</strong></div>
                   {receiptFornecedor.representante && (
-                    <div><span className="text-muted-foreground">Representante:</span> {receiptFornecedor.representante}</div>
+                    <div><span className="text-muted-foreground">Representante:</span> {formatNomePessoa(receiptFornecedor.representante)}</div>
                   )}
                   {receiptFornecedor.prazo_pagamento && (
                     <div><span className="text-muted-foreground">Prazo:</span> {receiptFornecedor.prazo_pagamento}</div>

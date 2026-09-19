@@ -14,6 +14,7 @@ import LojaSheet from "@/components/lojas/LojaSheet";
 import LojaEditModal from "@/components/lojas/LojaEditModal";
 import { Loja, LojaForm, LojaMetrics, emptyLojaForm, getDisplayName } from "@/components/lojas/lojaUtils";
 import { consumeVoltarLoja, clearVoltarLoja } from "@/lib/voltarLoja";
+import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
 const LojasPage = () => {
   const queryClient = useQueryClient();
@@ -107,8 +108,8 @@ const LojasPage = () => {
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload = {
-        nome: (form.nome.trim() || form.nome_fantasia.trim()),
-        nome_fantasia: form.nome_fantasia.trim() || null,
+        nome: formatNomeLoja(form.nome) || formatNomeLoja(form.nome_fantasia),
+        nome_fantasia: formatNomeLoja(form.nome_fantasia) || null,
         endereco: form.endereco || null,
         cidade: form.cidade.trim() || null,
         uf: form.uf.trim().toUpperCase() || null,
