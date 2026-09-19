@@ -187,7 +187,7 @@ const FornecedoresPage = () => {
   const openEdit = (f: Fornecedor) => {
     setEditingId(f.id);
     setForm({
-      nome: f.nome, representante: f.representante || "", telefone: maskTelefone(f.telefone || ""),
+      nome: f.nome, representante: f.representante || "", telefone: formatTelefone(f.telefone || ""),
       email: f.email || "", pedido_minimo: f.pedido_minimo?.toString() || "",
       prazo_pagamento: (f as any).prazo_pagamento || "", observacoes: f.observacoes || "",
     });
