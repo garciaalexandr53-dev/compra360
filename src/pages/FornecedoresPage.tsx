@@ -19,6 +19,7 @@ import BackToLojaButton from "@/components/shared/BackToLojaButton";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
+import SugestoesRegiaoDialog, { type SugestaoFornecedor } from "@/components/fornecedores/SugestoesRegiaoDialog";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -43,6 +44,7 @@ const FornecedoresPage = () => {
   const [selectedFornecedor, setSelectedFornecedor] = useState<Fornecedor | null>(null);
   const [selectedLojas, setSelectedLojas] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sugestoesOpen, setSugestoesOpen] = useState(false);
   const { checkLimit, showPlanos, setShowPlanos } = useFeatureCheck();
 
   const { data: lojas = [] } = useQuery({
