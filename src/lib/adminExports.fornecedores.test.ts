@@ -27,7 +27,7 @@ describe("export de fornecedores", () => {
   it("gera a linha na mesma ordem do cabeçalho", () => {
     const row = fornecedorRow(base);
     expect(row).toHaveLength(FORNECEDORES_HEADER.length);
-    expect(row[0]).toBe("Distribuidora Alfa");
+    expect(row[0]).toBe("DISTRIBUIDORA ALFA");
     expect(row[6]).toBe("Alexandre");
     expect(row[7]).toBe("Mercado Central");
     expect(row[8]).toBe("Maringá/PR");

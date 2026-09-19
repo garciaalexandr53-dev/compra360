@@ -24,6 +24,7 @@ import {
   type PadraoEmbalagem,
 } from "@/lib/itensFaltantesImport";
 import { filtrarItensSemPreco } from "@/lib/itensSemPreco";
+import { formatNomeLoja } from "@/lib/masks";
 
 export const parseFatorFromObs = (obs: string | null): number => {
   const match = obs?.match(/Fator:\s*(\d+)/);
@@ -760,7 +761,7 @@ const FuncionariosPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {lojas.map((l) => (
-                    <SelectItem key={l.id} value={l.id}>{l.nome}</SelectItem>
+                    <SelectItem key={l.id} value={l.id}>{formatNomeLoja(l.nome)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

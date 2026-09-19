@@ -16,6 +16,7 @@ import {
   FornecedorAdmin, buildFornecedoresXlsx, fornecedoresFilenameXlsx, downloadXlsx,
 } from "@/lib/adminExports";
 import FornecedorAdminSheet from "./FornecedorAdminSheet";
+import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
 const PAGE_SIZE = 50;
 type Filtro = "todos" | "sem_whatsapp" | "sem_email" | "duplicados";
@@ -183,7 +184,7 @@ export default function FornecedoresTab() {
                 {itens.map((f) => (
                   <tr key={f.id} className="border-t hover:bg-muted/30">
                     <td className="px-3 py-2">
-                      <span className="font-medium">{f.nome}</span>
+                      <span className="font-medium">{formatNomeEmpresa(f.nome)}</span>
                       {f.duplicado && <Badge variant="secondary" className="ml-1.5 text-[10px] py-0">Duplicado</Badge>}
                       {f.tipo_fornecedor && (
                         <Badge variant="outline" className="ml-1.5 text-[10px] py-0">{tipoFornecedorLabel(f.tipo_fornecedor)}</Badge>
@@ -193,7 +194,7 @@ export default function FornecedoresTab() {
                       )}
                       {f.email && <p className="text-[11px] text-muted-foreground break-all">{f.email}</p>}
                     </td>
-                    <td className="px-3 py-2">{f.representante || "—"}</td>
+                    <td className="px-3 py-2">{formatNomePessoa(f.representante) || "—"}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{formatTelefone(f.telefone) || "—"}</td>
                     <td className="px-3 py-2 text-right">{f.pedido_minimo ? formatBRL(Number(f.pedido_minimo)) : "—"}</td>
                     <td className="px-3 py-2">{f.prazo_pagamento || "—"}</td>
@@ -219,9 +220,9 @@ export default function FornecedoresTab() {
                 <CardContent className="p-3 space-y-2">
                   <div className="flex items-start gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium leading-tight break-words">{f.nome}</p>
+                      <p className="text-sm font-medium leading-tight break-words">{formatNomeEmpresa(f.nome)}</p>
                       <p className="text-[11px] text-muted-foreground break-words">
-                        {f.representante || "sem representante"} · {formatTelefone(f.telefone) || "sem telefone"}
+                        {formatNomePessoa(f.representante) || "sem representante"} · {formatTelefone(f.telefone) || "sem telefone"}
                       </p>
                     </div>
                     <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => setDetalhe(f)} aria-label="Abrir ficha do fornecedor">

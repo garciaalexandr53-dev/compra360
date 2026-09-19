@@ -21,6 +21,7 @@ import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import PainelMovimentacoes from "@/components/analise/PainelMovimentacoes";
+import { formatNomeLoja } from "@/lib/masks";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -342,7 +343,7 @@ const AnalisePage = () => {
     const date = new Date().toLocaleDateString("pt-BR");
     const billingParts: string[] = [];
     if (lojaAtiva) {
-      if (lojaAtiva.nome) billingParts.push(`🏪 *Loja:* ${lojaAtiva.nome}`);
+      if (lojaAtiva.nome) billingParts.push(`🏪 *Loja:* ${formatNomeLoja(lojaAtiva.nome)}`);
       if ((lojaAtiva as any).razao_social) billingParts.push(`🏢 *Razão Social:* ${(lojaAtiva as any).razao_social}`);
       if ((lojaAtiva as any).cnpj) billingParts.push(`📄 *CNPJ:* ${(lojaAtiva as any).cnpj}`);
       if ((lojaAtiva as any).inscricao_estadual) billingParts.push(`📋 *IE:* ${(lojaAtiva as any).inscricao_estadual}`);
@@ -1194,7 +1195,7 @@ const AnalisePage = () => {
                   <div className="mt-3 pt-3 border-t text-sm">
                     <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Dados para Faturamento</div>
                     <div className="grid grid-cols-2 gap-1 text-xs">
-                      <div><span className="text-muted-foreground">Loja:</span> {lojaAtiva.nome}</div>
+                      <div><span className="text-muted-foreground">Loja:</span> {formatNomeLoja(lojaAtiva.nome)}</div>
                       {(lojaAtiva as any).cnpj && <div><span className="text-muted-foreground">CNPJ:</span> {(lojaAtiva as any).cnpj}</div>}
                       {(lojaAtiva as any).razao_social && <div><span className="text-muted-foreground">Razão Social:</span> {(lojaAtiva as any).razao_social}</div>}
                       {(lojaAtiva as any).inscricao_estadual && <div><span className="text-muted-foreground">IE:</span> {(lojaAtiva as any).inscricao_estadual}</div>}

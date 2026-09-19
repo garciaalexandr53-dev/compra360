@@ -43,6 +43,7 @@ import {
 } from "@/lib/historicoInsights";
 import type { Tables } from "@/integrations/supabase/types";
 import BackToLojaButton from "@/components/shared/BackToLojaButton";
+import { formatNomeLoja } from "@/lib/masks";
 
 type PeriodFilter = "7d" | "30d" | "90d" | "all" | "custom";
 type StatusFilter = "all" | "finalizada" | "cancelada";
@@ -1236,7 +1237,7 @@ const HistoricoPage = () => {
                         <Store className="h-4 w-4 shrink-0" />
                         <span className="truncate">
                           Loja selecionada
-                          {lojaAtiva ? ` · ${lojaAtiva.nome}` : ""}
+                          {lojaAtiva ? ` · ${formatNomeLoja(lojaAtiva.nome)}` : ""}
                         </span>
                       </button>
                       <button

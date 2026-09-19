@@ -41,3 +41,42 @@ export function isCNPJValido(value: string): boolean {
   const d = value.replace(/\D/g, "");
   return d.length === 0 || d.length === 14;
 }
+
+const MINUSCULAS_PT = new Set([
+  "de", "da", "do", "das", "dos", "e", "di", "du", "van", "von", "com", "em", "a", "o",
+]);
+
+/** Nome de empresa/fornecedor: sempre em MAIÚSCULO, sem espaços duplicados. */
+export function formatNomeEmpresa(value: string | null | undefined): string {
+  if (!value) return "";
+  return value.replace(/\s+/g, " ").trim().toUpperCase();
+}
+
+/** Title Case pt-BR: preposições em minúsculo, siglas curtas preservadas. */
+function titleCasePt(value: string): string {
+  const clean = value.replace(/\s+/g, " ").trim();
+  if (!clean) return "";
+  const words = clean.split(" ");
+  return words
+    .map((word, idx) => {
+      const lower = word.toLocaleLowerCase("pt-BR");
+      if (idx > 0 && MINUSCULAS_PT.has(lower)) return lower;
+      // trata hifens e barras internas: "cianorte-pr" -> "Cianorte-Pr"
+      return lower.replace(/(^|[-/.'])([\p{L}])/gu, (_m, sep: string, ch: string) =>
+        sep + ch.toLocaleUpperCase("pt-BR")
+      );
+    })
+    .join(" ");
+}
+
+/** Nome de pessoa/representante em Iniciais Maiúsculas. */
+export function formatNomePessoa(value: string | null | undefined): string {
+  if (!value) return "";
+  return titleCasePt(value);
+}
+
+/** Nome de loja em Iniciais Maiúsculas, preservando separadores. */
+export function formatNomeLoja(value: string | null | undefined): string {
+  if (!value) return "";
+  return titleCasePt(value);
+}

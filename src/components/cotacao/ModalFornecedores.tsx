@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Clock } from "lucide-react";
 import { formatBRL } from "@/lib/format";
 import type { Tables } from "@/integrations/supabase/types";
+import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -103,9 +104,9 @@ const ModalFornecedores = ({
               />
 
               <div className="flex-1">
-                <div className="text-sm font-bold">{f.nome}</div>
+                <div className="text-sm font-bold">{formatNomeEmpresa(f.nome)}</div>
                 <div className="text-xs text-muted-foreground">
-                  {f.representante && `${f.representante}`}
+                  {f.representante && `${formatNomePessoa(f.representante)}`}
                   {f.telefone && ` · ${f.telefone}`}
                   {f.pedido_minimo && f.pedido_minimo > 0 ? ` · mín: ${formatBRL(f.pedido_minimo)}` : ""}
                 </div>

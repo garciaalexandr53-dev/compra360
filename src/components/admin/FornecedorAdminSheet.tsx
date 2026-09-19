@@ -14,6 +14,7 @@ import { formatDate, formatDateTime, buildWhatsAppUrl } from "@/lib/format";
 import { TIPOS_FORNECEDOR, PASTAS_FORNECEDOR } from "@/lib/adminHelpers";
 import { maskTelefone } from "@/lib/masks";
 import type { FornecedorAdmin } from "@/lib/adminExports";
+import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
 type Detalhes = {
   id?: string;
@@ -110,8 +111,8 @@ export default function FornecedorAdminSheet({
     setSalvando(true);
     const { error } = await supabase.rpc("admin_update_fornecedor", {
       _fornecedor_id: fornecedor.id,
-      _nome: form.nome.trim(),
-      _representante: form.representante.trim() || null,
+      _nome: formatNomeEmpresa(form.nome),
+      _representante: formatNomePessoa(form.representante) || null,
       _telefone: form.telefone.trim() || null,
       _email: form.email.trim() || null,
       _pedido_minimo: pedidoMinimo,
@@ -173,7 +174,7 @@ export default function FornecedorAdminSheet({
                 <div className="flex flex-wrap gap-1.5">
                   {detalhes.lojas.map((l) => (
                     <Badge key={l.id} variant="secondary" className="text-[11px]">
-                      {l.nome}{l.cidade ? ` · ${l.cidade}${l.uf ? `/${l.uf}` : ""}` : ""}
+                      {formatNomeLoja(l.nome)}{l.cidade ? ` · ${l.cidade}${l.uf ? `/${l.uf}` : ""}` : ""}
                     </Badge>
                   ))}
                 </div>

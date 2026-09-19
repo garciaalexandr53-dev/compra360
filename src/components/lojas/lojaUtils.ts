@@ -1,3 +1,4 @@
+import { formatNomeLoja } from "@/lib/masks";
 export const formatCNPJ = (value: string) => {
   const digits = value.replace(/\D/g, "").slice(0, 14);
   return digits
@@ -83,5 +84,5 @@ export function isLojaAtiva(lojaId: string, ativaId: string | null | undefined):
  * Retorna o nome de exibição preferindo nome_fantasia, com fallback para nome.
  */
 export function getDisplayName(loja: Pick<Loja, "nome" | "nome_fantasia">): string {
-  return (loja.nome_fantasia?.trim() || loja.nome || "").trim();
+  return formatNomeLoja(loja.nome_fantasia?.trim() || loja.nome || "");
 }

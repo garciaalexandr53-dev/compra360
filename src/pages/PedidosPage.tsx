@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
+import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -187,7 +188,7 @@ const PedidosPage = () => {
     // Build billing info from active store
     const billingParts: string[] = [];
     if (lojaAtiva) {
-      if (lojaAtiva.nome) billingParts.push(`🏪 *Loja:* ${lojaAtiva.nome}`);
+      if (lojaAtiva.nome) billingParts.push(`🏪 *Loja:* ${formatNomeLoja(lojaAtiva.nome)}`);
       if ((lojaAtiva as any).razao_social) billingParts.push(`🏢 *Razão Social:* ${(lojaAtiva as any).razao_social}`);
       if ((lojaAtiva as any).cnpj) billingParts.push(`📄 *CNPJ:* ${(lojaAtiva as any).cnpj}`);
       if ((lojaAtiva as any).inscricao_estadual) billingParts.push(`📋 *IE:* ${(lojaAtiva as any).inscricao_estadual}`);
@@ -362,7 +363,7 @@ const PedidosPage = () => {
                   <div><span className="text-muted-foreground">Fornecedor:</span> <strong>{receiptFornecedor.nome}</strong></div>
                   <div><span className="text-muted-foreground">Data:</span> <strong>{new Date().toLocaleDateString("pt-BR")}</strong></div>
                   {receiptFornecedor.representante && (
-                    <div><span className="text-muted-foreground">Representante:</span> {receiptFornecedor.representante}</div>
+                    <div><span className="text-muted-foreground">Representante:</span> {formatNomePessoa(receiptFornecedor.representante)}</div>
                   )}
                   {receiptFornecedor.prazo_pagamento && (
                     <div><span className="text-muted-foreground">Prazo:</span> {receiptFornecedor.prazo_pagamento}</div>
