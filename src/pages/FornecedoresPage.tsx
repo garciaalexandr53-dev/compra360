@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal, X, Phone, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
+import { maskTelefone, formatTelefone } from "@/lib/masks";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import BackToLojaButton from "@/components/shared/BackToLojaButton";
 import { useFeatureCheck } from "@/components/FeatureGate";
@@ -325,7 +326,7 @@ const FornecedoresPage = () => {
                             className="flex items-center gap-1 text-xs text-primary hover:underline"
                             onClick={(e) => { e.stopPropagation(); window.open(`tel:${f.telefone}`); }}
                           >
-                            <Phone className="h-3 w-3" /> {f.telefone}
+                            <Phone className="h-3 w-3" /> {formatTelefone(f.telefone)}
                           </span>
                         )}
                         {lojaNames.length > 0 ? lojaNames.map((name, i) => (

@@ -244,7 +244,7 @@ export function fornecedorRow(f: FornecedorAdmin): unknown[] {
   return [
     f.nome,
     f.representante || "",
-    f.telefone || "",
+    formatTelefone(f.telefone),
     f.email || "",
     f.pedido_minimo ?? "",
     f.prazo_pagamento || "",
