@@ -39,6 +39,11 @@ export default function LojaCard({ loja, ativaId, metrics, loadingMetrics, onCli
                 ATIVA
               </span>
             )}
+            {!loja.cidade?.trim() && (
+              <span className="text-[10px] px-2 py-0.5 bg-warning/15 text-warning border border-warning/40 rounded-full font-bold shrink-0">
+                SEM CIDADE
+              </span>
+            )}
           </div>
           {loja.razao_social && (
             <p className="text-xs text-muted-foreground mt-0.5 truncate">{loja.razao_social}</p>
