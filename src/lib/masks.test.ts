@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { maskTelefone, maskCNPJ, isTelefoneValido, isCNPJValido } from "./masks";
+import { maskTelefone, maskCNPJ, isTelefoneValido, isCNPJValido, formatTelefone } from "./masks";
 
 describe("maskTelefone", () => {
   it("formats 11 digits as mobile", () => {
@@ -31,5 +31,20 @@ describe("validators", () => {
     expect(isCNPJValido("12345678000199")).toBe(true);
     expect(isCNPJValido("123")).toBe(false);
     expect(isCNPJValido("")).toBe(true);
+  });
+});
+
+describe("formatTelefone (prefill de formulários)", () => {
+  it("remove o código do país 55 sem cortar dígitos", () => {
+    expect(formatTelefone("5544999447117")).toBe("(44) 99944-7117");
+    expect(formatTelefone("554433334444")).toBe("(44) 3333-4444");
+  });
+  it("mantém números já corretos", () => {
+    expect(formatTelefone("44999447117")).toBe("(44) 99944-7117");
+    expect(formatTelefone("(44) 99944-7117")).toBe("(44) 99944-7117");
+  });
+  it("devolve o texto original quando não reconhece", () => {
+    expect(formatTelefone("123")).toBe("123");
+    expect(formatTelefone(null)).toBe("");
   });
 });
