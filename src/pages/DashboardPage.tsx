@@ -31,6 +31,7 @@ import ModalNovaCotacao from "@/components/cotacao/ModalNovaCotacao";
 import TrialBanner from "@/components/dashboard/TrialBanner";
 import TrialUpsellCard from "@/components/dashboard/TrialUpsellCard";
 import AppFuncionariosDiscoveryCard from "@/components/dashboard/AppFuncionariosDiscoveryCard";
+import CidadeLojaBanner from "@/components/dashboard/CidadeLojaBanner";
 import TrialExpiredOverlay from "@/components/dashboard/TrialExpiredOverlay";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -653,6 +654,7 @@ const DashboardPage = () => {
         totalProdutos={economiaHistorica.totalProdutos}
         economiaTotal={economiaHistorica.economiaTotal}
       />
+      <CidadeLojaBanner />
       <AppFuncionariosDiscoveryCard />
       <ItensCarregadosBanner cotacaoId={cotacaoAtiva?.id ?? null} />
       <div className="animate-fade-in">

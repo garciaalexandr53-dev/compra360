@@ -60,6 +60,8 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   // Step 1 - Loja
   const [lojaNome, setLojaNome] = useState("");
   const [lojaCnpj, setLojaCnpj] = useState("");
+  const [lojaCidade, setLojaCidade] = useState("");
+  const [lojaUf, setLojaUf] = useState("");
 
   // Step 2 - Fornecedores (múltiplos)
   const [fornecedores, setFornecedores] = useState<FornecedorDraft[]>([emptyFornecedor()]);
@@ -121,6 +123,8 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
 
         const { data: lojaData, error } = await supabase.from("lojas").insert({
           nome: lojaNome.trim(),
+          cidade: lojaCidade.trim(),
+          uf: lojaUf.trim() ? lojaUf.trim().toUpperCase() : null,
           cnpj: cnpjDigits.length === 14 ? cnpjDigits : null,
           user_id: user?.id,
         }).select("id").single();
@@ -204,7 +208,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
 
   const canAdvance = () => {
     if (step === 0) return true;
-    if (step === 1) return lojaNome.trim().length > 0;
+    if (step === 1) return lojaNome.trim().length > 0 && lojaCidade.trim().length > 0;
     if (step === 2) return fornecedores.some((f) => f.nome.trim().length > 0);
     return true; // conclusão
   };
@@ -297,6 +301,32 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   autoFocus
                 />
               </div>
+              <div className="grid grid-cols-[1fr_auto] gap-2">
+                <div className="space-y-2">
+                  <Label htmlFor="loja-cidade">Cidade *</Label>
+                  <Input
+                    id="loja-cidade"
+                    placeholder="Ex: Cianorte"
+                    value={lojaCidade}
+                    onChange={(e) => setLojaCidade(e.target.value)}
+                    maxLength={100}
+                  />
+                </div>
+                <div className="w-20 space-y-2">
+                  <Label htmlFor="loja-uf">UF</Label>
+                  <Input
+                    id="loja-uf"
+                    placeholder="PR"
+                    value={lojaUf}
+                    onChange={(e) => setLojaUf(e.target.value.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase())}
+                    maxLength={2}
+                    className="uppercase"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground -mt-2">
+                Usamos a cidade para sugerir fornecedores que já atendem na sua região.
+              </p>
               <div className="space-y-2">
                 <Label htmlFor="loja-cnpj">CNPJ *</Label>
                 <Input
