@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal, X, Phone, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal, X, Phone, CheckCircle2, Clock, AlertCircle, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
 import { maskTelefone, formatTelefone } from "@/lib/masks";
@@ -19,6 +19,7 @@ import BackToLojaButton from "@/components/shared/BackToLojaButton";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
+import SugestoesRegiaoDialog, { type SugestaoFornecedor } from "@/components/fornecedores/SugestoesRegiaoDialog";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -43,6 +44,7 @@ const FornecedoresPage = () => {
   const [selectedFornecedor, setSelectedFornecedor] = useState<Fornecedor | null>(null);
   const [selectedLojas, setSelectedLojas] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sugestoesOpen, setSugestoesOpen] = useState(false);
   const { checkLimit, showPlanos, setShowPlanos } = useFeatureCheck();
 
   const { data: lojas = [] } = useQuery({
@@ -71,6 +73,25 @@ const FornecedoresPage = () => {
       return data as Fornecedor[];
     },
   });
+
+  const { data: sugestoes = [] } = useQuery({
+    queryKey: ["sugestoes-regiao", lojaAtiva?.id],
+    enabled: !!lojaAtiva?.id && !!lojaAtiva?.cidade,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("sugerir_fornecedores_por_cidade", { _loja_id: lojaAtiva!.id });
+      if (error) throw error;
+      return (data || []) as SugestaoFornecedor[];
+    },
+  });
+
+  const cidadeLabel = lojaAtiva?.cidade
+    ? `${formatNomeLoja(lojaAtiva.cidade)}${lojaAtiva.uf ? ` - ${lojaAtiva.uf.toUpperCase()}` : ""}`
+    : "";
+
+  const abrirSugestoes = () => {
+    if (!checkLimit("max_fornecedores", fornecedores.length, "Faça upgrade para cadastrar mais fornecedores.")) return;
+    setSugestoesOpen(true);
+  };
 
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
@@ -260,9 +281,17 @@ const FornecedoresPage = () => {
           <span className="text-xs text-muted-foreground">
             {fornecedores.length} fornecedor{fornecedores.length !== 1 ? "es" : ""}
           </span>
-          <Button size="sm" onClick={openAdd}>
-            <Plus className="h-4 w-4 mr-1" /> Novo Fornecedor
-          </Button>
+          <div className="flex items-center gap-2">
+            {sugestoes.length > 0 && (
+              <Button size="sm" variant="outline" onClick={abrirSugestoes}>
+                <MapPin className="h-4 w-4 mr-1" /> Sugestões da região
+                <span className="ml-1 text-[10px] font-semibold text-primary">{sugestoes.length} disponíveis</span>
+              </Button>
+            )}
+            <Button size="sm" onClick={openAdd}>
+              <Plus className="h-4 w-4 mr-1" /> Novo Fornecedor
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -292,6 +321,22 @@ const FornecedoresPage = () => {
                 <Button onClick={openAdd} variant="outline" size="sm">
                   + Adicionar primeiro fornecedor
                 </Button>
+              )}
+              {!searchTerm && fornecedores.length === 0 && sugestoes.length > 0 && (
+                <div className="mx-auto max-w-sm rounded-lg border border-primary/30 bg-primary/5 p-4 text-left space-y-2">
+                  <p className="text-sm text-foreground">
+                    Encontramos <strong>{sugestoes.length}</strong> fornecedor{sugestoes.length === 1 ? "" : "es"} que
+                    atende{sugestoes.length === 1 ? "" : "m"} em {cidadeLabel}. Quer adicioná-los?
+                  </p>
+                  <Button size="sm" onClick={abrirSugestoes}>
+                    <MapPin className="h-4 w-4 mr-1" /> Ver sugestões da região
+                  </Button>
+                </div>
+              )}
+              {!searchTerm && !lojaAtiva?.cidade && (
+                <p className="text-xs">
+                  Preencha a cidade da sua loja em <strong>Lojas</strong> para receber sugestões de fornecedores da região.
+                </p>
               )}
             </div>
           ) : (
@@ -523,6 +568,19 @@ const FornecedoresPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <SugestoesRegiaoDialog
+        open={sugestoesOpen}
+        onOpenChange={setSugestoesOpen}
+        sugestoes={sugestoes}
+        lojaId={lojaAtiva?.id ?? null}
+        cidadeLabel={cidadeLabel}
+        onAdded={() => {
+          queryClient.invalidateQueries({ queryKey: ["fornecedores"] });
+          queryClient.invalidateQueries({ queryKey: ["fornecedor-lojas"] });
+          queryClient.invalidateQueries({ queryKey: ["sugestoes-regiao"] });
+        }}
+      />
 
       <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>

@@ -1308,6 +1308,10 @@ export type Database = {
         Args: { _cnpj?: string; _fingerprint?: string; _phone?: string }
         Returns: Json
       }
+      copiar_fornecedores_para_loja: {
+        Args: { _fornecedor_ids: string[]; _loja_id: string }
+        Returns: number
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -1496,6 +1500,19 @@ export type Database = {
           fonte: string
           id: string
           nome: string
+        }[]
+      }
+      sugerir_fornecedores_por_cidade: {
+        Args: { _loja_id: string }
+        Returns: {
+          id: string
+          nome: string
+          pasta: string[]
+          pedido_minimo: number
+          prazo_pagamento: string
+          representante: string
+          telefone: string
+          tipo_fornecedor: string
         }[]
       }
     }
