@@ -1304,19 +1304,40 @@ export type Database = {
         Args: { _plan_name: string; _user_id: string }
         Returns: Json
       }
-      admin_update_fornecedor: {
-        Args: {
-          _email?: string
-          _fornecedor_id: string
-          _nome: string
-          _observacoes?: string
-          _pasta?: string[]
-          _pedido_minimo?: number
-          _prazo_pagamento?: string
-          _representante?: string
-          _telefone?: string
-          _tipo_fornecedor?: string
-        }
+      admin_update_fornecedor:
+        | {
+            Args: {
+              _email?: string
+              _fornecedor_id: string
+              _nome: string
+              _observacoes?: string
+              _pasta?: string[]
+              _pedido_minimo?: number
+              _prazo_pagamento?: string
+              _representante?: string
+              _telefone?: string
+              _tipo_fornecedor?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _consentimento_rede?: string
+              _email?: string
+              _fornecedor_id: string
+              _nome: string
+              _observacoes?: string
+              _pasta?: string[]
+              _pedido_minimo?: number
+              _prazo_pagamento?: string
+              _representante?: string
+              _telefone?: string
+              _tipo_fornecedor?: string
+            }
+            Returns: Json
+          }
+      admin_update_loja: {
+        Args: { _cidade?: string; _loja_id: string; _uf?: string }
         Returns: Json
       }
       checar_cnpj_duplicado: {
