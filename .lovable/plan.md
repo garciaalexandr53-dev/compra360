@@ -1,4 +1,4 @@
-# Editar Cidade e UF das lojas pelo Painel Admin
+# Edições manuais no Painel Admin: Cidade/UF das lojas e consentimento do fornecedor
 
 ## Objetivo
 Permitir que você (admin) preencha Cidade e UF das lojas diretamente no painel `/admin`, sem depender do cliente — principalmente as ~20 lojas antigas que estão em branco. Edição livre, sem obrigatoriedade.
