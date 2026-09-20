@@ -274,6 +274,36 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
 
             <Separator />
 
+            {/* LOJAS */}
+            <div>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <Store className="h-3.5 w-3.5" />
+                Lojas — cidade e estado
+              </h3>
+              {isLoading ? (
+                <div className="text-sm text-muted-foreground animate-pulse">Carregando...</div>
+              ) : !detalhes?.lojas || detalhes.lojas.length === 0 ? (
+                <div className="text-sm text-muted-foreground italic">
+                  Nenhuma loja cadastrada ainda
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {detalhes.lojas.map((l) => (
+                    <LojaLocalRow
+                      key={l.id}
+                      loja={l}
+                      onSaved={() => {
+                        queryClient.invalidateQueries({ queryKey: ["admin-cliente-detalhes", cliente.user_id] });
+                        queryClient.invalidateQueries({ queryKey: ["admin-clientes"] });
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
             {/* HISTÓRICO DE CONTATOS */}
             <div>
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
