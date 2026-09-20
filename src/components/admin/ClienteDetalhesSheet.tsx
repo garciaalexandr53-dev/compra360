@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
@@ -8,6 +8,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { formatUF } from "@/components/lojas/lojaUtils";
+import { formatNomeLoja } from "@/lib/masks";
 import {
   Building2, IdCard, Mail, Phone, Calendar, LogIn, CreditCard, Activity, Clock,
   Store, Package, Users, FileText, Send, Loader2, MessageCircle, Pencil, CheckCircle2, XCircle, History, Trash2, HandCoins, AtSign, KeyRound,
@@ -39,6 +44,15 @@ type Detalhes = {
   current_period_end: string | null;
   subscription_created_at: string | null;
   plan_price_monthly: number | null;
+  lojas?: LojaAdmin[] | null;
+};
+
+type LojaAdmin = {
+  id: string;
+  nome: string;
+  nome_fantasia: string | null;
+  cidade: string | null;
+  uf: string | null;
 };
 
 function formatDateTime(iso: string | null | undefined): string {
@@ -76,6 +90,7 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
   const [senhaOpen, setSenhaOpen] = useState(false);
   const isMobile = useIsMobile();
   const open = !!cliente;
+  const queryClient = useQueryClient();
 
   const { data: detalhes, isLoading } = useQuery({
     queryKey: ["admin-cliente-detalhes", cliente?.user_id],
@@ -256,6 +271,36 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
                 value={temCotacao ? "Sim — já fez cotação" : "Não — sem cotações"}
               />
             </Secao>
+
+            <Separator />
+
+            {/* LOJAS */}
+            <div>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <Store className="h-3.5 w-3.5" />
+                Lojas — cidade e estado
+              </h3>
+              {isLoading ? (
+                <div className="text-sm text-muted-foreground animate-pulse">Carregando...</div>
+              ) : !detalhes?.lojas || detalhes.lojas.length === 0 ? (
+                <div className="text-sm text-muted-foreground italic">
+                  Nenhuma loja cadastrada ainda
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {detalhes.lojas.map((l) => (
+                    <LojaLocalRow
+                      key={l.id}
+                      loja={l}
+                      onSaved={() => {
+                        queryClient.invalidateQueries({ queryKey: ["admin-cliente-detalhes", cliente.user_id] });
+                        queryClient.invalidateQueries({ queryKey: ["admin-clientes"] });
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
 
             <Separator />
 
@@ -444,6 +489,85 @@ function Info({
       <div className={`text-sm font-medium mt-1 ${breakAll ? "break-all" : "break-words"}`}>
         {value}
       </div>
+    </div>
+  );
+}
+
+function LojaLocalRow({ loja, onSaved }: { loja: LojaAdmin; onSaved: () => void }) {
+  const [cidade, setCidade] = useState(loja.cidade ?? "");
+  const [uf, setUf] = useState((loja.uf ?? "").toUpperCase());
+  const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => {
+    setCidade(loja.cidade ?? "");
+    setUf((loja.uf ?? "").toUpperCase());
+  }, [loja.id, loja.cidade, loja.uf]);
+
+  const mudou =
+    cidade.trim() !== (loja.cidade ?? "").trim() ||
+    uf.trim() !== (loja.uf ?? "").toUpperCase().trim();
+
+  const salvar = async () => {
+    setSalvando(true);
+    const { error } = await supabase.rpc("admin_update_loja", {
+      _loja_id: loja.id,
+      _cidade: cidade.trim() || null,
+      _uf: uf.trim() || null,
+    });
+    setSalvando(false);
+    if (error) {
+      toast.error(error.message || "Não foi possível salvar.");
+      return;
+    }
+    toast.success("Loja atualizada!");
+    onSaved();
+  };
+
+  const nome = formatNomeLoja(loja.nome_fantasia?.trim() || loja.nome || "");
+
+  return (
+    <div className="rounded-md border bg-card/50 p-2.5 space-y-2">
+      <div className="flex items-center gap-1.5 text-sm font-medium">
+        <Store className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        <span className="truncate">{nome}</span>
+        {!loja.cidade?.trim() && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+            Sem cidade
+          </Badge>
+        )}
+      </div>
+      <div className="grid grid-cols-[1fr_auto] gap-2">
+        <div className="space-y-1">
+          <Label htmlFor={`cidade-${loja.id}`} className="text-[11px] text-muted-foreground uppercase">
+            Cidade
+          </Label>
+          <Input
+            id={`cidade-${loja.id}`}
+            value={cidade}
+            onChange={(e) => setCidade(e.target.value)}
+            placeholder="Ex: Cianorte"
+            maxLength={100}
+            className="h-9"
+          />
+        </div>
+        <div className="space-y-1 w-20">
+          <Label htmlFor={`uf-${loja.id}`} className="text-[11px] text-muted-foreground uppercase">
+            UF
+          </Label>
+          <Input
+            id={`uf-${loja.id}`}
+            value={uf}
+            onChange={(e) => setUf(formatUF(e.target.value))}
+            placeholder="PR"
+            maxLength={2}
+            className="h-9 uppercase"
+          />
+        </div>
+      </div>
+      <Button size="sm" variant="outline" className="w-full" onClick={salvar} disabled={!mudou || salvando}>
+        {salvando ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : null}
+        Salvar
+      </Button>
     </div>
   );
 }

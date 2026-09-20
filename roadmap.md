@@ -7,3 +7,7 @@
 ## Em espera (não construir)
 - [ ] Frente B — Dados fiscais completos para emissão de nota (razão social, endereço com número e bairro, inscrição municipal, e-mail de faturamento), exigidos no momento da assinatura paga.
   - Bloqueio: aguardando decisão do Alexandre sobre qual emissor de nota fiscal será usado.
+
+## Concluído (continuação)
+- [x] Consentimento da Rede no link do fornecedor (CNPJ, pastas, sim/não/preciso pensar, janelas de 90/180 dias).
+- [x] Edições manuais no Admin: cidade/UF das lojas na ficha do cliente e consentimento da rede na ficha do fornecedor.

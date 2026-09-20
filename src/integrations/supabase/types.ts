@@ -1306,6 +1306,7 @@ export type Database = {
       }
       admin_update_fornecedor: {
         Args: {
+          _consentimento_rede?: string
           _email?: string
           _fornecedor_id: string
           _nome: string
@@ -1317,6 +1318,10 @@ export type Database = {
           _telefone?: string
           _tipo_fornecedor?: string
         }
+        Returns: Json
+      }
+      admin_update_loja: {
+        Args: { _cidade?: string; _loja_id: string; _uf?: string }
         Returns: Json
       }
       checar_cnpj_duplicado: {

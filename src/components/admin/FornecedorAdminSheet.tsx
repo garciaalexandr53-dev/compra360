@@ -52,12 +52,13 @@ type Form = {
   observacoes: string;
   tipo_fornecedor: string;
   pasta: string[];
+  consentimento_rede: string;
 };
 
 const VAZIO: Form = {
   nome: "", representante: "", telefone: "", email: "",
   pedido_minimo: "", prazo_pagamento: "", observacoes: "",
-  tipo_fornecedor: "", pasta: [],
+  tipo_fornecedor: "", pasta: [], consentimento_rede: "pendente",
 };
 
 const SEM_TIPO = "__sem_tipo__";
@@ -96,6 +97,7 @@ export default function FornecedorAdminSheet({
       observacoes: detalhes.observacoes ?? "",
       tipo_fornecedor: detalhes.tipo_fornecedor ?? "",
       pasta: detalhes.pasta ?? [],
+      consentimento_rede: detalhes.consentimento_rede ?? "pendente",
     });
   }, [detalhes?.id, detalhes]);
 
@@ -125,6 +127,7 @@ export default function FornecedorAdminSheet({
       _observacoes: form.observacoes.trim() || null,
       _tipo_fornecedor: form.tipo_fornecedor || null,
       _pasta: form.tipo_fornecedor === "especializado" && form.pasta.length ? form.pasta : null,
+      _consentimento_rede: form.consentimento_rede || null,
     });
     setSalvando(false);
 
@@ -287,14 +290,27 @@ export default function FornecedorAdminSheet({
                   <span className="text-muted-foreground">CNPJ: </span>
                   {detalhes?.cnpj ? maskCNPJ(detalhes.cnpj) : "não informado"}
                 </p>
-                <p>
-                  <span className="text-muted-foreground">Consentimento: </span>
-                  {detalhes?.consentimento_rede === "sim"
-                    ? "aceitou participar"
-                    : detalhes?.consentimento_rede === "nao"
-                      ? `recusou (${detalhes?.consentimento_recusas ?? 0}x)`
-                      : "ainda não respondeu"}
-                </p>
+                <div className="space-y-1.5">
+                  <Label htmlFor="forn-consent" className="text-xs text-muted-foreground">
+                    Consentimento para aparecer na rede
+                  </Label>
+                  <Select
+                    value={form.consentimento_rede || "pendente"}
+                    onValueChange={(v) => setForm((prev) => ({ ...prev, consentimento_rede: v }))}
+                  >
+                    <SelectTrigger id="forn-consent" className="bg-background"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pendente">Pendente — ainda não respondeu</SelectItem>
+                      <SelectItem value="sim">Sim — aceitou participar</SelectItem>
+                      <SelectItem value="nao">Não — recusou</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(detalhes?.consentimento_recusas ?? 0) > 0 && (
+                    <p className="text-[11px] text-muted-foreground">
+                      Recusas registradas: {detalhes?.consentimento_recusas}x
+                    </p>
+                  )}
+                </div>
                 {detalhes?.consentimento_ultima_pergunta && (
                   <p>
                     <span className="text-muted-foreground">Última pergunta: </span>
