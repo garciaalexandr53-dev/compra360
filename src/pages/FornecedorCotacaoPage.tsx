@@ -242,7 +242,7 @@ const FornecedorCotacaoPage = () => {
       }
 
       const { data, error } = await supabase.functions.invoke("submit-precos", {
-        body: { token, prices: priceEntries },
+        body: { token, prices: priceEntries, skip_cnpj_pendente: skipCnpjPendente },
       });
 
       if (error || data?.error) {
