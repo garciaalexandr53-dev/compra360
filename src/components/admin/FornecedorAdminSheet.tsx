@@ -127,6 +127,7 @@ export default function FornecedorAdminSheet({
       _observacoes: form.observacoes.trim() || null,
       _tipo_fornecedor: form.tipo_fornecedor || null,
       _pasta: form.tipo_fornecedor === "especializado" && form.pasta.length ? form.pasta : null,
+      _consentimento_rede: form.consentimento_rede || null,
     });
     setSalvando(false);
 
