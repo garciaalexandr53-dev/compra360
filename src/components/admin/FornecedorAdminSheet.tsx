@@ -52,12 +52,13 @@ type Form = {
   observacoes: string;
   tipo_fornecedor: string;
   pasta: string[];
+  consentimento_rede: string;
 };
 
 const VAZIO: Form = {
   nome: "", representante: "", telefone: "", email: "",
   pedido_minimo: "", prazo_pagamento: "", observacoes: "",
-  tipo_fornecedor: "", pasta: [],
+  tipo_fornecedor: "", pasta: [], consentimento_rede: "pendente",
 };
 
 const SEM_TIPO = "__sem_tipo__";
