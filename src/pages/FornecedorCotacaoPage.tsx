@@ -438,6 +438,11 @@ const FornecedorCotacaoPage = () => {
         );
       })()}
 
+      {/* Cadastro da empresa + consentimento da Rede */}
+      {token && (
+        <OnboardingFornecedorCard token={token} onSkipChange={setSkipCnpjPendente} />
+      )}
+
       {/* Products */}
       <div className="p-3 sm:p-4 space-y-3 max-w-3xl mx-auto">
         {produtos.map((p, i) => (
