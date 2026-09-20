@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.admin_update_fornecedor(uuid, text, text, text, text, numeric, text, text, text, text[]);
