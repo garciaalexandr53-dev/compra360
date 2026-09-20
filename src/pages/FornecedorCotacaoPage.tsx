@@ -8,6 +8,7 @@ import { formatNumber, formatHoraLocal, formatTimeRemaining } from "@/lib/format
 import { withAssetVersion } from "@/lib/assetVersion";
 import { avaliarPreco, type ReferenciaFonte } from "@/lib/avaliarPreco";
 import { PRECO_FALLBACK_MIN, DEBOUNCE_AVALIACAO_MS } from "@/lib/precoReferencia";
+import OnboardingFornecedorCard from "@/components/fornecedor/OnboardingFornecedorCard";
 
 interface ProdutoItem {
   cotacao_produto_id: string;
