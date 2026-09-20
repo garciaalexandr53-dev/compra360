@@ -492,3 +492,82 @@ function Info({
     </div>
   );
 }
+
+function LojaLocalRow({ loja, onSaved }: { loja: LojaAdmin; onSaved: () => void }) {
+  const [cidade, setCidade] = useState(loja.cidade ?? "");
+  const [uf, setUf] = useState((loja.uf ?? "").toUpperCase());
+  const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => {
+    setCidade(loja.cidade ?? "");
+    setUf((loja.uf ?? "").toUpperCase());
+  }, [loja.id, loja.cidade, loja.uf]);
+
+  const mudou =
+    cidade.trim() !== (loja.cidade ?? "").trim() ||
+    uf.trim() !== (loja.uf ?? "").toUpperCase().trim();
+
+  const salvar = async () => {
+    setSalvando(true);
+    const { error } = await supabase.rpc("admin_update_loja", {
+      _loja_id: loja.id,
+      _cidade: cidade.trim() || null,
+      _uf: uf.trim() || null,
+    });
+    setSalvando(false);
+    if (error) {
+      toast.error(error.message || "Não foi possível salvar.");
+      return;
+    }
+    toast.success("Loja atualizada!");
+    onSaved();
+  };
+
+  const nome = formatNomeLoja(loja.nome_fantasia?.trim() || loja.nome || "");
+
+  return (
+    <div className="rounded-md border bg-card/50 p-2.5 space-y-2">
+      <div className="flex items-center gap-1.5 text-sm font-medium">
+        <Store className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        <span className="truncate">{nome}</span>
+        {!loja.cidade?.trim() && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+            Sem cidade
+          </Badge>
+        )}
+      </div>
+      <div className="grid grid-cols-[1fr_auto] gap-2">
+        <div className="space-y-1">
+          <Label htmlFor={`cidade-${loja.id}`} className="text-[11px] text-muted-foreground uppercase">
+            Cidade
+          </Label>
+          <Input
+            id={`cidade-${loja.id}`}
+            value={cidade}
+            onChange={(e) => setCidade(e.target.value)}
+            placeholder="Ex: Cianorte"
+            maxLength={100}
+            className="h-9"
+          />
+        </div>
+        <div className="space-y-1 w-20">
+          <Label htmlFor={`uf-${loja.id}`} className="text-[11px] text-muted-foreground uppercase">
+            UF
+          </Label>
+          <Input
+            id={`uf-${loja.id}`}
+            value={uf}
+            onChange={(e) => setUf(formatUF(e.target.value))}
+            placeholder="PR"
+            maxLength={2}
+            className="h-9 uppercase"
+          />
+        </div>
+      </div>
+      <Button size="sm" variant="outline" className="w-full" onClick={salvar} disabled={!mudou || salvando}>
+        {salvando ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : null}
+        Salvar
+      </Button>
+    </div>
+  );
+}
