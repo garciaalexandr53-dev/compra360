@@ -30,6 +30,7 @@ const OnboardingFornecedorCard = ({ token, onSkipChange }: Props) => {
   const [duplicado, setDuplicado] = useState(false);
   const [pastas, setPastas] = useState<string[]>([]);
   const [consentimento, setConsentimento] = useState<"sim" | "nao" | null>(null);
+  const [selecionado, setSelecionado] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [hidden, setHidden] = useState(false);
