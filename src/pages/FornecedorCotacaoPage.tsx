@@ -41,6 +41,7 @@ const FornecedorCotacaoPage = () => {
   const [cotacaoId, setCotacaoId] = useState<string | null>(null);
   const [, forceTick] = useState(0);
   const visualizadoMarcado = useRef(false);
+  const [skipCnpjPendente, setSkipCnpjPendente] = useState(false);
 
   useEffect(() => {
     return () => {
