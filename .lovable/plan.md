@@ -1,4 +1,4 @@
-# Editar Cidade e UF das lojas pelo Painel Admin
+# Edições manuais no Painel Admin: Cidade/UF das lojas e consentimento do fornecedor
 
 ## Objetivo
 Permitir que você (admin) preencha Cidade e UF das lojas diretamente no painel `/admin`, sem depender do cliente — principalmente as ~20 lojas antigas que estão em branco. Edição livre, sem obrigatoriedade.
@@ -29,6 +29,22 @@ Permitir que você (admin) preencha Cidade e UF das lojas diretamente no painel 
 
 4. **Verificação**: tsgo, testes existentes, conferência visual em desktop e 360px; teste funcional real preenchendo cidade/UF de uma loja antiga via painel.
 
+## Parte 2 — Consentimento da Rede editável na ficha do fornecedor
+
+### O que muda para você
+- Na ficha do fornecedor no painel, junto do bloco "Rede de fornecedores", aparece um seletor **Consentimento** com Pendente / Sim / Não.
+- Você pode marcar "Sim" para os representantes que já confirmaram por WhatsApp, e eles passam a aparecer nas sugestões da região na hora — sem esperar um novo link de cotação.
+- Salva junto com o botão "Salvar alterações" que já existe na ficha.
+
+### Detalhes técnicos
+5. **`admin_update_fornecedor`** ganha o parâmetro opcional `_consentimento_rede text DEFAULT NULL` (recriada por migração, mantendo todos os parâmetros e comportamentos atuais):
+   - Quando NULL, nada muda no consentimento (compatível com chamadas existentes).
+   - Valida em ('pendente','sim','nao'), senão `RAISE EXCEPTION 'Consentimento inválido'`.
+   - Grava apenas `consentimento_rede`; não toca em `consentimento_recusas` nem `consentimento_ultima_pergunta`.
+   - Acrescenta ao log de `admin_contatos` o trecho antes/depois `| consentimento: sim → nao`, no mesmo padrão dos outros campos.
+6. **`FornecedorAdminSheet.tsx`**: campo `consentimento_rede` no `Form` (prefill a partir de `detalhes.consentimento_rede`), `Select` com as três opções dentro do bloco "Rede de fornecedores" (que deixa de ser 100% somente leitura nesse item), enviado em `_consentimento_rede` no `supabase.rpc`. CNPJ e demais informações do bloco continuam somente leitura.
+
 ## Fora de escopo
-- Nenhuma obrigatoriedade ou trava de validação além do formato da UF.
+- Nenhuma obrigatoriedade ou trava de validação além do formato da UF e dos três valores de consentimento.
 - Nada muda no sistema do cliente (o aviso "Sem cidade" que já existe continua e some sozinho quando você preencher).
+- O fluxo automático de perguntas no link do fornecedor (90/180 dias, limite de skips) continua exatamente como está.
