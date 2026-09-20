@@ -44,6 +44,15 @@ type Detalhes = {
   current_period_end: string | null;
   subscription_created_at: string | null;
   plan_price_monthly: number | null;
+  lojas?: LojaAdmin[] | null;
+};
+
+type LojaAdmin = {
+  id: string;
+  nome: string;
+  nome_fantasia: string | null;
+  cidade: string | null;
+  uf: string | null;
 };
 
 function formatDateTime(iso: string | null | undefined): string {
