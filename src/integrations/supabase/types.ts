@@ -472,6 +472,11 @@ export type Database = {
       }
       fornecedores: {
         Row: {
+          cnpj: string | null
+          consentimento_recusas: number
+          consentimento_rede: string
+          consentimento_tentativas_skip: number
+          consentimento_ultima_pergunta: string | null
           created_at: string
           email: string | null
           id: string
@@ -488,6 +493,11 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          cnpj?: string | null
+          consentimento_recusas?: number
+          consentimento_rede?: string
+          consentimento_tentativas_skip?: number
+          consentimento_ultima_pergunta?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -504,6 +514,11 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          cnpj?: string | null
+          consentimento_recusas?: number
+          consentimento_rede?: string
+          consentimento_tentativas_skip?: number
+          consentimento_ultima_pergunta?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -1304,6 +1319,10 @@ export type Database = {
         }
         Returns: Json
       }
+      checar_cnpj_duplicado: {
+        Args: { _cnpj: string; _token: string }
+        Returns: boolean
+      }
       check_trial_eligibility: {
         Args: { _cnpj?: string; _fingerprint?: string; _phone?: string }
         Returns: Json
@@ -1417,6 +1436,17 @@ export type Database = {
           nome: string
         }[]
       }
+      get_supplier_onboarding_state: {
+        Args: { _token: string }
+        Returns: {
+          pasta: string[]
+          pedir_cnpj: boolean
+          pedir_consentimento: boolean
+          pedir_pasta: boolean
+          permite_skip: boolean
+          tipo_fornecedor: string
+        }[]
+      }
       get_ultima_compra_item: {
         Args: {
           _catalogo_mestre_id?: string
@@ -1479,6 +1509,16 @@ export type Database = {
           _status: Database["public"]["Enums"]["envio_status"]
         }
         Returns: string
+      }
+      registrar_skip_cnpj: { Args: { _token: string }; Returns: boolean }
+      salvar_dados_fornecedor: {
+        Args: {
+          _cnpj?: string
+          _consentimento?: string
+          _pasta?: string[]
+          _token: string
+        }
+        Returns: boolean
       }
       search_produtos_funcionario: {
         Args: { _limit?: number; _loja_id: string; _termo: string }

@@ -8,6 +8,7 @@ import { formatNumber, formatHoraLocal, formatTimeRemaining } from "@/lib/format
 import { withAssetVersion } from "@/lib/assetVersion";
 import { avaliarPreco, type ReferenciaFonte } from "@/lib/avaliarPreco";
 import { PRECO_FALLBACK_MIN, DEBOUNCE_AVALIACAO_MS } from "@/lib/precoReferencia";
+import OnboardingFornecedorCard from "@/components/fornecedor/OnboardingFornecedorCard";
 
 interface ProdutoItem {
   cotacao_produto_id: string;
@@ -40,6 +41,7 @@ const FornecedorCotacaoPage = () => {
   const [cotacaoId, setCotacaoId] = useState<string | null>(null);
   const [, forceTick] = useState(0);
   const visualizadoMarcado = useRef(false);
+  const [skipCnpjPendente, setSkipCnpjPendente] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -240,7 +242,7 @@ const FornecedorCotacaoPage = () => {
       }
 
       const { data, error } = await supabase.functions.invoke("submit-precos", {
-        body: { token, prices: priceEntries },
+        body: { token, prices: priceEntries, skip_cnpj_pendente: skipCnpjPendente },
       });
 
       if (error || data?.error) {
@@ -435,6 +437,11 @@ const FornecedorCotacaoPage = () => {
           </div>
         );
       })()}
+
+      {/* Cadastro da empresa + consentimento da Rede */}
+      {token && (
+        <OnboardingFornecedorCard token={token} onSkipChange={setSkipCnpjPendente} />
+      )}
 
       {/* Products */}
       <div className="p-3 sm:p-4 space-y-3 max-w-3xl mx-auto">

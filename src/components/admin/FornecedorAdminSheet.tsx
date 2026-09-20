@@ -11,8 +11,8 @@ import { Loader2, MessageCircle, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate, formatDateTime, buildWhatsAppUrl } from "@/lib/format";
-import { TIPOS_FORNECEDOR, PASTAS_FORNECEDOR } from "@/lib/adminHelpers";
-import { maskTelefone, formatTelefone } from "@/lib/masks";
+import { TIPOS_FORNECEDOR, pastasDisponiveis } from "@/lib/adminHelpers";
+import { maskTelefone, formatTelefone, maskCNPJ } from "@/lib/masks";
 import type { FornecedorAdmin } from "@/lib/adminExports";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
@@ -27,6 +27,11 @@ type Detalhes = {
   observacoes?: string | null;
   tipo_fornecedor?: string | null;
   pasta?: string[] | null;
+  cnpj?: string | null;
+  consentimento_rede?: string | null;
+  consentimento_ultima_pergunta?: string | null;
+  consentimento_tentativas_skip?: number | null;
+  consentimento_recusas?: number | null;
   created_at?: string;
   cliente_nome?: string | null;
   cliente_empresa?: string | null;
@@ -243,7 +248,7 @@ export default function FornecedorAdminSheet({
                 <div className="space-y-1.5">
                   <Label>Pastas atendidas</Label>
                   <div className="flex flex-wrap gap-1.5">
-                    {PASTAS_FORNECEDOR.map((p) => {
+                    {pastasDisponiveis(form.tipo_fornecedor).map((p) => {
                       const ativo = form.pasta.includes(p);
                       return (
                         <Button
@@ -274,6 +279,32 @@ export default function FornecedorAdminSheet({
               <div className="space-y-1.5">
                 <Label htmlFor="forn-obs">Observações</Label>
                 <Textarea id="forn-obs" rows={3} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
+              </div>
+
+              <div className="rounded-lg border bg-muted/40 p-3 space-y-1.5 text-xs">
+                <p className="font-semibold text-sm">Rede de fornecedores</p>
+                <p>
+                  <span className="text-muted-foreground">CNPJ: </span>
+                  {detalhes?.cnpj ? maskCNPJ(detalhes.cnpj) : "não informado"}
+                </p>
+                <p>
+                  <span className="text-muted-foreground">Consentimento: </span>
+                  {detalhes?.consentimento_rede === "sim"
+                    ? "aceitou participar"
+                    : detalhes?.consentimento_rede === "nao"
+                      ? `recusou (${detalhes?.consentimento_recusas ?? 0}x)`
+                      : "ainda não respondeu"}
+                </p>
+                {detalhes?.consentimento_ultima_pergunta && (
+                  <p>
+                    <span className="text-muted-foreground">Última pergunta: </span>
+                    {formatDateTime(detalhes.consentimento_ultima_pergunta)}
+                  </p>
+                )}
+                <p>
+                  <span className="text-muted-foreground">Pulou o CNPJ: </span>
+                  {detalhes?.consentimento_tentativas_skip ?? 0}x
+                </p>
               </div>
             </div>
 

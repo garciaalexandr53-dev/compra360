@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { token, prices } = await req.json();
+    const { token, prices, skip_cnpj_pendente } = await req.json();
 
     if (!token || typeof token !== "string") {
       return new Response(JSON.stringify({ error: "Token inválido" }), {
@@ -127,6 +127,13 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "Erro ao salvar preços: " + upsertErr.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Conta a tentativa de "Responder depois" apenas quando a cotação foi
+    // realmente concluída com pelo menos um preço informado.
+    if (skip_cnpj_pendente === true && rows.some((r: any) => Number(r.preco) > 0)) {
+      const { error: skipErr } = await supabase.rpc("registrar_skip_cnpj", { _token: token });
+      if (skipErr) console.error("registrar_skip_cnpj error:", skipErr);
     }
 
     return new Response(
