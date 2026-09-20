@@ -11,7 +11,7 @@ import { Loader2, MessageCircle, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate, formatDateTime, buildWhatsAppUrl } from "@/lib/format";
-import { TIPOS_FORNECEDOR, PASTAS_FORNECEDOR } from "@/lib/adminHelpers";
+import { TIPOS_FORNECEDOR, pastasDisponiveis } from "@/lib/adminHelpers";
 import { maskTelefone, formatTelefone } from "@/lib/masks";
 import type { FornecedorAdmin } from "@/lib/adminExports";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
