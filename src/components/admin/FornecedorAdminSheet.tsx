@@ -243,7 +243,7 @@ export default function FornecedorAdminSheet({
                 <div className="space-y-1.5">
                   <Label>Pastas atendidas</Label>
                   <div className="flex flex-wrap gap-1.5">
-                    {PASTAS_FORNECEDOR.map((p) => {
+                    {pastasDisponiveis(form.tipo_fornecedor).map((p) => {
                       const ativo = form.pasta.includes(p);
                       return (
                         <Button
