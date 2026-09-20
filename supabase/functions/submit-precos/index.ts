@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { token, prices } = await req.json();
+    const { token, prices, skip_cnpj_pendente } = await req.json();
 
     if (!token || typeof token !== "string") {
       return new Response(JSON.stringify({ error: "Token inválido" }), {
