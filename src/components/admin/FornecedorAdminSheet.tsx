@@ -97,6 +97,7 @@ export default function FornecedorAdminSheet({
       observacoes: detalhes.observacoes ?? "",
       tipo_fornecedor: detalhes.tipo_fornecedor ?? "",
       pasta: detalhes.pasta ?? [],
+      consentimento_rede: detalhes.consentimento_rede ?? "pendente",
     });
   }, [detalhes?.id, detalhes]);
 
