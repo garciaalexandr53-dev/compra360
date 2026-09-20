@@ -8,7 +8,7 @@ No link público de cotação, o representante passa a informar o CNPJ da empres
 ### Cartão no topo da cotação
 - Aparece antes dos produtos, sem bloquear o preenchimento dos preços.
 - **CNPJ** (quando ainda não temos): campo com máscara `00.000.000/0000-00` e botão "Responder depois" ao lado.
-- **Linhas de produtos**: aparece somente quando o CNPJ digitado já existe em outro cadastro (mesma empresa, representante diferente). Seleção múltipla das tags: Frios e Laticínios, Carnes, Hortifruti, Padaria, Limpeza, Higiene e Beleza, Mercearia, Bebidas, Congelados, Pet. "Bebidas" passa a existir também no painel, para as listas ficarem iguais.
+- **Linhas de produtos**: aparece somente quando o CNPJ digitado já existe em outro cadastro (mesma empresa, representante diferente). Seleção múltipla das tags: Frios e Laticínios, Carnes, Hortifruti, Padaria, Limpeza, Higiene e Beleza, Mercearia, Congelados, Pet — e "Bebidas" apenas para quem está classificado como Especializado, já que quem é do tipo Bebidas já está identificado por esse campo.
 - **Rede**: pergunta sempre exibida (mesmo para quem pulou o CNPJ), com o texto aprovado: "Estamos pensando em uma função onde seu contato pode aparecer para outros supermercados da sua região que ainda não compram de você, para gerar novos negócios. Isso significa que esses novos clientes também vão ver há quanto tempo você está cadastrado e sua taxa de resposta às cotações. Você toparia participar dessa lista?" — opções **Sim**, **Não**, **Preciso pensar**.
 - Ao salvar, o cartão some e mostra uma confirmação curta ("Obrigado! Dados atualizados.").
 
@@ -33,5 +33,6 @@ No link público de cotação, o representante passa a informar o CNPJ da empres
 3. **`sugerir_fornecedores_por_cidade`**: recriada com `and f.consentimento_rede = 'sim'` no `WHERE`, mantendo o resto da lógica atual (cidade normalizada, dedupe por telefone, exclusão da própria carteira).
 4. **Front**: novo `src/components/fornecedor/OnboardingFornecedorCard.tsx` (estado do cartão, máscara de CNPJ via `src/lib/masks.ts`, tags de pasta, botões de consentimento) usado em `src/pages/FornecedorCotacaoPage.tsx` na tela `ready`, alimentado por `get_supplier_onboarding_state`. O estado de "pulou nesta sessão" fica no componente e é informado ao enviar.
 5. **`supabase/functions/submit-precos/index.ts`**: aceita `skip_cnpj_pendente: boolean` no corpo e, após o upsert bem-sucedido com pelo menos um preço, chama `registrar_skip_cnpj` — assim a tentativa só conta quando a cotação foi realmente concluída.
-6. **Painel**: `PASTAS_FORNECEDOR` em `src/lib/adminHelpers.ts` ganha "Bebidas"; a ficha do Admin passa a exibir CNPJ e o status do consentimento (somente leitura nesta etapa).
-7. Verificação: `tsgo`, `vitest` (testes novos para a janela de 90/180 dias e para o limite de 3 skips) e revisão no portal do fornecedor em 360px e desktop.
+6. **Pastas**: `PASTAS_FORNECEDOR` em `src/lib/adminHelpers.ts` continua sem "Bebidas"; uma função nova `pastasDisponiveis(tipo)` devolve a lista com "Bebidas" só quando `tipo_fornecedor = 'especializado'`, usada tanto pela ficha do Admin quanto pelo cartão público — nenhum valor duplicado entre os dois campos.
+7. **Painel**: a ficha do Admin passa a exibir CNPJ e o status do consentimento (somente leitura nesta etapa).
+8. Verificação: `tsgo`, `vitest` (testes novos para a janela de 90/180 dias e para o limite de 3 skips) e revisão no portal do fornecedor em 360px e desktop.
