@@ -8,6 +8,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { formatUF } from "@/components/lojas/lojaUtils";
+import { formatNomeLoja } from "@/lib/masks";
 import {
   Building2, IdCard, Mail, Phone, Calendar, LogIn, CreditCard, Activity, Clock,
   Store, Package, Users, FileText, Send, Loader2, MessageCircle, Pencil, CheckCircle2, XCircle, History, Trash2, HandCoins, AtSign, KeyRound,
