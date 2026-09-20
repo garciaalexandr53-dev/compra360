@@ -90,6 +90,7 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
   const [senhaOpen, setSenhaOpen] = useState(false);
   const isMobile = useIsMobile();
   const open = !!cliente;
+  const queryClient = useQueryClient();
 
   const { data: detalhes, isLoading } = useQuery({
     queryKey: ["admin-cliente-detalhes", cliente?.user_id],
