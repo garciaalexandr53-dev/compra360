@@ -275,6 +275,32 @@ export default function FornecedorAdminSheet({
                 <Label htmlFor="forn-obs">Observações</Label>
                 <Textarea id="forn-obs" rows={3} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
               </div>
+
+              <div className="rounded-lg border bg-muted/40 p-3 space-y-1.5 text-xs">
+                <p className="font-semibold text-sm">Rede de fornecedores</p>
+                <p>
+                  <span className="text-muted-foreground">CNPJ: </span>
+                  {detalhes?.cnpj ? maskCNPJ(detalhes.cnpj) : "não informado"}
+                </p>
+                <p>
+                  <span className="text-muted-foreground">Consentimento: </span>
+                  {detalhes?.consentimento_rede === "sim"
+                    ? "aceitou participar"
+                    : detalhes?.consentimento_rede === "nao"
+                      ? `recusou (${detalhes?.consentimento_recusas ?? 0}x)`
+                      : "ainda não respondeu"}
+                </p>
+                {detalhes?.consentimento_ultima_pergunta && (
+                  <p>
+                    <span className="text-muted-foreground">Última pergunta: </span>
+                    {formatDateTime(detalhes.consentimento_ultima_pergunta)}
+                  </p>
+                )}
+                <p>
+                  <span className="text-muted-foreground">Pulou o CNPJ: </span>
+                  {detalhes?.consentimento_tentativas_skip ?? 0}x
+                </p>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
