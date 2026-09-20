@@ -26,7 +26,12 @@ No link público de cotação, o representante passa a informar o CNPJ da empres
 
 1. **Migração** em `public.fornecedores`: `cnpj text`, `consentimento_rede text not null default 'pendente' check (in ('pendente','sim','nao'))`, `consentimento_ultima_pergunta timestamptz`, `consentimento_tentativas_skip int not null default 0`, mais `consentimento_recusas int not null default 0` (necessário para distinguir a 1ª recusa, com 90 dias, da 2ª, com 180 dias e fim das perguntas). Índice em `cnpj` (dígitos) para a checagem de duplicidade. `pasta text[]` é reaproveitada.
 2. **RPCs `security definer`, `set search_path = public`, `execute` para `anon` + `authenticated`** (o portal do fornecedor é anônimo, autenticado por token):
-   - `get_supplier_onboarding_state(_token text)` → `pedir_cnpj bool`, `pedir_pasta bool`, `pedir_consentimento bool`, `permite_skip bool`, `pasta text[]`. `pedir_consentimento` aplica a janela: `pendente` → sim; `nao` com `consentimento_recusas = 1` → só após 90 dias; `recusas >= 2` → nunca. `permite_skip` = `consentimento_tentativas_skip < 3`.
+   - `get_supplier_onboarding_state(_token text)` → `pedir_cnpj bool`, `pedir_pasta bool`, `pedir_consentimento bool`, `permite_skip bool`, `pasta text[]`, `tipo_fornecedor text`. `permite_skip` = `consentimento_tentativas_skip < 3`. `pedir_consentimento` é um `CASE` explícito com os quatro casos:
+     - `consentimento_rede = 'sim'` → `false` (para sempre);
+     - `consentimento_rede = 'pendente'` → `true`;
+     - `consentimento_rede = 'nao'` e `consentimento_recusas = 1` → `true` só se `consentimento_ultima_pergunta <= now() - interval '90 days'` (ou nulo), senão `false`;
+     - `consentimento_rede = 'nao'` e `consentimento_recusas >= 2` → `false`;
+     - qualquer outro caso → `false`.
    - `checar_cnpj_duplicado(_token text, _cnpj text)` → bool, comparando só dígitos, ignorando o próprio registro.
    - `salvar_dados_fornecedor(_token text, _cnpj text, _pasta text[], _consentimento text)` → grava o que veio: CNPJ (dígitos, valida 14) zerando `consentimento_tentativas_skip`; `pasta` quando enviada; consentimento `'sim'`/`'nao'` sempre com `consentimento_ultima_pergunta = now()` e `consentimento_recusas = consentimento_recusas + 1` nas recusas.
    - `registrar_skip_cnpj(_token text)` → incrementa `consentimento_tentativas_skip` apenas quando `cnpj is null`.
