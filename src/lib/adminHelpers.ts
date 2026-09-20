@@ -274,6 +274,25 @@ export const PASTAS_FORNECEDOR: string[] = [
   "Pet",
 ];
 
+/**
+ * Pastas disponíveis conforme o tipo do fornecedor.
+ * "Bebidas" só entra para Especializado — quem é do tipo Bebidas já está
+ * identificado pelo campo tipo_fornecedor, evitando o valor duplicado.
+ */
+export function pastasDisponiveis(tipo: string | null | undefined): string[] {
+  if (tipo !== "especializado") return PASTAS_FORNECEDOR;
+  const i = PASTAS_FORNECEDOR.indexOf("Congelados");
+  const idx = i >= 0 ? i : PASTAS_FORNECEDOR.length;
+  return [...PASTAS_FORNECEDOR.slice(0, idx), "Bebidas", ...PASTAS_FORNECEDOR.slice(idx)];
+}
+
+/** O botão "Responder depois" só existe nas 3 primeiras tentativas. */
+export function podePularCnpj(tentativas: number | null | undefined): boolean {
+  return (tentativas ?? 0) < 3;
+}
+
+
+
 /** Rótulo legível do tipo do fornecedor ("" quando não definido). */
 export function tipoFornecedorLabel(tipo: string | null | undefined): string {
   if (!tipo) return "";
