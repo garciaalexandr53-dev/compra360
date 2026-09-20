@@ -35,4 +35,4 @@ No link público de cotação, o representante passa a informar o CNPJ da empres
 5. **`supabase/functions/submit-precos/index.ts`**: aceita `skip_cnpj_pendente: boolean` no corpo e, após o upsert bem-sucedido com pelo menos um preço, chama `registrar_skip_cnpj` — assim a tentativa só conta quando a cotação foi realmente concluída.
 6. **Pastas**: `PASTAS_FORNECEDOR` em `src/lib/adminHelpers.ts` continua sem "Bebidas"; uma função nova `pastasDisponiveis(tipo)` devolve a lista com "Bebidas" só quando `tipo_fornecedor = 'especializado'`, usada tanto pela ficha do Admin quanto pelo cartão público — nenhum valor duplicado entre os dois campos.
 7. **Painel**: a ficha do Admin passa a exibir CNPJ e o status do consentimento (somente leitura nesta etapa).
-7. Verificação: `tsgo`, `vitest` (testes novos para a janela de 90/180 dias e para o limite de 3 skips) e revisão no portal do fornecedor em 360px e desktop.
+8. Verificação: `tsgo`, `vitest` (testes novos para a janela de 90/180 dias e para o limite de 3 skips) e revisão no portal do fornecedor em 360px e desktop.
