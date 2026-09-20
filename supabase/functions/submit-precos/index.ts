@@ -129,6 +129,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Conta a tentativa de "Responder depois" apenas quando a cotação foi
+    // realmente concluída com pelo menos um preço informado.
+    if (skip_cnpj_pendente === true && rows.some((r: any) => Number(r.preco) > 0)) {
+      const { error: skipErr } = await supabase.rpc("registrar_skip_cnpj", { _token: token });
+      if (skipErr) console.error("registrar_skip_cnpj error:", skipErr);
+    }
+
     return new Response(
       JSON.stringify({ success: true, count: rows.length }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
