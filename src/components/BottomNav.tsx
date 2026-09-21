@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, BarChart3, TrendingUp, MoreHorizontal, Package, Users, Store, ClipboardCheck, History, Shield, UserCog, PackageOpen, MessageCircleQuestion } from "lucide-react";
+import { LayoutDashboard, BarChart3, TrendingUp, MoreHorizontal, Package, Users, Store, ClipboardCheck, History, Shield, UserCog, PackageOpen, MessageCircleQuestion, Smartphone } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { buildSuporteUrl } from "@/lib/suporte";
+import { usePwaInstall } from "@/hooks/usePwaInstall";
+import InstallAppDialog from "@/components/InstallAppDialog";
 
 const tabs = [
   { label: "Painel", icon: LayoutDashboard, path: "/dashboard" },
@@ -34,9 +36,18 @@ export default function BottomNav() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [installOpen, setInstallOpen] = useState(false);
   const { nome } = useProfile();
   const { plan } = useSubscription();
   const { lojaAtiva } = useLojaAtiva();
+  const { isInstalled, isIos, install } = usePwaInstall();
+
+  const handleInstallTap = async () => {
+    setMoreOpen(false);
+    const ok = await install();
+    if (!ok) setInstallOpen(true);
+  };
+
 
   const suporteUrl = buildSuporteUrl({
     nome,
@@ -144,9 +155,22 @@ export default function BottomNav() {
               <helpItem.icon className="h-5 w-5" />
               <span className="text-xs font-medium">{helpItem.label}</span>
             </a>
+            {!isInstalled && (
+              <button
+                type="button"
+                onClick={handleInstallTap}
+                className="flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors text-muted-foreground hover:bg-muted"
+                title="Instalar o Compra360 na tela do celular"
+              >
+                <Smartphone className="h-5 w-5" />
+                <span className="text-xs font-medium text-center leading-tight">Instalar app</span>
+              </button>
+            )}
           </div>
         </SheetContent>
       </Sheet>
+
+      <InstallAppDialog open={installOpen} onOpenChange={setInstallOpen} isIos={isIos} />
     </>
   );
 }

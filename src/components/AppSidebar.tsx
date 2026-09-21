@@ -11,12 +11,15 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, Package, Users, TrendingUp, History, ClipboardCheck, Store, LayoutDashboard, Shield, UserCog, PackageOpen, MessageCircleQuestion } from "lucide-react";
+import { BarChart3, Package, Users, TrendingUp, History, ClipboardCheck, Store, LayoutDashboard, Shield, UserCog, PackageOpen, MessageCircleQuestion, Smartphone } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { withAssetVersion } from "@/lib/assetVersion";
 import { buildSuporteUrl } from "@/lib/suporte";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useState } from "react";
+import { usePwaInstall } from "@/hooks/usePwaInstall";
+import InstallAppDialog from "@/components/InstallAppDialog";
 
 const mainMenu = [
   { title: "Painel", url: "/dashboard", icon: LayoutDashboard, emoji: "🏠" },
@@ -46,8 +49,16 @@ export function AppSidebar() {
   const { user } = useAuth();
   const { nome } = useProfile();
   const { plan } = useSubscription();
+  const [installOpen, setInstallOpen] = useState(false);
+  const { isInstalled, isIos, install } = usePwaInstall();
+
+  const handleInstallTap = async () => {
+    const ok = await install();
+    if (!ok) setInstallOpen(true);
+  };
 
   const suporteUrl = buildSuporteUrl({ nome, email: user?.email, plano: plan?.display_name, loja: lojaAtiva?.nome });
+
 
 
   const { data: isAdmin = false } = useQuery({
@@ -227,8 +238,22 @@ export function AppSidebar() {
           <helpItem.icon className="h-3.5 w-3.5" />
           {!collapsed && <span>Ajuda</span>}
         </a>
+        {!isInstalled && (
+          <button
+            type="button"
+            onClick={handleInstallTap}
+            className={`flex w-full items-center gap-2 px-2 py-1.5 rounded-md text-[11px] text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors ${
+              collapsed ? "justify-center" : ""
+            }`}
+            title="Instalar o Compra360 no seu aparelho"
+          >
+            <Smartphone className="h-3.5 w-3.5" />
+            {!collapsed && <span>Instalar app</span>}
+          </button>
+        )}
       </SidebarFooter>
 
+      <InstallAppDialog open={installOpen} onOpenChange={setInstallOpen} isIos={isIos} />
     </Sidebar>
   );
 }
