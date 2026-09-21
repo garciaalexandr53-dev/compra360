@@ -1,8 +1,12 @@
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { LojaForm, formatCNPJ, formatCEP, formatUF } from "./lojaUtils";
+import { buscarCep, cepCompleto } from "@/lib/cep";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface Props {
   open: boolean;
