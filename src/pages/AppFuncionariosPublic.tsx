@@ -15,6 +15,8 @@ import { FATOR_PADRAO } from "@/lib/embalagemFatores";
 import AdicionarItemDialog from "@/components/shared/AdicionarItemDialog";
 import { useUltimaCompra } from "@/hooks/useUltimaCompra";
 import SearchInputComScanner from "@/components/shared/SearchInputComScanner";
+import { usePwaInstall } from "@/hooks/usePwaInstall";
+import InstallAppDialog from "@/components/InstallAppDialog";
 
 interface ItemEntry {
   nome: string;
@@ -129,7 +131,13 @@ const AppFuncionariosPublic = () => {
   const [sending, setSending] = useState(false);
   const queryClient = useQueryClient();
   const [sent, setSent] = useState(false);
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const { isInstalled, isIos, install } = usePwaInstall();
+  const [installOpen, setInstallOpen] = useState(false);
+  /** Tenta o instalador nativo; sem prompt (iPhone/navegador embutido) abre o guia visual. */
+  const handleInstallTap = async () => {
+    const ok = await install();
+    if (!ok) setInstallOpen(true);
+  };
   const [justAdded, setJustAdded] = useState<Set<string>>(new Set());
   const [showNewProduct, setShowNewProduct] = useState(false);
   /** EAN escaneado/digitado sem match no catálogo — vira coluna `ean` do item novo. */
@@ -168,19 +176,12 @@ const AppFuncionariosPublic = () => {
     const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
     if (appleTitle) appleTitle.setAttribute("content", "Compra360 Reposição");
 
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setInstallPrompt(e);
-    };
-    window.addEventListener("beforeinstallprompt", handler);
-
     return () => {
       document.title = originalTitle;
       const manifestOnCleanup = document.querySelector('link[rel="manifest"]');
       if (manifestOnCleanup) manifestOnCleanup.setAttribute("href", originalManifest);
       const appleTitleOnCleanup = document.querySelector('meta[name="apple-mobile-web-app-title"]');
       if (appleTitleOnCleanup) appleTitleOnCleanup.setAttribute("content", originalAppleTitle);
-      window.removeEventListener("beforeinstallprompt", handler);
     };
   }, []);
 
@@ -726,16 +727,12 @@ const AppFuncionariosPublic = () => {
                 📋 {items.length} {items.length === 1 ? "item" : "itens"}
               </span>
             )}
-            {installPrompt && (
+            {!isInstalled && (
               <Button
                 size="sm"
                 variant="secondary"
-                className="gap-1 text-xs h-8"
-                onClick={async () => {
-                  installPrompt.prompt();
-                  const { outcome } = await installPrompt.userChoice;
-                  if (outcome === "accepted") setInstallPrompt(null);
-                }}
+                className="gap-1 text-xs h-8 shrink-0"
+                onClick={handleInstallTap}
               >
                 <Download className="h-3.5 w-3.5" />
                 Instalar
@@ -744,6 +741,25 @@ const AppFuncionariosPublic = () => {
           </div>
         </div>
       </div>
+
+      {/* Aviso de instalação — só enquanto o app não estiver na tela inicial */}
+      {!isInstalled && (
+        <button
+          type="button"
+          onClick={handleInstallTap}
+          className="w-full flex items-center gap-3 border-b bg-primary/10 px-4 py-3 text-left"
+        >
+          <Download className="h-5 w-5 shrink-0 text-primary" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-foreground">
+              Deixe este app na tela do seu celular
+            </span>
+            <span className="block text-xs text-muted-foreground">
+              Toque aqui para instalar e não precisar mais do link.
+            </span>
+          </span>
+        </button>
+      )}
 
       {/* Tabs */}
       <div className="flex border-b bg-card sticky top-[52px] z-10">
@@ -1291,6 +1307,7 @@ const AppFuncionariosPublic = () => {
         }}
       />
 
+      <InstallAppDialog open={installOpen} onOpenChange={setInstallOpen} isIos={isIos} />
     </div>
   );
 };
