@@ -15,6 +15,8 @@ import { FATOR_PADRAO } from "@/lib/embalagemFatores";
 import AdicionarItemDialog from "@/components/shared/AdicionarItemDialog";
 import { useUltimaCompra } from "@/hooks/useUltimaCompra";
 import SearchInputComScanner from "@/components/shared/SearchInputComScanner";
+import { usePwaInstall } from "@/hooks/usePwaInstall";
+import InstallAppDialog from "@/components/InstallAppDialog";
 
 interface ItemEntry {
   nome: string;
