@@ -238,8 +238,22 @@ export function AppSidebar() {
           <helpItem.icon className="h-3.5 w-3.5" />
           {!collapsed && <span>Ajuda</span>}
         </a>
+        {!isInstalled && (
+          <button
+            type="button"
+            onClick={handleInstallTap}
+            className={`flex w-full items-center gap-2 px-2 py-1.5 rounded-md text-[11px] text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors ${
+              collapsed ? "justify-center" : ""
+            }`}
+            title="Instalar o Compra360 no seu aparelho"
+          >
+            <Smartphone className="h-3.5 w-3.5" />
+            {!collapsed && <span>Instalar app</span>}
+          </button>
+        )}
       </SidebarFooter>
 
+      <InstallAppDialog open={installOpen} onOpenChange={setInstallOpen} isIos={isIos} />
     </Sidebar>
   );
 }
