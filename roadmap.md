@@ -12,3 +12,7 @@
 ## Concluído (continuação)
 - [x] Consentimento da Rede no link do fornecedor (CNPJ, pastas, sim/não/preciso pensar, janelas de 90/180 dias).
 - [x] Edições manuais no Admin: cidade/UF das lojas na ficha do cliente e consentimento da rede na ficha do fornecedor.
+- [x] Etapa 1 — Cidades atendidas pelo fornecedor: no link da cotação, quem aceita a Rede informa as cidades que atende (cidade da loja já sugerida, autocompletar do IBGE, quantas quiser), pedido uma única vez com link "Atualizar minhas cidades"; sugestões da região passam a cruzar as cidades declaradas; Admin edita as cidades na ficha do fornecedor.
+
+## Próximos passos
+- [ ] Fase 2 — Página pública de autocadastro do fornecedor (/seja-parceiro) com validação do WhatsApp e acesso posterior sem senha.

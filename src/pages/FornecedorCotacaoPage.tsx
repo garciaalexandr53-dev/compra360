@@ -42,6 +42,8 @@ const FornecedorCotacaoPage = () => {
   const [, forceTick] = useState(0);
   const visualizadoMarcado = useRef(false);
   const [skipCnpjPendente, setSkipCnpjPendente] = useState(false);
+  const [participaRede, setParticipaRede] = useState(false);
+  const [editarCidades, setEditarCidades] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -438,9 +440,17 @@ const FornecedorCotacaoPage = () => {
         );
       })()}
 
-      {/* Cadastro da empresa + consentimento da Rede */}
+      {/* Cadastro da empresa + consentimento da Rede + cidades atendidas */}
       {token && (
-        <OnboardingFornecedorCard token={token} onSkipChange={setSkipCnpjPendente} />
+        <OnboardingFornecedorCard
+          key={editarCidades ? "cidades" : "onboarding"}
+          token={token}
+          cotacaoId={cotacaoId}
+          onSkipChange={setSkipCnpjPendente}
+          onParticipaRede={setParticipaRede}
+          modoCidades={editarCidades}
+          onFechar={editarCidades ? () => setEditarCidades(false) : undefined}
+        />
       )}
 
       {/* Products */}
@@ -498,6 +508,18 @@ const FornecedorCotacaoPage = () => {
           </div>
         ))}
       </div>
+
+      {participaRede && !editarCidades && (
+        <div className="px-3 sm:px-4 pb-28 max-w-3xl mx-auto">
+          <button
+            type="button"
+            onClick={() => setEditarCidades(true)}
+            className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+          >
+            Atende novas cidades? Atualizar minhas cidades
+          </button>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-3 sm:p-4 shadow-lg pb-[max(0.75rem,env(safe-area-inset-bottom))]">
