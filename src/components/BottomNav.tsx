@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, BarChart3, TrendingUp, MoreHorizontal, Package, Users, Store, ClipboardCheck, History, Shield, UserCog, PackageOpen, MessageCircleQuestion } from "lucide-react";
+import { LayoutDashboard, BarChart3, TrendingUp, MoreHorizontal, Package, Users, Store, ClipboardCheck, History, Shield, UserCog, PackageOpen, MessageCircleQuestion, Smartphone } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { buildSuporteUrl } from "@/lib/suporte";
+import { usePwaInstall } from "@/hooks/usePwaInstall";
+import InstallAppDialog from "@/components/InstallAppDialog";
 
 const tabs = [
   { label: "Painel", icon: LayoutDashboard, path: "/dashboard" },
