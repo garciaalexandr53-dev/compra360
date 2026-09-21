@@ -40,6 +40,7 @@ export default function CidadeLojaBanner() {
     uf?: string | null;
     cep?: string | null;
     endereco?: string | null;
+    numero?: string | null;
     bairro?: string | null;
   } | null | undefined;
 
@@ -49,6 +50,7 @@ export default function CidadeLojaBanner() {
       setUf((loja.uf ?? "").toUpperCase());
       setCep(formatCEP(loja.cep ?? ""));
       setEndereco(loja.endereco ?? "");
+      setNumero(loja.numero ?? "");
       setBairro(loja.bairro ?? "");
     }
   }, [open, loja?.id]);
@@ -64,6 +66,7 @@ export default function CidadeLojaBanner() {
           uf: uf.trim() ? uf.trim().toUpperCase() : null,
           cep: cep.replace(/\D/g, "") ? cep : null,
           endereco: endereco.trim() || null,
+          numero: numero.trim() || null,
           bairro: bairro.trim() || null,
         })
         .eq("id", loja.id);
