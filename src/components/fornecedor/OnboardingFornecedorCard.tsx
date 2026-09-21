@@ -261,14 +261,25 @@ const OnboardingFornecedorCard = ({
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-2">
-        <Button onClick={salvar} disabled={!podeSalvar || saving} className="w-full sm:w-auto">
-          {saving ? "Salvando..." : "Salvar"}
-        </Button>
-        {modoCidades && onFechar && (
-          <Button variant="outline" onClick={onFechar} className="w-full sm:w-auto">
-            Cancelar
+      <div className="space-y-2">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button onClick={salvar} disabled={!podeSalvar || saving} className="w-full sm:w-auto">
+            {saving ? "Salvando..." : "Salvar"}
           </Button>
+          {modoCidades && onFechar && (
+            <Button variant="outline" onClick={onFechar} className="w-full sm:w-auto">
+              Cancelar
+            </Button>
+          )}
+        </div>
+        {mostrarSkip && (
+          <button
+            type="button"
+            onClick={responderDepois}
+            className="block w-full text-center text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+          >
+            Responder depois e ir para os preços
+          </button>
         )}
       </div>
     </div>
