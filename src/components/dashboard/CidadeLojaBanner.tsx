@@ -29,6 +29,7 @@ export default function CidadeLojaBanner() {
   const [uf, setUf] = useState("");
   const [cep, setCep] = useState("");
   const [endereco, setEndereco] = useState("");
+  const [numero, setNumero] = useState("");
   const [bairro, setBairro] = useState("");
 
   const loja = lojaAtiva as {
@@ -39,6 +40,7 @@ export default function CidadeLojaBanner() {
     uf?: string | null;
     cep?: string | null;
     endereco?: string | null;
+    numero?: string | null;
     bairro?: string | null;
   } | null | undefined;
 
@@ -48,6 +50,7 @@ export default function CidadeLojaBanner() {
       setUf((loja.uf ?? "").toUpperCase());
       setCep(formatCEP(loja.cep ?? ""));
       setEndereco(loja.endereco ?? "");
+      setNumero(loja.numero ?? "");
       setBairro(loja.bairro ?? "");
     }
   }, [open, loja?.id]);
@@ -63,6 +66,7 @@ export default function CidadeLojaBanner() {
           uf: uf.trim() ? uf.trim().toUpperCase() : null,
           cep: cep.replace(/\D/g, "") ? cep : null,
           endereco: endereco.trim() || null,
+          numero: numero.trim() || null,
           bairro: bairro.trim() || null,
         })
         .eq("id", loja.id);
@@ -111,10 +115,11 @@ export default function CidadeLojaBanner() {
           <EnderecoFields
             compact
             autoFocusCep
-            value={{ cep, endereco, bairro, cidade, uf }}
+            value={{ cep, endereco, numero, bairro, cidade, uf }}
             onChange={(v) => {
               setCep(v.cep);
               setEndereco(v.endereco);
+              setNumero(v.numero);
               setBairro(v.bairro);
               setCidade(v.cidade);
               setUf(v.uf);

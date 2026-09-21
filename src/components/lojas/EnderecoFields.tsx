@@ -9,6 +9,7 @@ import { formatCEP, formatUF } from "./lojaUtils";
 export interface EnderecoValue {
   cep: string;
   endereco: string;
+  numero: string;
   bairro: string;
   cidade: string;
   uf: string;
@@ -118,14 +119,25 @@ export default function EnderecoFields({
 
       {mostrarRuaBairro && (
         <>
-          <div>
-            <Label>Endereço</Label>
-            <Input
-              value={value.endereco}
-              onChange={(e) => onChange({ ...value, endereco: e.target.value })}
-              placeholder="Rua e número. Ex: Rua Principal, 100"
-              maxLength={200}
-            />
+          <div className="grid grid-cols-[1fr_5rem] gap-3">
+            <div>
+              <Label>Endereço</Label>
+              <Input
+                value={value.endereco}
+                onChange={(e) => onChange({ ...value, endereco: e.target.value })}
+                placeholder="Ex: Rua Principal"
+                maxLength={200}
+              />
+            </div>
+            <div>
+              <Label>Nº</Label>
+              <Input
+                value={value.numero}
+                onChange={(e) => onChange({ ...value, numero: e.target.value })}
+                placeholder="150"
+                maxLength={12}
+              />
+            </div>
           </div>
           <div>
             <Label>Bairro</Label>
