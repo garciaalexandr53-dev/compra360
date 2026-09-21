@@ -131,7 +131,13 @@ const AppFuncionariosPublic = () => {
   const [sending, setSending] = useState(false);
   const queryClient = useQueryClient();
   const [sent, setSent] = useState(false);
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const { isInstalled, isIos, install } = usePwaInstall();
+  const [installOpen, setInstallOpen] = useState(false);
+  /** Tenta o instalador nativo; sem prompt (iPhone/navegador embutido) abre o guia visual. */
+  const handleInstallTap = async () => {
+    const ok = await install();
+    if (!ok) setInstallOpen(true);
+  };
   const [justAdded, setJustAdded] = useState<Set<string>>(new Set());
   const [showNewProduct, setShowNewProduct] = useState(false);
   /** EAN escaneado/digitado sem match no catálogo — vira coluna `ean` do item novo. */
