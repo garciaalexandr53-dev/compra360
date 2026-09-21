@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal, X, Phone, CheckCircle2, Clock, AlertCircle, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
-import { maskTelefone, formatTelefone } from "@/lib/masks";
+import { maskTelefone, formatTelefone, maskMoeda, parseMoeda, moedaParaInput } from "@/lib/masks";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import BackToLojaButton from "@/components/shared/BackToLojaButton";
 import { useFeatureCheck } from "@/components/FeatureGate";
@@ -211,8 +211,8 @@ const FornecedoresPage = () => {
     setEditingId(f.id);
     setForm({
       nome: f.nome, representante: f.representante || "", telefone: formatTelefone(f.telefone || ""),
-      email: f.email || "", pedido_minimo: f.pedido_minimo?.toString() || "",
-      prazo_pagamento: (f as any).prazo_pagamento || "", observacoes: f.observacoes || "",
+      email: f.email || "", pedido_minimo: moedaParaInput(f.pedido_minimo),
+      prazo_pagamento: ((f as any).prazo_pagamento || "").toUpperCase(), observacoes: f.observacoes || "",
     });
     setSelectedLojas(fornecedorLojas.filter((fl: any) => fl.fornecedor_id === f.id).map((fl: any) => fl.loja_id));
     setModalOpen(true);
@@ -223,7 +223,7 @@ const FornecedoresPage = () => {
     await saveMutation.mutateAsync({
       nome: formatNomeEmpresa(form.nome), representante: formatNomePessoa(form.representante) || null,
       telefone: form.telefone.trim() || null, email: form.email.trim() || null,
-      pedido_minimo: parseFloat(form.pedido_minimo) || 0, prazo_pagamento: form.prazo_pagamento.trim() || null,
+      pedido_minimo: parseMoeda(form.pedido_minimo), prazo_pagamento: form.prazo_pagamento.trim().toUpperCase() || null,
       observacoes: form.observacoes.trim() || null,
     } as any);
   };
@@ -513,9 +513,9 @@ const FornecedoresPage = () => {
             <div><Label>E-mail</Label><Input type="email" placeholder="email@empresa.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
             <div>
               <Label>Pedido Mínimo (R$)</Label>
-              <Input type="number" placeholder="0.00" min="0" step="0.01" value={form.pedido_minimo} onChange={(e) => setForm({ ...form, pedido_minimo: e.target.value })} />
+              <Input inputMode="numeric" placeholder="0,00" value={form.pedido_minimo} onChange={(e) => setForm({ ...form, pedido_minimo: maskMoeda(e.target.value) })} />
             </div>
-            <div><Label>Prazo de Pagamento</Label><Input placeholder="Ex: 30 dias, à vista, 7/14/21" value={form.prazo_pagamento} onChange={(e) => setForm({ ...form, prazo_pagamento: e.target.value })} /></div>
+            <div><Label>Prazo de Pagamento</Label><Input placeholder="EX: 30 DIAS, À VISTA, 7/14/21" className="uppercase" value={form.prazo_pagamento} onChange={(e) => setForm({ ...form, prazo_pagamento: e.target.value.toUpperCase() })} /></div>
             <div><Label>Observações</Label><Input placeholder="Ex: entrega 3x por semana" value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} /></div>
             {lojas.length > 0 && (
               <div>
