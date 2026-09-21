@@ -198,7 +198,13 @@ const FornecedoresPage = () => {
       const { error } = await supabase.from("fornecedores").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["fornecedores"] }); toast.success("Fornecedor removido!"); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fornecedores"] });
+      queryClient.invalidateQueries({ queryKey: ["fornecedor-lojas"] });
+      queryClient.invalidateQueries({ queryKey: ["fornecedores-count"] });
+      queryClient.invalidateQueries({ queryKey: ["sugestoes-regiao"] });
+      toast.success("Fornecedor removido!");
+    },
     onError: (e: any) => toast.error(e.message),
   });
 

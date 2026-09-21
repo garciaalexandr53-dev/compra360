@@ -14,7 +14,7 @@ import SugestoesRegiaoDialog, { type SugestaoFornecedor } from "@/components/for
  * - Caso contrário, convida a cadastrar os próprios fornecedores.
  */
 export default function FornecedoresLojaBanner() {
-  const { lojaAtiva } = useLojaAtiva();
+  const { lojaAtiva, lojas } = useLojaAtiva();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -26,9 +26,13 @@ export default function FornecedoresLojaBanner() {
 
   // Conta fornecedores disponíveis para a loja ativa: vinculados a ela
   // OU sem nenhum vínculo (nesse caso atendem todas as lojas).
+  // Quando a conta tem apenas uma loja, qualquer fornecedor cadastrado atende essa loja.
+  const lojaUnica = (lojas?.length ?? 0) <= 1;
+
   const { data: totalFornecedores } = useQuery({
-    queryKey: ["fornecedores-count", loja?.id],
+    queryKey: ["fornecedores-count", loja?.id, lojaUnica],
     enabled: !!loja?.id,
+    refetchOnMount: "always",
     queryFn: async () => {
       const [{ data: fornecedores, error: errF }, { data: vinculos, error: errV }] = await Promise.all([
         supabase.from("fornecedores").select("id"),
@@ -36,6 +40,7 @@ export default function FornecedoresLojaBanner() {
       ]);
       if (errF) throw errF;
       if (errV) throw errV;
+      if (lojaUnica) return (fornecedores || []).length;
       const vinculados = new Set((vinculos || []).map((v) => v.fornecedor_id));
       const daLoja = new Set((vinculos || []).filter((v) => v.loja_id === loja!.id).map((v) => v.fornecedor_id));
       return (fornecedores || []).filter((f) => daLoja.has(f.id) || !vinculados.has(f.id)).length;
