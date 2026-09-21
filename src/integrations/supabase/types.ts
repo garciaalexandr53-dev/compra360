@@ -434,6 +434,41 @@ export type Database = {
         }
         Relationships: []
       }
+      fornecedor_cidades_atendidas: {
+        Row: {
+          cidade: string
+          cidade_norm: string
+          created_at: string
+          fornecedor_id: string
+          id: string
+          uf: string | null
+        }
+        Insert: {
+          cidade: string
+          cidade_norm: string
+          created_at?: string
+          fornecedor_id: string
+          id?: string
+          uf?: string | null
+        }
+        Update: {
+          cidade?: string
+          cidade_norm?: string
+          created_at?: string
+          fornecedor_id?: string
+          id?: string
+          uf?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fornecedor_cidades_atendidas_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fornecedor_lojas: {
         Row: {
           created_at: string
@@ -1312,6 +1347,7 @@ export type Database = {
       }
       admin_update_fornecedor: {
         Args: {
+          _cidades?: Json
           _consentimento_rede?: string
           _email?: string
           _fornecedor_id: string
@@ -1456,14 +1492,19 @@ export type Database = {
         }[]
       }
       get_supplier_onboarding_state: {
-        Args: { _token: string }
+        Args: { _cotacao_id?: string; _token: string }
         Returns: {
+          cidade_loja: string
+          cidades: Json
+          participa_rede: boolean
           pasta: string[]
+          pedir_cidades: boolean
           pedir_cnpj: boolean
           pedir_consentimento: boolean
           pedir_pasta: boolean
           permite_skip: boolean
           tipo_fornecedor: string
+          uf_loja: string
         }[]
       }
       get_ultima_compra_item: {
@@ -1504,6 +1545,7 @@ export type Database = {
         }
         Returns: number
       }
+      norm_cidade: { Args: { _v: string }; Returns: string }
       pedido_is_enviado: { Args: { _pedido_id: string }; Returns: boolean }
       pedido_owner: { Args: { _pedido_id: string }; Returns: string }
       produto_belongs_to_loja_owner: {
@@ -1532,6 +1574,7 @@ export type Database = {
       registrar_skip_cnpj: { Args: { _token: string }; Returns: boolean }
       salvar_dados_fornecedor: {
         Args: {
+          _cidades?: Json
           _cnpj?: string
           _consentimento?: string
           _pasta?: string[]

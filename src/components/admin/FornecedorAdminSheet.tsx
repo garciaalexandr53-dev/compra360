@@ -15,6 +15,9 @@ import { TIPOS_FORNECEDOR, pastasDisponiveis } from "@/lib/adminHelpers";
 import { maskTelefone, formatTelefone, maskCNPJ } from "@/lib/masks";
 import type { FornecedorAdmin } from "@/lib/adminExports";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
+import CidadesAtendidasInput from "@/components/fornecedor/CidadesAtendidasInput";
+import { dedupCidades } from "@/lib/cidades";
+import type { Municipio } from "@/lib/cep";
 
 type Detalhes = {
   id?: string;
@@ -36,6 +39,7 @@ type Detalhes = {
   cliente_nome?: string | null;
   cliente_empresa?: string | null;
   cliente_email?: string | null;
+  cidades_atendidas?: { cidade: string; uf: string | null }[];
   lojas?: { id: string; nome: string; cidade: string | null; uf: string | null }[];
   cotacoes_recebidas?: number;
   cotacoes_respondidas?: number;
@@ -72,6 +76,7 @@ export default function FornecedorAdminSheet({
 }) {
   const [form, setForm] = useState<Form>(VAZIO);
   const [salvando, setSalvando] = useState(false);
+  const [cidades, setCidades] = useState<Municipio[]>([]);
 
   const { data: detalhes, isLoading } = useQuery({
     queryKey: ["admin-fornecedor-detalhes", fornecedor?.id],
@@ -99,6 +104,11 @@ export default function FornecedorAdminSheet({
       pasta: detalhes.pasta ?? [],
       consentimento_rede: detalhes.consentimento_rede ?? "pendente",
     });
+    setCidades(
+      dedupCidades(
+        (detalhes.cidades_atendidas ?? []).map((c) => ({ cidade: c.cidade, uf: c.uf ?? "" })),
+      ),
+    );
   }, [detalhes?.id, detalhes]);
 
   const salvar = async () => {
@@ -128,6 +138,7 @@ export default function FornecedorAdminSheet({
       _tipo_fornecedor: form.tipo_fornecedor || null,
       _pasta: form.tipo_fornecedor === "especializado" && form.pasta.length ? form.pasta : null,
       _consentimento_rede: form.consentimento_rede || null,
+      _cidades: cidades.map((m) => ({ cidade: m.cidade, uf: m.uf })),
     });
     setSalvando(false);
 
@@ -310,6 +321,14 @@ export default function FornecedorAdminSheet({
                       Recusas registradas: {detalhes?.consentimento_recusas}x
                     </p>
                   )}
+                </div>
+                <div className="space-y-1.5 pt-1">
+                  <Label className="text-xs text-muted-foreground">Cidades atendidas</Label>
+                  <CidadesAtendidasInput
+                    cidades={cidades}
+                    onChange={setCidades}
+                    placeholder="Adicionar cidade (ex.: Jus...)"
+                  />
                 </div>
                 {detalhes?.consentimento_ultima_pergunta && (
                   <p>
