@@ -56,6 +56,7 @@ type LojaAdmin = {
   uf: string | null;
   cep?: string | null;
   endereco?: string | null;
+  numero?: string | null;
   bairro?: string | null;
 };
 
