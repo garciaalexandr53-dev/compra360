@@ -727,16 +727,12 @@ const AppFuncionariosPublic = () => {
                 📋 {items.length} {items.length === 1 ? "item" : "itens"}
               </span>
             )}
-            {installPrompt && (
+            {!isInstalled && (
               <Button
                 size="sm"
                 variant="secondary"
-                className="gap-1 text-xs h-8"
-                onClick={async () => {
-                  installPrompt.prompt();
-                  const { outcome } = await installPrompt.userChoice;
-                  if (outcome === "accepted") setInstallPrompt(null);
-                }}
+                className="gap-1 text-xs h-8 shrink-0"
+                onClick={handleInstallTap}
               >
                 <Download className="h-3.5 w-3.5" />
                 Instalar
