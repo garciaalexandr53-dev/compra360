@@ -155,9 +155,22 @@ export default function BottomNav() {
               <helpItem.icon className="h-5 w-5" />
               <span className="text-xs font-medium">{helpItem.label}</span>
             </a>
+            {!isInstalled && (
+              <button
+                type="button"
+                onClick={handleInstallTap}
+                className="flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors text-muted-foreground hover:bg-muted"
+                title="Instalar o Compra360 na tela do celular"
+              >
+                <Smartphone className="h-5 w-5" />
+                <span className="text-xs font-medium text-center leading-tight">Instalar app</span>
+              </button>
+            )}
           </div>
         </SheetContent>
       </Sheet>
+
+      <InstallAppDialog open={installOpen} onOpenChange={setInstallOpen} isIos={isIos} />
     </>
   );
 }

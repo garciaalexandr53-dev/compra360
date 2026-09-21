@@ -49,8 +49,16 @@ export function AppSidebar() {
   const { user } = useAuth();
   const { nome } = useProfile();
   const { plan } = useSubscription();
+  const [installOpen, setInstallOpen] = useState(false);
+  const { isInstalled, isIos, install } = usePwaInstall();
+
+  const handleInstallTap = async () => {
+    const ok = await install();
+    if (!ok) setInstallOpen(true);
+  };
 
   const suporteUrl = buildSuporteUrl({ nome, email: user?.email, plano: plan?.display_name, loja: lojaAtiva?.nome });
+
 
 
   const { data: isAdmin = false } = useQuery({
