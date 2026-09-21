@@ -64,6 +64,15 @@ export interface Municipio {
   uf: string;
 }
 
+/** Códigos IBGE de UF → sigla (a BrasilAPI devolve só o código numérico). */
+const UF_POR_CODIGO: Record<number, string> = {
+  11: "RO", 12: "AC", 13: "AM", 14: "RR", 15: "PA", 16: "AP", 17: "TO",
+  21: "MA", 22: "PI", 23: "CE", 24: "RN", 25: "PB", 26: "PE", 27: "AL", 28: "SE", 29: "BA",
+  31: "MG", 32: "ES", 33: "RJ", 35: "SP",
+  41: "PR", 42: "SC", 43: "RS",
+  50: "MS", 51: "MT", 52: "GO", 53: "DF",
+};
+
 let cacheMunicipios: Municipio[] | null = null;
 let carregando: Promise<Municipio[]> | null = null;
 
@@ -89,7 +98,7 @@ export async function carregarMunicipios(): Promise<Municipio[]> {
           cacheMunicipios = d
             .map((m: any) => ({
               cidade: String(m?.nome ?? ""),
-              uf: String(m?.codigo_uf ?? ""),
+              uf: UF_POR_CODIGO[Number(m?.codigo_uf)] ?? "",
             }))
             .filter((m) => m.cidade);
           if (cacheMunicipios.length > 0) return cacheMunicipios;
