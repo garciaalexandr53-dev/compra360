@@ -11,7 +11,8 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { formatUF } from "@/components/lojas/lojaUtils";
+import { formatUF, formatCEP } from "@/components/lojas/lojaUtils";
+import { buscarCep, cepCompleto } from "@/lib/cep";
 import { formatNomeLoja } from "@/lib/masks";
 import {
   Building2, IdCard, Mail, Phone, Calendar, LogIn, CreditCard, Activity, Clock,
