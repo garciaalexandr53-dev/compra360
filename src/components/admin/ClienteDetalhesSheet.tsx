@@ -497,6 +497,23 @@ function LojaLocalRow({ loja, onSaved }: { loja: LojaAdmin; onSaved: () => void 
   const [cidade, setCidade] = useState(loja.cidade ?? "");
   const [uf, setUf] = useState((loja.uf ?? "").toUpperCase());
   const [salvando, setSalvando] = useState(false);
+  const [cep, setCep] = useState("");
+  const [buscandoCep, setBuscandoCep] = useState(false);
+
+  const onCepChange = async (valor: string) => {
+    const novo = formatCEP(valor);
+    setCep(novo);
+    if (!cepCompleto(novo)) return;
+    setBuscandoCep(true);
+    const r = await buscarCep(novo);
+    setBuscandoCep(false);
+    if (!r) {
+      toast.error("CEP não encontrado. Preencha a cidade manualmente.");
+      return;
+    }
+    setCidade(r.cidade);
+    setUf(r.uf);
+  };
 
   useEffect(() => {
     setCidade(loja.cidade ?? "");
