@@ -28,7 +28,7 @@ Na ficha do fornecedor, uma lista de **Cidades atendidas** com etiquetas, busca 
 
 - Nova tabela `fornecedor_cidades_atendidas` (`fornecedor_id`, `cidade`, `uf`, `cidade_norm`, `created_at`), com RLS, GRANTs para `anon`/`authenticated`/`service_role`, índice em `cidade_norm` e chave única `(fornecedor_id, cidade_norm, uf)`.
 - `salvar_dados_fornecedor` ganha o parâmetro `_cidades jsonb` (`[{cidade, uf}]`) e sincroniza a lista de forma atômica (apaga o que saiu, insere o que entrou) na mesma transação.
-- `get_supplier_onboarding_state` passa a devolver `cidades` (as já salvas) e `cidade_loja`/`uf_loja` da loja da cotação, para pré-selecionar a etiqueta.
+- `get_supplier_onboarding_state` passa a devolver `pedir_cidades boolean` (true só quando `consentimento_rede = 'sim'`/em aprovação nesta sessão **e** o fornecedor não tem nenhuma linha em `fornecedor_cidades_atendidas`), mais `cidade_loja`/`uf_loja` da loja da cotação para pré-selecionar a etiqueta. Assim o bloco aparece uma única vez por fornecedor.
 - `sugerir_fornecedores_por_cidade` recriada: candidatos = consentimento `sim` E (cidade declarada em `fornecedor_cidades_atendidas` OU cidade de alguma loja que ele já atende), mantendo o corte anti-duplicidade por telefone e o dedup pelo cadastro mais recente. GRANT EXECUTE reaplicado junto.
 - Novo componente `CidadesAtendidasInput` reutilizando `buscarMunicipios` de `src/lib/cep.ts` (debounce 200ms, mínimo 2 letras), usado no card do link do fornecedor e na ficha do Admin.
 - `admin_update_fornecedor` estendida para gravar as cidades enviadas pelo Admin.
