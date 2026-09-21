@@ -40,7 +40,7 @@ export default function BottomNav() {
   const { nome } = useProfile();
   const { plan } = useSubscription();
   const { lojaAtiva } = useLojaAtiva();
-  const { isInstalled, isIos, canInstall, install } = usePwaInstall();
+  const { isInstalled, isIos, install } = usePwaInstall();
 
   const handleInstallTap = async () => {
     setMoreOpen(false);
