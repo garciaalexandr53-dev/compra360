@@ -742,6 +742,25 @@ const AppFuncionariosPublic = () => {
         </div>
       </div>
 
+      {/* Aviso de instalação — só enquanto o app não estiver na tela inicial */}
+      {!isInstalled && (
+        <button
+          type="button"
+          onClick={handleInstallTap}
+          className="w-full flex items-center gap-3 border-b bg-primary/10 px-4 py-3 text-left"
+        >
+          <Download className="h-5 w-5 shrink-0 text-primary" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-foreground">
+              Deixe este app na tela do seu celular
+            </span>
+            <span className="block text-xs text-muted-foreground">
+              Toque aqui para instalar e não precisar mais do link.
+            </span>
+          </span>
+        </button>
+      )}
+
       {/* Tabs */}
       <div className="flex border-b bg-card sticky top-[52px] z-10">
         <button
