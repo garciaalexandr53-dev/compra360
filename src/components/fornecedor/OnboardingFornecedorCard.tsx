@@ -126,6 +126,10 @@ const OnboardingFornecedorCard = ({
   }
 
   const mostrarPasta = state.pedir_cnpj && state.pedir_pasta && duplicado;
+  // Some assim que ele começa a preencher algo, evitando toque acidental.
+  const nadaPreenchido = digits.length === 0 && consentimento === null && pastas.length === 0;
+  const mostrarSkip =
+    !modoCidades && state.pedir_cnpj && state.permite_skip && nadaPreenchido;
   const opcoesPasta = pastasDisponiveis(state.tipo_fornecedor);
 
   const togglePasta = (p: string) =>
@@ -173,21 +177,14 @@ const OnboardingFornecedorCard = ({
           <label className="text-xs sm:text-sm font-medium" htmlFor="onb-cnpj">
             CNPJ da empresa que você representa
           </label>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Input
-              id="onb-cnpj"
-              inputMode="numeric"
-              placeholder="00.000.000/0000-00"
-              value={cnpj}
-              onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
-              className="flex-1"
-            />
-            {state.permite_skip ? (
-              <Button variant="outline" onClick={responderDepois} className="shrink-0">
-                Responder depois
-              </Button>
-            ) : null}
-          </div>
+          <Input
+            id="onb-cnpj"
+            inputMode="numeric"
+            placeholder="00.000.000/0000-00"
+            value={cnpj}
+            onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
+            className="w-full"
+          />
           {!state.permite_skip && (
             <p className="text-xs text-amber-700 dark:text-amber-300">
               Para continuar recebendo cotações, complete o cadastro da sua empresa.
@@ -268,14 +265,25 @@ const OnboardingFornecedorCard = ({
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-2">
-        <Button onClick={salvar} disabled={!podeSalvar || saving} className="w-full sm:w-auto">
-          {saving ? "Salvando..." : "Salvar"}
-        </Button>
-        {modoCidades && onFechar && (
-          <Button variant="outline" onClick={onFechar} className="w-full sm:w-auto">
-            Cancelar
+      <div className="space-y-2">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button onClick={salvar} disabled={!podeSalvar || saving} className="w-full sm:w-auto">
+            {saving ? "Salvando..." : "Salvar"}
           </Button>
+          {modoCidades && onFechar && (
+            <Button variant="outline" onClick={onFechar} className="w-full sm:w-auto">
+              Cancelar
+            </Button>
+          )}
+        </div>
+        {mostrarSkip && (
+          <button
+            type="button"
+            onClick={responderDepois}
+            className="block w-full text-center text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+          >
+            Responder depois e ir para os preços
+          </button>
         )}
       </div>
     </div>
