@@ -126,6 +126,10 @@ const OnboardingFornecedorCard = ({
   }
 
   const mostrarPasta = state.pedir_cnpj && state.pedir_pasta && duplicado;
+  // Some assim que ele começa a preencher algo, evitando toque acidental.
+  const nadaPreenchido = digits.length === 0 && consentimento === null && pastas.length === 0;
+  const mostrarSkip =
+    !modoCidades && state.pedir_cnpj && state.permite_skip && nadaPreenchido;
   const opcoesPasta = pastasDisponiveis(state.tipo_fornecedor);
 
   const togglePasta = (p: string) =>
