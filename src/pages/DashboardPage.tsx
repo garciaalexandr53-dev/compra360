@@ -656,6 +656,7 @@ const DashboardPage = () => {
         economiaTotal={economiaHistorica.economiaTotal}
       />
       <CidadeLojaBanner />
+      <FornecedoresLojaBanner />
       <AppFuncionariosDiscoveryCard />
       <ItensCarregadosBanner cotacaoId={cotacaoAtiva?.id ?? null} />
       <div className="animate-fade-in">
