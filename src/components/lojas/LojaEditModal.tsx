@@ -19,6 +19,25 @@ interface Props {
 }
 
 export default function LojaEditModal({ open, onOpenChange, editing, form, setForm, onSave, saving }: Props) {
+  const [buscandoCep, setBuscandoCep] = useState(false);
+  const ultimoCep = useRef("");
+
+  const onCepChange = async (valor: string) => {
+    const cep = formatCEP(valor);
+    const next = { ...form, cep };
+    setForm(next);
+    if (!cepCompleto(cep) || ultimoCep.current === cep) return;
+    ultimoCep.current = cep;
+    setBuscandoCep(true);
+    const r = await buscarCep(cep);
+    setBuscandoCep(false);
+    if (!r) {
+      toast.error("CEP não encontrado. Preencha a cidade manualmente.");
+      return;
+    }
+    setForm({ ...next, cidade: r.cidade, uf: r.uf });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
