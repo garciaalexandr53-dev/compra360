@@ -185,6 +185,8 @@ const FornecedoresPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fornecedores"] });
       queryClient.invalidateQueries({ queryKey: ["fornecedor-lojas"] });
+      queryClient.invalidateQueries({ queryKey: ["fornecedores-count"] });
+      queryClient.invalidateQueries({ queryKey: ["sugestoes-regiao"] });
       setModalOpen(false); setEditingId(null); setForm(emptyForm);
       toast.success(editingId ? "Fornecedor atualizado!" : "Fornecedor adicionado!");
     },
