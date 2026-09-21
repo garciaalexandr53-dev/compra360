@@ -115,10 +115,11 @@ export default function CidadeLojaBanner() {
           <EnderecoFields
             compact
             autoFocusCep
-            value={{ cep, endereco, bairro, cidade, uf }}
+            value={{ cep, endereco, numero, bairro, cidade, uf }}
             onChange={(v) => {
               setCep(v.cep);
               setEndereco(v.endereco);
+              setNumero(v.numero);
               setBairro(v.bairro);
               setCidade(v.cidade);
               setUf(v.uf);
