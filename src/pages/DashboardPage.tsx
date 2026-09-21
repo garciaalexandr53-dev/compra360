@@ -32,6 +32,7 @@ import TrialBanner from "@/components/dashboard/TrialBanner";
 import TrialUpsellCard from "@/components/dashboard/TrialUpsellCard";
 import AppFuncionariosDiscoveryCard from "@/components/dashboard/AppFuncionariosDiscoveryCard";
 import CidadeLojaBanner from "@/components/dashboard/CidadeLojaBanner";
+import FornecedoresLojaBanner from "@/components/dashboard/FornecedoresLojaBanner";
 import TrialExpiredOverlay from "@/components/dashboard/TrialExpiredOverlay";
 import { useFeatureCheck } from "@/components/FeatureGate";
 import { useSubscription } from "@/hooks/useSubscription";
