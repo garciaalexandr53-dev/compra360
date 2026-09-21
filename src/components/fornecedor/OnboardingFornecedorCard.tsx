@@ -225,7 +225,7 @@ const OnboardingFornecedorCard = ({
 
       {!modoCidades && state.pedir_consentimento && (
         <div className="space-y-2 border-t pt-3">
-          <p className="text-xs sm:text-sm leading-relaxed text-muted-foreground">{TEXTO_REDE}</p>
+          <p className="text-xs sm:text-sm leading-relaxed text-muted-foreground whitespace-pre-line">{TEXTO_REDE}</p>
           <div className="flex flex-wrap gap-2">
             {([
               { v: "sim", label: "Sim" },
