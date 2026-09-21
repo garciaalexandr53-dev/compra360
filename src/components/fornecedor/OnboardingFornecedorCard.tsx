@@ -38,7 +38,8 @@ interface Props {
 }
 
 const TEXTO_REDE =
-  "Estamos pensando em uma função onde seu contato pode aparecer para outros supermercados da sua região que ainda não compram de você, para gerar novos negócios. Isso significa que esses novos clientes também vão ver há quanto tempo você está cadastrado e sua taxa de resposta às cotações. Você toparia participar dessa lista?";
+  "🚀 Estamos desenvolvendo a Rede Compra360 para conectar fornecedores a novos supermercados da sua região.\n\nSeu contato e sua taxa de resposta poderão ser recomendados para que esses supermercados enviem cotações diretamente para você.\n\nDeseja participar e receber novas cotações?";
+
 
 const OnboardingFornecedorCard = ({
   token,
@@ -224,7 +225,7 @@ const OnboardingFornecedorCard = ({
 
       {!modoCidades && state.pedir_consentimento && (
         <div className="space-y-2 border-t pt-3">
-          <p className="text-xs sm:text-sm leading-relaxed text-muted-foreground">{TEXTO_REDE}</p>
+          <p className="text-xs sm:text-sm leading-relaxed text-muted-foreground whitespace-pre-line">{TEXTO_REDE}</p>
           <div className="flex flex-wrap gap-2">
             {([
               { v: "sim", label: "Sim" },
