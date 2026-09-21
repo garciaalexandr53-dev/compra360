@@ -1,12 +1,9 @@
-import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { LojaForm, formatCNPJ, formatCEP, formatUF } from "./lojaUtils";
-import { buscarCep, cepCompleto } from "@/lib/cep";
-import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { LojaForm, formatCNPJ } from "./lojaUtils";
+import EnderecoFields from "./EnderecoFields";
 
 interface Props {
   open: boolean;
@@ -19,24 +16,6 @@ interface Props {
 }
 
 export default function LojaEditModal({ open, onOpenChange, editing, form, setForm, onSave, saving }: Props) {
-  const [buscandoCep, setBuscandoCep] = useState(false);
-  const ultimoCep = useRef("");
-
-  const onCepChange = async (valor: string) => {
-    const cep = formatCEP(valor);
-    const next = { ...form, cep };
-    setForm(next);
-    if (!cepCompleto(cep) || ultimoCep.current === cep) return;
-    ultimoCep.current = cep;
-    setBuscandoCep(true);
-    const r = await buscarCep(cep);
-    setBuscandoCep(false);
-    if (!r) {
-      toast.error("CEP não encontrado. Preencha a cidade manualmente.");
-      return;
-    }
-    setForm({ ...next, cidade: r.cidade, uf: r.uf });
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -90,55 +69,16 @@ export default function LojaEditModal({ open, onOpenChange, editing, form, setFo
               />
             </div>
           </div>
-          <div>
-            <Label>Endereço</Label>
-            <Input
-              value={form.endereco}
-              onChange={(e) => setForm({ ...form, endereco: e.target.value })}
-              placeholder="Ex: Rua Principal, 100"
-              maxLength={200}
-            />
-          </div>
-          <div>
-            <Label>CEP</Label>
-            <Input
-              value={form.cep}
-              onChange={(e) => onCepChange(e.target.value)}
-              placeholder="00000-000"
-              inputMode="numeric"
-              maxLength={9}
-            />
-            <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
-              {buscandoCep ? (
-                <>
-                  <Loader2 className="h-3 w-3 animate-spin" /> Buscando cidade…
-                </>
-              ) : (
-                "Informe o CEP e a cidade é preenchida automaticamente."
-              )}
-            </p>
-          </div>
-          <div className="grid grid-cols-[1fr_auto] gap-3">
-            <div>
-              <Label>Cidade *</Label>
-              <Input
-                value={form.cidade}
-                onChange={(e) => setForm({ ...form, cidade: e.target.value })}
-                placeholder="Ex: São Paulo"
-                maxLength={100}
-              />
-            </div>
-            <div className="w-20">
-              <Label>UF</Label>
-              <Input
-                value={form.uf}
-                onChange={(e) => setForm({ ...form, uf: formatUF(e.target.value) })}
-                placeholder="SP"
-                maxLength={2}
-                className="uppercase"
-              />
-            </div>
-          </div>
+          <EnderecoFields
+            value={{
+              cep: form.cep,
+              endereco: form.endereco,
+              bairro: form.bairro,
+              cidade: form.cidade,
+              uf: form.uf,
+            }}
+            onChange={(v) => setForm({ ...form, ...v })}
+          />
         </div>
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>

@@ -3,8 +3,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -13,10 +11,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { MapPin, Loader2 } from "lucide-react";
-import { buscarCep, cepCompleto } from "@/lib/cep";
+import { MapPin } from "lucide-react";
 import { toast } from "sonner";
-import { formatCEP, formatUF } from "@/components/lojas/lojaUtils";
+import { formatCEP } from "@/components/lojas/lojaUtils";
+import EnderecoFields from "@/components/lojas/EnderecoFields";
 import { formatNomeLoja } from "@/lib/masks";
 
 /**
@@ -30,33 +28,30 @@ export default function CidadeLojaBanner() {
   const [cidade, setCidade] = useState("");
   const [uf, setUf] = useState("");
   const [cep, setCep] = useState("");
+  const [endereco, setEndereco] = useState("");
+  const [bairro, setBairro] = useState("");
 
-  const loja = lojaAtiva as { id: string; nome?: string | null; nome_fantasia?: string | null; cidade?: string | null; uf?: string | null; cep?: string | null } | null | undefined;
+  const loja = lojaAtiva as {
+    id: string;
+    nome?: string | null;
+    nome_fantasia?: string | null;
+    cidade?: string | null;
+    uf?: string | null;
+    cep?: string | null;
+    endereco?: string | null;
+    bairro?: string | null;
+  } | null | undefined;
 
   useEffect(() => {
     if (open && loja) {
       setCidade(loja.cidade ?? "");
       setUf((loja.uf ?? "").toUpperCase());
       setCep(formatCEP(loja.cep ?? ""));
+      setEndereco(loja.endereco ?? "");
+      setBairro(loja.bairro ?? "");
     }
   }, [open, loja?.id]);
 
-  const [buscandoCep, setBuscandoCep] = useState(false);
-
-  const onCepChange = async (valor: string) => {
-    const novo = formatCEP(valor);
-    setCep(novo);
-    if (!cepCompleto(novo)) return;
-    setBuscandoCep(true);
-    const r = await buscarCep(novo);
-    setBuscandoCep(false);
-    if (!r) {
-      toast.error("CEP não encontrado. Preencha a cidade manualmente.");
-      return;
-    }
-    setCidade(r.cidade);
-    setUf(r.uf);
-  };
 
   const salvar = useMutation({
     mutationFn: async () => {
@@ -67,6 +62,8 @@ export default function CidadeLojaBanner() {
           cidade: cidade.trim(),
           uf: uf.trim() ? uf.trim().toUpperCase() : null,
           cep: cep.replace(/\D/g, "") ? cep : null,
+          endereco: endereco.trim() || null,
+          bairro: bairro.trim() || null,
         })
         .eq("id", loja.id);
       if (error) throw error;
@@ -111,49 +108,18 @@ export default function CidadeLojaBanner() {
               Usamos a cidade para sugerir fornecedores que já atendem na sua região.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label>CEP</Label>
-              <Input
-                value={cep}
-                onChange={(e) => onCepChange(e.target.value)}
-                placeholder="00000-000"
-                inputMode="numeric"
-                maxLength={9}
-                autoFocus
-              />
-              <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
-                {buscandoCep ? (
-                  <>
-                    <Loader2 className="h-3 w-3 animate-spin" /> Buscando cidade…
-                  </>
-                ) : (
-                  "Informe o CEP e a cidade é preenchida automaticamente."
-                )}
-              </p>
-            </div>
-            <div className="grid grid-cols-[1fr_auto] gap-3">
-              <div>
-                <Label>Cidade *</Label>
-                <Input
-                  value={cidade}
-                  onChange={(e) => setCidade(e.target.value)}
-                  placeholder="Ex: Cianorte"
-                  maxLength={100}
-                />
-              </div>
-              <div className="w-20">
-                <Label>UF</Label>
-                <Input
-                  value={uf}
-                  onChange={(e) => setUf(formatUF(e.target.value))}
-                  placeholder="PR"
-                  maxLength={2}
-                  className="uppercase"
-                />
-              </div>
-            </div>
-          </div>
+          <EnderecoFields
+            compact
+            autoFocusCep
+            value={{ cep, endereco, bairro, cidade, uf }}
+            onChange={(v) => {
+              setCep(v.cep);
+              setEndereco(v.endereco);
+              setBairro(v.bairro);
+              setCidade(v.cidade);
+              setUf(v.uf);
+            }}
+          />
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setOpen(false)}>
               Depois
