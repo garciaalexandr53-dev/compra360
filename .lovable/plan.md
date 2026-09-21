@@ -13,7 +13,8 @@ No link da cotação, quando ele responde **Sim** para participar da Rede, apare
 - Campo de busca por nome: digita `jus`, aparece `Jussara - PR` na lista oficial de municípios, toca e vira etiqueta.
 - Pode adicionar quantas cidades quiser e remover qualquer uma no `×`.
 - Salvar grava consentimento, CNPJ, linhas de produto e as cidades juntos.
-- Se ele já tinha cidades salvas, elas aparecem preenchidas para conferir e completar.
+
+**Pede uma única vez.** Depois que ele salva pelo menos uma cidade, o bloco nunca mais aparece nas cotações seguintes — igual ao CNPJ. Quem já aceitou participar da Rede antes desta etapa e ainda não tem cidade nenhuma vê o bloco uma vez, sozinho, para completar. Alterações posteriores ficam com você no Painel Admin.
 
 ## O que muda para o cliente
 
