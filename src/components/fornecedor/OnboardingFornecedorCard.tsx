@@ -173,21 +173,14 @@ const OnboardingFornecedorCard = ({
           <label className="text-xs sm:text-sm font-medium" htmlFor="onb-cnpj">
             CNPJ da empresa que você representa
           </label>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Input
-              id="onb-cnpj"
-              inputMode="numeric"
-              placeholder="00.000.000/0000-00"
-              value={cnpj}
-              onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
-              className="flex-1"
-            />
-            {state.permite_skip ? (
-              <Button variant="outline" onClick={responderDepois} className="shrink-0">
-                Responder depois
-              </Button>
-            ) : null}
-          </div>
+          <Input
+            id="onb-cnpj"
+            inputMode="numeric"
+            placeholder="00.000.000/0000-00"
+            value={cnpj}
+            onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
+            className="w-full"
+          />
           {!state.permite_skip && (
             <p className="text-xs text-amber-700 dark:text-amber-300">
               Para continuar recebendo cotações, complete o cadastro da sua empresa.
