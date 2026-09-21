@@ -73,6 +73,7 @@ export default function LojaEditModal({ open, onOpenChange, editing, form, setFo
             value={{
               cep: form.cep,
               endereco: form.endereco,
+              numero: form.numero,
               bairro: form.bairro,
               cidade: form.cidade,
               uf: form.uf,

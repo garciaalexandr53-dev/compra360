@@ -21,6 +21,7 @@ export interface Loja {
   nome: string;
   nome_fantasia: string | null;
   endereco: string | null;
+  numero: string | null;
   bairro: string | null;
   cidade: string | null;
   uf: string | null;
@@ -36,6 +37,7 @@ export interface LojaForm {
   nome: string;
   nome_fantasia: string;
   endereco: string;
+  numero: string;
   bairro: string;
   cidade: string;
   uf: string;
@@ -49,6 +51,7 @@ export const emptyLojaForm: LojaForm = {
   nome: "",
   nome_fantasia: "",
   endereco: "",
+  numero: "",
   bairro: "",
   cidade: "",
   uf: "",
