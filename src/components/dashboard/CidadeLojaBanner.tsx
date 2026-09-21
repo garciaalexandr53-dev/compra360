@@ -29,6 +29,7 @@ export default function CidadeLojaBanner() {
   const [uf, setUf] = useState("");
   const [cep, setCep] = useState("");
   const [endereco, setEndereco] = useState("");
+  const [numero, setNumero] = useState("");
   const [bairro, setBairro] = useState("");
 
   const loja = lojaAtiva as {

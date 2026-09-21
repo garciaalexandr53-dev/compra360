@@ -501,6 +501,7 @@ function LojaLocalRow({ loja, onSaved }: { loja: LojaAdmin; onSaved: () => void 
   const inicial = (l: LojaAdmin): EnderecoValue => ({
     cep: formatCEP(l.cep ?? ""),
     endereco: l.endereco ?? "",
+    numero: l.numero ?? "",
     bairro: l.bairro ?? "",
     cidade: l.cidade ?? "",
     uf: (l.uf ?? "").toUpperCase(),

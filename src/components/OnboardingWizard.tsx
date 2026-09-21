@@ -64,6 +64,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   const [lojaEndereco, setLojaEndereco] = useState<EnderecoValue>({
     cep: "",
     endereco: "",
+    numero: "",
     bairro: "",
     cidade: "",
     uf: "",
@@ -135,6 +136,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
           uf: lojaUf.trim() ? lojaUf.trim().toUpperCase() : null,
           cep: lojaEndereco.cep.trim() || null,
           endereco: lojaEndereco.endereco.trim() || null,
+          numero: lojaEndereco.numero.trim() || null,
           bairro: lojaEndereco.bairro.trim() || null,
           cnpj: cnpjDigits.length === 14 ? cnpjDigits : null,
           user_id: user?.id,
