@@ -1288,6 +1288,7 @@ const AppFuncionariosPublic = () => {
         }}
       />
 
+      <InstallAppDialog open={installOpen} onOpenChange={setInstallOpen} isIos={isIos} />
     </div>
   );
 };
