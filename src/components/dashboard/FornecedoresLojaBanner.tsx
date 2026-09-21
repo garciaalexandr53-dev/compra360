@@ -24,17 +24,21 @@ export default function FornecedoresLojaBanner() {
     | null
     | undefined;
 
-  // Conta fornecedores vinculados à loja ativa (não da conta inteira)
+  // Conta fornecedores disponíveis para a loja ativa: vinculados a ela
+  // OU sem nenhum vínculo (nesse caso atendem todas as lojas).
   const { data: totalFornecedores } = useQuery({
     queryKey: ["fornecedores-count", loja?.id],
     enabled: !!loja?.id,
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from("fornecedor_lojas")
-        .select("id", { count: "exact", head: true })
-        .eq("loja_id", loja!.id);
-      if (error) throw error;
-      return count ?? 0;
+      const [{ data: fornecedores, error: errF }, { data: vinculos, error: errV }] = await Promise.all([
+        supabase.from("fornecedores").select("id"),
+        supabase.from("fornecedor_lojas").select("fornecedor_id, loja_id"),
+      ]);
+      if (errF) throw errF;
+      if (errV) throw errV;
+      const vinculados = new Set((vinculos || []).map((v) => v.fornecedor_id));
+      const daLoja = new Set((vinculos || []).filter((v) => v.loja_id === loja!.id).map((v) => v.fornecedor_id));
+      return (fornecedores || []).filter((f) => daLoja.has(f.id) || !vinculados.has(f.id)).length;
     },
   });
 

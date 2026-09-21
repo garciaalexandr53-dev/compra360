@@ -32,6 +32,31 @@ export function maskCNPJ(value: string): string {
   return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
 }
 
+/**
+ * Máscara de dinheiro pt-BR: aceita apenas dígitos e formata em centavos.
+ * "0200" -> "2,00" · "12345" -> "123,45" · "" -> ""
+ */
+export function maskMoeda(value: string): string {
+  const d = value.replace(/\D/g, "").slice(0, 11);
+  if (!d) return "";
+  const num = Number(d) / 100;
+  return num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** Converte o texto mascarado em número (0 quando vazio/inválido). */
+export function parseMoeda(value: string): number {
+  const d = value.replace(/\D/g, "");
+  if (!d) return 0;
+  return Number(d) / 100;
+}
+
+/** Formata um número salvo para o campo mascarado de dinheiro. */
+export function moedaParaInput(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "";
+  if (value === 0) return "";
+  return value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export function isTelefoneValido(value: string): boolean {
   const d = value.replace(/\D/g, "");
   return d.length === 0 || d.length === 10 || d.length === 11;
