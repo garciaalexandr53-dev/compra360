@@ -24,16 +24,20 @@ export default function FornecedoresLojaBanner() {
     | null
     | undefined;
 
+  // Conta fornecedores vinculados à loja ativa (não da conta inteira)
   const { data: totalFornecedores } = useQuery({
-    queryKey: ["fornecedores-count"],
+    queryKey: ["fornecedores-count", loja?.id],
+    enabled: !!loja?.id,
     queryFn: async () => {
       const { count, error } = await supabase
-        .from("fornecedores")
-        .select("id", { count: "exact", head: true });
+        .from("fornecedor_lojas")
+        .select("id", { count: "exact", head: true })
+        .eq("loja_id", loja!.id);
       if (error) throw error;
       return count ?? 0;
     },
   });
+
 
   const { data: sugestoes = [] } = useQuery({
     queryKey: ["sugestoes-regiao", loja?.id],
