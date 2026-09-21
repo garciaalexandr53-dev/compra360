@@ -14,7 +14,9 @@ No link da cotação, quando ele responde **Sim** para participar da Rede, apare
 - Pode adicionar quantas cidades quiser e remover qualquer uma no `×`.
 - Salvar grava consentimento, CNPJ, linhas de produto e as cidades juntos.
 
-**Pede uma única vez.** Depois que ele salva pelo menos uma cidade, o bloco nunca mais aparece nas cotações seguintes — igual ao CNPJ. Quem já aceitou participar da Rede antes desta etapa e ainda não tem cidade nenhuma vê o bloco uma vez, sozinho, para completar. Alterações posteriores ficam com você no Painel Admin.
+**Pede uma única vez.** Depois que ele salva pelo menos uma cidade, o bloco não volta a aparecer sozinho nas cotações seguintes — igual ao CNPJ. Quem já aceitou participar da Rede antes desta etapa e ainda não tem cidade nenhuma vê o bloco uma vez, sozinho, para completar.
+
+**Como ele atualiza depois.** No rodapé de qualquer link de cotação fica a linha discreta: "Atende novas cidades? Atualizar minhas cidades" — mostrada só para quem participa da Rede. Ao tocar, o bloco reabre já com as cidades salvas, ele adiciona ou remove e salva. Sem senha e sem cadastro: o link da cotação já identifica ele com segurança. Você também pode ajustar tudo pelo Painel Admin.
 
 ## O que muda para o cliente
 
@@ -31,5 +33,6 @@ Na ficha do fornecedor, uma lista de **Cidades atendidas** com etiquetas, busca 
 - `get_supplier_onboarding_state` passa a devolver `pedir_cidades boolean` (true só quando `consentimento_rede = 'sim'`/em aprovação nesta sessão **e** o fornecedor não tem nenhuma linha em `fornecedor_cidades_atendidas`), mais `cidade_loja`/`uf_loja` da loja da cotação para pré-selecionar a etiqueta. Assim o bloco aparece uma única vez por fornecedor.
 - `sugerir_fornecedores_por_cidade` recriada: candidatos = consentimento `sim` E (cidade declarada em `fornecedor_cidades_atendidas` OU cidade de alguma loja que ele já atende), mantendo o corte anti-duplicidade por telefone e o dedup pelo cadastro mais recente. GRANT EXECUTE reaplicado junto.
 - Novo componente `CidadesAtendidasInput` reutilizando `buscarMunicipios` de `src/lib/cep.ts` (debounce 200ms, mínimo 2 letras), usado no card do link do fornecedor e na ficha do Admin.
+- Reabertura pelo representante: `get_supplier_onboarding_state` devolve também `participa_rede` e `cidades` (as já salvas); em `FornecedorCotacaoPage` um link no rodapé (visível quando `participa_rede`) força o card em modo "somente cidades", pré-carregado com as cidades atuais.
 - `admin_update_fornecedor` estendida para gravar as cidades enviadas pelo Admin.
 - Testes de unidade para a normalização/dedup das cidades; `tsgo` e vitest verdes antes de publicar.
