@@ -41,6 +41,8 @@ interface Props {
 type Detalhes = {
   last_sign_in_at: string | null;
   telefone: string | null;
+  whatsapp?: string | null;
+  assinatura?: { current_period_end?: string | null } | null;
   subscription_started_at: string | null;
   current_period_end: string | null;
   subscription_created_at: string | null;
@@ -130,8 +132,8 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
   const saude = useMemo(() => (cliente ? getSaudeCliente(cliente) : null), [cliente]);
   const diasTrial = useMemo(() => (cliente ? getDiasTrialRestantes(cliente.trial_end) : null), [cliente]);
   const whatsappOk = useMemo(
-    () => normalizarWhatsAppCliente(detalhes?.telefone ?? cliente?.whatsapp ?? null),
-    [detalhes?.telefone, cliente?.whatsapp],
+    () => normalizarWhatsAppCliente(detalhes?.whatsapp ?? detalhes?.telefone ?? cliente?.whatsapp ?? null),
+    [detalhes?.whatsapp, detalhes?.telefone, cliente?.whatsapp],
   );
   const { data: pagamentos, isLoading: loadingPagamentos, isError: erroPagamentos } = useQuery({
     queryKey: ["admin-cliente-pagamentos", cliente?.email],
@@ -160,7 +162,7 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
   if (!cliente) return null;
 
   const nome = getNomeExibicao(cliente);
-  const telefoneDisplay = detalhes?.telefone || cliente.whatsapp || null;
+  const telefoneDisplay = detalhes?.whatsapp || detalhes?.telefone || cliente.whatsapp || null;
   const temCotacao = (cliente.total_cotacoes || 0) > 0;
 
   return (
@@ -446,7 +448,9 @@ export default function ClienteDetalhesSheet({ cliente, onClose, onContatar, onA
         userId={cliente.user_id}
         email={cliente.email}
         planoAtual={cliente.plan_name}
-        vencimentoAtual={detalhes?.current_period_end ?? cliente.trial_end}
+        vencimentoAtual={
+          detalhes?.assinatura?.current_period_end ?? detalhes?.current_period_end ?? cliente.trial_end
+        }
       />
 
       <AlterarEmailDialog
