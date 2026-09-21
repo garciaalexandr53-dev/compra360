@@ -652,6 +652,7 @@ export type Database = {
           inscricao_estadual: string | null
           nome: string
           nome_fantasia: string | null
+          numero: string | null
           razao_social: string | null
           telefone: string | null
           uf: string | null
@@ -668,6 +669,7 @@ export type Database = {
           inscricao_estadual?: string | null
           nome: string
           nome_fantasia?: string | null
+          numero?: string | null
           razao_social?: string | null
           telefone?: string | null
           uf?: string | null
@@ -684,6 +686,7 @@ export type Database = {
           inscricao_estadual?: string | null
           nome?: string
           nome_fantasia?: string | null
+          numero?: string | null
           razao_social?: string | null
           telefone?: string | null
           uf?: string | null
@@ -1330,6 +1333,7 @@ export type Database = {
           _cidade?: string
           _endereco?: string
           _loja_id: string
+          _numero?: string
           _uf?: string
         }
         Returns: undefined
