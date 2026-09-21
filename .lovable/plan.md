@@ -14,7 +14,9 @@ No link da cotação, quando ele responde **Sim** para participar da Rede, apare
 - Pode adicionar quantas cidades quiser e remover qualquer uma no `×`.
 - Salvar grava consentimento, CNPJ, linhas de produto e as cidades juntos.
 
-**Pede uma única vez.** Depois que ele salva pelo menos uma cidade, o bloco nunca mais aparece nas cotações seguintes — igual ao CNPJ. Quem já aceitou participar da Rede antes desta etapa e ainda não tem cidade nenhuma vê o bloco uma vez, sozinho, para completar. Alterações posteriores ficam com você no Painel Admin.
+**Pede uma única vez.** Depois que ele salva pelo menos uma cidade, o bloco não volta a aparecer sozinho nas cotações seguintes — igual ao CNPJ. Quem já aceitou participar da Rede antes desta etapa e ainda não tem cidade nenhuma vê o bloco uma vez, sozinho, para completar.
+
+**Como ele atualiza depois.** No rodapé de qualquer link de cotação fica a linha discreta: "Atende novas cidades? Atualizar minhas cidades" — mostrada só para quem participa da Rede. Ao tocar, o bloco reabre já com as cidades salvas, ele adiciona ou remove e salva. Sem senha e sem cadastro: o link da cotação já identifica ele com segurança. Você também pode ajustar tudo pelo Painel Admin.
 
 ## O que muda para o cliente
 
