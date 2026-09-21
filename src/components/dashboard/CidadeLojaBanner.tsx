@@ -13,7 +13,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { MapPin } from "lucide-react";
+import { MapPin, Loader2 } from "lucide-react";
+import { buscarCep, cepCompleto } from "@/lib/cep";
 import { toast } from "sonner";
 import { formatCEP, formatUF } from "@/components/lojas/lojaUtils";
 import { formatNomeLoja } from "@/lib/masks";
@@ -39,6 +40,23 @@ export default function CidadeLojaBanner() {
       setCep(formatCEP(loja.cep ?? ""));
     }
   }, [open, loja?.id]);
+
+  const [buscandoCep, setBuscandoCep] = useState(false);
+
+  const onCepChange = async (valor: string) => {
+    const novo = formatCEP(valor);
+    setCep(novo);
+    if (!cepCompleto(novo)) return;
+    setBuscandoCep(true);
+    const r = await buscarCep(novo);
+    setBuscandoCep(false);
+    if (!r) {
+      toast.error("CEP não encontrado. Preencha a cidade manualmente.");
+      return;
+    }
+    setCidade(r.cidade);
+    setUf(r.uf);
+  };
 
   const salvar = useMutation({
     mutationFn: async () => {
