@@ -554,6 +554,25 @@ function LojaLocalRow({ loja, onSaved }: { loja: LojaAdmin; onSaved: () => void 
           </Badge>
         )}
       </div>
+      <div className="space-y-1">
+        <Label htmlFor={`cep-${loja.id}`} className="text-[11px] text-muted-foreground uppercase">
+          CEP (busca automática)
+        </Label>
+        <Input
+          id={`cep-${loja.id}`}
+          value={cep}
+          onChange={(e) => onCepChange(e.target.value)}
+          placeholder="00000-000"
+          inputMode="numeric"
+          maxLength={9}
+          className="h-9"
+        />
+        {buscandoCep && (
+          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+            <Loader2 className="h-3 w-3 animate-spin" /> Buscando cidade…
+          </p>
+        )}
+      </div>
       <div className="grid grid-cols-[1fr_auto] gap-2">
         <div className="space-y-1">
           <Label htmlFor={`cidade-${loja.id}`} className="text-[11px] text-muted-foreground uppercase">
