@@ -56,3 +56,97 @@ export async function buscarCep(valor: string): Promise<CepResultado | null> {
 
   return null;
 }
+
+/* ===================== Autocompletar de cidades (IBGE) ===================== */
+
+export interface Municipio {
+  cidade: string;
+  uf: string;
+}
+
+let cacheMunicipios: Municipio[] | null = null;
+let carregando: Promise<Municipio[]> | null = null;
+
+/** Remove acentos e normaliza para comparação. */
+export const normalizarTexto = (v: string) =>
+  v
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+/** Carrega (uma vez) a lista oficial de municípios do IBGE. */
+export async function carregarMunicipios(): Promise<Municipio[]> {
+  if (cacheMunicipios) return cacheMunicipios;
+  if (carregando) return carregando;
+
+  carregando = (async () => {
+    try {
+      const r = await fetch("https://brasilapi.com.br/api/ibge/municipios/v1");
+      if (r.ok) {
+        const d = await r.json();
+        if (Array.isArray(d)) {
+          cacheMunicipios = d
+            .map((m: any) => ({
+              cidade: String(m?.nome ?? ""),
+              uf: String(m?.codigo_uf ?? ""),
+            }))
+            .filter((m) => m.cidade);
+          if (cacheMunicipios.length > 0) return cacheMunicipios;
+        }
+      }
+    } catch {
+      // segue para o fallback
+    }
+
+    try {
+      const r = await fetch(
+        "https://servicodados.ibge.gov.br/api/v1/localidades/municipios?orderBy=nome",
+      );
+      if (r.ok) {
+        const d = await r.json();
+        if (Array.isArray(d)) {
+          cacheMunicipios = d
+            .map((m: any) => ({
+              cidade: String(m?.nome ?? ""),
+              uf: String(
+                m?.microrregiao?.mesorregiao?.UF?.sigla ??
+                  m?.["regiao-imediata"]?.["regiao-intermediaria"]?.UF?.sigla ??
+                  "",
+              ).toUpperCase(),
+            }))
+            .filter((m) => m.cidade);
+          return cacheMunicipios;
+        }
+      }
+    } catch {
+      // sem resultado
+    }
+
+    cacheMunicipios = cacheMunicipios ?? [];
+    return cacheMunicipios;
+  })();
+
+  const res = await carregando;
+  carregando = null;
+  return res;
+}
+
+/**
+ * Sugere municípios a partir do que foi digitado (mínimo 2 caracteres).
+ * Prioriza quem começa com o termo, depois quem contém.
+ */
+export async function buscarMunicipios(termo: string, limite = 8): Promise<Municipio[]> {
+  const q = normalizarTexto(termo);
+  if (q.length < 2) return [];
+  const lista = await carregarMunicipios();
+  const comeca: Municipio[] = [];
+  const contem: Municipio[] = [];
+  for (const m of lista) {
+    const n = normalizarTexto(m.cidade);
+    if (n.startsWith(q)) comeca.push(m);
+    else if (n.includes(q)) contem.push(m);
+    if (comeca.length >= limite) break;
+  }
+  return [...comeca, ...contem].slice(0, limite);
+}

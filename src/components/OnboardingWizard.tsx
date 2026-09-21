@@ -13,6 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useAuth } from "@/hooks/useAuth";
 import { getDeviceFingerprint } from "@/lib/fingerprint";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
+import EnderecoFields, { type EnderecoValue } from "@/components/lojas/EnderecoFields";
 
 interface OnboardingWizardProps {
   open: boolean;
@@ -60,8 +61,15 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   // Step 1 - Loja
   const [lojaNome, setLojaNome] = useState("");
   const [lojaCnpj, setLojaCnpj] = useState("");
-  const [lojaCidade, setLojaCidade] = useState("");
-  const [lojaUf, setLojaUf] = useState("");
+  const [lojaEndereco, setLojaEndereco] = useState<EnderecoValue>({
+    cep: "",
+    endereco: "",
+    bairro: "",
+    cidade: "",
+    uf: "",
+  });
+  const lojaCidade = lojaEndereco.cidade;
+  const lojaUf = lojaEndereco.uf;
 
   // Step 2 - Fornecedores (múltiplos)
   const [fornecedores, setFornecedores] = useState<FornecedorDraft[]>([emptyFornecedor()]);
@@ -125,6 +133,9 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
           nome: lojaNome.trim(),
           cidade: lojaCidade.trim(),
           uf: lojaUf.trim() ? lojaUf.trim().toUpperCase() : null,
+          cep: lojaEndereco.cep.trim() || null,
+          endereco: lojaEndereco.endereco.trim() || null,
+          bairro: lojaEndereco.bairro.trim() || null,
           cnpj: cnpjDigits.length === 14 ? cnpjDigits : null,
           user_id: user?.id,
         }).select("id").single();
@@ -301,30 +312,8 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   autoFocus
                 />
               </div>
-              <div className="grid grid-cols-[1fr_auto] gap-2">
-                <div className="space-y-2">
-                  <Label htmlFor="loja-cidade">Cidade *</Label>
-                  <Input
-                    id="loja-cidade"
-                    placeholder="Ex: Cianorte"
-                    value={lojaCidade}
-                    onChange={(e) => setLojaCidade(e.target.value)}
-                    maxLength={100}
-                  />
-                </div>
-                <div className="w-20 space-y-2">
-                  <Label htmlFor="loja-uf">UF</Label>
-                  <Input
-                    id="loja-uf"
-                    placeholder="PR"
-                    value={lojaUf}
-                    onChange={(e) => setLojaUf(e.target.value.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase())}
-                    maxLength={2}
-                    className="uppercase"
-                  />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground -mt-2">
+              <EnderecoFields compact value={lojaEndereco} onChange={setLojaEndereco} />
+              <p className="text-xs text-muted-foreground -mt-1">
                 Usamos a cidade para sugerir fornecedores que já atendem na sua região.
               </p>
               <div className="space-y-2">

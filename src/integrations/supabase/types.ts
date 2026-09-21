@@ -642,6 +642,7 @@ export type Database = {
       }
       lojas: {
         Row: {
+          bairro: string | null
           cep: string | null
           cidade: string | null
           cnpj: string | null
@@ -657,6 +658,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          bairro?: string | null
           cep?: string | null
           cidade?: string | null
           cnpj?: string | null
@@ -672,6 +674,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          bairro?: string | null
           cep?: string | null
           cidade?: string | null
           cnpj?: string | null
@@ -1321,8 +1324,15 @@ export type Database = {
         Returns: Json
       }
       admin_update_loja: {
-        Args: { _cidade?: string; _loja_id: string; _uf?: string }
-        Returns: Json
+        Args: {
+          _bairro?: string
+          _cep?: string
+          _cidade?: string
+          _endereco?: string
+          _loja_id: string
+          _uf?: string
+        }
+        Returns: undefined
       }
       checar_cnpj_duplicado: {
         Args: { _cnpj: string; _token: string }
