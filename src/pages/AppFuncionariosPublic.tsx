@@ -176,19 +176,12 @@ const AppFuncionariosPublic = () => {
     const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
     if (appleTitle) appleTitle.setAttribute("content", "Compra360 Reposição");
 
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setInstallPrompt(e);
-    };
-    window.addEventListener("beforeinstallprompt", handler);
-
     return () => {
       document.title = originalTitle;
       const manifestOnCleanup = document.querySelector('link[rel="manifest"]');
       if (manifestOnCleanup) manifestOnCleanup.setAttribute("href", originalManifest);
       const appleTitleOnCleanup = document.querySelector('meta[name="apple-mobile-web-app-title"]');
       if (appleTitleOnCleanup) appleTitleOnCleanup.setAttribute("content", originalAppleTitle);
-      window.removeEventListener("beforeinstallprompt", handler);
     };
   }, []);
 
