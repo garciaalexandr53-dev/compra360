@@ -13,7 +13,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { MapPin } from "lucide-react";
+import { MapPin, Loader2 } from "lucide-react";
+import { buscarCep, cepCompleto } from "@/lib/cep";
 import { toast } from "sonner";
 import { formatCEP, formatUF } from "@/components/lojas/lojaUtils";
 import { formatNomeLoja } from "@/lib/masks";
@@ -39,6 +40,23 @@ export default function CidadeLojaBanner() {
       setCep(formatCEP(loja.cep ?? ""));
     }
   }, [open, loja?.id]);
+
+  const [buscandoCep, setBuscandoCep] = useState(false);
+
+  const onCepChange = async (valor: string) => {
+    const novo = formatCEP(valor);
+    setCep(novo);
+    if (!cepCompleto(novo)) return;
+    setBuscandoCep(true);
+    const r = await buscarCep(novo);
+    setBuscandoCep(false);
+    if (!r) {
+      toast.error("CEP não encontrado. Preencha a cidade manualmente.");
+      return;
+    }
+    setCidade(r.cidade);
+    setUf(r.uf);
+  };
 
   const salvar = useMutation({
     mutationFn: async () => {
@@ -94,6 +112,26 @@ export default function CidadeLojaBanner() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
+            <div>
+              <Label>CEP</Label>
+              <Input
+                value={cep}
+                onChange={(e) => onCepChange(e.target.value)}
+                placeholder="00000-000"
+                inputMode="numeric"
+                maxLength={9}
+                autoFocus
+              />
+              <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
+                {buscandoCep ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" /> Buscando cidade…
+                  </>
+                ) : (
+                  "Informe o CEP e a cidade é preenchida automaticamente."
+                )}
+              </p>
+            </div>
             <div className="grid grid-cols-[1fr_auto] gap-3">
               <div>
                 <Label>Cidade *</Label>
@@ -102,7 +140,6 @@ export default function CidadeLojaBanner() {
                   onChange={(e) => setCidade(e.target.value)}
                   placeholder="Ex: Cianorte"
                   maxLength={100}
-                  autoFocus
                 />
               </div>
               <div className="w-20">
@@ -115,16 +152,6 @@ export default function CidadeLojaBanner() {
                   className="uppercase"
                 />
               </div>
-            </div>
-            <div>
-              <Label>CEP</Label>
-              <Input
-                value={cep}
-                onChange={(e) => setCep(formatCEP(e.target.value))}
-                placeholder="00000-000"
-                inputMode="numeric"
-                maxLength={9}
-              />
             </div>
           </div>
           <DialogFooter className="gap-2">

@@ -11,7 +11,8 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { formatUF } from "@/components/lojas/lojaUtils";
+import { formatUF, formatCEP } from "@/components/lojas/lojaUtils";
+import { buscarCep, cepCompleto } from "@/lib/cep";
 import { formatNomeLoja } from "@/lib/masks";
 import {
   Building2, IdCard, Mail, Phone, Calendar, LogIn, CreditCard, Activity, Clock,
@@ -497,6 +498,23 @@ function LojaLocalRow({ loja, onSaved }: { loja: LojaAdmin; onSaved: () => void 
   const [cidade, setCidade] = useState(loja.cidade ?? "");
   const [uf, setUf] = useState((loja.uf ?? "").toUpperCase());
   const [salvando, setSalvando] = useState(false);
+  const [cep, setCep] = useState("");
+  const [buscandoCep, setBuscandoCep] = useState(false);
+
+  const onCepChange = async (valor: string) => {
+    const novo = formatCEP(valor);
+    setCep(novo);
+    if (!cepCompleto(novo)) return;
+    setBuscandoCep(true);
+    const r = await buscarCep(novo);
+    setBuscandoCep(false);
+    if (!r) {
+      toast.error("CEP não encontrado. Preencha a cidade manualmente.");
+      return;
+    }
+    setCidade(r.cidade);
+    setUf(r.uf);
+  };
 
   useEffect(() => {
     setCidade(loja.cidade ?? "");
@@ -534,6 +552,25 @@ function LojaLocalRow({ loja, onSaved }: { loja: LojaAdmin; onSaved: () => void 
           <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
             Sem cidade
           </Badge>
+        )}
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor={`cep-${loja.id}`} className="text-[11px] text-muted-foreground uppercase">
+          CEP (busca automática)
+        </Label>
+        <Input
+          id={`cep-${loja.id}`}
+          value={cep}
+          onChange={(e) => onCepChange(e.target.value)}
+          placeholder="00000-000"
+          inputMode="numeric"
+          maxLength={9}
+          className="h-9"
+        />
+        {buscandoCep && (
+          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+            <Loader2 className="h-3 w-3 animate-spin" /> Buscando cidade…
+          </p>
         )}
       </div>
       <div className="grid grid-cols-[1fr_auto] gap-2">

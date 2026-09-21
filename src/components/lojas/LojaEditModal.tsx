@@ -1,8 +1,12 @@
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { LojaForm, formatCNPJ, formatCEP, formatUF } from "./lojaUtils";
+import { buscarCep, cepCompleto } from "@/lib/cep";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface Props {
   open: boolean;
@@ -15,6 +19,25 @@ interface Props {
 }
 
 export default function LojaEditModal({ open, onOpenChange, editing, form, setForm, onSave, saving }: Props) {
+  const [buscandoCep, setBuscandoCep] = useState(false);
+  const ultimoCep = useRef("");
+
+  const onCepChange = async (valor: string) => {
+    const cep = formatCEP(valor);
+    const next = { ...form, cep };
+    setForm(next);
+    if (!cepCompleto(cep) || ultimoCep.current === cep) return;
+    ultimoCep.current = cep;
+    setBuscandoCep(true);
+    const r = await buscarCep(cep);
+    setBuscandoCep(false);
+    if (!r) {
+      toast.error("CEP não encontrado. Preencha a cidade manualmente.");
+      return;
+    }
+    setForm({ ...next, cidade: r.cidade, uf: r.uf });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
@@ -76,6 +99,25 @@ export default function LojaEditModal({ open, onOpenChange, editing, form, setFo
               maxLength={200}
             />
           </div>
+          <div>
+            <Label>CEP</Label>
+            <Input
+              value={form.cep}
+              onChange={(e) => onCepChange(e.target.value)}
+              placeholder="00000-000"
+              inputMode="numeric"
+              maxLength={9}
+            />
+            <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
+              {buscandoCep ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" /> Buscando cidade…
+                </>
+              ) : (
+                "Informe o CEP e a cidade é preenchida automaticamente."
+              )}
+            </p>
+          </div>
           <div className="grid grid-cols-[1fr_auto] gap-3">
             <div>
               <Label>Cidade *</Label>
@@ -96,16 +138,6 @@ export default function LojaEditModal({ open, onOpenChange, editing, form, setFo
                 className="uppercase"
               />
             </div>
-          </div>
-          <div>
-            <Label>CEP</Label>
-            <Input
-              value={form.cep}
-              onChange={(e) => setForm({ ...form, cep: formatCEP(e.target.value) })}
-              placeholder="00000-000"
-              inputMode="numeric"
-              maxLength={9}
-            />
           </div>
         </div>
         <DialogFooter className="gap-2">
