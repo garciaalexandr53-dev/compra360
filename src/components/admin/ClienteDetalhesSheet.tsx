@@ -512,7 +512,7 @@ function LojaLocalRow({ loja, onSaved }: { loja: LojaAdmin; onSaved: () => void 
 
   useEffect(() => {
     setEnd(inicial(loja));
-  }, [loja.id, loja.cidade, loja.uf, loja.cep, loja.endereco, loja.bairro]);
+  }, [loja.id, loja.cidade, loja.uf, loja.cep, loja.endereco, loja.numero, loja.bairro]);
 
   const base = inicial(loja);
   const mudou =
@@ -520,6 +520,7 @@ function LojaLocalRow({ loja, onSaved }: { loja: LojaAdmin; onSaved: () => void 
     end.uf.trim() !== base.uf.trim() ||
     end.cep.trim() !== base.cep.trim() ||
     end.endereco.trim() !== base.endereco.trim() ||
+    end.numero.trim() !== base.numero.trim() ||
     end.bairro.trim() !== base.bairro.trim();
 
   const salvar = async () => {
@@ -530,6 +531,7 @@ function LojaLocalRow({ loja, onSaved }: { loja: LojaAdmin; onSaved: () => void 
       _uf: end.uf.trim() || null,
       _cep: end.cep.trim() || null,
       _endereco: end.endereco.trim() || null,
+      _numero: end.numero.trim() || null,
       _bairro: end.bairro.trim() || null,
     });
     setSalvando(false);
