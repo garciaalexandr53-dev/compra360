@@ -11,12 +11,15 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, Package, Users, TrendingUp, History, ClipboardCheck, Store, LayoutDashboard, Shield, UserCog, PackageOpen, MessageCircleQuestion } from "lucide-react";
+import { BarChart3, Package, Users, TrendingUp, History, ClipboardCheck, Store, LayoutDashboard, Shield, UserCog, PackageOpen, MessageCircleQuestion, Smartphone } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { withAssetVersion } from "@/lib/assetVersion";
 import { buildSuporteUrl } from "@/lib/suporte";
 import { useProfile } from "@/hooks/useProfile";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useState } from "react";
+import { usePwaInstall } from "@/hooks/usePwaInstall";
+import InstallAppDialog from "@/components/InstallAppDialog";
 
 const mainMenu = [
   { title: "Painel", url: "/dashboard", icon: LayoutDashboard, emoji: "🏠" },

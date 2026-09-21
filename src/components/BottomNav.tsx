@@ -36,9 +36,18 @@ export default function BottomNav() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [installOpen, setInstallOpen] = useState(false);
   const { nome } = useProfile();
   const { plan } = useSubscription();
   const { lojaAtiva } = useLojaAtiva();
+  const { isInstalled, isIos, canInstall, install } = usePwaInstall();
+
+  const handleInstallTap = async () => {
+    setMoreOpen(false);
+    const ok = await install();
+    if (!ok) setInstallOpen(true);
+  };
+
 
   const suporteUrl = buildSuporteUrl({
     nome,
