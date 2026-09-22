@@ -128,7 +128,7 @@ export default function FornecedoresTab() {
           _search: termo || null,
           _limit: 500,
           _offset: offset,
-          _filtro: filtro,
+          _filtro: filtroRpc,
         });
         if (error) throw error;
         const rows = (data || []) as FornecedorAdmin[];
