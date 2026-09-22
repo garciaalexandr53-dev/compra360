@@ -1487,6 +1487,10 @@ export type Database = {
         Args: { _mestre_id: string; _sobressalente_ids: string[] }
         Returns: Json
       }
+      admin_unificar_valida_dono: {
+        Args: { _mestre_id: string; _sobressalente_ids: string[] }
+        Returns: undefined
+      }
       admin_update_fornecedor: {
         Args: {
           _cidades?: Json
