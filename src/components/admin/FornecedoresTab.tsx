@@ -23,11 +23,10 @@ import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks
 
 const PAGE_SIZE = 50;
 type Filtro = "todos" | "sem_whatsapp" | "sem_email" | "duplicados" | "autocadastro";
-type Visao = "rede" | "duplicados" | "registros";
+type Visao = "rede" | "registros";
 
 const VISOES: { key: Visao; label: string; descricao: string }[] = [
   { key: "rede", label: "Rede", descricao: "Cada fornecedor uma única vez, com cidades atendidas e em quantos clientes já está." },
-  { key: "duplicados", label: "Duplicados", descricao: "Cadastros repetidos (mesmo WhatsApp ou mesmo nome e representante) para revisão." },
   { key: "registros", label: "Por cliente", descricao: "Todos os cadastros, um por cliente, como estão no sistema." },
 ];
 
