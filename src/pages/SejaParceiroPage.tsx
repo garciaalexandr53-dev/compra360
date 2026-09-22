@@ -11,6 +11,7 @@ import CidadesAtendidasInput from "@/components/fornecedor/CidadesAtendidasInput
 import type { Municipio } from "@/lib/cep";
 import { maskTelefone, maskCNPJ, isCNPJValido, formatNomeEmpresa, formatNomePessoa } from "@/lib/masks";
 import { pastasDisponiveis } from "@/lib/adminHelpers";
+import { mensagemConfirmacaoCadastro, linkSuporteComMensagem } from "@/lib/parceiro";
 import {
   BadgeCheck,
   CheckCircle2,
