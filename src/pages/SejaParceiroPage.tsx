@@ -69,9 +69,11 @@ const SejaParceiroPage = () => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
       <Seo
-        title="Seja parceiro da Rede Compra360 — receba cotações de supermercados"
-        description="Cadastro gratuito para distribuidores e representantes: receba cotações de supermercados da sua região no WhatsApp, sem senha e sem mensalidade."
+        title="Rede de Fornecedores Compra360"
+        description="Conectamos sua distribuidora ou representação a supermercados da sua região. Receba cotações direto no seu WhatsApp, sem mensalidade nem comissão."
         path="/seja-parceiro"
+        image="/og-rede-fornecedores.jpg"
+        imageAlt="Rede de Fornecedores Compra360 — cotações no seu WhatsApp"
       />
 
       {/* Topo */}
