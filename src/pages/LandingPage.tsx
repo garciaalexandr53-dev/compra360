@@ -820,7 +820,6 @@ export default function LandingPage() {
             É fornecedor ou representante? Cadastre-se na Rede Compra360 e seja nosso parceiro
           </a>
         </div>
-        </div>
       </footer>
 
       {/* ── Botão flutuante de WhatsApp ── */}
