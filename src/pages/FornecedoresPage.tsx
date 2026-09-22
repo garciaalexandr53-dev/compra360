@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal, X, Phone, CheckCircle2, Clock, AlertCircle, MapPin } from "lucide-react";
+import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal, X, Phone, CheckCircle2, Clock, AlertCircle, MapPin, Send } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
 import { maskTelefone, formatTelefone, maskMoeda, parseMoeda, moedaParaInput } from "@/lib/masks";
@@ -20,6 +20,7 @@ import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 import SugestoesRegiaoDialog, { type SugestaoFornecedor } from "@/components/fornecedores/SugestoesRegiaoDialog";
+import ConvidarRedeDialog from "@/components/fornecedores/ConvidarRedeDialog";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -45,6 +46,7 @@ const FornecedoresPage = () => {
   const [selectedLojas, setSelectedLojas] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sugestoesOpen, setSugestoesOpen] = useState(false);
+  const [conviteOpen, setConviteOpen] = useState(false);
   const { checkLimit, showPlanos, setShowPlanos } = useFeatureCheck();
 
   const { data: lojas = [] } = useQuery({
@@ -304,6 +306,14 @@ const FornecedoresPage = () => {
             <span className="ml-1 text-[10px] font-semibold text-primary">{sugestoes.length} disponíveis</span>
           </Button>
         )}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setConviteOpen(true)}
+          className="w-full sm:w-auto justify-center border-primary/40 text-primary hover:text-primary"
+        >
+          <Send className="h-4 w-4 mr-1" /> Convidar para a Rede
+        </Button>
 
       </div>
 
@@ -593,6 +603,10 @@ const FornecedoresPage = () => {
           queryClient.invalidateQueries({ queryKey: ["sugestoes-regiao"] });
         }}
       />
+
+      {conviteOpen && (
+        <ConvidarRedeDialog open={conviteOpen} onOpenChange={setConviteOpen} />
+      )}
 
       <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>

@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
-        navigateFallbackDenylist: [/^\/~oauth/],
+        navigateFallbackDenylist: [/^\/~oauth/, /^\/rede\/?$/],
         globPatterns: ["**/*.{js,css,html,ico,svg,woff2}"],
         globIgnores: [
           "**/email-logo.*",

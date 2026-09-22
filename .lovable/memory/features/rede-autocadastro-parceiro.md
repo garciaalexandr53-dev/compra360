@@ -27,3 +27,9 @@ Quando uma API for conectada (Z-API ou Evolution) ao número do Compra360:
 3. Valida em `fornecedor_acessos` (mesmo fone_key, não expirado, não confirmado) e chama a mesma lógica de `admin_confirmar_parceiro`.
 4. Para finalidade `edicao`, responde na conversa com `linkParceiro(token)` (validade curta).
 5. A interface do usuário não muda — só deixa de depender da aprovação manual no /admin.
+
+## Convite oficial e prévia no WhatsApp
+- Link de divulgação: **https://compra360app.com.br/rede** (`public/rede/index.html`), página estática com as etiquetas Open Graph oficiais ("Rede de Fornecedores Compra360" + `og-rede-fornecedores.jpg` 1200x630) que redireciona para `/seja-parceiro`. Necessária porque o robô do WhatsApp não executa JS num SPA.
+- `/rede` está no `navigateFallbackDenylist` do PWA e com `Cache-Control: no-store` em `public/_headers`.
+- Mensagem de convite na **voz institucional do Compra360** (nunca a voz do supermercadista): `src/lib/conviteRede.ts` (`montarConviteRede`, `LINK_REDE_PARCEIRO`).
+- Painel: botão **Convidar para a Rede** na toolbar da aba Fornecedores abre `ConvidarRedeDialog` (telefone opcional, prévia da mensagem, copiar mensagem, copiar link, abrir no WhatsApp).
