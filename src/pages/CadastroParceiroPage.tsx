@@ -47,17 +47,17 @@ const CadastroParceiroPage = () => {
     setPastas((atual) => (atual.includes(p) ? atual.filter((x) => x !== p) : [...atual, p]));
 
   const enviar = async () => {
-    if (!nome.trim()) {
-      toast.error("Informe o nome da sua empresa ou representação.");
+    const erroFone = validarWhatsApp(telefone);
+    if (erroFone) {
+      toast.error(erroFone);
       return;
     }
     if (!representante.trim()) {
       toast.error("Informe o seu nome.");
       return;
     }
-    const erroFone = validarWhatsApp(telefone);
-    if (erroFone) {
-      toast.error(erroFone);
+    if (!nome.trim()) {
+      toast.error("Informe o nome da sua empresa ou representação.");
       return;
     }
     if (!isCNPJValido(cnpj)) {
@@ -198,6 +198,51 @@ const CadastroParceiroPage = () => {
 
           <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 space-y-5">
             <div className="space-y-2">
+              <Label className="text-slate-300">WhatsApp *</Label>
+              <Input
+                value={telefone}
+                onChange={(e) => {
+                  const v = maskTelefone(e.target.value);
+                  setTelefone(v);
+                  void checarTelefone(v);
+                }}
+                onBlur={(e) => void checarTelefone(e.target.value)}
+                placeholder="(44) 99999-9999"
+                inputMode="numeric"
+                autoFocus
+                className={`bg-slate-950 text-white ${
+                  jaCadastrado !== null ? "border-amber-500/60" : "border-white/10"
+                }`}
+              />
+              {jaCadastrado !== null ? (
+                <p className="text-xs text-amber-300 leading-relaxed">
+                  Este WhatsApp já está cadastrado na Rede Compra360
+                  {jaCadastrado ? ` (${jaCadastrado})` : ""}. Para alterar suas cidades ou linhas de
+                  atendimento,{" "}
+                  <Link to="/parceiro" className="underline font-semibold text-amber-200">
+                    atualize seus dados aqui
+                  </Link>
+                  .
+                </p>
+              ) : (
+                <p className="text-xs text-slate-500">
+                  É nele que você vai receber os links das cotações.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-slate-300">Seu nome *</Label>
+              <Input
+                value={representante}
+                onChange={(e) => setRepresentante(e.target.value)}
+                placeholder="Ex: João Silva"
+                className="bg-slate-950 border-white/10 text-white"
+                maxLength={80}
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label className="text-slate-300">Nome da empresa ou representação *</Label>
               <Input
                 value={nome}
@@ -219,46 +264,6 @@ const CadastroParceiroPage = () => {
               />
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-slate-300">Seu nome *</Label>
-                <Input
-                  value={representante}
-                  onChange={(e) => setRepresentante(e.target.value)}
-                  placeholder="Ex: João Silva"
-                  className="bg-slate-950 border-white/10 text-white"
-                  maxLength={80}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-slate-300">WhatsApp *</Label>
-                <Input
-                  value={telefone}
-                  onChange={(e) => {
-                    const v = maskTelefone(e.target.value);
-                    setTelefone(v);
-                    void checarTelefone(v);
-                  }}
-                  onBlur={(e) => void checarTelefone(e.target.value)}
-                  placeholder="(44) 99999-9999"
-                  inputMode="numeric"
-                  className={`bg-slate-950 text-white ${
-                    jaCadastrado !== null ? "border-amber-500/60" : "border-white/10"
-                  }`}
-                />
-                {jaCadastrado !== null && (
-                  <p className="text-xs text-amber-300 leading-relaxed">
-                    Este WhatsApp já está cadastrado na Rede Compra360
-                    {jaCadastrado ? ` (${jaCadastrado})` : ""}. Para alterar suas cidades ou linhas
-                    de atendimento,{" "}
-                    <Link to="/parceiro" className="underline font-semibold text-amber-200">
-                      atualize seus dados aqui
-                    </Link>
-                    .
-                  </p>
-                )}
-              </div>
-            </div>
 
             <div className="space-y-2">
               <Label className="text-slate-300">Tipo de fornecedor</Label>
