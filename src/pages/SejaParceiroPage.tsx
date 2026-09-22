@@ -113,6 +113,20 @@ const SejaParceiroPage = () => {
   const [salvando, setSalvando] = useState(false);
   const [pronto, setPronto] = useState(false);
   const [codigo, setCodigo] = useState<string | null>(null);
+  const [jaCadastrado, setJaCadastrado] = useState<string | null>(null);
+
+  /** Consulta discreta: avisa se o WhatsApp digitado ja existe na Rede. */
+  const checarTelefone = async (valor: string) => {
+    const digitos = valor.replace(/\D/g, "");
+    if (digitos.length < 10 || validarWhatsApp(valor)) {
+      setJaCadastrado(null);
+      return;
+    }
+    const { data, error } = await supabase.rpc("whatsapp_parceiro_existe", { _telefone: valor });
+    if (error) return;
+    const resp = (data ?? {}) as { existe?: boolean; nome?: string };
+    setJaCadastrado(resp.existe ? (resp.nome ?? "") : null);
+  };
 
   const opcoesPasta = useMemo(() => pastasDisponiveis(tipo), [tipo]);
 
