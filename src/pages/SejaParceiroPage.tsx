@@ -517,7 +517,7 @@ const SejaParceiroPage = () => {
               disabled={salvando}
               className="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold"
             >
-              {salvando ? "Enviando..." : "Quero receber novas cotações gratuitamente"}
+              {salvando ? "Salvando..." : "Salvar informações e participar"}
             </Button>
             <p className="text-xs text-slate-500 text-center">
               Ao cadastrar, você autoriza que seu contato e sua taxa de resposta sejam recomendados a
