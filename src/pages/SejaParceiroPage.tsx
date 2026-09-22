@@ -155,6 +155,13 @@ const SejaParceiroPage = () => {
       toast.error("Adicione ao menos uma cidade que você atende.");
       return;
     }
+    if (jaCadastrado !== null) {
+      toast.error(
+        "Você já faz parte da Rede! Por segurança, atualize seus dados na área do parceiro.",
+      );
+      return;
+    }
+
 
     setSalvando(true);
     const { data, error } = await supabase.rpc("cadastrar_fornecedor_parceiro", {
