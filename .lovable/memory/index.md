@@ -1,3 +1,4 @@
 - [MCP Server](mem://tech/mcp-server) — Integrações de agentes, OAuth Supabase, 7 ferramentas, consent route
 - [Leitor de código de barras](mem://tech/leitor-codigo-barras) — html5-qrcode: nó imperativo, stop antes de fechar, callbacks em ref
 - [Autocadastro na Rede](mem://features/rede-autocadastro-parceiro) — /seja-parceiro, /parceiro sem senha, código de 4 dígitos em fornecedor_acessos, filtro Auto-cadastro no admin, blueprint da API de WhatsApp
+- [Convite rastreado da Rede](mem://features/rede-convite-rastreado) — link ?c=loja_id vincula o parceiro à loja que convidou

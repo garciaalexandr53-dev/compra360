@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Seo from "@/components/Seo";
 import {
@@ -66,6 +66,8 @@ const DEPOIMENTOS = [
 ];
 
 const SejaParceiroPage = () => {
+  const { search } = useLocation();
+  const linkCadastro = `/seja-parceiro/cadastro${search}`;
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
       <Seo
@@ -101,7 +103,7 @@ const SejaParceiroPage = () => {
             </span>
           </div>
           <div className="mt-8">
-            <Link to="/seja-parceiro/cadastro">
+            <Link to={linkCadastro}>
               <Button
                 size="lg"
                 className="bg-emerald-500 hover:bg-emerald-400 text-white h-12 px-8 rounded-xl"
@@ -183,7 +185,7 @@ const SejaParceiroPage = () => {
           <p className="text-slate-400 text-sm mb-8">
             O cadastro é gratuito, leva menos de 2 minutos e você não precisa criar senha.
           </p>
-          <Link to="/seja-parceiro/cadastro">
+          <Link to={linkCadastro}>
             <Button
               size="lg"
               className="w-full sm:w-auto h-12 px-8 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold"

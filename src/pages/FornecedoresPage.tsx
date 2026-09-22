@@ -605,7 +605,11 @@ const FornecedoresPage = () => {
       />
 
       {conviteOpen && (
-        <ConvidarRedeDialog open={conviteOpen} onOpenChange={setConviteOpen} />
+        <ConvidarRedeDialog
+          open={conviteOpen}
+          onOpenChange={setConviteOpen}
+          lojaId={lojaAtiva?.id ?? null}
+        />
       )}
 
       <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />

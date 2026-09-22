@@ -7,7 +7,7 @@ import { Copy, Send, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { buildWhatsAppUrl } from "@/lib/format";
 import { maskTelefone } from "@/lib/masks";
-import { montarConviteRede, LINK_REDE_PARCEIRO } from "@/lib/conviteRede";
+import { montarConviteRede, linkConviteRede } from "@/lib/conviteRede";
 
 interface ConvidarRedeDialogProps {
   open: boolean;
@@ -16,16 +16,56 @@ interface ConvidarRedeDialogProps {
   nomeFornecedor?: string | null;
   /** Telefone já conhecido (ex.: fornecedor da lista). */
   telefoneInicial?: string | null;
+  /** Loja que está convidando: o parceiro entra direto na carteira dela. */
+  lojaId?: string | null;
 }
+
+/** Mostra a prévia do jeito que o WhatsApp exibe: *negrito* formatado e link clicável. */
+const PreviaMensagem = ({ texto }: { texto: string }) => (
+  <>
+    {texto.split("\n").map((linha, i) => (
+      <div key={i} className={linha ? "" : "h-2"}>
+        {linha
+          .split(/(\*[^*]+\*|https?:\/\/\S+)/g)
+          .filter(Boolean)
+          .map((parte, j) => {
+            if (/^\*[^*]+\*$/.test(parte)) {
+              return (
+                <strong key={j} className="font-semibold">
+                  {parte.slice(1, -1)}
+                </strong>
+              );
+            }
+            if (/^https?:\/\//.test(parte)) {
+              return (
+                <a
+                  key={j}
+                  href={parte}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline break-all"
+                >
+                  {parte}
+                </a>
+              );
+            }
+            return <span key={j}>{parte}</span>;
+          })}
+      </div>
+    ))}
+  </>
+);
 
 const ConvidarRedeDialog = ({
   open,
   onOpenChange,
   nomeFornecedor,
   telefoneInicial,
+  lojaId,
 }: ConvidarRedeDialogProps) => {
   const [telefone, setTelefone] = useState(telefoneInicial ? maskTelefone(telefoneInicial) : "");
-  const mensagem = montarConviteRede(nomeFornecedor);
+  const mensagem = montarConviteRede(nomeFornecedor, lojaId);
+  const link = linkConviteRede(lojaId);
 
   const copiar = async (texto: string, label: string) => {
     try {
@@ -57,6 +97,11 @@ const ConvidarRedeDialog = ({
             Envie o convite oficial do Compra360. O fornecedor faz o cadastro gratuito e passa a receber
             cotações da região dele no WhatsApp.
           </p>
+          {lojaId && (
+            <p className="text-sm rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-emerald-700 dark:text-emerald-300">
+              Quem se cadastrar por este convite já entra automaticamente na sua lista de fornecedores.
+            </p>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="convite-fone">WhatsApp do fornecedor (opcional)</Label>
@@ -74,8 +119,8 @@ const ConvidarRedeDialog = ({
 
           <div className="space-y-1.5">
             <Label>Mensagem que será enviada</Label>
-            <div className="rounded-lg border bg-muted/40 p-3 text-sm whitespace-pre-line leading-relaxed">
-              {mensagem}
+            <div className="rounded-lg border bg-muted/40 p-3 text-sm leading-relaxed">
+              <PreviaMensagem texto={mensagem} />
             </div>
           </div>
 
@@ -83,7 +128,7 @@ const ConvidarRedeDialog = ({
             <Button variant="outline" size="sm" onClick={() => copiar(mensagem, "Convite")}>
               <Copy className="h-4 w-4 mr-1" /> Copiar mensagem
             </Button>
-            <Button variant="outline" size="sm" onClick={() => copiar(LINK_REDE_PARCEIRO, "Link")}>
+            <Button variant="outline" size="sm" onClick={() => copiar(link, "Link")}>
               <Link2 className="h-4 w-4 mr-1" /> Copiar só o link
             </Button>
           </div>
