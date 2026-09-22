@@ -91,8 +91,7 @@ export default function FornecedoresTab() {
     return () => clearTimeout(t);
   }, [termoInput]);
 
-  const filtroRpc: Filtro =
-    visao === "duplicados" ? "duplicados" : visao === "rede" ? "todos" : filtro;
+  const filtroRpc: Filtro = visao === "rede" ? "todos" : filtro;
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["admin-fornecedores", termo, filtroRpc, page],
