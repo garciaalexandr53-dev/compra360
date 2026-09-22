@@ -434,6 +434,47 @@ export type Database = {
         }
         Relationships: []
       }
+      fornecedor_acessos: {
+        Row: {
+          codigo: string
+          confirmado_em: string | null
+          created_at: string
+          expira_em: string
+          finalidade: string
+          fone_key: string
+          fornecedor_id: string
+          id: string
+        }
+        Insert: {
+          codigo: string
+          confirmado_em?: string | null
+          created_at?: string
+          expira_em?: string
+          finalidade?: string
+          fone_key: string
+          fornecedor_id: string
+          id?: string
+        }
+        Update: {
+          codigo?: string
+          confirmado_em?: string | null
+          created_at?: string
+          expira_em?: string
+          finalidade?: string
+          fone_key?: string
+          fornecedor_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fornecedor_acessos_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fornecedor_cidades_atendidas: {
         Row: {
           cidade: string
@@ -1154,6 +1195,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: number
       }
+      admin_confirmar_parceiro: {
+        Args: { _fornecedor_id: string }
+        Returns: Json
+      }
       admin_email_stats: {
         Args: { _end?: string; _start?: string; _template?: string }
         Returns: Json
@@ -1298,6 +1343,7 @@ export type Database = {
           id: string
           lojas_vinculadas: number
           nome: string
+          origem_cadastro: string
           pasta: string[]
           pedido_minimo: number
           prazo_pagamento: string
@@ -1410,6 +1456,10 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      gerar_codigo_acesso_parceiro: {
+        Args: { _finalidade: string; _fone: string; _fornecedor_id: string }
+        Returns: string
+      }
       get_cotacao_status_for_supplier: {
         Args: { _loja_id?: string; _token: string }
         Returns: {
@@ -1440,6 +1490,7 @@ export type Database = {
           nome: string
         }[]
       }
+      get_parceiro_dados: { Args: { _token: string }; Returns: Json }
       get_pedido_itens_publico: {
         Args: { _loja_id: string; _pedido_id: string }
         Returns: {
@@ -1597,6 +1648,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      salvar_parceiro_dados: {
+        Args: {
+          _cidades?: Json
+          _nome: string
+          _pastas?: string[]
+          _representante: string
+          _tipo?: string
+          _token: string
+        }
+        Returns: Json
+      }
       search_produtos_funcionario: {
         Args: { _limit?: number; _loja_id: string; _termo: string }
         Returns: {
@@ -1619,6 +1681,7 @@ export type Database = {
           nome: string
         }[]
       }
+      solicitar_acesso_parceiro: { Args: { _telefone: string }; Returns: Json }
       sugerir_fornecedores_por_cidade: {
         Args: { _loja_id: string }
         Returns: {
