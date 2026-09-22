@@ -17,3 +17,9 @@
 ## Próximos passos
 - [x] Fase 2A — Página pública /seja-parceiro: atração (100% gratuito, sem senha, depoimentos) + cadastro do fornecedor com validação estrutural do WhatsApp, pastas e cidades atendidas (IBGE), anti-duplicidade por telefone e chamada no rodapé da Landing e do Login.
 - [x] Fase 2B — Confirmação reversa do WhatsApp (código de 4 dígitos + botão "Confirmar no WhatsApp"), área /parceiro sem senha (pedido de acesso pelo WhatsApp e edição pelo link exclusivo), filtro e etiqueta "Auto-cadastro" no /admin com botão de confirmação. Automação por API pendente — blueprint em mem://features/rede-autocadastro-parceiro.
+
+## Rede de Fornecedores no Admin
+- [x] Etapa 1 — Convite geral da Rede no Admin + 3 visões (Rede, Duplicados, Por cliente).
+- [x] Etapa 2 — Visão unificada da Rede: cada fornecedor uma única vez, com cidades atendidas, clientes e lojas.
+- [x] Etapa 3 — Ação em lote "Adicionar a uma loja" (silenciosa, sem notificar o cliente).
+- [x] Etapa 4 — Unificação de duplicados (Merge): escolha do cadastro principal e unificação segura com transferência de vínculos.

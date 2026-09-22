@@ -12,4 +12,4 @@ Etapa 2 da Rede de Fornecedores (Admin → Rede de Fornecedores → visão "Rede
 - Frontend: `src/components/admin/RedeUnificadaLista.tsx` (badges Rede / N cadastros / categoria, presença "X clientes · Y lojas", cidades atendidas, tabela desktop + cards mobile). `FornecedoresTab.tsx` desativa a query antiga quando `visao === "rede"`.
 - Base real: 119 cadastros → 61 fornecedores únicos.
 
-Próximas etapas pendentes: 3) ação em lote "Adicionar fornecedores a uma loja" (silenciosa, só vínculo em `fornecedor_lojas`); 4) merge de duplicados.
+Próximas etapas pendentes: 3) ação em lote "Adicionar fornecedores a uma loja" (silenciosa, só vínculo em `fornecedor_lojas`) — concluída (ver mem://features/rede-adicionar-a-loja); 4) merge de duplicados — concluída (ver mem://features/rede-unificacao-duplicados).

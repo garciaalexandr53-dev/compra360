@@ -1315,6 +1315,31 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_list_duplicados: {
+        Args: { _limit?: number; _offset?: number; _search?: string }
+        Returns: {
+          cidade: string
+          cliente_empresa: string
+          cliente_nome: string
+          created_at: string
+          email: string
+          grupo_key: string
+          grupo_tipo: string
+          id: string
+          lojas_vinculadas: number
+          mestre_sugerido: boolean
+          nome: string
+          origem_cadastro: string
+          representante: string
+          telefone: string
+          tipo_fornecedor: string
+          total_count: number
+          total_grupos: number
+          total_relacionamentos: number
+          uf: string
+          user_id: string
+        }[]
+      }
       admin_list_email_logs: {
         Args: {
           _end?: string
@@ -1456,6 +1481,10 @@ export type Database = {
       }
       admin_set_user_plan: {
         Args: { _plan_name: string; _user_id: string }
+        Returns: Json
+      }
+      admin_unificar_fornecedor: {
+        Args: { _mestre_id: string; _sobressalente_ids: string[] }
         Returns: Json
       }
       admin_update_fornecedor: {

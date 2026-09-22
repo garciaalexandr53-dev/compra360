@@ -17,6 +17,7 @@ import {
 } from "@/lib/adminExports";
 import FornecedorAdminSheet from "./FornecedorAdminSheet";
 import RedeUnificadaLista from "./RedeUnificadaLista";
+import DuplicadosLista from "./DuplicadosLista";
 import ConvidarRedeDialog from "@/components/fornecedores/ConvidarRedeDialog";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
@@ -96,7 +97,7 @@ export default function FornecedoresTab() {
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["admin-fornecedores", termo, filtroRpc, page],
-    enabled: visao !== "rede",
+    enabled: visao === "registros",
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_list_fornecedores", {
         _search: termo || null,
@@ -219,7 +220,7 @@ export default function FornecedoresTab() {
               {f.label}
             </Button>
           ))}
-          {visao !== "rede" && (
+          {visao === "registros" && (
             <span className="text-xs text-muted-foreground ml-auto flex items-center gap-1.5">
               {isFetching && <Loader2 className="h-3 w-3 animate-spin" />}
               {contador}
@@ -231,6 +232,8 @@ export default function FornecedoresTab() {
 
       {visao === "rede" ? (
         <RedeUnificadaLista termo={termo} onAbrirFicha={setDetalhe} />
+      ) : visao === "duplicados" ? (
+        <DuplicadosLista termo={termo} />
       ) : isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : itens.length === 0 ? (
