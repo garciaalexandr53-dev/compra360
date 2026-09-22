@@ -71,6 +71,7 @@ const App = () => (
                 <Route path="/admin" element={<Suspense fallback={null}><AdminPage /></Suspense>} />
                 <Route path="/apresentacao" element={<Suspense fallback={null}><ApresentacaoPage /></Suspense>} />
                 <Route path="/seja-parceiro" element={<Suspense fallback={null}><SejaParceiroPage /></Suspense>} />
+                <Route path="/seja-parceiro/cadastro" element={<Suspense fallback={null}><CadastroParceiroPage /></Suspense>} />
                 <Route path="/parceiro" element={<Suspense fallback={null}><ParceiroPage /></Suspense>} />
                 <Route path="/parceiro/:token" element={<Suspense fallback={null}><ParceiroPage /></Suspense>} />
                 <Route path="/unsubscribe" element={<Suspense fallback={null}><UnsubscribePage /></Suspense>} />
