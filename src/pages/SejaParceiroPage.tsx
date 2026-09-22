@@ -179,7 +179,15 @@ const SejaParceiroPage = () => {
       toast.error("Não foi possível concluir o cadastro. Confira os dados e tente de novo.");
       return;
     }
-    setCodigo(((data ?? {}) as { codigo?: string }).codigo ?? null);
+    const resp = (data ?? {}) as { status?: string; codigo?: string };
+    if (resp.status === "ja_cadastrado") {
+      setJaCadastrado("");
+      toast.error(
+        "Este WhatsApp já está cadastrado na Rede. Atualize seus dados na área do parceiro.",
+      );
+      return;
+    }
+    setCodigo(resp.codigo ?? null);
     setPronto(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
