@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -12,6 +13,7 @@ import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
 import { formatTelefone, formatNomeEmpresa, formatNomePessoa } from "@/lib/masks";
 import { TIPOS_FORNECEDOR, tipoFornecedorLabel, pastasLabel } from "@/lib/adminHelpers";
 import { FornecedorAdmin } from "@/lib/adminExports";
+import AdicionarALojaDialog from "./AdicionarALojaDialog";
 
 const PAGE_SIZE = 50;
 
