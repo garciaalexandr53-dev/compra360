@@ -20,6 +20,7 @@ import { useFeatureCheck } from "@/components/FeatureGate";
 import PlanosModal from "@/components/PlanosModal";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 import SugestoesRegiaoDialog, { type SugestaoFornecedor } from "@/components/fornecedores/SugestoesRegiaoDialog";
+import ConvidarRedeDialog from "@/components/fornecedores/ConvidarRedeDialog";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -45,6 +46,7 @@ const FornecedoresPage = () => {
   const [selectedLojas, setSelectedLojas] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sugestoesOpen, setSugestoesOpen] = useState(false);
+  const [conviteOpen, setConviteOpen] = useState(false);
   const { checkLimit, showPlanos, setShowPlanos } = useFeatureCheck();
 
   const { data: lojas = [] } = useQuery({
