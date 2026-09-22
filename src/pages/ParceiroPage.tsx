@@ -11,7 +11,7 @@ import CidadesAtendidasInput from "@/components/fornecedor/CidadesAtendidasInput
 import type { Municipio } from "@/lib/cep";
 import { maskTelefone, formatNomeEmpresa, formatNomePessoa } from "@/lib/masks";
 import { pastasDisponiveis } from "@/lib/adminHelpers";
-import { validarWhatsApp } from "@/pages/SejaParceiroPage";
+import { validarWhatsApp } from "@/lib/whatsappValidacao";
 import { mensagemAcessoParceiro, linkSuporteComMensagem } from "@/lib/parceiro";
 import { Loader2, MessageCircle, ShieldCheck, CheckCircle2 } from "lucide-react";
 
