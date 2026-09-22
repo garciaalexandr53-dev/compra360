@@ -178,10 +178,54 @@ export default function RedeUnificadaLista({
         </Button>
       </div>
 
-      <div className="flex items-center justify-end gap-1.5 text-xs text-muted-foreground">
-        {isFetching && <Loader2 className="h-3 w-3 animate-spin" />}
-        {isLoading ? "Carregando…" : `${total.toLocaleString("pt-BR")} ${total === 1 ? "fornecedor" : "fornecedores"} (sem repetição)`}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            onClick={() => setSelecao((prev) => {
+              const next = { ...prev };
+              itens.forEach((f) => { next[f.id] = f.nome; });
+              return next;
+            })}
+          >
+            Selecionar todos da página
+          </Button>
+          {selecionados.length > 0 && (
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSelecao({})}>
+              Limpar seleção
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          {isFetching && <Loader2 className="h-3 w-3 animate-spin" />}
+          {isLoading ? "Carregando…" : `${total.toLocaleString("pt-BR")} ${total === 1 ? "fornecedor" : "fornecedores"} (sem repetição)`}
+        </div>
       </div>
+
+      {selecionados.length > 0 && (
+        <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2">
+          <span className="text-xs font-medium">
+            {selecionados.length} {selecionados.length === 1 ? "fornecedor selecionado" : "fornecedores selecionados"}
+          </span>
+          <Button size="sm" className="h-8 text-xs" onClick={() => setLojaDialog(true)}>
+            <Store className="h-3.5 w-3.5 mr-1.5" /> Adicionar a uma loja
+          </Button>
+        </div>
+      )}
+
+      <AdicionarALojaDialog
+        open={lojaDialog}
+        onOpenChange={setLojaDialog}
+        selecionados={selecionados}
+        onRemover={(id) => setSelecao((prev) => { const n = { ...prev }; delete n[id]; return n; })}
+        onConcluido={() => {
+          setSelecao({});
+          queryClient.invalidateQueries({ queryKey: ["admin-rede-unificada"] });
+          queryClient.invalidateQueries({ queryKey: ["admin-lojas-clientes"] });
+        }}
+      />
 
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
