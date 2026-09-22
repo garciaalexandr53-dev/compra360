@@ -51,7 +51,7 @@ const NAV_GROUPS: { label: string; items: AdminNavItem[] }[] = [
   ]},
   { label: "Clientes", items: [
     { value: "clientes", label: "Clientes", icon: Users },
-    { value: "fornecedores", label: "Fornecedores", icon: Truck },
+    { value: "fornecedores", label: "Rede de Fornecedores", icon: Truck },
     { value: "contatos", label: "Contatos", icon: MessageCircle },
   ]},
   { label: "Financeiro", items: [
