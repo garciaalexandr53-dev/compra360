@@ -553,6 +553,7 @@ export type Database = {
           consentimento_rede: string
           consentimento_tentativas_skip: number
           consentimento_ultima_pergunta: string | null
+          convite_loja_id: string | null
           created_at: string
           email: string | null
           id: string
@@ -575,6 +576,7 @@ export type Database = {
           consentimento_rede?: string
           consentimento_tentativas_skip?: number
           consentimento_ultima_pergunta?: string | null
+          convite_loja_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -597,6 +599,7 @@ export type Database = {
           consentimento_rede?: string
           consentimento_tentativas_skip?: number
           consentimento_ultima_pergunta?: string | null
+          convite_loja_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -613,7 +616,15 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fornecedores_convite_loja_id_fkey"
+            columns: ["convite_loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       historico_envios: {
         Row: {
@@ -1423,18 +1434,32 @@ export type Database = {
         }
         Returns: undefined
       }
-      cadastrar_fornecedor_parceiro: {
-        Args: {
-          _cidades?: Json
-          _cnpj?: string
-          _nome: string
-          _pastas?: string[]
-          _representante: string
-          _telefone: string
-          _tipo?: string
-        }
-        Returns: Json
-      }
+      cadastrar_fornecedor_parceiro:
+        | {
+            Args: {
+              _cidades?: Json
+              _cnpj?: string
+              _nome: string
+              _pastas?: string[]
+              _representante: string
+              _telefone: string
+              _tipo?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _cidades?: Json
+              _cnpj?: string
+              _convite_loja?: string
+              _nome: string
+              _pastas?: string[]
+              _representante: string
+              _telefone: string
+              _tipo?: string
+            }
+            Returns: Json
+          }
       checar_cnpj_duplicado: {
         Args: { _cnpj: string; _token: string }
         Returns: boolean
