@@ -112,6 +112,7 @@ const SejaParceiroPage = () => {
   const [cidades, setCidades] = useState<Municipio[]>([]);
   const [salvando, setSalvando] = useState(false);
   const [pronto, setPronto] = useState(false);
+  const [codigo, setCodigo] = useState<string | null>(null);
 
   const opcoesPasta = useMemo(() => pastasDisponiveis(tipo), [tipo]);
 
