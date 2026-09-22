@@ -19,19 +19,31 @@ import FornecedorAdminSheet from "./FornecedorAdminSheet";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
 const PAGE_SIZE = 50;
-type Filtro = "todos" | "sem_whatsapp" | "sem_email" | "duplicados";
+type Filtro = "todos" | "sem_whatsapp" | "sem_email" | "duplicados" | "autocadastro";
 
 const FILTROS: { key: Filtro; label: string }[] = [
   { key: "todos", label: "Todos" },
   { key: "sem_whatsapp", label: "Sem WhatsApp" },
   { key: "sem_email", label: "Sem e-mail" },
   { key: "duplicados", label: "Duplicados" },
+  { key: "autocadastro", label: "Auto-cadastro" },
 ];
+
+/** Etiqueta de origem do cadastro (auto-cadastro na página pública). */
+export function origemLabel(origem?: string | null): string | null {
+  if (origem === "autocadastro") return "Auto-cadastro (a confirmar)";
+  if (origem === "autocadastro_confirmado") return "Auto-cadastro confirmado";
+  return null;
+}
 
 export function aplicaFiltro(itens: FornecedorAdmin[], filtro: Filtro): FornecedorAdmin[] {
   if (filtro === "sem_whatsapp") return itens.filter((f) => !f.telefone?.trim());
   if (filtro === "sem_email") return itens.filter((f) => !f.email?.trim());
   if (filtro === "duplicados") return itens.filter((f) => f.duplicado);
+  if (filtro === "autocadastro")
+    return itens.filter(
+      (f) => f.origem_cadastro === "autocadastro" || f.origem_cadastro === "autocadastro_confirmado",
+    );
   return itens;
 }
 
