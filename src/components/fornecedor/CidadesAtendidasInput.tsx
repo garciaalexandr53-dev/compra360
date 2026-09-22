@@ -8,10 +8,12 @@ interface Props {
   cidades: Municipio[];
   onChange: (cidades: Municipio[]) => void;
   placeholder?: string;
+  /** Classes extras do campo (usado em telas de fundo escuro). */
+  inputClassName?: string;
 }
 
 /** Campo de cidades atendidas com autocompletar da base oficial (IBGE). */
-const CidadesAtendidasInput = ({ cidades, onChange, placeholder }: Props) => {
+const CidadesAtendidasInput = ({ cidades, onChange, placeholder, inputClassName }: Props) => {
   const [termo, setTermo] = useState("");
   const [sugestoes, setSugestoes] = useState<Municipio[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -68,15 +70,17 @@ const CidadesAtendidasInput = ({ cidades, onChange, placeholder }: Props) => {
           onChange={(e) => setTermo(e.target.value)}
           placeholder={placeholder ?? "Digite a cidade (ex.: Jus...)"}
           autoComplete="off"
+          className={`bg-background text-foreground placeholder:text-muted-foreground ${inputClassName ?? ""}`}
         />
         {sugestoes.length > 0 && (
-          <div className="absolute z-50 mt-1 w-full rounded-lg border bg-popover shadow-lg overflow-hidden">
+          <div className="absolute z-50 mt-1 w-full rounded-lg border border-border bg-popover text-popover-foreground shadow-lg overflow-hidden">
             {sugestoes.map((m) => (
               <button
                 key={`${m.cidade}-${m.uf}`}
                 type="button"
                 onClick={() => adicionar(m)}
-                className="w-full text-left text-sm px-3 py-2 hover:bg-muted"
+                onMouseDown={(e) => e.preventDefault()}
+                className="w-full text-left text-sm px-3 py-2.5 font-medium text-popover-foreground hover:bg-accent hover:text-accent-foreground"
               >
                 {m.cidade}
                 {m.uf ? ` - ${m.uf}` : ""}
