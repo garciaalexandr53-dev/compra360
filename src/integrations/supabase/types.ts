@@ -1695,6 +1695,7 @@ export type Database = {
           tipo_fornecedor: string
         }[]
       }
+      whatsapp_parceiro_existe: { Args: { _telefone: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "user"
