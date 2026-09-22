@@ -15,7 +15,14 @@ import { mensagemConfirmacaoCadastro, linkSuporteComMensagem } from "@/lib/parce
 import { validarWhatsApp } from "@/lib/whatsappValidacao";
 import { ArrowLeft, CheckCircle2, MapPin, MessageCircle } from "lucide-react";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const CadastroParceiroPage = () => {
+  const [params] = useSearchParams();
+  const conviteLoja = (() => {
+    const c = params.get("c");
+    return c && UUID_RE.test(c) ? c : null;
+  })();
   const [nome, setNome] = useState("");
   const [cnpj, setCnpj] = useState("");
   const [representante, setRepresentante] = useState("");
@@ -84,6 +91,7 @@ const CadastroParceiroPage = () => {
       _tipo: tipo,
       _pastas: pastas.length ? pastas : null,
       _cidades: cidades.map((c) => ({ cidade: c.cidade, uf: c.uf ?? "" })),
+      _convite_loja: conviteLoja,
     });
     setSalvando(false);
 
