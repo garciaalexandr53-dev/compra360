@@ -383,6 +383,12 @@ export default function FornecedorAdminSheet({
                         ? "Auto-cadastro com WhatsApp confirmado"
                         : "Auto-cadastro aguardando confirmação do WhatsApp"}
                     </p>
+                    {detalhes?.codigo_verificacao && (
+                      <p>
+                        <span className="text-muted-foreground">Código enviado por ele: </span>
+                        <span className="font-semibold tracking-widest">{detalhes.codigo_verificacao}</span>
+                      </p>
+                    )}
                     <div className="flex flex-wrap gap-2">
                       {fornecedor.origem_cadastro === "autocadastro" && (
                         <Button size="sm" onClick={confirmarParceiro} disabled={confirmando}>
