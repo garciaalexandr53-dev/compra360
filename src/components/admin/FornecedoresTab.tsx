@@ -17,7 +17,6 @@ import {
 } from "@/lib/adminExports";
 import FornecedorAdminSheet from "./FornecedorAdminSheet";
 import RedeUnificadaLista from "./RedeUnificadaLista";
-import DuplicadosLista from "./DuplicadosLista";
 import ConvidarRedeDialog from "@/components/fornecedores/ConvidarRedeDialog";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
