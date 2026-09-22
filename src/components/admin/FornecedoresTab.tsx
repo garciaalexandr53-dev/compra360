@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  Loader2, Search, X, ChevronLeft, ChevronRight, FileSpreadsheet, Pencil, MessageCircle,
+  Loader2, Search, X, ChevronLeft, ChevronRight, FileSpreadsheet, Pencil, MessageCircle, Send,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { formatBRL, formatDate, buildWhatsAppUrl } from "@/lib/format";
@@ -16,18 +16,40 @@ import {
   FornecedorAdmin, buildFornecedoresXlsx, fornecedoresFilenameXlsx, downloadXlsx,
 } from "@/lib/adminExports";
 import FornecedorAdminSheet from "./FornecedorAdminSheet";
+import ConvidarRedeDialog from "@/components/fornecedores/ConvidarRedeDialog";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
 const PAGE_SIZE = 50;
 type Filtro = "todos" | "sem_whatsapp" | "sem_email" | "duplicados" | "autocadastro";
+type Visao = "rede" | "duplicados" | "registros";
+
+const VISOES: { key: Visao; label: string; descricao: string }[] = [
+  { key: "rede", label: "Rede", descricao: "Fornecedores que se cadastraram na Rede Compra360, sem repetição." },
+  { key: "duplicados", label: "Duplicados", descricao: "Cadastros repetidos (mesmo WhatsApp ou mesmo nome e representante) para revisão." },
+  { key: "registros", label: "Por cliente", descricao: "Todos os cadastros, um por cliente, como estão no sistema." },
+];
 
 const FILTROS: { key: Filtro; label: string }[] = [
   { key: "todos", label: "Todos" },
   { key: "sem_whatsapp", label: "Sem WhatsApp" },
   { key: "sem_email", label: "Sem e-mail" },
-  { key: "duplicados", label: "Duplicados" },
-  { key: "autocadastro", label: "Auto-cadastro" },
 ];
+
+/** Agrupa cadastros iguais (mesmo WhatsApp, ou mesmo nome + representante) e conta em quantas lojas aparece. */
+export function agruparUnicos(itens: FornecedorAdmin[]): (FornecedorAdmin & { repeticoes: number })[] {
+  const limpa = (t?: string | null) =>
+    (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const mapa = new Map<string, FornecedorAdmin & { repeticoes: number }>();
+  for (const f of itens) {
+    const digitos = (f.telefone || "").replace(/\D/g, "").slice(-8);
+    const chave = digitos || `${limpa(f.nome)}|${limpa(f.representante)}` || f.id;
+    const atual = mapa.get(chave);
+    if (atual) atual.repeticoes += 1;
+    else mapa.set(chave, { ...f, repeticoes: 1 });
+  }
+  return [...mapa.values()];
+}
+
 
 /** Etiqueta de origem do cadastro (auto-cadastro na página pública). */
 export function origemLabel(origem?: string | null): string | null {
@@ -56,24 +78,29 @@ export default function FornecedoresTab() {
   const qc = useQueryClient();
   const [termoInput, setTermoInput] = useState("");
   const [termo, setTermo] = useState("");
+  const [visao, setVisao] = useState<Visao>("rede");
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [page, setPage] = useState(0);
   const [detalhe, setDetalhe] = useState<FornecedorAdmin | null>(null);
   const [exportando, setExportando] = useState(false);
+  const [convite, setConvite] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => { setTermo(termoInput.trim()); setPage(0); }, 300);
     return () => clearTimeout(t);
   }, [termoInput]);
 
+  const filtroRpc: Filtro =
+    visao === "rede" ? "autocadastro" : visao === "duplicados" ? "duplicados" : filtro;
+
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["admin-fornecedores", termo, filtro, page],
+    queryKey: ["admin-fornecedores", termo, filtroRpc, page],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_list_fornecedores", {
         _search: termo || null,
         _limit: PAGE_SIZE,
         _offset: page * PAGE_SIZE,
-        _filtro: filtro,
+        _filtro: filtroRpc,
       });
       if (error) throw error;
       const rows = (data || []) as FornecedorAdmin[];
@@ -82,11 +109,15 @@ export default function FornecedoresTab() {
     placeholderData: (prev) => prev,
   });
 
-  const itens = useMemo(() => data?.itens ?? [], [data]);
-  const total = data?.total || 0;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const itens = useMemo(() => {
+    const rows = data?.itens ?? [];
+    return visao === "rede" ? agruparUnicos(rows) : rows;
+  }, [data, visao]);
+  const total = visao === "rede" ? itens.length : (data?.total || 0);
+  const totalPages = Math.max(1, Math.ceil((data?.total || 0) / PAGE_SIZE));
 
   const invalidar = () => qc.invalidateQueries({ queryKey: ["admin-fornecedores"] });
+
 
   const exportar = async () => {
     setExportando(true);
@@ -97,7 +128,7 @@ export default function FornecedoresTab() {
           _search: termo || null,
           _limit: 500,
           _offset: offset,
-          _filtro: filtro,
+          _filtro: filtroRpc,
         });
         if (error) throw error;
         const rows = (data || []) as FornecedorAdmin[];
@@ -123,6 +154,33 @@ export default function FornecedoresTab() {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold leading-tight">Rede de Fornecedores</h2>
+          <p className="text-xs text-muted-foreground">
+            {VISOES.find((v) => v.key === visao)?.descricao}
+          </p>
+        </div>
+        <Button onClick={() => setConvite(true)} className="sm:w-auto">
+          <Send className="h-4 w-4 mr-1.5" />
+          Convidar para a Rede
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 rounded-lg border p-1">
+        {VISOES.map((v) => (
+          <Button
+            key={v.key}
+            size="sm"
+            variant={visao === v.key ? "default" : "ghost"}
+            onClick={() => { setVisao(v.key); setFiltro("todos"); setPage(0); }}
+            className="h-8 text-xs flex-1 min-w-[90px]"
+          >
+            {v.label}
+          </Button>
+        ))}
+      </div>
+
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
@@ -151,7 +209,7 @@ export default function FornecedoresTab() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {FILTROS.map((f) => (
+          {visao === "registros" && FILTROS.map((f) => (
             <Button
               key={f.key}
               size="sm"
@@ -167,6 +225,7 @@ export default function FornecedoresTab() {
             {contador}
           </span>
         </div>
+
       </div>
 
       {isLoading ? (
@@ -294,11 +353,14 @@ export default function FornecedoresTab() {
         </>
       )}
 
+      <ConvidarRedeDialog open={convite} onOpenChange={setConvite} lojaId={null} />
+
       <FornecedorAdminSheet
         fornecedor={detalhe}
         onClose={() => setDetalhe(null)}
         onSaved={invalidar}
       />
+
     </div>
   );
 }
