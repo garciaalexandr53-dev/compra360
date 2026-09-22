@@ -16,18 +16,40 @@ import {
   FornecedorAdmin, buildFornecedoresXlsx, fornecedoresFilenameXlsx, downloadXlsx,
 } from "@/lib/adminExports";
 import FornecedorAdminSheet from "./FornecedorAdminSheet";
+import ConvidarRedeDialog from "@/components/fornecedores/ConvidarRedeDialog";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
 const PAGE_SIZE = 50;
 type Filtro = "todos" | "sem_whatsapp" | "sem_email" | "duplicados" | "autocadastro";
+type Visao = "rede" | "duplicados" | "registros";
+
+const VISOES: { key: Visao; label: string; descricao: string }[] = [
+  { key: "rede", label: "Rede", descricao: "Fornecedores que se cadastraram na Rede Compra360, sem repetição." },
+  { key: "duplicados", label: "Duplicados", descricao: "Cadastros repetidos (mesmo WhatsApp ou mesmo nome e representante) para revisão." },
+  { key: "registros", label: "Por cliente", descricao: "Todos os cadastros, um por cliente, como estão no sistema." },
+];
 
 const FILTROS: { key: Filtro; label: string }[] = [
   { key: "todos", label: "Todos" },
   { key: "sem_whatsapp", label: "Sem WhatsApp" },
   { key: "sem_email", label: "Sem e-mail" },
-  { key: "duplicados", label: "Duplicados" },
-  { key: "autocadastro", label: "Auto-cadastro" },
 ];
+
+/** Agrupa cadastros iguais (mesmo WhatsApp, ou mesmo nome + representante) e conta em quantas lojas aparece. */
+export function agruparUnicos(itens: FornecedorAdmin[]): (FornecedorAdmin & { repeticoes: number })[] {
+  const limpa = (t?: string | null) =>
+    (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const mapa = new Map<string, FornecedorAdmin & { repeticoes: number }>();
+  for (const f of itens) {
+    const digitos = (f.telefone || "").replace(/\D/g, "").slice(-8);
+    const chave = digitos || `${limpa(f.nome)}|${limpa(f.representante)}` || f.id;
+    const atual = mapa.get(chave);
+    if (atual) atual.repeticoes += 1;
+    else mapa.set(chave, { ...f, repeticoes: 1 });
+  }
+  return [...mapa.values()];
+}
+
 
 /** Etiqueta de origem do cadastro (auto-cadastro na página pública). */
 export function origemLabel(origem?: string | null): string | null {
