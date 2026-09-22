@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import CidadesAtendidasInput from "@/components/fornecedor/CidadesAtendidasInput";
 import type { Municipio } from "@/lib/cep";
 import { maskTelefone, maskCNPJ, isCNPJValido, formatNomeEmpresa, formatNomePessoa } from "@/lib/masks";
-import { PASTAS_FORNECEDOR, TIPOS_FORNECEDOR } from "@/lib/adminHelpers";
+import { pastasDisponiveis } from "@/lib/adminHelpers";
 import {
   BadgeCheck,
   CheckCircle2,
@@ -112,10 +112,7 @@ const SejaParceiroPage = () => {
   const [salvando, setSalvando] = useState(false);
   const [pronto, setPronto] = useState(false);
 
-  const pastasDisponiveis = useMemo(
-    () => (tipo === "bebidas" ? ["Bebidas", ...PASTAS_FORNECEDOR] : PASTAS_FORNECEDOR),
-    [tipo],
-  );
+  const opcoesPasta = useMemo(() => pastasDisponiveis(tipo), [tipo]);
 
   const togglePasta = (p: string) =>
     setPastas((atual) => (atual.includes(p) ? atual.filter((x) => x !== p) : [...atual, p]));
