@@ -1,0 +1,2 @@
+GRANT EXECUTE ON FUNCTION public.admin_list_rede_fornecedores(text, text, text, text, boolean, integer, integer) TO supabase_read_only_user;
+GRANT EXECUTE ON FUNCTION public.admin_rede_filtros() TO supabase_read_only_user;
