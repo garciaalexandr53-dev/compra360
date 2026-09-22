@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  Loader2, Search, X, ChevronLeft, ChevronRight, FileSpreadsheet, Pencil, MessageCircle,
+  Loader2, Search, X, ChevronLeft, ChevronRight, FileSpreadsheet, Pencil, MessageCircle, Send,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { formatBRL, formatDate, buildWhatsAppUrl } from "@/lib/format";
