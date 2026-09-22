@@ -33,6 +33,7 @@ type Detalhes = {
   pasta?: string[] | null;
   cnpj?: string | null;
   token?: string | null;
+  codigo_verificacao?: string | null;
   consentimento_rede?: string | null;
   consentimento_ultima_pergunta?: string | null;
   consentimento_tentativas_skip?: number | null;
