@@ -85,6 +85,21 @@ export default function RedeUnificadaLista({
   const [tipo, setTipo] = useState("todos");
   const [somenteRede, setSomenteRede] = useState(false);
   const [page, setPage] = useState(0);
+  const [selecao, setSelecao] = useState<Record<string, string>>({});
+  const [lojaDialog, setLojaDialog] = useState(false);
+  const queryClient = useQueryClient();
+
+  const selecionados = useMemo(
+    () => Object.entries(selecao).map(([id, nome]) => ({ id, nome })),
+    [selecao],
+  );
+  const toggleSel = (id: string, nome: string) =>
+    setSelecao((prev) => {
+      const next = { ...prev };
+      if (next[id]) delete next[id];
+      else next[id] = nome;
+      return next;
+    });
 
   const { data: filtros = [] } = useQuery({
     queryKey: ["admin-rede-filtros"],
