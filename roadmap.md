@@ -16,4 +16,4 @@
 
 ## Próximos passos
 - [x] Fase 2A — Página pública /seja-parceiro: atração (100% gratuito, sem senha, depoimentos) + cadastro do fornecedor com validação estrutural do WhatsApp, pastas e cidades atendidas (IBGE), anti-duplicidade por telefone e chamada no rodapé da Landing e do Login.
-- [ ] Fase 2B — Confirmação reversa do WhatsApp (código de 4 dígitos + webhook da API), edição posterior sem senha e filtro "Auto-cadastro" no /admin. Blueprint em mem://features/rede-autocadastro-parceiro.
+- [x] Fase 2B — Confirmação reversa do WhatsApp (código de 4 dígitos + botão "Confirmar no WhatsApp"), área /parceiro sem senha (pedido de acesso pelo WhatsApp e edição pelo link exclusivo), filtro e etiqueta "Auto-cadastro" no /admin com botão de confirmação. Automação por API pendente — blueprint em mem://features/rede-autocadastro-parceiro.

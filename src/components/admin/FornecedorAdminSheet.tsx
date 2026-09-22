@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, MessageCircle, Save } from "lucide-react";
+import { Copy, Loader2, MessageCircle, Save, ShieldCheck } from "lucide-react";
+import { linkParceiro } from "@/lib/parceiro";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate, formatDateTime, buildWhatsAppUrl } from "@/lib/format";
@@ -31,6 +32,8 @@ type Detalhes = {
   tipo_fornecedor?: string | null;
   pasta?: string[] | null;
   cnpj?: string | null;
+  token?: string | null;
+  codigo_verificacao?: string | null;
   consentimento_rede?: string | null;
   consentimento_ultima_pergunta?: string | null;
   consentimento_tentativas_skip?: number | null;
@@ -77,6 +80,38 @@ export default function FornecedorAdminSheet({
   const [form, setForm] = useState<Form>(VAZIO);
   const [salvando, setSalvando] = useState(false);
   const [cidades, setCidades] = useState<Municipio[]>([]);
+  const [confirmando, setConfirmando] = useState(false);
+
+  /** Confirma a posse do WhatsApp de um fornecedor que se auto-cadastrou. */
+  const confirmarParceiro = async () => {
+    if (!fornecedor) return;
+    setConfirmando(true);
+    const { data, error } = await supabase.rpc("admin_confirmar_parceiro", {
+      _fornecedor_id: fornecedor.id,
+    });
+    setConfirmando(false);
+    if (error) {
+      toast({ title: "Não foi possível confirmar", description: error.message, variant: "destructive" });
+      return;
+    }
+    const token = ((data ?? {}) as { token?: string }).token;
+    if (token) {
+      await navigator.clipboard?.writeText(linkParceiro(token, window.location.origin)).catch(() => {});
+    }
+    toast({ title: "WhatsApp confirmado", description: "Link de acesso do parceiro copiado." });
+    onSaved();
+  };
+
+  /** Copia o link exclusivo de atualização de dados do parceiro. */
+  const copiarLinkParceiro = async () => {
+    const token = detalhes?.token;
+    if (!token) {
+      toast({ title: "Link indisponível", variant: "destructive" });
+      return;
+    }
+    await navigator.clipboard?.writeText(linkParceiro(token, window.location.origin)).catch(() => {});
+    toast({ title: "Link copiado" });
+  };
 
   const { data: detalhes, isLoading } = useQuery({
     queryKey: ["admin-fornecedor-detalhes", fornecedor?.id],
@@ -340,6 +375,38 @@ export default function FornecedorAdminSheet({
                   <span className="text-muted-foreground">Pulou o CNPJ: </span>
                   {detalhes?.consentimento_tentativas_skip ?? 0}x
                 </p>
+                {(fornecedor?.origem_cadastro === "autocadastro" ||
+                  fornecedor?.origem_cadastro === "autocadastro_confirmado") && (
+                  <div className="space-y-2 pt-2 border-t">
+                    <p>
+                      <span className="text-muted-foreground">Origem: </span>
+                      {fornecedor.origem_cadastro === "autocadastro_confirmado"
+                        ? "Auto-cadastro com WhatsApp confirmado"
+                        : "Auto-cadastro aguardando confirmação do WhatsApp"}
+                    </p>
+                    {detalhes?.codigo_verificacao && (
+                      <p>
+                        <span className="text-muted-foreground">Código enviado por ele: </span>
+                        <span className="font-semibold tracking-widest">{detalhes.codigo_verificacao}</span>
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      {fornecedor.origem_cadastro === "autocadastro" && (
+                        <Button size="sm" onClick={confirmarParceiro} disabled={confirmando}>
+                          {confirmando ? (
+                            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                          ) : (
+                            <ShieldCheck className="h-4 w-4 mr-1.5" />
+                          )}
+                          Confirmar WhatsApp
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" onClick={copiarLinkParceiro}>
+                        <Copy className="h-4 w-4 mr-1.5" /> Copiar link de acesso
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

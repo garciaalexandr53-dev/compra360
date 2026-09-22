@@ -222,6 +222,7 @@ export interface FornecedorAdmin {
   duplicado: boolean;
   tipo_fornecedor?: string | null;
   pasta?: string[] | null;
+  origem_cadastro?: string | null;
   total_count?: number;
 }
 

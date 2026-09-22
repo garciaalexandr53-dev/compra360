@@ -11,6 +11,7 @@ import CidadesAtendidasInput from "@/components/fornecedor/CidadesAtendidasInput
 import type { Municipio } from "@/lib/cep";
 import { maskTelefone, maskCNPJ, isCNPJValido, formatNomeEmpresa, formatNomePessoa } from "@/lib/masks";
 import { pastasDisponiveis } from "@/lib/adminHelpers";
+import { mensagemConfirmacaoCadastro, linkSuporteComMensagem } from "@/lib/parceiro";
 import {
   BadgeCheck,
   CheckCircle2,
@@ -111,6 +112,7 @@ const SejaParceiroPage = () => {
   const [cidades, setCidades] = useState<Municipio[]>([]);
   const [salvando, setSalvando] = useState(false);
   const [pronto, setPronto] = useState(false);
+  const [codigo, setCodigo] = useState<string | null>(null);
 
   const opcoesPasta = useMemo(() => pastasDisponiveis(tipo), [tipo]);
 
@@ -141,7 +143,7 @@ const SejaParceiroPage = () => {
     }
 
     setSalvando(true);
-    const { error } = await supabase.rpc("cadastrar_fornecedor_parceiro", {
+    const { data, error } = await supabase.rpc("cadastrar_fornecedor_parceiro", {
       _nome: formatNomeEmpresa(nome),
       _representante: formatNomePessoa(representante),
       _telefone: telefone,
@@ -156,6 +158,7 @@ const SejaParceiroPage = () => {
       toast.error("Não foi possível concluir o cadastro. Confira os dados e tente de novo.");
       return;
     }
+    setCodigo(((data ?? {}) as { codigo?: string }).codigo ?? null);
     setPronto(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -178,13 +181,43 @@ const SejaParceiroPage = () => {
             Seu contato já está na Rede Compra360. Assim que um supermercado da sua região abrir uma
             cotação, o link chega no seu WhatsApp — sem senha, sem cadastro, direto no celular.
           </p>
+          {codigo && (
+            <div className="rounded-2xl border border-white/10 bg-slate-900 p-6 mb-6 text-left">
+              <p className="text-sm font-semibold text-white mb-1">
+                Falta 1 passo: confirme seu WhatsApp
+              </p>
+              <p className="text-sm text-slate-400 mb-4">
+                Toque no botão abaixo e envie a mensagem já pronta. É assim que garantimos que o
+                número é realmente seu.
+              </p>
+              <div className="rounded-xl bg-slate-950 border border-white/10 py-4 text-center mb-4">
+                <p className="text-xs text-slate-500 mb-1">Seu código</p>
+                <p className="text-4xl font-bold tracking-[0.4em] text-white">{codigo}</p>
+              </div>
+              <a
+                href={linkSuporteComMensagem(
+                  mensagemConfirmacaoCadastro(representante, nome, codigo),
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button className="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold">
+                  <MessageCircle className="h-5 w-5 mr-2" /> Confirmar no WhatsApp
+                </Button>
+              </a>
+            </div>
+          )}
           <p className="text-sm text-slate-500 mb-8">
-            Precisa incluir mais cidades depois? Fale com a gente pelo WhatsApp{" "}
+            Precisa atualizar suas cidades depois?{" "}
+            <Link to="/parceiro" className="text-emerald-400 hover:underline">
+              Atualize seus dados aqui
+            </Link>{" "}
+            ou fale com a gente pelo WhatsApp{" "}
             <a
               href="https://wa.me/5544984483553"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-emerald-400 hover:underline"
+              className="text-emerald-400 hover:underline whitespace-nowrap"
             >
               (44) 98448-3553
             </a>
@@ -444,6 +477,14 @@ const SejaParceiroPage = () => {
               supermercados da sua região para enviarem cotações a você.
             </p>
           </div>
+
+          <p className="text-center text-sm text-slate-400 mt-6">
+            Já é parceiro?{" "}
+            <Link to="/parceiro" className="text-emerald-400 hover:underline font-semibold">
+              Atualizar minhas cidades e dados
+            </Link>
+          </p>
+
 
           <p className="text-center text-sm text-slate-500 mt-8">
             Dúvidas? Fale com a gente no WhatsApp
