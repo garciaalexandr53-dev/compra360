@@ -254,6 +254,9 @@ export default function FornecedoresTab() {
                     {f.tipo_fornecedor && (
                       <Badge variant="outline" className="text-[10px] py-0">{tipoFornecedorLabel(f.tipo_fornecedor)}</Badge>
                     )}
+                    {origemLabel(f.origem_cadastro) && (
+                      <Badge className="text-[10px] py-0">{origemLabel(f.origem_cadastro)}</Badge>
+                    )}
                   </div>
                   {pastasLabel(f.pasta) && (
                     <p className="text-[11px] text-muted-foreground break-words">{pastasLabel(f.pasta)}</p>
