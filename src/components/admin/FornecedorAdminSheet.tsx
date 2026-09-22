@@ -340,6 +340,32 @@ export default function FornecedorAdminSheet({
                   <span className="text-muted-foreground">Pulou o CNPJ: </span>
                   {detalhes?.consentimento_tentativas_skip ?? 0}x
                 </p>
+                {(fornecedor?.origem_cadastro === "autocadastro" ||
+                  fornecedor?.origem_cadastro === "autocadastro_confirmado") && (
+                  <div className="space-y-2 pt-2 border-t">
+                    <p>
+                      <span className="text-muted-foreground">Origem: </span>
+                      {fornecedor.origem_cadastro === "autocadastro_confirmado"
+                        ? "Auto-cadastro com WhatsApp confirmado"
+                        : "Auto-cadastro aguardando confirmação do WhatsApp"}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {fornecedor.origem_cadastro === "autocadastro" && (
+                        <Button size="sm" onClick={confirmarParceiro} disabled={confirmando}>
+                          {confirmando ? (
+                            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                          ) : (
+                            <ShieldCheck className="h-4 w-4 mr-1.5" />
+                          )}
+                          Confirmar WhatsApp
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" onClick={copiarLinkParceiro}>
+                        <Copy className="h-4 w-4 mr-1.5" /> Copiar link de acesso
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
