@@ -25,7 +25,7 @@ type Filtro = "todos" | "sem_whatsapp" | "sem_email" | "duplicados" | "autocadas
 type Visao = "rede" | "duplicados" | "registros";
 
 const VISOES: { key: Visao; label: string; descricao: string }[] = [
-  { key: "rede", label: "Rede", descricao: "Fornecedores que se cadastraram na Rede Compra360, sem repetição." },
+  { key: "rede", label: "Rede", descricao: "Cada fornecedor uma única vez, com cidades atendidas e em quantos clientes já está." },
   { key: "duplicados", label: "Duplicados", descricao: "Cadastros repetidos (mesmo WhatsApp ou mesmo nome e representante) para revisão." },
   { key: "registros", label: "Por cliente", descricao: "Todos os cadastros, um por cliente, como estão no sistema." },
 ];
@@ -92,10 +92,11 @@ export default function FornecedoresTab() {
   }, [termoInput]);
 
   const filtroRpc: Filtro =
-    visao === "rede" ? "autocadastro" : visao === "duplicados" ? "duplicados" : filtro;
+    visao === "duplicados" ? "duplicados" : visao === "rede" ? "todos" : filtro;
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["admin-fornecedores", termo, filtroRpc, page],
+    enabled: visao !== "rede",
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_list_fornecedores", {
         _search: termo || null,
@@ -110,11 +111,8 @@ export default function FornecedoresTab() {
     placeholderData: (prev) => prev,
   });
 
-  const itens = useMemo(() => {
-    const rows = data?.itens ?? [];
-    return visao === "rede" ? agruparUnicos(rows) : rows;
-  }, [data, visao]);
-  const total = visao === "rede" ? itens.length : (data?.total || 0);
+  const itens = useMemo(() => data?.itens ?? [], [data]);
+  const total = data?.total || 0;
   const totalPages = Math.max(1, Math.ceil((data?.total || 0) / PAGE_SIZE));
 
   const invalidar = () => qc.invalidateQueries({ queryKey: ["admin-fornecedores"] });
