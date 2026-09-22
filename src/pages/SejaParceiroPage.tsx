@@ -364,41 +364,58 @@ const SejaParceiroPage = () => {
 
             <div className="space-y-2">
               <Label className="text-slate-300">Tipo de fornecedor</Label>
-              <div className="flex flex-wrap gap-2">
-                {TIPOS_FORNECEDOR.map((t) => (
+              <div className="grid sm:grid-cols-2 gap-2">
+                {[
+                  {
+                    value: "geral",
+                    label: "Geral",
+                    desc: "Atacado e distribuição com sortimento amplo.",
+                  },
+                  {
+                    value: "especializado",
+                    label: "Especializado",
+                    desc: "Atua em linhas específicas (bebidas, carnes, frios...).",
+                  },
+                ].map((t) => (
                   <button
                     key={t.value}
                     type="button"
-                    onClick={() => setTipo(t.value)}
-                    className={
+                    onClick={() => {
+                      setTipo(t.value);
+                      if (t.value !== "especializado") setPastas([]);
+                    }}
+                    className={`text-left rounded-xl px-4 py-3 border transition-colors ${
                       tipo === t.value
-                        ? "px-3 py-1.5 rounded-full text-sm bg-teal-500 text-white font-semibold"
-                        : "px-3 py-1.5 rounded-full text-sm bg-slate-950 text-slate-300 border border-white/10 hover:border-teal-500/40"
-                    }
+                        ? "bg-teal-500/15 border-teal-400 text-white"
+                        : "bg-slate-950 border-white/10 text-slate-300 hover:border-teal-500/40"
+                    }`}
                   >
-                    {t.label}
+                    <span className="block text-sm font-semibold">{t.label}</span>
+                    <span className="block text-xs text-slate-400 mt-0.5">{t.desc}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-slate-300">Linhas que você vende</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {pastasDisponiveis.map((p) => (
-                  <label
-                    key={p}
-                    className="flex items-center gap-2 text-sm text-slate-300 bg-slate-950 border border-white/10 rounded-lg px-3 py-2 cursor-pointer"
-                  >
-                    <Checkbox
-                      checked={pastas.includes(p)}
-                      onCheckedChange={() => togglePasta(p)}
-                    />
-                    {p}
-                  </label>
-                ))}
+            {tipo === "especializado" && (
+              <div className="space-y-2">
+                <Label className="text-slate-300">Linhas que você vende</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {opcoesPasta.map((p) => (
+                    <label
+                      key={p}
+                      className="flex items-center gap-2 text-sm text-slate-300 bg-slate-950 border border-white/10 rounded-lg px-3 py-2 cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={pastas.includes(p)}
+                        onCheckedChange={() => togglePasta(p)}
+                      />
+                      {p}
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="space-y-2">
               <Label className="text-slate-300 flex items-center gap-1.5">
