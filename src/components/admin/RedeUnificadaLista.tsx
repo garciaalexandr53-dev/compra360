@@ -240,6 +240,7 @@ export default function RedeUnificadaLista({
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs text-muted-foreground">
                 <tr>
+                  <th className="w-[36px] px-2 py-2" />
                   <th className="text-left px-3 py-2 font-medium">Fornecedor</th>
                   <th className="text-left px-3 py-2 font-medium">Representante</th>
                   <th className="text-left px-3 py-2 font-medium w-[130px]">WhatsApp</th>
