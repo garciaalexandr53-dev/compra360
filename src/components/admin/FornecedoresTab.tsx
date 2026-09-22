@@ -154,6 +154,33 @@ export default function FornecedoresTab() {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold leading-tight">Rede de Fornecedores</h2>
+          <p className="text-xs text-muted-foreground">
+            {VISOES.find((v) => v.key === visao)?.descricao}
+          </p>
+        </div>
+        <Button onClick={() => setConvite(true)} className="sm:w-auto">
+          <Send className="h-4 w-4 mr-1.5" />
+          Convidar para a Rede
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 rounded-lg border p-1">
+        {VISOES.map((v) => (
+          <Button
+            key={v.key}
+            size="sm"
+            variant={visao === v.key ? "default" : "ghost"}
+            onClick={() => { setVisao(v.key); setFiltro("todos"); setPage(0); }}
+            className="h-8 text-xs flex-1 min-w-[90px]"
+          >
+            {v.label}
+          </Button>
+        ))}
+      </div>
+
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
@@ -182,7 +209,7 @@ export default function FornecedoresTab() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {FILTROS.map((f) => (
+          {visao === "registros" && FILTROS.map((f) => (
             <Button
               key={f.key}
               size="sm"
@@ -198,6 +225,7 @@ export default function FornecedoresTab() {
             {contador}
           </span>
         </div>
+
       </div>
 
       {isLoading ? (
