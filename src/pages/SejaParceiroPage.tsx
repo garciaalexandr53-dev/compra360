@@ -143,7 +143,7 @@ const SejaParceiroPage = () => {
     }
 
     setSalvando(true);
-    const { error } = await supabase.rpc("cadastrar_fornecedor_parceiro", {
+    const { data, error } = await supabase.rpc("cadastrar_fornecedor_parceiro", {
       _nome: formatNomeEmpresa(nome),
       _representante: formatNomePessoa(representante),
       _telefone: telefone,
@@ -158,6 +158,7 @@ const SejaParceiroPage = () => {
       toast.error("Não foi possível concluir o cadastro. Confira os dados e tente de novo.");
       return;
     }
+    setCodigo(((data ?? {}) as { codigo?: string }).codigo ?? null);
     setPronto(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
