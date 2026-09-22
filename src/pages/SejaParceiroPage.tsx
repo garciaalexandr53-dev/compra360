@@ -478,6 +478,14 @@ const SejaParceiroPage = () => {
             </p>
           </div>
 
+          <p className="text-center text-sm text-slate-400 mt-6">
+            Já é parceiro?{" "}
+            <Link to="/parceiro" className="text-emerald-400 hover:underline font-semibold">
+              Atualizar minhas cidades e dados
+            </Link>
+          </p>
+
+
           <p className="text-center text-sm text-slate-500 mt-8">
             Dúvidas? Fale com a gente no WhatsApp
             <br />
