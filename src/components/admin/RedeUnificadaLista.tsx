@@ -296,9 +296,15 @@ export default function RedeUnificadaLista({
           {/* Mobile */}
           <div className="md:hidden space-y-2">
             {itens.map((f) => (
-              <Card key={f.id}>
+              <Card key={f.id} className={selecao[f.id] ? "border-primary/60 bg-primary/5" : ""}>
                 <CardContent className="p-3 space-y-2">
                   <div className="flex items-start gap-2">
+                    <Checkbox
+                      checked={!!selecao[f.id]}
+                      onCheckedChange={() => toggleSel(f.id, f.nome)}
+                      className="mt-0.5 shrink-0"
+                      aria-label={`Selecionar ${f.nome}`}
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium leading-tight break-words">{formatNomeEmpresa(f.nome)}</p>
                       <p className="text-[11px] text-muted-foreground break-words">
