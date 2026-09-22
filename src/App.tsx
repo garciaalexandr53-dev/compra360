@@ -45,6 +45,7 @@ const UnsubscribePage = lazy(() => retryImport(() => import("./pages/Unsubscribe
 const OAuthConsent = lazy(() => retryImport(() => import("./pages/OAuthConsent")));
 const ApresentacaoPage = lazy(() => retryImport(() => import("./pages/ApresentacaoPage")));
 const SejaParceiroPage = lazy(() => retryImport(() => import("./pages/SejaParceiroPage")));
+const ParceiroPage = lazy(() => retryImport(() => import("./pages/ParceiroPage")));
 
 const queryClient = new QueryClient();
 
