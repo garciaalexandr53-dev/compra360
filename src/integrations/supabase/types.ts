@@ -517,6 +517,7 @@ export type Database = {
           id: string
           nome: string
           observacoes: string | null
+          origem_cadastro: string
           pasta: string[] | null
           pedido_minimo: number | null
           prazo_pagamento: string | null
@@ -538,6 +539,7 @@ export type Database = {
           id?: string
           nome: string
           observacoes?: string | null
+          origem_cadastro?: string
           pasta?: string[] | null
           pedido_minimo?: number | null
           prazo_pagamento?: string | null
@@ -559,6 +561,7 @@ export type Database = {
           id?: string
           nome?: string
           observacoes?: string | null
+          origem_cadastro?: string
           pasta?: string[] | null
           pedido_minimo?: number | null
           prazo_pagamento?: string | null
@@ -1373,6 +1376,18 @@ export type Database = {
           _uf?: string
         }
         Returns: undefined
+      }
+      cadastrar_fornecedor_parceiro: {
+        Args: {
+          _cidades?: Json
+          _cnpj?: string
+          _nome: string
+          _pastas?: string[]
+          _representante: string
+          _telefone: string
+          _tipo?: string
+        }
+        Returns: Json
       }
       checar_cnpj_duplicado: {
         Args: { _cnpj: string; _token: string }
