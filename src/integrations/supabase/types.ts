@@ -1380,6 +1380,46 @@ export type Database = {
           valor: number
         }[]
       }
+      admin_list_rede_fornecedores: {
+        Args: {
+          _cidade?: string
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _somente_rede?: boolean
+          _tipo?: string
+          _uf?: string
+        }
+        Returns: {
+          cadastros: number
+          cidades: string[]
+          clientes: number
+          clientes_nomes: string[]
+          consentimento_rede: string
+          created_at: string
+          email: string
+          id: string
+          lojas_vinculadas: number
+          na_rede: boolean
+          nome: string
+          origem_cadastro: string
+          pasta: string[]
+          pedido_minimo: number
+          prazo_pagamento: string
+          representante: string
+          telefone: string
+          tipo_fornecedor: string
+          total_count: number
+        }[]
+      }
+      admin_rede_filtros: {
+        Args: never
+        Returns: {
+          cidade: string
+          fornecedores: number
+          uf: string
+        }[]
+      }
       admin_registrar_contato: {
         Args: {
           _canal: string
