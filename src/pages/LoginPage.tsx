@@ -307,10 +307,14 @@ const LoginPage = () => {
 
       <a
         href="/seja-parceiro"
-        className="mt-5 max-w-sm text-center text-xs text-muted-foreground hover:text-primary transition-colors"
+        className="mt-5 flex w-full max-w-sm flex-col items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-5 py-4 text-center transition-colors hover:bg-primary/15"
       >
-        É fornecedor ou representante? Cadastre-se na Rede Compra360 e seja nosso parceiro
+        <span className="text-sm text-foreground">É fornecedor ou representante?</span>
+        <span className="text-sm font-semibold text-primary">
+          Cadastre-se na Rede Compra360 e seja nosso parceiro →
+        </span>
       </a>
+
     </div>
   );
 };

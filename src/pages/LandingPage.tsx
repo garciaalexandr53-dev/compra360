@@ -796,7 +796,7 @@ export default function LandingPage() {
             <img
               src={withAssetVersion("https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada//logo-completa.png")}
               alt="Compra360"
-              className="h-7 w-auto max-w-[140px] object-contain"
+              className="h-10 w-auto max-w-[180px] object-contain"
             />
           </div>
           <div className="flex items-center gap-4 text-sm text-slate-500 flex-wrap justify-center">
@@ -812,14 +812,18 @@ export default function LandingPage() {
           </div>
           <p className="text-xs text-slate-600">© 2026 Compra360 · Todos os direitos reservados</p>
         </div>
-        <div className="max-w-6xl mx-auto mt-6 pt-6 border-t border-white/5 text-center">
+        <div className="max-w-6xl mx-auto mt-6 pt-6 border-t border-white/5 flex justify-center">
           <a
             href="/seja-parceiro"
-            className="text-sm text-slate-400 hover:text-emerald-400 transition-colors"
+            className="group flex flex-col items-center gap-1 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-4 text-center transition-colors hover:bg-emerald-500/15 sm:flex-row sm:gap-2"
           >
-            É fornecedor ou representante? Cadastre-se na Rede Compra360 e seja nosso parceiro
+            <span className="text-sm text-slate-200">É fornecedor ou representante?</span>
+            <span className="text-sm font-semibold text-emerald-400">
+              Cadastre-se na Rede Compra360 e seja nosso parceiro →
+            </span>
           </a>
         </div>
+
       </footer>
 
       {/* ── Botão flutuante de WhatsApp ── */}

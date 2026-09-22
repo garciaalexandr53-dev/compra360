@@ -446,16 +446,18 @@ const SejaParceiroPage = () => {
           </div>
 
           <p className="text-center text-sm text-slate-500 mt-8">
-            Dúvidas? Fale com a gente no WhatsApp{" "}
+            Dúvidas? Fale com a gente no WhatsApp
+            <br />
             <a
               href="https://wa.me/5544984483553"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-emerald-400 hover:underline"
+              className="text-emerald-400 hover:underline whitespace-nowrap font-semibold"
             >
-              (44) 98448-3553
+              (44)&nbsp;98448-3553
             </a>
           </p>
+
         </div>
       </section>
     </div>
