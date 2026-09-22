@@ -1366,6 +1366,19 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_list_lojas_clientes: {
+        Args: { _search?: string }
+        Returns: {
+          cidade: string
+          cliente_email: string
+          cliente_nome: string
+          loja_id: string
+          loja_nome: string
+          total_fornecedores: number
+          uf: string
+          user_id: string
+        }[]
+      }
       admin_list_pagamentos_manuais: {
         Args: { _user_id: string }
         Returns: {
@@ -1473,6 +1486,10 @@ export type Database = {
           _uf?: string
         }
         Returns: undefined
+      }
+      admin_vincular_fornecedores_loja: {
+        Args: { _fornecedor_ids: string[]; _loja_id: string }
+        Returns: Json
       }
       cadastrar_fornecedor_parceiro:
         | {
