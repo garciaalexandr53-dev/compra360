@@ -428,6 +428,7 @@ const SejaParceiroPage = () => {
                 cidades={cidades}
                 onChange={setCidades}
                 placeholder="Digite a cidade (ex.: Jus...)"
+                inputClassName="!bg-slate-950 !text-white border-white/20 placeholder:!text-slate-500"
               />
             </div>
 
