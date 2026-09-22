@@ -252,7 +252,14 @@ export default function RedeUnificadaLista({
               </thead>
               <tbody>
                 {itens.map((f) => (
-                  <tr key={f.id} className="border-t hover:bg-muted/30">
+                  <tr key={f.id} className={`border-t hover:bg-muted/30 ${selecao[f.id] ? "bg-primary/5" : ""}`}>
+                    <td className="px-2 py-2">
+                      <Checkbox
+                        checked={!!selecao[f.id]}
+                        onCheckedChange={() => toggleSel(f.id, f.nome)}
+                        aria-label={`Selecionar ${f.nome}`}
+                      />
+                    </td>
                     <td className="px-3 py-2">
                       <span className="font-medium">{formatNomeEmpresa(f.nome)}</span>
                       {f.na_rede && <Badge className="ml-1.5 text-[10px] py-0">Rede</Badge>}
