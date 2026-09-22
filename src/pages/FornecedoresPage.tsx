@@ -306,6 +306,14 @@ const FornecedoresPage = () => {
             <span className="ml-1 text-[10px] font-semibold text-primary">{sugestoes.length} disponíveis</span>
           </Button>
         )}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setConviteOpen(true)}
+          className="w-full sm:w-auto justify-center border-primary/40 text-primary hover:text-primary"
+        >
+          <Send className="h-4 w-4 mr-1" /> Convidar para a Rede
+        </Button>
 
       </div>
 
