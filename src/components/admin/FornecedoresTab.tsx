@@ -78,24 +78,29 @@ export default function FornecedoresTab() {
   const qc = useQueryClient();
   const [termoInput, setTermoInput] = useState("");
   const [termo, setTermo] = useState("");
+  const [visao, setVisao] = useState<Visao>("rede");
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [page, setPage] = useState(0);
   const [detalhe, setDetalhe] = useState<FornecedorAdmin | null>(null);
   const [exportando, setExportando] = useState(false);
+  const [convite, setConvite] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => { setTermo(termoInput.trim()); setPage(0); }, 300);
     return () => clearTimeout(t);
   }, [termoInput]);
 
+  const filtroRpc: Filtro =
+    visao === "rede" ? "autocadastro" : visao === "duplicados" ? "duplicados" : filtro;
+
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["admin-fornecedores", termo, filtro, page],
+    queryKey: ["admin-fornecedores", termo, filtroRpc, page],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_list_fornecedores", {
         _search: termo || null,
         _limit: PAGE_SIZE,
         _offset: page * PAGE_SIZE,
-        _filtro: filtro,
+        _filtro: filtroRpc,
       });
       if (error) throw error;
       const rows = (data || []) as FornecedorAdmin[];
@@ -104,11 +109,15 @@ export default function FornecedoresTab() {
     placeholderData: (prev) => prev,
   });
 
-  const itens = useMemo(() => data?.itens ?? [], [data]);
-  const total = data?.total || 0;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const itens = useMemo(() => {
+    const rows = data?.itens ?? [];
+    return visao === "rede" ? agruparUnicos(rows) : rows;
+  }, [data, visao]);
+  const total = visao === "rede" ? itens.length : (data?.total || 0);
+  const totalPages = Math.max(1, Math.ceil((data?.total || 0) / PAGE_SIZE));
 
   const invalidar = () => qc.invalidateQueries({ queryKey: ["admin-fornecedores"] });
+
 
   const exportar = async () => {
     setExportando(true);
