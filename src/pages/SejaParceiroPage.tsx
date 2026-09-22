@@ -416,11 +416,29 @@ const SejaParceiroPage = () => {
                 <Label className="text-slate-300">WhatsApp *</Label>
                 <Input
                   value={telefone}
-                  onChange={(e) => setTelefone(maskTelefone(e.target.value))}
+                  onChange={(e) => {
+                    const v = maskTelefone(e.target.value);
+                    setTelefone(v);
+                    void checarTelefone(v);
+                  }}
+                  onBlur={(e) => void checarTelefone(e.target.value)}
                   placeholder="(44) 99999-9999"
                   inputMode="numeric"
-                  className="bg-slate-950 border-white/10 text-white"
+                  className={`bg-slate-950 text-white ${
+                    jaCadastrado !== null ? "border-amber-500/60" : "border-white/10"
+                  }`}
                 />
+                {jaCadastrado !== null && (
+                  <p className="text-xs text-amber-300 leading-relaxed">
+                    Este WhatsApp já está cadastrado na Rede Compra360
+                    {jaCadastrado ? ` (${jaCadastrado})` : ""}. Para alterar suas cidades ou linhas
+                    de atendimento,{" "}
+                    <Link to="/parceiro" className="underline font-semibold text-amber-200">
+                      atualize seus dados aqui
+                    </Link>
+                    .
+                  </p>
+                )}
               </div>
             </div>
 
