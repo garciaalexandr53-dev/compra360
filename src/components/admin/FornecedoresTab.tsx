@@ -219,15 +219,19 @@ export default function FornecedoresTab() {
               {f.label}
             </Button>
           ))}
-          <span className="text-xs text-muted-foreground ml-auto flex items-center gap-1.5">
-            {isFetching && <Loader2 className="h-3 w-3 animate-spin" />}
-            {contador}
-          </span>
+          {visao !== "rede" && (
+            <span className="text-xs text-muted-foreground ml-auto flex items-center gap-1.5">
+              {isFetching && <Loader2 className="h-3 w-3 animate-spin" />}
+              {contador}
+            </span>
+          )}
         </div>
 
       </div>
 
-      {isLoading ? (
+      {visao === "rede" ? (
+        <RedeUnificadaLista termo={termo} onAbrirFicha={setDetalhe} />
+      ) : isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : itens.length === 0 ? (
         <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">
