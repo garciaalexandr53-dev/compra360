@@ -44,6 +44,7 @@ const NotFound = lazy(() => retryImport(() => import("./pages/NotFound")));
 const UnsubscribePage = lazy(() => retryImport(() => import("./pages/UnsubscribePage")));
 const OAuthConsent = lazy(() => retryImport(() => import("./pages/OAuthConsent")));
 const ApresentacaoPage = lazy(() => retryImport(() => import("./pages/ApresentacaoPage")));
+const SejaParceiroPage = lazy(() => retryImport(() => import("./pages/SejaParceiroPage")));
 
 const queryClient = new QueryClient();
 

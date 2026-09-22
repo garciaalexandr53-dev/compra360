@@ -812,6 +812,15 @@ export default function LandingPage() {
           </div>
           <p className="text-xs text-slate-600">© 2026 Compra360 · Todos os direitos reservados</p>
         </div>
+        <div className="max-w-6xl mx-auto mt-6 pt-6 border-t border-white/5 text-center">
+          <a
+            href="/seja-parceiro"
+            className="text-sm text-slate-400 hover:text-emerald-400 transition-colors"
+          >
+            É fornecedor ou representante? Cadastre-se na Rede Compra360 e seja nosso parceiro
+          </a>
+        </div>
+        </div>
       </footer>
 
       {/* ── Botão flutuante de WhatsApp ── */}

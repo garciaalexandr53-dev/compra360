@@ -304,6 +304,13 @@ const LoginPage = () => {
           )}
         </CardContent>
       </Card>
+
+      <a
+        href="/seja-parceiro"
+        className="mt-5 max-w-sm text-center text-xs text-muted-foreground hover:text-primary transition-colors"
+      >
+        É fornecedor ou representante? Cadastre-se na Rede Compra360 e seja nosso parceiro
+      </a>
     </div>
   );
 };
