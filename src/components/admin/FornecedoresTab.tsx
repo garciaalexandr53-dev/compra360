@@ -353,11 +353,14 @@ export default function FornecedoresTab() {
         </>
       )}
 
+      <ConvidarRedeDialog open={convite} onOpenChange={setConvite} lojaId={null} />
+
       <FornecedorAdminSheet
         fornecedor={detalhe}
         onClose={() => setDetalhe(null)}
         onSaved={invalidar}
       />
+
     </div>
   );
 }
