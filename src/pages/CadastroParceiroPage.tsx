@@ -47,17 +47,17 @@ const CadastroParceiroPage = () => {
     setPastas((atual) => (atual.includes(p) ? atual.filter((x) => x !== p) : [...atual, p]));
 
   const enviar = async () => {
-    if (!nome.trim()) {
-      toast.error("Informe o nome da sua empresa ou representação.");
+    const erroFone = validarWhatsApp(telefone);
+    if (erroFone) {
+      toast.error(erroFone);
       return;
     }
     if (!representante.trim()) {
       toast.error("Informe o seu nome.");
       return;
     }
-    const erroFone = validarWhatsApp(telefone);
-    if (erroFone) {
-      toast.error(erroFone);
+    if (!nome.trim()) {
+      toast.error("Informe o nome da sua empresa ou representação.");
       return;
     }
     if (!isCNPJValido(cnpj)) {
