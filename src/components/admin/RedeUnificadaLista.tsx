@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -12,6 +13,7 @@ import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
 import { formatTelefone, formatNomeEmpresa, formatNomePessoa } from "@/lib/masks";
 import { TIPOS_FORNECEDOR, tipoFornecedorLabel, pastasLabel } from "@/lib/adminHelpers";
 import { FornecedorAdmin } from "@/lib/adminExports";
+import AdicionarALojaDialog from "./AdicionarALojaDialog";
 
 const PAGE_SIZE = 50;
 
@@ -83,6 +85,21 @@ export default function RedeUnificadaLista({
   const [tipo, setTipo] = useState("todos");
   const [somenteRede, setSomenteRede] = useState(false);
   const [page, setPage] = useState(0);
+  const [selecao, setSelecao] = useState<Record<string, string>>({});
+  const [lojaDialog, setLojaDialog] = useState(false);
+  const queryClient = useQueryClient();
+
+  const selecionados = useMemo(
+    () => Object.entries(selecao).map(([id, nome]) => ({ id, nome })),
+    [selecao],
+  );
+  const toggleSel = (id: string, nome: string) =>
+    setSelecao((prev) => {
+      const next = { ...prev };
+      if (next[id]) delete next[id];
+      else next[id] = nome;
+      return next;
+    });
 
   const { data: filtros = [] } = useQuery({
     queryKey: ["admin-rede-filtros"],
@@ -161,10 +178,54 @@ export default function RedeUnificadaLista({
         </Button>
       </div>
 
-      <div className="flex items-center justify-end gap-1.5 text-xs text-muted-foreground">
-        {isFetching && <Loader2 className="h-3 w-3 animate-spin" />}
-        {isLoading ? "Carregando…" : `${total.toLocaleString("pt-BR")} ${total === 1 ? "fornecedor" : "fornecedores"} (sem repetição)`}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            onClick={() => setSelecao((prev) => {
+              const next = { ...prev };
+              itens.forEach((f) => { next[f.id] = f.nome; });
+              return next;
+            })}
+          >
+            Selecionar todos da página
+          </Button>
+          {selecionados.length > 0 && (
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSelecao({})}>
+              Limpar seleção
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          {isFetching && <Loader2 className="h-3 w-3 animate-spin" />}
+          {isLoading ? "Carregando…" : `${total.toLocaleString("pt-BR")} ${total === 1 ? "fornecedor" : "fornecedores"} (sem repetição)`}
+        </div>
       </div>
+
+      {selecionados.length > 0 && (
+        <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2">
+          <span className="text-xs font-medium">
+            {selecionados.length} {selecionados.length === 1 ? "fornecedor selecionado" : "fornecedores selecionados"}
+          </span>
+          <Button size="sm" className="h-8 text-xs" onClick={() => setLojaDialog(true)}>
+            <Store className="h-3.5 w-3.5 mr-1.5" /> Adicionar a uma loja
+          </Button>
+        </div>
+      )}
+
+      <AdicionarALojaDialog
+        open={lojaDialog}
+        onOpenChange={setLojaDialog}
+        selecionados={selecionados}
+        onRemover={(id) => setSelecao((prev) => { const n = { ...prev }; delete n[id]; return n; })}
+        onConcluido={() => {
+          setSelecao({});
+          queryClient.invalidateQueries({ queryKey: ["admin-rede-unificada"] });
+          queryClient.invalidateQueries({ queryKey: ["admin-lojas-clientes"] });
+        }}
+      />
 
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
@@ -179,6 +240,7 @@ export default function RedeUnificadaLista({
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs text-muted-foreground">
                 <tr>
+                  <th className="w-[36px] px-2 py-2" />
                   <th className="text-left px-3 py-2 font-medium">Fornecedor</th>
                   <th className="text-left px-3 py-2 font-medium">Representante</th>
                   <th className="text-left px-3 py-2 font-medium w-[130px]">WhatsApp</th>
@@ -190,7 +252,14 @@ export default function RedeUnificadaLista({
               </thead>
               <tbody>
                 {itens.map((f) => (
-                  <tr key={f.id} className="border-t hover:bg-muted/30">
+                  <tr key={f.id} className={`border-t hover:bg-muted/30 ${selecao[f.id] ? "bg-primary/5" : ""}`}>
+                    <td className="px-2 py-2">
+                      <Checkbox
+                        checked={!!selecao[f.id]}
+                        onCheckedChange={() => toggleSel(f.id, f.nome)}
+                        aria-label={`Selecionar ${f.nome}`}
+                      />
+                    </td>
                     <td className="px-3 py-2">
                       <span className="font-medium">{formatNomeEmpresa(f.nome)}</span>
                       {f.na_rede && <Badge className="ml-1.5 text-[10px] py-0">Rede</Badge>}
@@ -227,9 +296,15 @@ export default function RedeUnificadaLista({
           {/* Mobile */}
           <div className="md:hidden space-y-2">
             {itens.map((f) => (
-              <Card key={f.id}>
+              <Card key={f.id} className={selecao[f.id] ? "border-primary/60 bg-primary/5" : ""}>
                 <CardContent className="p-3 space-y-2">
                   <div className="flex items-start gap-2">
+                    <Checkbox
+                      checked={!!selecao[f.id]}
+                      onCheckedChange={() => toggleSel(f.id, f.nome)}
+                      className="mt-0.5 shrink-0"
+                      aria-label={`Selecionar ${f.nome}`}
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium leading-tight break-words">{formatNomeEmpresa(f.nome)}</p>
                       <p className="text-[11px] text-muted-foreground break-words">

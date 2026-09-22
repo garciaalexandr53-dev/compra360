@@ -3,3 +3,4 @@
 - [Autocadastro na Rede](mem://features/rede-autocadastro-parceiro) — /seja-parceiro, /parceiro sem senha, código de 4 dígitos em fornecedor_acessos, filtro Auto-cadastro no admin, blueprint da API de WhatsApp
 - [Convite rastreado da Rede](mem://features/rede-convite-rastreado) — link ?c=loja_id vincula o parceiro à loja que convidou
 - [Visão Unificada da Rede](mem://features/rede-visao-unificada) — Admin agrupa fornecedores por WhatsApp/nome, filtros cidade/UF/categoria
+- [Adicionar Fornecedores a uma Loja](mem://features/rede-adicionar-a-loja) — Seleção em lote no Admin, vínculo silencioso, reaproveita cadastro existente
