@@ -77,6 +77,38 @@ export default function FornecedorAdminSheet({
   const [form, setForm] = useState<Form>(VAZIO);
   const [salvando, setSalvando] = useState(false);
   const [cidades, setCidades] = useState<Municipio[]>([]);
+  const [confirmando, setConfirmando] = useState(false);
+
+  /** Confirma a posse do WhatsApp de um fornecedor que se auto-cadastrou. */
+  const confirmarParceiro = async () => {
+    if (!fornecedor) return;
+    setConfirmando(true);
+    const { data, error } = await supabase.rpc("admin_confirmar_parceiro", {
+      _fornecedor_id: fornecedor.id,
+    });
+    setConfirmando(false);
+    if (error) {
+      toast({ title: "Não foi possível confirmar", description: error.message, variant: "destructive" });
+      return;
+    }
+    const token = ((data ?? {}) as { token?: string }).token;
+    if (token) {
+      await navigator.clipboard?.writeText(linkParceiro(token, window.location.origin)).catch(() => {});
+    }
+    toast({ title: "WhatsApp confirmado", description: "Link de acesso do parceiro copiado." });
+    onSaved();
+  };
+
+  /** Copia o link exclusivo de atualização de dados do parceiro. */
+  const copiarLinkParceiro = async () => {
+    const token = detalhes?.token;
+    if (!token) {
+      toast({ title: "Link indisponível", variant: "destructive" });
+      return;
+    }
+    await navigator.clipboard?.writeText(linkParceiro(token, window.location.origin)).catch(() => {});
+    toast({ title: "Link copiado" });
+  };
 
   const { data: detalhes, isLoading } = useQuery({
     queryKey: ["admin-fornecedor-detalhes", fornecedor?.id],
