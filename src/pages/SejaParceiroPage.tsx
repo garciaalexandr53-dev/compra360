@@ -66,6 +66,8 @@ const DEPOIMENTOS = [
 ];
 
 const SejaParceiroPage = () => {
+  const { search } = useLocation();
+  const linkCadastro = `/seja-parceiro/cadastro${search}`;
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
       <Seo
