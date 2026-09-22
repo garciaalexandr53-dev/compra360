@@ -193,8 +193,7 @@ export default function AdicionarALojaDialog({
             className="w-full sm:w-auto"
           >
             {vincular.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Confirmar e vincular
-            {lojaEscolhida ? "" : ""}
+            {lojaEscolhida ? `Vincular a ${formatNomeLoja(lojaEscolhida.loja_nome)}` : "Confirmar e vincular"}
           </Button>
         </DialogFooter>
       </DialogContent>
