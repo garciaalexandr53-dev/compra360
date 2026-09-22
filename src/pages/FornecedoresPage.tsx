@@ -604,6 +604,10 @@ const FornecedoresPage = () => {
         }}
       />
 
+      {conviteOpen && (
+        <ConvidarRedeDialog open={conviteOpen} onOpenChange={setConviteOpen} />
+      )}
+
       <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
     </div>
   );
