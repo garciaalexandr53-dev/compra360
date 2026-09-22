@@ -113,6 +113,20 @@ const SejaParceiroPage = () => {
   const [salvando, setSalvando] = useState(false);
   const [pronto, setPronto] = useState(false);
   const [codigo, setCodigo] = useState<string | null>(null);
+  const [jaCadastrado, setJaCadastrado] = useState<string | null>(null);
+
+  /** Consulta discreta: avisa se o WhatsApp digitado ja existe na Rede. */
+  const checarTelefone = async (valor: string) => {
+    const digitos = valor.replace(/\D/g, "");
+    if (digitos.length < 10 || validarWhatsApp(valor)) {
+      setJaCadastrado(null);
+      return;
+    }
+    const { data, error } = await supabase.rpc("whatsapp_parceiro_existe", { _telefone: valor });
+    if (error) return;
+    const resp = (data ?? {}) as { existe?: boolean; nome?: string };
+    setJaCadastrado(resp.existe ? (resp.nome ?? "") : null);
+  };
 
   const opcoesPasta = useMemo(() => pastasDisponiveis(tipo), [tipo]);
 
@@ -141,6 +155,13 @@ const SejaParceiroPage = () => {
       toast.error("Adicione ao menos uma cidade que você atende.");
       return;
     }
+    if (jaCadastrado !== null) {
+      toast.error(
+        "Você já faz parte da Rede! Por segurança, atualize seus dados na área do parceiro.",
+      );
+      return;
+    }
+
 
     setSalvando(true);
     const { data, error } = await supabase.rpc("cadastrar_fornecedor_parceiro", {
@@ -158,7 +179,15 @@ const SejaParceiroPage = () => {
       toast.error("Não foi possível concluir o cadastro. Confira os dados e tente de novo.");
       return;
     }
-    setCodigo(((data ?? {}) as { codigo?: string }).codigo ?? null);
+    const resp = (data ?? {}) as { status?: string; codigo?: string };
+    if (resp.status === "ja_cadastrado") {
+      setJaCadastrado("");
+      toast.error(
+        "Este WhatsApp já está cadastrado na Rede. Atualize seus dados na área do parceiro.",
+      );
+      return;
+    }
+    setCodigo(resp.codigo ?? null);
     setPronto(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -387,11 +416,29 @@ const SejaParceiroPage = () => {
                 <Label className="text-slate-300">WhatsApp *</Label>
                 <Input
                   value={telefone}
-                  onChange={(e) => setTelefone(maskTelefone(e.target.value))}
+                  onChange={(e) => {
+                    const v = maskTelefone(e.target.value);
+                    setTelefone(v);
+                    void checarTelefone(v);
+                  }}
+                  onBlur={(e) => void checarTelefone(e.target.value)}
                   placeholder="(44) 99999-9999"
                   inputMode="numeric"
-                  className="bg-slate-950 border-white/10 text-white"
+                  className={`bg-slate-950 text-white ${
+                    jaCadastrado !== null ? "border-amber-500/60" : "border-white/10"
+                  }`}
                 />
+                {jaCadastrado !== null && (
+                  <p className="text-xs text-amber-300 leading-relaxed">
+                    Este WhatsApp já está cadastrado na Rede Compra360
+                    {jaCadastrado ? ` (${jaCadastrado})` : ""}. Para alterar suas cidades ou linhas
+                    de atendimento,{" "}
+                    <Link to="/parceiro" className="underline font-semibold text-amber-200">
+                      atualize seus dados aqui
+                    </Link>
+                    .
+                  </p>
+                )}
               </div>
             </div>
 
@@ -470,7 +517,7 @@ const SejaParceiroPage = () => {
               disabled={salvando}
               className="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold"
             >
-              {salvando ? "Enviando..." : "Quero receber novas cotações gratuitamente"}
+              {salvando ? "Salvando..." : "Salvar informações e participar"}
             </Button>
             <p className="text-xs text-slate-500 text-center">
               Ao cadastrar, você autoriza que seu contato e sua taxa de resposta sejam recomendados a
