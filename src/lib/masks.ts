@@ -23,6 +23,19 @@ export function formatTelefone(value: string | null | undefined): string {
   return value.trim();
 }
 
+/**
+ * Padroniza o telefone para gravação: celulares de 10 dígitos recebem o nono
+ * dígito (ex.: (44) 9977-6453 -> (44) 99977-6453). Fixos e telefones já
+ * completos são apenas formatados. Vazio devolve "".
+ */
+export function normalizeTelefone(value: string | null | undefined): string {
+  if (!value) return "";
+  let d = value.replace(/\D/g, "");
+  if ((d.length === 12 || d.length === 13) && d.startsWith("55")) d = d.slice(2);
+  if (d.length === 10 && /[6-9]/.test(d[2])) d = `${d.slice(0, 2)}9${d.slice(2)}`;
+  return formatTelefone(d);
+}
+
 export function maskCNPJ(value: string): string {
   const d = value.replace(/\D/g, "").slice(0, 14);
   if (d.length <= 2) return d;
