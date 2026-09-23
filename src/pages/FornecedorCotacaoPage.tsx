@@ -441,17 +441,15 @@ const FornecedorCotacaoPage = () => {
       })()}
 
       {/* Cadastro da empresa + consentimento da Rede + cidades atendidas */}
-      {token && (
+      {token && !editarCidades && (
         <OnboardingFornecedorCard
-          key={editarCidades ? "cidades" : "onboarding"}
           token={token}
           cotacaoId={cotacaoId}
           onSkipChange={setSkipCnpjPendente}
           onParticipaRede={setParticipaRede}
-          modoCidades={editarCidades}
-          onFechar={editarCidades ? () => setEditarCidades(false) : undefined}
         />
       )}
+
 
       {/* Products */}
       <div className="p-3 sm:p-4 space-y-3 max-w-3xl mx-auto">
