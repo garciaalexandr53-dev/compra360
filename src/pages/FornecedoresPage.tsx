@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal, X, Phone, CheckCircle2, Clock, AlertCircle, MapPin, Send } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
-import { maskTelefone, formatTelefone, maskMoeda, parseMoeda, moedaParaInput } from "@/lib/masks";
+import { maskTelefone, formatTelefone, normalizeTelefone, maskMoeda, parseMoeda, moedaParaInput } from "@/lib/masks";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import BackToLojaButton from "@/components/shared/BackToLojaButton";
 import { useFeatureCheck } from "@/components/FeatureGate";
@@ -228,7 +228,7 @@ const FornecedoresPage = () => {
     if (!form.nome.trim()) { toast.error("Digite o nome do fornecedor"); return; }
     await saveMutation.mutateAsync({
       nome: formatNomeEmpresa(form.nome), representante: formatNomePessoa(form.representante) || null,
-      telefone: form.telefone.trim() || null, email: form.email.trim() || null,
+      telefone: normalizeTelefone(form.telefone) || null, email: form.email.trim() || null,
       pedido_minimo: parseMoeda(form.pedido_minimo), prazo_pagamento: form.prazo_pagamento.trim().toUpperCase() || null,
       observacoes: form.observacoes.trim() || null,
     } as any);
