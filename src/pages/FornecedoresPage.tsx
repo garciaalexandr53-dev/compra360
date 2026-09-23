@@ -47,7 +47,7 @@ const FornecedoresPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sugestoesOpen, setSugestoesOpen] = useState(false);
   const [conviteOpen, setConviteOpen] = useState(false);
-  const { checkLimit, showPlanos, setShowPlanos } = useFeatureCheck();
+  const { showPlanos, setShowPlanos } = useFeatureCheck();
 
   const { data: lojas = [] } = useQuery({
     queryKey: ["lojas"],
@@ -91,7 +91,6 @@ const FornecedoresPage = () => {
     : "";
 
   const abrirSugestoes = () => {
-    if (!checkLimit("max_fornecedores", fornecedores.length, "Faça upgrade para cadastrar mais fornecedores.")) return;
     setSugestoesOpen(true);
   };
 
@@ -211,7 +210,6 @@ const FornecedoresPage = () => {
   });
 
   const openAdd = () => {
-    if (!checkLimit("max_fornecedores", fornecedores.length, "Faça upgrade para cadastrar mais fornecedores.")) return;
     setEditingId(null); setForm(emptyForm); setSelectedLojas([]); setModalOpen(true);
   };
 
