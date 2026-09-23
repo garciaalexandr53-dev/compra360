@@ -366,9 +366,14 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
       if (cpsErr) throw cpsErr;
       const cpsByProd = new Map<string, string>();
       const cpsByCat = new Map<string, string>();
+      // Trava 2 — índice por nome normalizado, pega o mesmo produto vindo de
+      // outra origem (cadastro local x Catálogo Mestre).
+      const cpsByNome = new Map<string, string>();
       (existingCps || []).forEach((cp: any) => {
         if (cp.produto_id) cpsByProd.set(cp.produto_id, cp.id);
         if (cp.catalogo_mestre_id) cpsByCat.set(cp.catalogo_mestre_id, cp.id);
+        const k = normalizeNomeCotacao(cp.nome);
+        if (k && !cpsByNome.has(k)) cpsByNome.set(k, cp.id);
       });
 
       // 6. Montar inserts e updates via buildSnapshotInsert (sem duplicar na cotação)
@@ -376,16 +381,20 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
       const toInsert: any[] = [];
       const toUpdate: { id: string; quantidade: number }[] = [];
       const jaPlanejado = new Set<string>();
+      const nomesPlanejados = new Set<string>();
 
       for (const l of plano) {
         if (l.destino === "catalogo" && l.cat) {
-          const existingId = cpsByCat.get(l.cat.id);
+          const nomeKey = normalizeNomeCotacao(l.cat.nome);
+          const existingId = cpsByCat.get(l.cat.id) ?? (nomeKey ? cpsByNome.get(nomeKey) : undefined);
           if (existingId) {
             toUpdate.push({ id: existingId, quantidade: l.item.quantidade });
             continue;
           }
           if (jaPlanejado.has(l.key)) continue;
+          if (nomeKey && nomesPlanejados.has(nomeKey)) continue;
           jaPlanejado.add(l.key);
+          if (nomeKey) nomesPlanejados.add(nomeKey);
           toInsert.push(buildSnapshotInsert({
             cotacaoId,
             quantidade: l.item.quantidade,
