@@ -344,7 +344,7 @@ export function printCotacao(
     · <b>Total: ${formatBRL(meta.total_pedido)}</b>
   </div>
 
-  <h2>Pedidos por fornecedor</h2>
+  ${pedidos.length ? `<h2>Pedidos por fornecedor</h2>${pedidosHtml}` : ""}
 
   ${semPrecoPrint.length ? `<h2>Itens sem preço (${semPrecoPrint.length})</h2>
   <div class="meta" style="margin-bottom:6px">Nenhum fornecedor informou preço para estes itens, então eles não entraram em nenhum pedido.</div>
