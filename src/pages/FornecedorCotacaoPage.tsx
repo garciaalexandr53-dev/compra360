@@ -507,17 +507,31 @@ const FornecedorCotacaoPage = () => {
         ))}
       </div>
 
-      {participaRede && !editarCidades && (
+      {participaRede && (
         <div className="px-3 sm:px-4 pb-28 max-w-3xl mx-auto">
-          <button
-            type="button"
-            onClick={() => setEditarCidades(true)}
-            className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-          >
-            Atende novas cidades? Atualizar minhas cidades
-          </button>
+          {!editarCidades ? (
+            <button
+              type="button"
+              onClick={() => setEditarCidades(true)}
+              className="w-full text-left rounded-xl border-2 border-emerald-500/70 bg-emerald-50 dark:bg-emerald-950/40 px-4 py-3 text-sm font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors shadow-sm"
+            >
+              📍 Atende outras cidades? Atualizar regiões e dados
+            </button>
+          ) : (
+            <div className="-mx-3 sm:-mx-4">
+              <OnboardingFornecedorCard
+                key="cidades"
+                token={token!}
+                cotacaoId={cotacaoId}
+                onSkipChange={setSkipCnpjPendente}
+                modoCidades
+                onFechar={() => setEditarCidades(false)}
+              />
+            </div>
+          )}
         </div>
       )}
+
 
       {/* Footer */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-3 sm:p-4 shadow-lg pb-[max(0.75rem,env(safe-area-inset-bottom))]">
