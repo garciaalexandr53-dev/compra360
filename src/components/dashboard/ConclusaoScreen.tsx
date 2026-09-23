@@ -173,11 +173,13 @@ const ConclusaoScreen = ({ economyEstimate, pedidos, itensSemPreco = [], onDownl
             <RefreshCw className="h-5 w-5" /> Nova cotação
           </Button>
           <div className="grid grid-cols-2 gap-2">
+            {onDownloadPdf && (
+              <Button variant="outline" className="gap-2" onClick={handlePdf} disabled={pdfLoading}>
+                <FileText className="h-4 w-4" /> {pdfLoading ? "Gerando…" : "Baixar PDF"}
+              </Button>
+            )}
             <Button variant="outline" className="gap-2" onClick={() => navigate("/historico")}>
               <History className="h-4 w-4" /> Ver histórico
-            </Button>
-            <Button variant="outline" className="gap-2" onClick={() => navigate("/analise")}>
-              <BarChart3 className="h-4 w-4" /> Ver análise
             </Button>
           </div>
         </div>
