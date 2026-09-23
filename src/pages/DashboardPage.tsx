@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchPrecosByCpIds } from "@/lib/supabaseHelpers";
+import { downloadCotacaoPdfById } from "@/lib/cotacaoPdfById";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
