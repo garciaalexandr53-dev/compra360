@@ -409,14 +409,17 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
             },
           }));
         } else if (l.prod) {
-          const existingId = cpsByProd.get(l.prod.id);
+          const nomeKey = normalizeNomeCotacao(l.prod.nome);
+          const existingId = cpsByProd.get(l.prod.id) ?? (nomeKey ? cpsByNome.get(nomeKey) : undefined);
           if (existingId) {
             toUpdate.push({ id: existingId, quantidade: l.item.quantidade });
             continue;
           }
           const key = `local:${l.prod.id}`;
           if (jaPlanejado.has(key)) continue;
+          if (nomeKey && nomesPlanejados.has(nomeKey)) continue;
           jaPlanejado.add(key);
+          if (nomeKey) nomesPlanejados.add(nomeKey);
           const fatorProd = l.prod.fator_embalagem;
           toInsert.push(buildSnapshotInsert({
             cotacaoId,
