@@ -136,7 +136,7 @@ const OnboardingFornecedorCard = ({
     setPastas((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]));
 
   const podeSalvar = modoCidades
-    ? cidades.length > 0
+    ? cidades.length > 0 || cnpjCompleto
     : (state.pedir_cnpj && cnpjCompleto) || consentimento !== null || cidades.length > 0;
 
   const salvar = async () => {
@@ -144,15 +144,16 @@ const OnboardingFornecedorCard = ({
     try {
       const { error } = await supabase.rpc("salvar_dados_fornecedor", {
         _token: token,
-        _cnpj: !modoCidades && cnpjCompleto ? digits : null,
-        _pasta: !modoCidades && mostrarPasta && pastas.length > 0 ? pastas : null,
+        _cnpj: cnpjCompleto ? digits : null,
+        _pasta: mostrarPasta && pastas.length > 0 ? pastas : null,
         _consentimento: modoCidades ? null : consentimento,
         _cidades: mostrarCidades
           ? cidades.map((m) => ({ cidade: m.cidade, uf: m.uf }))
           : null,
       });
+
       if (error) throw error;
-      if (!modoCidades && cnpjCompleto) onSkipChange?.(false);
+      if (cnpjCompleto) onSkipChange?.(false);
       setDone(true);
       onFechar?.();
     } catch (e: any) {
@@ -169,10 +170,14 @@ const OnboardingFornecedorCard = ({
   return (
     <div className="mx-3 sm:mx-4 mt-3 rounded-xl border bg-card p-3 sm:p-4 space-y-4 max-w-3xl md:mx-auto">
       <h2 className="text-sm sm:text-base font-bold">
-        {modoCidades ? "Cidades que você atende" : "Complete o cadastro da sua empresa"}
+        {modoCidades
+          ? state.pedir_cnpj
+            ? "Seus dados e as cidades que você atende"
+            : "Cidades que você atende"
+          : "Complete o cadastro da sua empresa"}
       </h2>
 
-      {!modoCidades && state.pedir_cnpj && (
+      {state.pedir_cnpj && (
         <div className="space-y-2">
           <label className="text-xs sm:text-sm font-medium" htmlFor="onb-cnpj">
             CNPJ da empresa que você representa
@@ -193,7 +198,8 @@ const OnboardingFornecedorCard = ({
         </div>
       )}
 
-      {!modoCidades && mostrarPasta && (
+      {mostrarPasta && (
+
         <div className="space-y-2">
           <p className="text-xs sm:text-sm font-medium">
             Quais linhas de produtos você atende?
