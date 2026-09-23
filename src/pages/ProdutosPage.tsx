@@ -194,9 +194,9 @@ const ProdutosPage = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("cotacao_produtos")
-        .select("produto_id, catalogo_mestre_id")
+        .select("produto_id, catalogo_mestre_id, nome")
         .eq("cotacao_id", cotacaoAtiva!.id);
-      return (data ?? []) as { produto_id: string | null; catalogo_mestre_id: string | null }[];
+      return (data ?? []) as { produto_id: string | null; catalogo_mestre_id: string | null; nome: string | null }[];
     },
   });
 
