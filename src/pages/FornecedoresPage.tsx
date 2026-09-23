@@ -47,7 +47,7 @@ const FornecedoresPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sugestoesOpen, setSugestoesOpen] = useState(false);
   const [conviteOpen, setConviteOpen] = useState(false);
-  const { checkLimit, showPlanos, setShowPlanos } = useFeatureCheck();
+  const { showPlanos, setShowPlanos } = useFeatureCheck();
 
   const { data: lojas = [] } = useQuery({
     queryKey: ["lojas"],
