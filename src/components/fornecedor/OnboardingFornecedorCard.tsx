@@ -136,7 +136,7 @@ const OnboardingFornecedorCard = ({
     setPastas((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]));
 
   const podeSalvar = modoCidades
-    ? cidades.length > 0
+    ? cidades.length > 0 || cnpjCompleto
     : (state.pedir_cnpj && cnpjCompleto) || consentimento !== null || cidades.length > 0;
 
   const salvar = async () => {
@@ -144,13 +144,14 @@ const OnboardingFornecedorCard = ({
     try {
       const { error } = await supabase.rpc("salvar_dados_fornecedor", {
         _token: token,
-        _cnpj: !modoCidades && cnpjCompleto ? digits : null,
-        _pasta: !modoCidades && mostrarPasta && pastas.length > 0 ? pastas : null,
+        _cnpj: cnpjCompleto ? digits : null,
+        _pasta: mostrarPasta && pastas.length > 0 ? pastas : null,
         _consentimento: modoCidades ? null : consentimento,
         _cidades: mostrarCidades
           ? cidades.map((m) => ({ cidade: m.cidade, uf: m.uf }))
           : null,
       });
+
       if (error) throw error;
       if (!modoCidades && cnpjCompleto) onSkipChange?.(false);
       setDone(true);
