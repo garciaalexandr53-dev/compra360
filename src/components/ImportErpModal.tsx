@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, Trash2, Loader2 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { normalizeNomeCotacao } from "@/lib/cotacaoDedup";
 
 export interface ParsedItem {
   nome: string;
