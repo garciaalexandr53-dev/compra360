@@ -1567,6 +1567,14 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      fornecedor_cnpj_key: { Args: { _cnpj: string }; Returns: string }
+      fornecedor_fone_key: { Args: { _telefone: string }; Returns: string }
+      fornecedor_grupo_ids: {
+        Args: { _id: string }
+        Returns: {
+          id: string
+        }[]
+      }
       gerar_codigo_acesso_parceiro: {
         Args: { _finalidade: string; _fone: string; _fornecedor_id: string }
         Returns: string
