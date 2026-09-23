@@ -78,7 +78,7 @@ export default function FornecedoresLojaBanner() {
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
             {temSugestoes
-              ? `Encontramos ${sugestoes.length} fornecedor${sugestoes.length === 1 ? "" : "es"} que já atende${sugestoes.length === 1 ? "" : "m"} em ${cidadeLabel}. Adicione com 1 clique e agilize suas cotações.`
+              ? `Encontramos ${sugestoes.length} fornecedor${sugestoes.length === 1 ? "" : "es"} disponíve${sugestoes.length === 1 ? "l" : "is"} para sua loja em ${cidadeLabel}. Adicione com 1 clique e agilize suas cotações.`
               : "Adicione seus contatos para começar a enviar cotações e comparar preços."}
           </p>
           <Button
@@ -86,7 +86,7 @@ export default function FornecedoresLojaBanner() {
             className="mt-2"
             onClick={() => (temSugestoes ? setOpen(true) : navigate("/fornecedores"))}
           >
-            {temSugestoes ? "Ver fornecedores da região" : "Cadastrar fornecedores"}
+            {temSugestoes ? "Ver fornecedores disponíveis" : "Cadastrar fornecedores"}
           </Button>
         </div>
       </div>

@@ -300,7 +300,7 @@ const FornecedoresPage = () => {
             onClick={abrirSugestoes}
             className="w-full sm:w-auto justify-center"
           >
-            <MapPin className="h-4 w-4 mr-1" /> Sugestões da região
+            <MapPin className="h-4 w-4 mr-1" /> Novos fornecedores disponíveis
             <span className="ml-1 text-[10px] font-semibold text-primary">{sugestoes.length} disponíveis</span>
           </Button>
         )}
@@ -345,17 +345,16 @@ const FornecedoresPage = () => {
               {!searchTerm && fornecedores.length === 0 && sugestoes.length > 0 && (
                 <div className="mx-auto max-w-sm rounded-lg border border-primary/30 bg-primary/5 p-4 text-left space-y-2">
                   <p className="text-sm text-foreground">
-                    Encontramos <strong>{sugestoes.length}</strong> fornecedor{sugestoes.length === 1 ? "" : "es"} que
-                    atende{sugestoes.length === 1 ? "" : "m"} em {cidadeLabel}. Quer adicioná-los?
+                    Encontramos <strong>{sugestoes.length}</strong> fornecedor{sugestoes.length === 1 ? "" : "es"} disponíve{sugestoes.length === 1 ? "l" : "is"} para sua loja em {cidadeLabel}. Quer adicioná-los?
                   </p>
                   <Button size="sm" onClick={abrirSugestoes}>
-                    <MapPin className="h-4 w-4 mr-1" /> Ver sugestões da região
+                    <MapPin className="h-4 w-4 mr-1" /> Ver fornecedores disponíveis
                   </Button>
                 </div>
               )}
               {!searchTerm && !lojaAtiva?.cidade && (
                 <p className="text-xs">
-                  Preencha a cidade da sua loja em <strong>Lojas</strong> para receber sugestões de fornecedores da região.
+                  Preencha a cidade da sua loja em <strong>Lojas</strong> para receber novos fornecedores disponíveis.
                 </p>
               )}
             </div>
