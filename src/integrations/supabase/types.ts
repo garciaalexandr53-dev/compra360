@@ -1294,6 +1294,37 @@ export type Database = {
           whatsapp: string
         }[]
       }
+      admin_list_consentimentos: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _status?: string
+        }
+        Returns: {
+          cadastros: number
+          cidades: string[]
+          clientes: number
+          cnpj: string
+          consentimento_recusas: number
+          consentimento_rede: string
+          consentimento_ultima_pergunta: string
+          created_at: string
+          email: string
+          id: string
+          lojas_vinculadas: number
+          nome: string
+          origem_cadastro: string
+          pasta: string[]
+          representante: string
+          telefone: string
+          tipo_fornecedor: string
+          total_count: number
+          total_nao: number
+          total_pendente: number
+          total_sim: number
+        }[]
+      }
       admin_list_contatos: {
         Args: {
           _canal?: string

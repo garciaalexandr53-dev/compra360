@@ -17,15 +17,17 @@ import {
 } from "@/lib/adminExports";
 import FornecedorAdminSheet from "./FornecedorAdminSheet";
 import RedeUnificadaLista from "./RedeUnificadaLista";
+import ConsentimentoLista from "./ConsentimentoLista";
 import ConvidarRedeDialog from "@/components/fornecedores/ConvidarRedeDialog";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
 const PAGE_SIZE = 50;
 type Filtro = "todos" | "sem_whatsapp" | "sem_email" | "duplicados" | "autocadastro";
-type Visao = "rede" | "registros";
+type Visao = "rede" | "consentimento" | "registros";
 
 const VISOES: { key: Visao; label: string; descricao: string }[] = [
   { key: "rede", label: "Rede", descricao: "Cada fornecedor uma única vez, com cidades atendidas e em quantos clientes já está." },
+  { key: "consentimento", label: "Consentimento", descricao: "Quem já aceitou, recusou ou ainda não respondeu ao convite da Rede, com CNPJ, tipo, pastas e data da última pergunta." },
   { key: "registros", label: "Por cliente", descricao: "Todos os cadastros, um por cliente, como estão no sistema." },
 ];
 
@@ -178,7 +180,7 @@ export default function FornecedoresTab() {
         ))}
       </div>
 
-      <div className="space-y-3">
+      <div className={`space-y-3 ${visao === "consentimento" ? "hidden" : ""}`}>
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -227,7 +229,9 @@ export default function FornecedoresTab() {
 
       </div>
 
-      {visao === "rede" ? (
+      {visao === "consentimento" ? (
+        <ConsentimentoLista />
+      ) : visao === "rede" ? (
         <RedeUnificadaLista termo={termo} onAbrirFicha={setDetalhe} />
       ) : isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>

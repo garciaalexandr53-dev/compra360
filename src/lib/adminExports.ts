@@ -267,3 +267,86 @@ export function buildFornecedoresXlsx(fornecedores: FornecedorAdmin[]): XLSX.Wor
 export function fornecedoresFilenameXlsx(now: Date = new Date()): string {
   return `fornecedores_compra360_${todayFileSuffix(now)}.xlsx`;
 }
+
+/* ---------- Consentimento da Rede (Painel Admin) ---------- */
+
+export interface ConsentimentoFornecedor {
+  id: string;
+  nome: string;
+  representante: string | null;
+  telefone: string | null;
+  email: string | null;
+  cnpj: string | null;
+  tipo_fornecedor: string | null;
+  pasta: string[] | null;
+  origem_cadastro: string | null;
+  consentimento_rede: string | null;
+  consentimento_ultima_pergunta: string | null;
+  consentimento_recusas: number | null;
+  cadastros: number;
+  clientes: number;
+  lojas_vinculadas: number;
+  cidades: string[] | null;
+  created_at: string;
+  total_count?: number;
+  total_sim?: number;
+  total_nao?: number;
+  total_pendente?: number;
+}
+
+/** Aplica a máscara 00.000.000/0000-00 quando houver 14 dígitos. */
+export function formatCnpjBR(cnpj: string | null | undefined): string {
+  const d = (cnpj || "").replace(/\D/g, "");
+  if (d.length !== 14) return d;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+}
+
+/** Rótulo em português do status de consentimento da Rede. */
+export function consentimentoLabel(status: string | null | undefined): string {
+  if (status === "sim") return "Participa";
+  if (status === "nao") return "Recusou";
+  return "Pendente";
+}
+
+/** Data e hora da última vez que a pergunta de consentimento apareceu. */
+export function ultimaPerguntaLabel(iso: string | null | undefined): string {
+  if (!iso) return "Ainda não perguntado";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "Ainda não perguntado";
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return `${formatDateBR(iso)} às ${hh}:${mi}`;
+}
+
+export const CONSENTIMENTOS_HEADER = [
+  "Fornecedor", "Representante", "WhatsApp", "E-mail", "CNPJ", "Tipo", "Pastas",
+  "Consentimento", "Última pergunta", "Recusas", "Cadastros", "Clientes",
+  "Lojas vinculadas", "Cidades atendidas",
+];
+
+export function consentimentoRow(f: ConsentimentoFornecedor): unknown[] {
+  return [
+    formatNomeEmpresa(f.nome),
+    formatNomePessoa(f.representante) || "",
+    formatTelefone(f.telefone),
+    f.email || "",
+    formatCnpjBR(f.cnpj),
+    tipoFornecedorLabel(f.tipo_fornecedor),
+    pastasLabel(f.pasta),
+    consentimentoLabel(f.consentimento_rede),
+    ultimaPerguntaLabel(f.consentimento_ultima_pergunta),
+    Number(f.consentimento_recusas ?? 0),
+    Number(f.cadastros ?? 0),
+    Number(f.clientes ?? 0),
+    Number(f.lojas_vinculadas ?? 0),
+    (f.cidades || []).join(", "),
+  ];
+}
+
+export function buildConsentimentosXlsx(itens: ConsentimentoFornecedor[]): XLSX.WorkBook {
+  return buildXlsx(CONSENTIMENTOS_HEADER, itens.map(consentimentoRow), "Consentimentos");
+}
+
+export function consentimentosFilenameXlsx(now: Date = new Date()): string {
+  return `consentimento_rede_${todayFileSuffix(now)}.xlsx`;
+}
