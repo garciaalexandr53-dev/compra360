@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, Trash2, Loader2 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { normalizeNomeCotacao } from "@/lib/cotacaoDedup";
 
 export interface ParsedItem {
   nome: string;
@@ -361,14 +362,19 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
       // 5. Descobrir o que já está na cotação (produto_id ou catalogo_mestre_id)
       const { data: existingCps, error: cpsErr } = await supabase
         .from("cotacao_produtos")
-        .select("id, produto_id, catalogo_mestre_id")
+        .select("id, produto_id, catalogo_mestre_id, nome")
         .eq("cotacao_id", cotacaoId);
       if (cpsErr) throw cpsErr;
       const cpsByProd = new Map<string, string>();
       const cpsByCat = new Map<string, string>();
+      // Trava 2 — índice por nome normalizado, pega o mesmo produto vindo de
+      // outra origem (cadastro local x Catálogo Mestre).
+      const cpsByNome = new Map<string, string>();
       (existingCps || []).forEach((cp: any) => {
         if (cp.produto_id) cpsByProd.set(cp.produto_id, cp.id);
         if (cp.catalogo_mestre_id) cpsByCat.set(cp.catalogo_mestre_id, cp.id);
+        const k = normalizeNomeCotacao(cp.nome);
+        if (k && !cpsByNome.has(k)) cpsByNome.set(k, cp.id);
       });
 
       // 6. Montar inserts e updates via buildSnapshotInsert (sem duplicar na cotação)
@@ -376,16 +382,20 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
       const toInsert: any[] = [];
       const toUpdate: { id: string; quantidade: number }[] = [];
       const jaPlanejado = new Set<string>();
+      const nomesPlanejados = new Set<string>();
 
       for (const l of plano) {
         if (l.destino === "catalogo" && l.cat) {
-          const existingId = cpsByCat.get(l.cat.id);
+          const nomeKey = normalizeNomeCotacao(l.cat.nome);
+          const existingId = cpsByCat.get(l.cat.id) ?? (nomeKey ? cpsByNome.get(nomeKey) : undefined);
           if (existingId) {
             toUpdate.push({ id: existingId, quantidade: l.item.quantidade });
             continue;
           }
           if (jaPlanejado.has(l.key)) continue;
+          if (nomeKey && nomesPlanejados.has(nomeKey)) continue;
           jaPlanejado.add(l.key);
+          if (nomeKey) nomesPlanejados.add(nomeKey);
           toInsert.push(buildSnapshotInsert({
             cotacaoId,
             quantidade: l.item.quantidade,
@@ -399,14 +409,17 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
             },
           }));
         } else if (l.prod) {
-          const existingId = cpsByProd.get(l.prod.id);
+          const nomeKey = normalizeNomeCotacao(l.prod.nome);
+          const existingId = cpsByProd.get(l.prod.id) ?? (nomeKey ? cpsByNome.get(nomeKey) : undefined);
           if (existingId) {
             toUpdate.push({ id: existingId, quantidade: l.item.quantidade });
             continue;
           }
           const key = `local:${l.prod.id}`;
           if (jaPlanejado.has(key)) continue;
+          if (nomeKey && nomesPlanejados.has(nomeKey)) continue;
           jaPlanejado.add(key);
+          if (nomeKey) nomesPlanejados.add(nomeKey);
           const fatorProd = l.prod.fator_embalagem;
           toInsert.push(buildSnapshotInsert({
             cotacaoId,

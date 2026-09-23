@@ -8,3 +8,4 @@
 - [Consentimento compartilhado](mem://features/rede-consentimento-compartilhado) — onboarding do fornecedor (consentimento, CNPJ, pasta, cidades) unificado por WhatsApp/CNPJ entre clientes
 - [Painel de Consentimento](mem://features/rede-painel-consentimento) — aba Consentimento no Admin: status, CNPJ, tipo, pasta, data da última pergunta, resumo e export
 - [Padronização de telefone](mem://tech/padronizacao-telefone) — normalizeTelefone grava 11 dígitos; sugestões da região e cópia para loja deduplicam por fone_key/CNPJ
+- [Travas anti-duplicidade em cotações](mem://features/travas-duplicidade-cotacao) — duas travas cumulativas: IDs técnicos + nome normalizado nas 3 entradas de itens

@@ -28,6 +28,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import BackToLojaButton from "@/components/shared/BackToLojaButton";
 import { useProdutosHibrido } from "@/hooks/useProdutosHibrido";
 import { buildSnapshotInsert, type ProdutoHibrido } from "@/lib/buscaProdutos";
+import { isDuplicadoNaCotacao } from "@/lib/cotacaoDedup";
 
 
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
@@ -194,9 +195,9 @@ const ProdutosPage = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("cotacao_produtos")
-        .select("produto_id, catalogo_mestre_id")
+        .select("produto_id, catalogo_mestre_id, nome")
         .eq("cotacao_id", cotacaoAtiva!.id);
-      return (data ?? []) as { produto_id: string | null; catalogo_mestre_id: string | null }[];
+      return (data ?? []) as { produto_id: string | null; catalogo_mestre_id: string | null; nome: string | null }[];
     },
   });
 
@@ -358,6 +359,17 @@ const ProdutosPage = () => {
           embalagem: tipoEmbalagem,
           fator: fatorEmbalagem,
         });
+        // Trava 1 (ids) + Trava 2 (nome normalizado): o mesmo produto não pode
+        // entrar duas vezes, nem quando vem do Catálogo Mestre e do cadastro local.
+        if (
+          isDuplicadoNaCotacao(cotacaoItens as any, {
+            nome: produto.nome,
+            produtoId: produto.fonte === "local" ? produto.id : null,
+            catalogoMestreId: produto.fonte === "catalogo" ? produto.id : null,
+          })
+        ) {
+          throw new Error("DUPLICADO_NA_COTACAO");
+        }
         const { error } = await supabase.from("cotacao_produtos").insert(snap as any);
         if (error) throw error;
       } else if (!adding && cotacaoAtiva) {
@@ -380,7 +392,12 @@ const ProdutosPage = () => {
       queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
       toast.success(variables.adding ? "Produto adicionado à cotação!" : "Produto removido da cotação");
     },
-    onError: (e: any) => toast.error(e.message || "Erro ao adicionar à cotação"),
+    onError: (e: any) =>
+      toast.error(
+        e?.message === "DUPLICADO_NA_COTACAO"
+          ? "Este produto já está na cotação. Ajuste a quantidade na tela da cotação."
+          : e.message || "Erro ao adicionar à cotação",
+      ),
   });
 
 
