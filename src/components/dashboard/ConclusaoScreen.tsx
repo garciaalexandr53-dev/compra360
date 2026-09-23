@@ -49,13 +49,24 @@ const AnimatedNumber = ({ value, duration = 1500 }: { value: number; duration?: 
   return <>{formatBRL(current)}</>;
 };
 
-const ConclusaoScreen = ({ economyEstimate, pedidos, itensSemPreco = [], onNewCotacao, onDismiss }: Props) => {
+const ConclusaoScreen = ({ economyEstimate, pedidos, itensSemPreco = [], onDownloadPdf, onNewCotacao, onDismiss }: Props) => {
   const navigate = useNavigate();
   const [showIcon, setShowIcon] = useState(false);
   const [showTitle, setShowTitle] = useState(false);
   const [showEconomy, setShowEconomy] = useState(false);
   const [showList, setShowList] = useState(false);
   const [showButtons, setShowButtons] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const handlePdf = async () => {
+    if (!onDownloadPdf || pdfLoading) return;
+    setPdfLoading(true);
+    try {
+      await onDownloadPdf();
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   const totalGeral = pedidos.reduce((s, p) => s + p.total, 0);
 
