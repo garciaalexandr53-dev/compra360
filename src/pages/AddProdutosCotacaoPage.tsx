@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { defaultPrazoHoje } from "@/lib/format";
 import { useFeatureCheck } from "@/components/FeatureGate";
+import { isDuplicadoNaCotacao, normalizeNomeCotacao } from "@/lib/cotacaoDedup";
 
 interface LocalItem {
   id: string;
@@ -135,7 +136,7 @@ const AddProdutosCotacaoPage = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("cotacao_produtos")
-        .select("produto_id, catalogo_mestre_id, quantidade")
+        .select("produto_id, catalogo_mestre_id, quantidade, nome")
         .eq("cotacao_id", cotacaoAtiva!.id);
       return data || [];
     },
@@ -165,8 +166,22 @@ const AddProdutosCotacaoPage = () => {
 
   const handleDialogConfirm = (qtd: number, embalagem: string, fator: number) => {
     if (!dialogItem) return;
-    if (items.some(i => i.nome.toLowerCase() === dialogItem.nome.toLowerCase())) {
+    const chaveNome = normalizeNomeCotacao(dialogItem.nome);
+    if (items.some(i => normalizeNomeCotacao(i.nome) === chaveNome)) {
       toast.error("Produto já adicionado à lista");
+      setDialogItem(null);
+      return;
+    }
+    // Trava 2 — o mesmo produto já está na cotação por outra origem
+    // (cadastro da loja x Catálogo Mestre), então os ids seriam diferentes.
+    if (
+      isDuplicadoNaCotacao(alreadyInCotacao as any, {
+        nome: dialogItem.nome,
+        produtoId: dialogItem.produtoId ?? null,
+        catalogoMestreId: dialogItem.catalogoMestreId ?? null,
+      })
+    ) {
+      toast.error("Este produto já está na cotação. Ajuste a quantidade na tela da cotação.");
       setDialogItem(null);
       return;
     }
