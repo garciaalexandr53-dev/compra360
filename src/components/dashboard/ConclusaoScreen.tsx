@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle2, History, BarChart3, RefreshCw, X, AlertCircle } from "lucide-react";
+import { CheckCircle2, History, FileText, RefreshCw, X, AlertCircle } from "lucide-react";
 import { formatBRL } from "@/lib/format";
 import { useNavigate } from "react-router-dom";
 import type { Tables } from "@/integrations/supabase/types";
