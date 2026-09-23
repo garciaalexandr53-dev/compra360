@@ -19,6 +19,8 @@ interface Props {
   pedidos: PedidoResumo[];
   /** Nomes dos itens que não receberam preço de nenhum fornecedor. */
   itensSemPreco?: string[];
+  /** Baixa o PDF com o pedido exatamente como foi enviado. */
+  onDownloadPdf?: () => Promise<void> | void;
   onNewCotacao: () => void;
   onDismiss: () => void;
 }
