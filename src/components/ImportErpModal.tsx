@@ -361,7 +361,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
       // 5. Descobrir o que já está na cotação (produto_id ou catalogo_mestre_id)
       const { data: existingCps, error: cpsErr } = await supabase
         .from("cotacao_produtos")
-        .select("id, produto_id, catalogo_mestre_id")
+        .select("id, produto_id, catalogo_mestre_id, nome")
         .eq("cotacao_id", cotacaoId);
       if (cpsErr) throw cpsErr;
       const cpsByProd = new Map<string, string>();

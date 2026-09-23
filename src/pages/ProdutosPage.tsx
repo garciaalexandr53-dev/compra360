@@ -358,6 +358,17 @@ const ProdutosPage = () => {
           embalagem: tipoEmbalagem,
           fator: fatorEmbalagem,
         });
+        // Trava 1 (ids) + Trava 2 (nome normalizado): o mesmo produto não pode
+        // entrar duas vezes, nem quando vem do Catálogo Mestre e do cadastro local.
+        if (
+          isDuplicadoNaCotacao(cotacaoItens as any, {
+            nome: produto.nome,
+            produtoId: produto.fonte === "local" ? produto.id : null,
+            catalogoMestreId: produto.fonte === "catalogo" ? produto.id : null,
+          })
+        ) {
+          throw new Error("DUPLICADO_NA_COTACAO");
+        }
         const { error } = await supabase.from("cotacao_produtos").insert(snap as any);
         if (error) throw error;
       } else if (!adding && cotacaoAtiva) {
