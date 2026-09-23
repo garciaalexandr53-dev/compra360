@@ -65,13 +65,13 @@ const SugestoesRegiaoDialog = ({ open, onOpenChange, sugestoes, lojaId, cidadeLa
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <MapPin className="h-4 w-4 text-primary" />
-            Fornecedores que atendem {cidadeLabel}
+            Novos fornecedores disponíveis para sua loja
           </DialogTitle>
         </DialogHeader>
 
         <p className="text-xs text-muted-foreground">
-          Encontramos {sugestoes.length} fornecedor{sugestoes.length === 1 ? "" : "es"} que já atende
-          {sugestoes.length === 1 ? "" : "m"} outras lojas na sua região — adicione os que fizerem sentido para você.
+          Encontramos {sugestoes.length} fornecedor{sugestoes.length === 1 ? "" : "es"} disponíve
+          {sugestoes.length === 1 ? "l" : "is"} para sua loja em {cidadeLabel}. Selecione os que você quer adicionar.
         </p>
 
         <div className="flex items-center gap-2">
