@@ -91,7 +91,6 @@ const FornecedoresPage = () => {
     : "";
 
   const abrirSugestoes = () => {
-    if (!checkLimit("max_fornecedores", fornecedores.length, "Faça upgrade para cadastrar mais fornecedores.")) return;
     setSugestoesOpen(true);
   };
 
