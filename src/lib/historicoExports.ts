@@ -287,20 +287,8 @@ export function printCotacao(
   rows: ExportRow[],
   pedidos: ExportPedidoForn[]
 ) {
-  const totalGeral = rows.reduce((a, r) => a + (r.total || 0), 0);
   const w = window.open("", "_blank", "width=900,height=700");
   if (!w) return;
-
-  const rowsHtml = rows.map((r) => `
-    <tr>
-      <td>${escapeHtml(r.nome)}</td>
-      <td class="c">${escapeHtml(r.embalagem)}</td>
-      <td class="c">×${r.fator}</td>
-      <td class="c">${r.qtd}</td>
-      <td>${escapeHtml(r.fornecedor)}</td>
-      <td class="r mono">${r.precoUnit != null ? formatBRL(r.precoUnit) : "—"}</td>
-      <td class="r mono b">${r.total != null ? formatBRL(r.total) : "—"}</td>
-    </tr>`).join("");
 
   const pedidosHtml = pedidos.map((g) => `
     <div class="pf">
