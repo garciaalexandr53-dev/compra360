@@ -5,3 +5,4 @@
 - [Visão Unificada da Rede](mem://features/rede-visao-unificada) — Admin agrupa fornecedores por WhatsApp/nome, filtros cidade/UF/categoria
 - [Adicionar Fornecedores a uma Loja](mem://features/rede-adicionar-a-loja) — Seleção em lote no Admin, vínculo silencioso, reaproveita cadastro existente
 - [Unificação de Duplicados](mem://features/rede-unificacao-duplicados) — Etapa 4: aba Duplicados agrupa por WhatsApp/nome e unifica (Merge) transferindo vínculos ao mestre
+- [Consentimento compartilhado](mem://features/rede-consentimento-compartilhado) — onboarding do fornecedor (consentimento, CNPJ, pasta, cidades) unificado por WhatsApp/CNPJ entre clientes
