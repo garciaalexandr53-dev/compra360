@@ -392,7 +392,12 @@ const ProdutosPage = () => {
       queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
       toast.success(variables.adding ? "Produto adicionado à cotação!" : "Produto removido da cotação");
     },
-    onError: (e: any) => toast.error(e.message || "Erro ao adicionar à cotação"),
+    onError: (e: any) =>
+      toast.error(
+        e?.message === "DUPLICADO_NA_COTACAO"
+          ? "Este produto já está na cotação. Ajuste a quantidade na tela da cotação."
+          : e.message || "Erro ao adicionar à cotação",
+      ),
   });
 
 
