@@ -1071,9 +1071,24 @@ const DashboardPage = () => {
       {/* Conclusion Screen */}
       {showConclusao && (
         <ConclusaoScreen
-          economyEstimate={economyEstimate || null}
-          pedidos={pedidoResumos}
-          itensSemPreco={itensSemPreco.map((cp: any) => cp.nome || "Item sem nome")}
+          economyEstimate={
+            pedidoResumos.length > 0 ? economyEstimate || null : conclusaoSnapshot?.economia ?? null
+          }
+          pedidos={pedidoResumos.length > 0 ? pedidoResumos : conclusaoSnapshot?.pedidos ?? []}
+          itensSemPreco={
+            pedidoResumos.length > 0
+              ? itensSemPreco.map((cp: any) => cp.nome || "Item sem nome")
+              : conclusaoSnapshot?.itensSemPreco ?? []
+          }
+          onDownloadPdf={async () => {
+            const id = cotacaoAtiva?.id || conclusaoSnapshot?.cotacaoId || lastCotacao?.id;
+            if (!id) return;
+            try {
+              await downloadCotacaoPdfById(id);
+            } catch (e: any) {
+              toast.error("Erro ao gerar PDF: " + (e?.message || ""));
+            }
+          }}
           onNewCotacao={() => setNovaCotacaoOpen(true)}
           onDismiss={dismissConclusao}
         />
