@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.fornecedor_grupo_ids(uuid) FROM anon, authenticated, PUBLIC;
