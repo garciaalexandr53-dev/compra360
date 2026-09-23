@@ -288,8 +288,10 @@ const AddProdutosCotacaoPage = () => {
           produtoId = newProd.id;
         }
 
-        const alreadyExists = alreadyInCotacao.some((a: any) => a.produto_id === produtoId);
-        if (alreadyExists) continue;
+        // Trava 1 (id do produto local) + Trava 2 (nome normalizado).
+        if (
+          isDuplicadoNaCotacao(alreadyInCotacao as any, { nome: item.nome, produtoId })
+        ) continue;
         toInsert.push(
           buildSnapshotInsert({
             cotacaoId: cotacaoId!,
