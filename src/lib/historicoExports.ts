@@ -196,34 +196,9 @@ export async function exportCotacaoToPdf(
   y += wrappedB.length * 11 + 6;
   doc.setTextColor(0);
 
-  // Main table
-  autoTable(doc, {
-    startY: y,
-    head: [["Produto", "Embal.", "Fator", "Qtd", "Fornecedor", "Preço un.", "Total"]],
-    body: rows.map((r) => [
-      r.nome,
-      r.embalagem,
-      `×${r.fator}`,
-      String(r.qtd),
-      r.fornecedor,
-      r.precoUnit != null ? formatBRL(r.precoUnit) : "—",
-      r.total != null ? formatBRL(r.total) : "—",
-    ]),
-    foot: [["", "", "", "", "", "TOTAL GERAL", formatBRL(rows.reduce((a, r) => a + (r.total || 0), 0))]],
-    styles: { fontSize: 8.5, cellPadding: 4 },
-    headStyles: { fillColor: [40, 50, 75], textColor: 255 },
-    footStyles: { fillColor: [240, 240, 245], textColor: 20, fontStyle: "bold" },
-    columnStyles: {
-      0: { cellWidth: 160 },
-      5: { halign: "right" },
-      6: { halign: "right" },
-    },
-    margin: { left: 36, right: 36 },
-  });
-
   // Pedidos por fornecedor
   if (pedidos.length) {
-    let cursor = (doc as any).lastAutoTable.finalY + 18;
+    let cursor = y + 18;
     if (cursor > 720) {
       doc.addPage();
       cursor = 40;
@@ -312,20 +287,8 @@ export function printCotacao(
   rows: ExportRow[],
   pedidos: ExportPedidoForn[]
 ) {
-  const totalGeral = rows.reduce((a, r) => a + (r.total || 0), 0);
   const w = window.open("", "_blank", "width=900,height=700");
   if (!w) return;
-
-  const rowsHtml = rows.map((r) => `
-    <tr>
-      <td>${escapeHtml(r.nome)}</td>
-      <td class="c">${escapeHtml(r.embalagem)}</td>
-      <td class="c">×${r.fator}</td>
-      <td class="c">${r.qtd}</td>
-      <td>${escapeHtml(r.fornecedor)}</td>
-      <td class="r mono">${r.precoUnit != null ? formatBRL(r.precoUnit) : "—"}</td>
-      <td class="r mono b">${r.total != null ? formatBRL(r.total) : "—"}</td>
-    </tr>`).join("");
 
   const pedidosHtml = pedidos.map((g) => `
     <div class="pf">
@@ -380,16 +343,6 @@ export function printCotacao(
     · Produtos: ${meta.produtos_count} · Fornecedores: ${meta.fornecedores_count}
     · <b>Total: ${formatBRL(meta.total_pedido)}</b>
   </div>
-
-  <h2>Resumo do pedido</h2>
-  <table>
-    <thead><tr>
-      <th>Produto</th><th>Embal.</th><th>Fator</th><th>Qtd</th>
-      <th>Fornecedor</th><th>Preço un.</th><th>Total</th>
-    </tr></thead>
-    <tbody>${rowsHtml}</tbody>
-    <tfoot><tr><td colspan="6" class="r">TOTAL GERAL</td><td class="r mono">${formatBRL(totalGeral)}</td></tr></tfoot>
-  </table>
 
   ${pedidos.length ? `<h2>Pedidos por fornecedor</h2>${pedidosHtml}` : ""}
 
