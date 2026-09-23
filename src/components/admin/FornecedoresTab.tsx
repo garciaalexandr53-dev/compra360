@@ -180,7 +180,7 @@ export default function FornecedoresTab() {
         ))}
       </div>
 
-      <div className="space-y-3">
+      <div className={`space-y-3 ${visao === "consentimento" ? "hidden" : ""}`}>
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -229,7 +229,9 @@ export default function FornecedoresTab() {
 
       </div>
 
-      {visao === "rede" ? (
+      {visao === "consentimento" ? (
+        <ConsentimentoLista />
+      ) : visao === "rede" ? (
         <RedeUnificadaLista termo={termo} onAbrirFicha={setDetalhe} />
       ) : isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
