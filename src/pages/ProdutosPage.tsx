@@ -28,6 +28,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import BackToLojaButton from "@/components/shared/BackToLojaButton";
 import { useProdutosHibrido } from "@/hooks/useProdutosHibrido";
 import { buildSnapshotInsert, type ProdutoHibrido } from "@/lib/buscaProdutos";
+import { isDuplicadoNaCotacao } from "@/lib/cotacaoDedup";
 
 
 type Produto = Tables<"produtos"> & { categorias?: { nome: string } | null };
