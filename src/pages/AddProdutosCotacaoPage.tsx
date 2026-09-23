@@ -251,10 +251,13 @@ const AddProdutosCotacaoPage = () => {
       for (const item of items) {
         if (item.catalogoMestreId) {
           // Item do catálogo global — snapshot direto, sem produto local.
-          const alreadyExists = alreadyInCotacao.some(
-            (a: any) => a.catalogo_mestre_id === item.catalogoMestreId,
-          );
-          if (alreadyExists) continue;
+          // Trava 1 (id do catálogo) + Trava 2 (nome normalizado).
+          if (
+            isDuplicadoNaCotacao(alreadyInCotacao as any, {
+              nome: item.nome,
+              catalogoMestreId: item.catalogoMestreId,
+            })
+          ) continue;
           toInsert.push(
             buildSnapshotInsert({
               cotacaoId: cotacaoId!,
