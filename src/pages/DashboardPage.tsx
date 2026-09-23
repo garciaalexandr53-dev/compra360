@@ -432,6 +432,30 @@ const DashboardPage = () => {
     [pedidosEnviados]
   );
 
+  // Snapshot da conclusão: ao finalizar, a cotação deixa de ser "ativa" e as
+  // consultas acima se esvaziam. Guardamos os valores para a tela de conclusão
+  // continuar mostrando os pedidos, o total e a economia reais.
+  const [conclusaoSnapshot, setConclusaoSnapshot] = useState<{
+    cotacaoId: string;
+    pedidos: typeof pedidoResumos;
+    economia: number | null;
+    itensSemPreco: string[];
+  } | null>(null);
+
+  useEffect(() => {
+    if (!showConclusao) return;
+    const id = cotacaoAtiva?.id || lastCotacao?.id;
+    if (!id) return;
+    if (conclusaoSnapshot?.cotacaoId === id && conclusaoSnapshot.pedidos.length > 0) return;
+    if (pedidoResumos.length === 0) return;
+    setConclusaoSnapshot({
+      cotacaoId: id,
+      pedidos: pedidoResumos,
+      economia: economyEstimate || null,
+      itensSemPreco: (itensSemPreco as any[]).map((cp: any) => cp.nome || "Item sem nome"),
+    });
+  }, [showConclusao, cotacaoAtiva?.id, lastCotacao?.id, pedidoResumos, economyEstimate, itensSemPreco, conclusaoSnapshot]);
+
   // Nova cotação handler
   const handleNovaCotacao = async (prazoIso: string | null) => {
     if (!cotacaoAtiva?.id || !novaCotacaoOpt) return;
