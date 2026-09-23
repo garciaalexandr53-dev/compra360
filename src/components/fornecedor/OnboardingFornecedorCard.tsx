@@ -153,7 +153,7 @@ const OnboardingFornecedorCard = ({
       });
 
       if (error) throw error;
-      if (!modoCidades && cnpjCompleto) onSkipChange?.(false);
+      if (cnpjCompleto) onSkipChange?.(false);
       setDone(true);
       onFechar?.();
     } catch (e: any) {
