@@ -196,34 +196,9 @@ export async function exportCotacaoToPdf(
   y += wrappedB.length * 11 + 6;
   doc.setTextColor(0);
 
-  // Main table
-  autoTable(doc, {
-    startY: y,
-    head: [["Produto", "Embal.", "Fator", "Qtd", "Fornecedor", "Preço un.", "Total"]],
-    body: rows.map((r) => [
-      r.nome,
-      r.embalagem,
-      `×${r.fator}`,
-      String(r.qtd),
-      r.fornecedor,
-      r.precoUnit != null ? formatBRL(r.precoUnit) : "—",
-      r.total != null ? formatBRL(r.total) : "—",
-    ]),
-    foot: [["", "", "", "", "", "TOTAL GERAL", formatBRL(rows.reduce((a, r) => a + (r.total || 0), 0))]],
-    styles: { fontSize: 8.5, cellPadding: 4 },
-    headStyles: { fillColor: [40, 50, 75], textColor: 255 },
-    footStyles: { fillColor: [240, 240, 245], textColor: 20, fontStyle: "bold" },
-    columnStyles: {
-      0: { cellWidth: 160 },
-      5: { halign: "right" },
-      6: { halign: "right" },
-    },
-    margin: { left: 36, right: 36 },
-  });
-
   // Pedidos por fornecedor
   if (pedidos.length) {
-    let cursor = (doc as any).lastAutoTable.finalY + 18;
+    let cursor = y + 18;
     if (cursor > 720) {
       doc.addPage();
       cursor = 40;
