@@ -9,7 +9,7 @@ import Seo from "@/components/Seo";
 import { supabase } from "@/integrations/supabase/client";
 import CidadesAtendidasInput from "@/components/fornecedor/CidadesAtendidasInput";
 import type { Municipio } from "@/lib/cep";
-import { maskTelefone, maskCNPJ, isCNPJValido, formatNomeEmpresa, formatNomePessoa } from "@/lib/masks";
+import { maskTelefone, maskCNPJ, isCNPJValido, formatNomeEmpresa, formatNomePessoa, normalizeTelefone } from "@/lib/masks";
 import { pastasDisponiveis } from "@/lib/adminHelpers";
 import { mensagemConfirmacaoCadastro, linkSuporteComMensagem } from "@/lib/parceiro";
 import { validarWhatsApp } from "@/lib/whatsappValidacao";
@@ -86,7 +86,7 @@ const CadastroParceiroPage = () => {
     const { data, error } = await supabase.rpc("cadastrar_fornecedor_parceiro", {
       _nome: formatNomeEmpresa(nome),
       _representante: formatNomePessoa(representante),
-      _telefone: telefone,
+      _telefone: normalizeTelefone(telefone),
       _cnpj: cnpj || null,
       _tipo: tipo,
       _pastas: pastas.length ? pastas : null,
