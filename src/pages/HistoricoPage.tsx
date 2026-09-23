@@ -1425,6 +1425,64 @@ const HistoricoPage = () => {
                           </div>
                         ) : (
                           <div className="p-3 md:p-4 space-y-4">
+                            {/* Toolbar de exportação — no topo, sem precisar rolar a lista */}
+                            <div className="flex flex-wrap items-center gap-2 bg-background border rounded-lg p-2">
+                              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                                Salvar / compartilhar
+                              </span>
+                              <div className="flex flex-wrap items-center gap-2 ml-auto">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 gap-1.5 text-xs"
+                                  onClick={async () => {
+                                    const meta = {
+                                      nome: c.nome, created_at: c.created_at, finalizada_at: c.finalizada_at, status: c.status,
+                                      loja_nome: c.loja_nome, total_pedido: c.total_pedido,
+                                      produtos_count: c.produtos_count, fornecedores_count: c.fornecedores_count,
+                                    };
+                                    try {
+                                      await exportCotacaoToPdf(meta, tableRows, pedidosByFornecedor);
+                                    } catch (e: any) {
+                                      toast.error("Erro ao gerar PDF: " + e.message);
+                                    }
+                                  }}
+                                >
+                                  <FileText className="h-3.5 w-3.5" /> PDF
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 gap-1.5 text-xs"
+                                  onClick={() => {
+                                    const meta = {
+                                      nome: c.nome, created_at: c.created_at, finalizada_at: c.finalizada_at, status: c.status,
+                                      loja_nome: c.loja_nome, total_pedido: c.total_pedido,
+                                      produtos_count: c.produtos_count, fornecedores_count: c.fornecedores_count,
+                                    };
+                                    exportCotacaoToExcel(meta, tableRows, pedidosByFornecedor);
+                                  }}
+                                >
+                                  <FileSpreadsheet className="h-3.5 w-3.5" /> Excel
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 gap-1.5 text-xs"
+                                  onClick={() => {
+                                    const meta = {
+                                      nome: c.nome, created_at: c.created_at, finalizada_at: c.finalizada_at, status: c.status,
+                                      loja_nome: c.loja_nome, total_pedido: c.total_pedido,
+                                      produtos_count: c.produtos_count, fornecedores_count: c.fornecedores_count,
+                                    };
+                                    printCotacao(meta, tableRows, pedidosByFornecedor);
+                                  }}
+                                >
+                                  <Printer className="h-3.5 w-3.5" /> Imprimir
+                                </Button>
+                              </div>
+                            </div>
+
                             {/* Tabela principal */}
                             <div>
                               <div className="flex flex-wrap items-center justify-between gap-2 mb-2 px-1">
@@ -1607,58 +1665,6 @@ const HistoricoPage = () => {
                               </CollapsibleContent>
                             </Collapsible>
 
-                            {/* Toolbar de exportação */}
-                            <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 gap-1.5 text-xs"
-                                onClick={() => {
-                                  const meta = {
-                                    nome: c.nome, created_at: c.created_at, finalizada_at: c.finalizada_at, status: c.status,
-                                    loja_nome: c.loja_nome, total_pedido: c.total_pedido,
-                                    produtos_count: c.produtos_count, fornecedores_count: c.fornecedores_count,
-                                  };
-                                  exportCotacaoToExcel(meta, tableRows, pedidosByFornecedor);
-                                }}
-                              >
-                                <FileSpreadsheet className="h-3.5 w-3.5" /> Excel
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 gap-1.5 text-xs"
-                                onClick={async () => {
-                                  const meta = {
-                                    nome: c.nome, created_at: c.created_at, finalizada_at: c.finalizada_at, status: c.status,
-                                    loja_nome: c.loja_nome, total_pedido: c.total_pedido,
-                                    produtos_count: c.produtos_count, fornecedores_count: c.fornecedores_count,
-                                  };
-                                  try {
-                                    await exportCotacaoToPdf(meta, tableRows, pedidosByFornecedor);
-                                  } catch (e: any) {
-                                    toast.error("Erro ao gerar PDF: " + e.message);
-                                  }
-                                }}
-                              >
-                                <FileText className="h-3.5 w-3.5" /> PDF
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 gap-1.5 text-xs"
-                                onClick={() => {
-                                  const meta = {
-                                    nome: c.nome, created_at: c.created_at, finalizada_at: c.finalizada_at, status: c.status,
-                                    loja_nome: c.loja_nome, total_pedido: c.total_pedido,
-                                    produtos_count: c.produtos_count, fornecedores_count: c.fornecedores_count,
-                                  };
-                                  printCotacao(meta, tableRows, pedidosByFornecedor);
-                                }}
-                              >
-                                <Printer className="h-3.5 w-3.5" /> Imprimir
-                              </Button>
-                            </div>
                           </div>
                         )}
                       </div>

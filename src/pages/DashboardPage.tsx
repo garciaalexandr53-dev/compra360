@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchPrecosByCpIds } from "@/lib/supabaseHelpers";
+import { downloadCotacaoPdfById } from "@/lib/cotacaoPdfById";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -431,6 +432,30 @@ const DashboardPage = () => {
     })),
     [pedidosEnviados]
   );
+
+  // Snapshot da conclusão: ao finalizar, a cotação deixa de ser "ativa" e as
+  // consultas acima se esvaziam. Guardamos os valores para a tela de conclusão
+  // continuar mostrando os pedidos, o total e a economia reais.
+  const [conclusaoSnapshot, setConclusaoSnapshot] = useState<{
+    cotacaoId: string;
+    pedidos: typeof pedidoResumos;
+    economia: number | null;
+    itensSemPreco: string[];
+  } | null>(null);
+
+  useEffect(() => {
+    if (!showConclusao) return;
+    const id = cotacaoAtiva?.id || lastCotacao?.id;
+    if (!id) return;
+    if (conclusaoSnapshot?.cotacaoId === id && conclusaoSnapshot.pedidos.length > 0) return;
+    if (pedidoResumos.length === 0) return;
+    setConclusaoSnapshot({
+      cotacaoId: id,
+      pedidos: pedidoResumos,
+      economia: economyEstimate || null,
+      itensSemPreco: (itensSemPreco as any[]).map((cp: any) => cp.nome || "Item sem nome"),
+    });
+  }, [showConclusao, cotacaoAtiva?.id, lastCotacao?.id, pedidoResumos, economyEstimate, itensSemPreco, conclusaoSnapshot]);
 
   // Nova cotação handler
   const handleNovaCotacao = async (prazoIso: string | null) => {
@@ -1047,9 +1072,24 @@ const DashboardPage = () => {
       {/* Conclusion Screen */}
       {showConclusao && (
         <ConclusaoScreen
-          economyEstimate={economyEstimate || null}
-          pedidos={pedidoResumos}
-          itensSemPreco={itensSemPreco.map((cp: any) => cp.nome || "Item sem nome")}
+          economyEstimate={
+            pedidoResumos.length > 0 ? economyEstimate || null : conclusaoSnapshot?.economia ?? null
+          }
+          pedidos={pedidoResumos.length > 0 ? pedidoResumos : conclusaoSnapshot?.pedidos ?? []}
+          itensSemPreco={
+            pedidoResumos.length > 0
+              ? itensSemPreco.map((cp: any) => cp.nome || "Item sem nome")
+              : conclusaoSnapshot?.itensSemPreco ?? []
+          }
+          onDownloadPdf={async () => {
+            const id = cotacaoAtiva?.id || conclusaoSnapshot?.cotacaoId || lastCotacao?.id;
+            if (!id) return;
+            try {
+              await downloadCotacaoPdfById(id);
+            } catch (e: any) {
+              toast.error("Erro ao gerar PDF: " + (e?.message || ""));
+            }
+          }}
           onNewCotacao={() => setNovaCotacaoOpen(true)}
           onDismiss={dismissConclusao}
         />

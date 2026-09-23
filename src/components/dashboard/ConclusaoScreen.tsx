@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle2, History, BarChart3, RefreshCw, X, AlertCircle } from "lucide-react";
+import { CheckCircle2, History, FileText, RefreshCw, X, AlertCircle } from "lucide-react";
 import { formatBRL } from "@/lib/format";
 import { useNavigate } from "react-router-dom";
 import type { Tables } from "@/integrations/supabase/types";
@@ -19,6 +19,8 @@ interface Props {
   pedidos: PedidoResumo[];
   /** Nomes dos itens que não receberam preço de nenhum fornecedor. */
   itensSemPreco?: string[];
+  /** Baixa o PDF com o pedido exatamente como foi enviado. */
+  onDownloadPdf?: () => Promise<void> | void;
   onNewCotacao: () => void;
   onDismiss: () => void;
 }
@@ -47,13 +49,24 @@ const AnimatedNumber = ({ value, duration = 1500 }: { value: number; duration?: 
   return <>{formatBRL(current)}</>;
 };
 
-const ConclusaoScreen = ({ economyEstimate, pedidos, itensSemPreco = [], onNewCotacao, onDismiss }: Props) => {
+const ConclusaoScreen = ({ economyEstimate, pedidos, itensSemPreco = [], onDownloadPdf, onNewCotacao, onDismiss }: Props) => {
   const navigate = useNavigate();
   const [showIcon, setShowIcon] = useState(false);
   const [showTitle, setShowTitle] = useState(false);
   const [showEconomy, setShowEconomy] = useState(false);
   const [showList, setShowList] = useState(false);
   const [showButtons, setShowButtons] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const handlePdf = async () => {
+    if (!onDownloadPdf || pdfLoading) return;
+    setPdfLoading(true);
+    try {
+      await onDownloadPdf();
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   const totalGeral = pedidos.reduce((s, p) => s + p.total, 0);
 
@@ -160,11 +173,13 @@ const ConclusaoScreen = ({ economyEstimate, pedidos, itensSemPreco = [], onNewCo
             <RefreshCw className="h-5 w-5" /> Nova cotação
           </Button>
           <div className="grid grid-cols-2 gap-2">
+            {onDownloadPdf && (
+              <Button variant="outline" className="gap-2" onClick={handlePdf} disabled={pdfLoading}>
+                <FileText className="h-4 w-4" /> {pdfLoading ? "Gerando…" : "Baixar PDF"}
+              </Button>
+            )}
             <Button variant="outline" className="gap-2" onClick={() => navigate("/historico")}>
               <History className="h-4 w-4" /> Ver histórico
-            </Button>
-            <Button variant="outline" className="gap-2" onClick={() => navigate("/analise")}>
-              <BarChart3 className="h-4 w-4" /> Ver análise
             </Button>
           </div>
         </div>
