@@ -7,3 +7,4 @@
 - [Unificação de Duplicados](mem://features/rede-unificacao-duplicados) — Etapa 4: aba Duplicados agrupa por WhatsApp/nome e unifica (Merge) transferindo vínculos ao mestre
 - [Consentimento compartilhado](mem://features/rede-consentimento-compartilhado) — onboarding do fornecedor (consentimento, CNPJ, pasta, cidades) unificado por WhatsApp/CNPJ entre clientes
 - [Painel de Consentimento](mem://features/rede-painel-consentimento) — aba Consentimento no Admin: status, CNPJ, tipo, pasta, data da última pergunta, resumo e export
+- [Padronização de telefone](mem://tech/padronizacao-telefone) — normalizeTelefone grava 11 dígitos; sugestões da região e cópia para loja deduplicam por fone_key/CNPJ
