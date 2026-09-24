@@ -732,6 +732,7 @@ export type Database = {
       }
       lojas: {
         Row: {
+          ativo: boolean
           bairro: string | null
           cep: string | null
           cidade: string | null
@@ -749,6 +750,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          ativo?: boolean
           bairro?: string | null
           cep?: string | null
           cidade?: string | null
@@ -766,6 +768,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          ativo?: boolean
           bairro?: string | null
           cep?: string | null
           cidade?: string | null

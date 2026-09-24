@@ -28,13 +28,35 @@ const LojasPage = () => {
   const [sheetLojaId, setSheetLojaId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  const { data: lojas = [], isLoading } = useQuery({
-    queryKey: ["lojas"],
+  const [showInativas, setShowInativas] = useState(false);
+  const { data: todasLojas = [], isLoading } = useQuery({
+    queryKey: ["lojas-todas"],
     queryFn: async () => {
       const { data, error } = await supabase.from("lojas").select("*").order("nome");
       if (error) throw error;
-      return (data || []) as Loja[];
+      return (data || []) as (Loja & { ativo: boolean })[];
     },
+  });
+  const lojas = useMemo(() => todasLojas.filter((l) => l.ativo !== false), [todasLojas]);
+  const lojasInativas = useMemo(() => todasLojas.filter((l) => l.ativo === false), [todasLojas]);
+  const invalidateLojas = () => {
+    queryClient.invalidateQueries({ queryKey: ["lojas"] });
+    queryClient.invalidateQueries({ queryKey: ["lojas-todas"] });
+    queryClient.invalidateQueries({ queryKey: ["lojas-metrics"] });
+  };
+
+  const toggleAtivoMutation = useMutation({
+    mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
+      const { error } = await supabase.from("lojas").update({ ativo } as any).eq("id", id);
+      if (error) throw error;
+      return ativo;
+    },
+    onSuccess: (ativo) => {
+      invalidateLojas();
+      toast.success(ativo ? "Loja reativada!" : "Loja inativada. O histórico continua guardado.");
+      setSheetLojaId(null);
+    },
+    onError: (e: any) => toast.error(e.message),
   });
 
   // Restaura o sheet apenas se o usuário voltou explicitamente via BackToLojaButton
@@ -129,8 +151,7 @@ const LojasPage = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lojas"] });
-      queryClient.invalidateQueries({ queryKey: ["lojas-metrics"] });
+      invalidateLojas();
       toast.success(editingId ? "Loja atualizada!" : "Loja cadastrada!");
       setModalOpen(false);
       setEditingId(null);
@@ -145,12 +166,16 @@ const LojasPage = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lojas"] });
-      queryClient.invalidateQueries({ queryKey: ["lojas-metrics"] });
+      invalidateLojas();
       toast.success("Loja removida!");
       setSheetLojaId(null);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) =>
+      toast.error(
+        e?.code === "23503"
+          ? "Esta loja possui cotações registradas e não pode ser excluída. Use a opção Inativar."
+          : e.message,
+      ),
   });
 
   const openAdd = () => {
@@ -264,6 +289,40 @@ const LojasPage = () => {
         </div>
       )}
 
+      {lojasInativas.length > 0 && (
+        <div className="mt-6">
+          <button
+            onClick={() => setShowInativas((v) => !v)}
+            className="text-xs text-muted-foreground underline hover:text-foreground"
+          >
+            {showInativas ? "Ocultar" : "Ver"} lojas inativas ({lojasInativas.length})
+          </button>
+          {showInativas && (
+            <div className="mt-3 space-y-2">
+              {lojasInativas.map((l) => (
+                <div key={l.id} className="flex items-center justify-between gap-3 rounded-xl border border-dashed bg-muted/30 p-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-muted-foreground truncate">{getDisplayName(l)}</p>
+                    <p className="text-[11px] text-muted-foreground">Inativa · histórico guardado</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={toggleAtivoMutation.isPending}
+                    onClick={() => {
+                      if (!checkLimit("max_lojas", lojas.length, "Faça upgrade para ter mais lojas ativas.")) return;
+                      toggleAtivoMutation.mutate({ id: l.id, ativo: true });
+                    }}
+                  >
+                    Reativar
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Sheet de detalhes */}
       <LojaSheet
         loja={sheetLoja}
@@ -275,7 +334,8 @@ const LojasPage = () => {
         onActivate={handleActivate}
         onEdit={openEdit}
         onDelete={(l) => {
-          if (confirm(`Remover "${getDisplayName(l)}"?`)) deleteMutation.mutate(l.id);
+          if (metricsByLoja[l.id]?.ultimaCotacaoId) toggleAtivoMutation.mutate({ id: l.id, ativo: false });
+          else deleteMutation.mutate(l.id);
         }}
       />
 

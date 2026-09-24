@@ -52,7 +52,7 @@ const FornecedoresPage = () => {
   const { data: lojas = [] } = useQuery({
     queryKey: ["lojas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("lojas").select("*").order("nome");
+      const { data, error } = await supabase.from("lojas").select("*").eq("ativo", true).order("nome");
       if (error) throw error;
       return data;
     },

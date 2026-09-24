@@ -240,13 +240,15 @@ export default function LojaSheet({
                   onClick={() => setConfirmDelete(true)}
                 >
                   <Trash2 className="h-4 w-4" />
-                  <span className="text-[11px]">Excluir</span>
+                  <span className="text-[11px]">{metrics?.ultimaCotacaoId ? "Inativar" : "Excluir"}</span>
                 </Button>
               )}
             </div>
             {confirmDelete && (
               <p className="text-[11px] text-destructive mt-2 text-center">
-                Toque novamente para confirmar a exclusão de "{display}".
+                {metrics?.ultimaCotacaoId
+                  ? `Toque novamente para inativar "${display}". Ela some do sistema, mas o histórico fica guardado.`
+                  : `Toque novamente para confirmar a exclusão de "${display}".`}
               </p>
             )}
           </section>
