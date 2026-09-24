@@ -39,16 +39,17 @@ export function LojaProvider({ children }: { children: ReactNode }) {
   const { data: lojas = [], isLoading } = useQuery({
     queryKey: ["lojas", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("lojas").select("*").order("nome");
+      const { data, error } = await supabase.from("lojas").select("*").eq("ativo", true).order("nome");
       if (error) throw error;
       return data as Loja[];
     },
     enabled: !!user,
   });
 
-  // Auto-select first loja if none selected
+  // Auto-select first loja if none selected (or selected one is inactive/removed)
   useEffect(() => {
-    if (!isLoading && lojas.length > 0 && !lojaAtivaId) {
+    if (isLoading || lojas.length === 0) return;
+    if (!lojaAtivaId || !lojas.some((l) => l.id === lojaAtivaId)) {
       const firstId = lojas[0].id;
       setLojaAtivaId(firstId);
       localStorage.setItem("loja_ativa_id", firstId);
