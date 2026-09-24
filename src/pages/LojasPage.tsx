@@ -151,8 +151,7 @@ const LojasPage = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lojas"] });
-      queryClient.invalidateQueries({ queryKey: ["lojas-metrics"] });
+      invalidateLojas();
       toast.success(editingId ? "Loja atualizada!" : "Loja cadastrada!");
       setModalOpen(false);
       setEditingId(null);
@@ -167,12 +166,16 @@ const LojasPage = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lojas"] });
-      queryClient.invalidateQueries({ queryKey: ["lojas-metrics"] });
+      invalidateLojas();
       toast.success("Loja removida!");
       setSheetLojaId(null);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) =>
+      toast.error(
+        e?.code === "23503"
+          ? "Esta loja possui cotações registradas e não pode ser excluída. Use a opção Inativar."
+          : e.message,
+      ),
   });
 
   const openAdd = () => {
@@ -286,6 +289,40 @@ const LojasPage = () => {
         </div>
       )}
 
+      {lojasInativas.length > 0 && (
+        <div className="mt-6">
+          <button
+            onClick={() => setShowInativas((v) => !v)}
+            className="text-xs text-muted-foreground underline hover:text-foreground"
+          >
+            {showInativas ? "Ocultar" : "Ver"} lojas inativas ({lojasInativas.length})
+          </button>
+          {showInativas && (
+            <div className="mt-3 space-y-2">
+              {lojasInativas.map((l) => (
+                <div key={l.id} className="flex items-center justify-between gap-3 rounded-xl border border-dashed bg-muted/30 p-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-muted-foreground truncate">{getDisplayName(l)}</p>
+                    <p className="text-[11px] text-muted-foreground">Inativa · histórico guardado</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={toggleAtivoMutation.isPending}
+                    onClick={() => {
+                      if (!checkLimit("max_lojas", lojas.length, "Faça upgrade para ter mais lojas ativas.")) return;
+                      toggleAtivoMutation.mutate({ id: l.id, ativo: true });
+                    }}
+                  >
+                    Reativar
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Sheet de detalhes */}
       <LojaSheet
         loja={sheetLoja}
@@ -297,7 +334,8 @@ const LojasPage = () => {
         onActivate={handleActivate}
         onEdit={openEdit}
         onDelete={(l) => {
-          if (confirm(`Remover "${getDisplayName(l)}"?`)) deleteMutation.mutate(l.id);
+          if (metricsByLoja[l.id]?.ultimaCotacaoId) toggleAtivoMutation.mutate({ id: l.id, ativo: false });
+          else deleteMutation.mutate(l.id);
         }}
       />
 
