@@ -28,13 +28,35 @@ const LojasPage = () => {
   const [sheetLojaId, setSheetLojaId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  const { data: lojas = [], isLoading } = useQuery({
-    queryKey: ["lojas"],
+  const [showInativas, setShowInativas] = useState(false);
+  const { data: todasLojas = [], isLoading } = useQuery({
+    queryKey: ["lojas-todas"],
     queryFn: async () => {
       const { data, error } = await supabase.from("lojas").select("*").order("nome");
       if (error) throw error;
-      return (data || []) as Loja[];
+      return (data || []) as (Loja & { ativo: boolean })[];
     },
+  });
+  const lojas = useMemo(() => todasLojas.filter((l) => l.ativo !== false), [todasLojas]);
+  const lojasInativas = useMemo(() => todasLojas.filter((l) => l.ativo === false), [todasLojas]);
+  const invalidateLojas = () => {
+    queryClient.invalidateQueries({ queryKey: ["lojas"] });
+    queryClient.invalidateQueries({ queryKey: ["lojas-todas"] });
+    queryClient.invalidateQueries({ queryKey: ["lojas-metrics"] });
+  };
+
+  const toggleAtivoMutation = useMutation({
+    mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
+      const { error } = await supabase.from("lojas").update({ ativo } as any).eq("id", id);
+      if (error) throw error;
+      return ativo;
+    },
+    onSuccess: (ativo) => {
+      invalidateLojas();
+      toast.success(ativo ? "Loja reativada!" : "Loja inativada. O histórico continua guardado.");
+      setSheetLojaId(null);
+    },
+    onError: (e: any) => toast.error(e.message),
   });
 
   // Restaura o sheet apenas se o usuário voltou explicitamente via BackToLojaButton
