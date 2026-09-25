@@ -718,7 +718,13 @@ const FuncionariosPage = () => {
       return;
     }
     const lojaLabel = effectiveLinkLoja ? ` da loja ${effectiveLinkLoja.nome}` : "";
-    const msg = `📋 Use este link para registrar itens faltantes${lojaLabel}:\n${appUrl}\n\nBasta abrir no celular, digitar o item e enviar!`;
+    const msg =
+      `📋 Use este link para registrar itens faltantes${lojaLabel}:\n${appUrl}\n\n` +
+      `Basta abrir no celular, digitar o item e enviar!\n\n` +
+      `*Para instalar o ícone na tela:*\n` +
+      `📱 iPhone: toque no link → se abrir dentro do WhatsApp, escolha *Abrir no Safari* → Compartilhar (quadrado com seta) → *Adicionar à Tela de Início*.\n` +
+      `🤖 Android: toque no link → menu (3 pontinhos) → *Instalar aplicativo* ou *Adicionar à tela inicial*.\n\n` +
+      `⚠️ Se já tinha o ícone antigo, apague e instale de novo por este link.`;
     window.open(buildWhatsAppUrl(null, msg), "_blank");
   };
 

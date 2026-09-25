@@ -171,7 +171,10 @@ const AppFuncionariosPublic = () => {
       : "/manifest-funcionarios.json";
 
     const manifest = document.querySelector('link[rel="manifest"]');
-    if (manifest) manifest.setAttribute("href", manifestHref);
+    // Preserva o manifest com a loja embutida (gerado no index.html).
+    if (manifest && !manifest.getAttribute("href")?.startsWith("blob:")) {
+      manifest.setAttribute("href", manifestHref);
+    }
 
     const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
     if (appleTitle) appleTitle.setAttribute("content", "Compra360 Reposição");
@@ -695,8 +698,17 @@ const AppFuncionariosPublic = () => {
             reposição enviado pelo seu gerente no WhatsApp.
           </p>
           <p className="text-xs text-muted-foreground">
-            Depois de abrir pelo link uma vez, o ícone na tela inicial já volta direto para a sua loja.
+            Se você instalou o ícone antes, apague-o e instale de novo a partir do link recebido
+            (no iPhone, pelo Safari: Compartilhar → Adicionar à Tela de Início).
           </p>
+          <a
+            href="https://wa.me/5544984483553?text=Preciso%20de%20ajuda%20com%20o%20app%20de%20Reposi%C3%A7%C3%A3o"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block text-xs text-primary underline"
+          >
+            Precisa de ajuda? Fale com o suporte
+          </a>
         </div>
       </div>
     );

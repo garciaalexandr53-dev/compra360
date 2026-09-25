@@ -14,9 +14,39 @@
 
         const appTitle = isFuncionarios ? "Compra360 Reposição" : "Compra360";
         const manifestBase = isFuncionarios ? "/manifest-funcionarios.json" : "/manifest.json";
-        const manifestHref = token
+        let manifestHref = token
           ? `${manifestBase}?__lovable_token=${encodeURIComponent(token)}`
           : manifestBase;
+
+        // Ícone instalado já nasce sabendo a loja: start_url com ?loja=<id>.
+        const loja = search.get("loja");
+        if (isFuncionarios && loja && /^[0-9a-f-]{36}$/i.test(loja)) {
+          try {
+            const origin = window.location.origin;
+            const start = `${origin}/reposicao?loja=${loja}`;
+            const icon = (src, sizes, purpose) =>
+              Object.assign({ src: origin + src, sizes, type: "image/png" }, purpose ? { purpose } : {});
+            const dyn = {
+              name: "Compra360 Reposição",
+              short_name: "C360 Reposição",
+              description: "Lista de faltas e conferência de pedidos",
+              start_url: start,
+              id: start,
+              scope: `${origin}/reposicao`,
+              display: "standalone",
+              orientation: "portrait",
+              background_color: "#ffffff",
+              theme_color: "#16a34a",
+              icons: [
+                icon("/icon-192.png", "192x192", "any maskable"),
+                icon("/icon-512.png", "512x512", "any maskable"),
+              ],
+            };
+            manifestHref = URL.createObjectURL(
+              new Blob([JSON.stringify(dyn)], { type: "application/manifest+json" })
+            );
+          } catch (e) { /* mantém o manifest estático */ }
+        }
 
         window.__compra360HeadConfig = { appTitle, manifestHref };
 
