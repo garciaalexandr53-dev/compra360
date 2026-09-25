@@ -171,7 +171,10 @@ const AppFuncionariosPublic = () => {
       : "/manifest-funcionarios.json";
 
     const manifest = document.querySelector('link[rel="manifest"]');
-    if (manifest) manifest.setAttribute("href", manifestHref);
+    // Preserva o manifest com a loja embutida (gerado no index.html).
+    if (manifest && !manifest.getAttribute("href")?.startsWith("blob:")) {
+      manifest.setAttribute("href", manifestHref);
+    }
 
     const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
     if (appleTitle) appleTitle.setAttribute("content", "Compra360 Reposição");
