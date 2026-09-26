@@ -77,3 +77,25 @@ export function buildWhatsAppUrl(phone: string | null | undefined, message: stri
     ? `https://api.whatsapp.com/send?phone=55${cleanPhone}&text=${encoded}`
     : `https://api.whatsapp.com/send?text=${encoded}`;
 }
+
+/** Line "⏰ Fechamento da cotação: ..." for WhatsApp messages, or "" when no/expired deadline. */
+export function formatPrazoMensagem(iso: string | null | undefined, nowMs: number = Date.now()): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime()) || d.getTime() <= nowMs) return "";
+  const hora = formatHoraLocal(iso);
+  const now = new Date(nowMs);
+  const dayKey = (x: Date) => `${x.getFullYear()}-${x.getMonth()}-${x.getDate()}`;
+  const amanha = new Date(now); amanha.setDate(now.getDate() + 1);
+  let quando: string;
+  if (dayKey(d) === dayKey(now)) quando = "hoje";
+  else if (dayKey(d) === dayKey(amanha)) quando = "amanhã";
+  else quando = `dia ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+  return `⏰ Fechamento da cotação: ${quando} até às ${hora}`;
+}
+
+/** Returns "\n\n<line>" or "" to append after the link. */
+export function prazoBloco(iso: string | null | undefined): string {
+  const l = formatPrazoMensagem(iso);
+  return l ? `\n\n${l}` : "";
+}

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Copy, ExternalLink, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { buildWhatsAppUrl } from "@/lib/format";
+import { buildWhatsAppUrl, prazoBloco } from "@/lib/format";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 
@@ -29,7 +29,7 @@ const LinksPage = () => {
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
-      let query = supabase.from("cotacoes").select("id").eq("status", "ativa");
+      let query = supabase.from("cotacoes").select("id, prazo_resposta").eq("status", "ativa");
       if (lojaAtiva?.id) query = query.eq("loja_id", lojaAtiva.id);
       else query = query.is("loja_id", null);
       const { data } = await query.limit(1).maybeSingle();
@@ -103,7 +103,7 @@ const LinksPage = () => {
 
   const openWhatsApp = (f: Fornecedor) => {
     const link = getLink(f);
-    const msg = `Olá ${f.nome}! Segue o link para cotação de preços:\n\n${link}\n\nPreencha os preços e envie. Obrigado!`;
+    const msg = `Olá ${f.nome}! Segue o link para cotação de preços:\n\n${link}${prazoBloco((cotacaoAtiva as any)?.prazo_resposta)}\n\nPreencha os preços e envie. Obrigado!`;
     window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
   };
 

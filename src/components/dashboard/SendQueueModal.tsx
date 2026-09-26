@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle2, Clock, SkipForward, Smartphone } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
-import { buildWhatsAppUrl } from "@/lib/format";
+import { buildWhatsAppUrl, prazoBloco } from "@/lib/format";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 
 type Fornecedor = Tables<"fornecedores">;
@@ -13,13 +13,14 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   fornecedores: Fornecedor[];
+  prazoIso?: string | null;
 }
 
 type Status = "pending" | "sent" | "skipped";
 
 const STORAGE_KEY = "send-queue-state";
 
-const SendQueueModal = ({ open, onOpenChange, fornecedores, onConclude }: Props & { onConclude?: () => void }) => {
+const SendQueueModal = ({ open, onOpenChange, fornecedores, onConclude, prazoIso }: Props & { onConclude?: () => void }) => {
   const { lojaAtiva } = useLojaAtiva();
 
   const [statuses, setStatuses] = useState<Record<string, Status>>(() => {
@@ -56,7 +57,7 @@ const SendQueueModal = ({ open, onOpenChange, fornecedores, onConclude }: Props 
 
   const openWhatsApp = (f: Fornecedor) => {
     const link = getLink(f);
-    const msg = `Olá ${f.nome}! Segue o link para cotação de preços:\n\n${link}\n\nPreencha os preços e envie. Obrigado!`;
+    const msg = `Olá ${f.nome}! Segue o link para cotação de preços:\n\n${link}${prazoBloco(prazoIso)}\n\nPreencha os preços e envie. Obrigado!`;
     window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
     setStatuses(prev => ({ ...prev, [f.id]: "sent" }));
   };
