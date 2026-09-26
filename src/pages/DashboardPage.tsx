@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
+import { formatBRL, buildWhatsAppUrl, prazoBloco } from "@/lib/format";
 import type { Tables } from "@/integrations/supabase/types";
 
 

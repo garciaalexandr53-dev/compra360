@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal, X, Phone, CheckCircle2, Clock, AlertCircle, MapPin, Send } from "lucide-react";
 import { toast } from "sonner";
-import { formatBRL, buildWhatsAppUrl } from "@/lib/format";
+import { formatBRL, buildWhatsAppUrl, prazoBloco } from "@/lib/format";
 import { maskTelefone, formatTelefone, normalizeTelefone, maskMoeda, parseMoeda, moedaParaInput } from "@/lib/masks";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import BackToLojaButton from "@/components/shared/BackToLojaButton";
