@@ -44,6 +44,8 @@ import PrazoEditableBadge from "@/components/dashboard/PrazoEditableBadge";
 import WhatsAppRequiredModal from "@/components/dashboard/WhatsAppRequiredModal";
 import { Flame } from "lucide-react";
 import { formatNomeLoja } from "@/lib/masks";
+import CockpitCard, { type CockpitAcao } from "@/components/dashboard/CockpitCard";
+
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -613,7 +615,100 @@ const DashboardPage = () => {
     navigate("/cotacao?review=1");
   };
 
+  // ── Cockpit: qual é a única coisa a fazer agora ──
+  const cockpitAcao = useMemo<CockpitAcao | null>(() => {
+    if (state === 1) {
+      if (itensFaltantes > 0) {
+        return {
+          tom: "atencao",
+          selo: "Reposição",
+          titulo: `${itensFaltantes} item(ns) de falta esperando a próxima cotação`,
+          descricao: "Sua equipe já registrou o que está faltando na loja.",
+          botao: "Importar itens faltantes",
+          onClick: () => navigate("/funcionarios"),
+          secundario: { label: "Montar manualmente", onClick: () => navigate("/add-produtos") },
+        };
+      }
+      return {
+        tom: "neutro",
+        titulo: "Comece uma nova cotação",
+        descricao: "Monte a lista de produtos para pedir preço aos fornecedores.",
+        botao: "Adicionar produtos",
+        onClick: () => navigate("/add-produtos"),
+      };
+    }
+    if (state === 2) {
+      return {
+        tom: "atencao",
+        selo: "Em andamento",
+        titulo: "Sua cotação está sem produtos",
+        descricao: "Adicione os itens que você quer cotar.",
+        botao: "Adicionar produtos",
+        onClick: () => navigate("/add-produtos"),
+      };
+    }
+    if (state === 3) {
+      if (selectedSupplierCount === 0) {
+        return {
+          tom: "atencao",
+          selo: "Em andamento",
+          titulo: `${itemCount} produtos prontos. Escolha os fornecedores`,
+          descricao: "Selecione para quem você quer pedir preço.",
+          botao: "Selecionar fornecedores",
+          onClick: () => setSupplierModalOpen(true),
+        };
+      }
+      return {
+        tom: "atencao",
+        selo: "Pronto para enviar",
+        titulo: `Envie a cotação para ${selectedSupplierCount} fornecedor(es)`,
+        descricao: `${itemCount} produtos na lista.`,
+        botao: "Enviar para todos",
+        onClick: () => setSendQueueOpen(true),
+      };
+    }
+    if (state === 4) {
+      const faltam = Math.max(selectedSupplierCount - respostaCount, 0);
+      return {
+        tom: "neutro",
+        selo: "Ao vivo",
+        titulo:
+          respostaCount === 0
+            ? "Aguardando as primeiras respostas dos fornecedores"
+            : `${respostaCount} de ${selectedSupplierCount} já responderam`,
+        descricao:
+          faltam > 0
+            ? `Falta${faltam === 1 ? "" : "m"} ${faltam} fornecedor(es). Você pode cobrar pelo WhatsApp na lista abaixo.`
+            : undefined,
+        botao: "Ver cotação parcial",
+        onClick: () => navigate("/cotacao?from=dashboard"),
+      };
+    }
+    if (state === 5) {
+      if (!cotacaoRevisada) {
+        return {
+          tom: "sucesso",
+          selo: "Pronto",
+          titulo: "Todos responderam. Revise os preços",
+          descricao: "Confira a tabela completa antes de fechar a compra.",
+          botao: "Revisar cotação",
+          onClick: handleRevisarCotacao,
+        };
+      }
+      return {
+        tom: "sucesso",
+        selo: "Pronto",
+        titulo: "Feche a compra com os melhores preços",
+        descricao: "Veja os pedidos por fornecedor e envie.",
+        botao: "Ver pedidos",
+        onClick: () => navigate("/analise"),
+      };
+    }
+    return null;
+  }, [state, itensFaltantes, itemCount, selectedSupplierCount, respostaCount, cotacaoRevisada, navigate]);
+
   // ── Action buttons shared across states 1 & 2 ──
+
   const ActionButtons = () => (
     <div className="space-y-2">
       {itensFaltantes > 0 && (
@@ -684,7 +779,9 @@ const DashboardPage = () => {
       <FornecedoresLojaBanner />
       <AppFuncionariosDiscoveryCard />
       <ItensCarregadosBanner cotacaoId={cotacaoAtiva?.id ?? null} />
+      {!showConclusao && <CockpitCard acao={cockpitAcao} />}
       <div className="animate-fade-in">
+
 
         {/* ── STATE 1: No active quote — guided flow ── */}
         {state === 1 && (
