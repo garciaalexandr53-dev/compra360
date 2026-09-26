@@ -779,7 +779,9 @@ const DashboardPage = () => {
       <FornecedoresLojaBanner />
       <AppFuncionariosDiscoveryCard />
       <ItensCarregadosBanner cotacaoId={cotacaoAtiva?.id ?? null} />
+      {!showConclusao && <CockpitCard acao={cockpitAcao} />}
       <div className="animate-fade-in">
+
 
         {/* ── STATE 1: No active quote — guided flow ── */}
         {state === 1 && (
