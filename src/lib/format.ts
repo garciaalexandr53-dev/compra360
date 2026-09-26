@@ -91,7 +91,7 @@ export function formatPrazoMensagem(iso: string | null | undefined, nowMs: numbe
   if (dayKey(d) === dayKey(now)) quando = "hoje";
   else if (dayKey(d) === dayKey(amanha)) quando = "amanhã";
   else quando = `dia ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
-  return `⏰ Fechamento da cotação: ${quando} até às ${hora}`;
+  return `⏰ *Fechamento da cotação: ${quando} até às ${hora}*`;
 }
 
 /** Returns "\n\n<line>" or "" to append after the link. */
