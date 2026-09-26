@@ -464,6 +464,7 @@ const TabelaCotacao = ({
           </tbody>
         </table>
       </div>
+      <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
 
       {/* Total bar — hidden in review mode since ReviewFooter replaces it */}
       {!isReviewMode && (
