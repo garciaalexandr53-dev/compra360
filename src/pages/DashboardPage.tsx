@@ -44,6 +44,8 @@ import PrazoEditableBadge from "@/components/dashboard/PrazoEditableBadge";
 import WhatsAppRequiredModal from "@/components/dashboard/WhatsAppRequiredModal";
 import { Flame } from "lucide-react";
 import { formatNomeLoja } from "@/lib/masks";
+import CockpitCard, { type CockpitAcao } from "@/components/dashboard/CockpitCard";
+
 
 type Fornecedor = Tables<"fornecedores">;
 
