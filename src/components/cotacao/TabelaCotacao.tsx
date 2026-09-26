@@ -3,7 +3,12 @@ import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Trash2, Phone, Mail } from "lucide-react";
+import { Trash2, Phone, Mail, ArrowDown, ArrowUp } from "lucide-react";
+import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useHistoricoPrecos } from "@/hooks/useHistoricoPrecos";
+import { chaveProduto, classificar, variacao, formatPct } from "@/lib/precoHistorico";
+import PlanosModal from "@/components/PlanosModal";
 import { formatBRL, formatNumber } from "@/lib/format";
 import { getCotacaoNome } from "@/lib/buscaProdutos";
 import { toast } from "sonner";
@@ -83,6 +88,10 @@ const TabelaCotacao = ({
   isReviewMode = false,
 }: TabelaCotacaoProps) => {
   const toastedRef = useRef<Set<string>>(new Set());
+  const { lojaAtiva } = useLojaAtiva();
+  const { isPro } = useSubscription();
+  const { data: historico } = useHistoricoPrecos(lojaAtiva?.id);
+  const [showPlanos, setShowPlanos] = useState(false);
   const [qtyDrafts, setQtyDrafts] = useState<Record<string, string>>({});
   const [fatorDrafts, setFatorDrafts] = useState<Record<string, string>>({});
   const [deleteConfirm, setDeleteConfirm] = useState<{ cpId: string; nome: string } | null>(null);
@@ -249,6 +258,28 @@ const TabelaCotacao = ({
                         onContextMenu={(e) => e.preventDefault()}
                       >
                         {getCotacaoNome(cp)}
+                        {(() => {
+                          const ref = historico?.get(chaveProduto({ ...cp, nome: getCotacaoNome(cp) }));
+                          if (!ref) return null;
+                          if (!isPro) {
+                            return (
+                              <span
+                                role="button"
+                                onClick={(e) => { e.stopPropagation(); setShowPlanos(true); }}
+                                className="block mt-0.5 text-[10px] font-normal text-muted-foreground cursor-pointer"
+                              >
+                                ⭐ Inteligência de Preço · Pro
+                              </span>
+                            );
+                          }
+                          return (
+                            <span className="block mt-0.5 text-[10px] font-normal text-muted-foreground">
+                              Último: R$ {formatNumber(ref.ultimo_preco * fator)}
+                              {ref.ultimo_fornecedor ? ` · ${ref.ultimo_fornecedor}` : ""}
+                              {` · ${new Date(ref.ultima_data).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`}
+                            </span>
+                          );
+                        })()}
                       </button>
                       <button
                         className="hidden md:flex opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center h-6 w-6 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex-shrink-0"
@@ -335,6 +366,7 @@ const TabelaCotacao = ({
                     else inputClass += " text-muted-foreground/40";
 
                     const hist = historicalAvgMap[cp.produto_id];
+                    const histRef = historico?.get(chaveProduto({ ...cp, nome: getCotacaoNome(cp) }));
 
                     return (
                       <td key={f.id} className="px-0.5 py-1 border-b border-border/50 text-center">
@@ -392,6 +424,30 @@ const TabelaCotacao = ({
                               </TooltipContent>
                             </Tooltip>
                           )}
+                          {isPro && histRef && numVal !== null && numVal > 0 && (() => {
+                            const unit = numVal / fator;
+                            const cls = classificar(unit, histRef.ultimo_preco);
+                            if (!cls || cls === "neutro") return null;
+                            return (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button
+                                    type="button"
+                                    aria-label="Comparar com o último preço pago"
+                                    className={`absolute -top-1.5 -left-1 leading-none ${cls === "abaixo" ? "text-green-600 dark:text-emerald-400" : "text-destructive"}`}
+                                  >
+                                    {cls === "abaixo" ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />}
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent side="top" className="w-60 p-3 text-xs space-y-1">
+                                  <p className="font-semibold">Histórico da loja</p>
+                                  <p>Último pago: <b>R$ {formatNumber(histRef.ultimo_preco * fator)}</b>{histRef.ultimo_fornecedor ? ` · ${histRef.ultimo_fornecedor}` : ""} · {new Date(histRef.ultima_data).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</p>
+                                  <p>Média ({histRef.amostras} cotações): <b>R$ {formatNumber(histRef.media * fator)}</b></p>
+                                  <p>Este preço: {formatPct(variacao(unit, histRef.ultimo_preco))} vs último · {formatPct(variacao(unit, histRef.media))} vs média</p>
+                                </PopoverContent>
+                              </Popover>
+                            );
+                          })()}
                         </div>
                       </td>
                     );
@@ -408,6 +464,7 @@ const TabelaCotacao = ({
           </tbody>
         </table>
       </div>
+      <PlanosModal open={showPlanos} onClose={() => setShowPlanos(false)} />
 
       {/* Total bar — hidden in review mode since ReviewFooter replaces it */}
       {!isReviewMode && (

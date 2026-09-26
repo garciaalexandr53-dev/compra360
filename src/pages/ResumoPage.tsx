@@ -7,12 +7,18 @@ import { fetchPrecosByCpIds } from "@/lib/supabaseHelpers";
 import { formatBRL } from "@/lib/format";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useHistoricoPrecos } from "@/hooks/useHistoricoPrecos";
+import { chaveProduto, formatPct } from "@/lib/precoHistorico";
+import { getCotacaoNome } from "@/lib/buscaProdutos";
 
 type Fornecedor = Tables<"fornecedores">;
 
 const ResumoPage = () => {
   const navigate = useNavigate();
   const { lojaAtiva } = useLojaAtiva();
+  const { isPro } = useSubscription();
+  const { data: historico } = useHistoricoPrecos(lojaAtiva?.id, isPro);
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
     queryFn: async () => {
@@ -143,6 +149,24 @@ const ResumoPage = () => {
     return { totalItems, responderam, itensCotados, cobertura, grandTotal, supplierStats };
   }, [cotacaoProdutos, precos, fornecedores]);
 
+  const comparacao = useMemo(() => {
+    let base = 0, atual = 0, itens = 0;
+    if (!historico) return { base, diff: 0, itens };
+    cotacaoProdutos.forEach((cp: any) => {
+      const ref = historico.get(chaveProduto({ ...cp, nome: getCotacaoNome(cp) }));
+      if (!ref) return;
+      const cpPrecos = precos.filter((p: any) => p.cotacao_produto_id === cp.id && p.preco > 0);
+      if (!cpPrecos.length) return;
+      const min = Math.min(...cpPrecos.map((p: any) => p.preco));
+      const qtd = cp.quantidade || 1;
+      base += ref.ultimo_preco * (cp.fator_embalagem || 1) * qtd;
+      atual += min * qtd;
+      itens++;
+    });
+    return { base, diff: atual - base, itens };
+  }, [historico, cotacaoProdutos, precos]);
+
+
 
   if (!cotacaoAtiva) {
     return (
@@ -169,6 +193,18 @@ const ResumoPage = () => {
         <KpiCard label="Cobertura" value={`${stats.cobertura}%`} sub={`${stats.itensCotados} de ${stats.totalItems} cotados`} />
         <KpiCard label="Itens Cotados" value={String(stats.itensCotados)} sub={`de ${stats.totalItems} total`} />
       </div>
+
+      {isPro && comparacao.base > 0 && (
+        <div className={`mb-5 rounded-xl border px-4 py-3 text-sm ${comparacao.diff <= 0 ? "border-green-500/30 bg-green-50 dark:bg-green-950/20" : "border-destructive/30 bg-destructive/5"}`}>
+          Comparado ao último preço pago ({comparacao.itens} itens):{" "}
+          <b>
+            {comparacao.diff <= 0
+              ? `economia de ${formatBRL(-comparacao.diff)} (${formatPct(comparacao.diff / comparacao.base)})`
+              : `${formatBRL(comparacao.diff)} acima (${formatPct(comparacao.diff / comparacao.base)})`}
+          </b>
+        </div>
+      )}
+
 
       {/* Supplier cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
