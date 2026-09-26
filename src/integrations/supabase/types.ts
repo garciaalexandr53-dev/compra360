@@ -1623,6 +1623,17 @@ export type Database = {
           status: string
         }[]
       }
+      get_historico_precos_loja: {
+        Args: { _loja_id: string }
+        Returns: {
+          amostras: number
+          chave: string
+          media: number
+          ultima_data: string
+          ultimo_fornecedor: string
+          ultimo_preco: number
+        }[]
+      }
       get_itens_enviados_publico: {
         Args: { _loja_id: string; _since: string }
         Returns: {
