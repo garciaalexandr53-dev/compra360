@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { formatBRL } from "@/lib/format";
 import { formatNomeEmpresa, formatNomePessoa, formatTelefone } from "@/lib/masks";
 import { tipoFornecedorLabel, pastasLabel } from "@/lib/adminHelpers";
+import DesempenhoFornecedorBadge from "./DesempenhoFornecedorBadge";
 
 export interface SugestaoFornecedor {
   id: string;
@@ -20,6 +21,9 @@ export interface SugestaoFornecedor {
   pasta: string[] | null;
   pedido_minimo: number | null;
   prazo_pagamento: string | null;
+  total_cotacoes?: number | null;
+  total_respondidas?: number | null;
+  tempo_medio_horas?: number | null;
 }
 
 interface Props {
@@ -115,6 +119,11 @@ const SugestoesRegiaoDialog = ({ open, onOpenChange, sugestoes, lojaId, cidadeLa
                       {s.prazo_pagamento || ""}
                     </p>
                   )}
+                  <DesempenhoFornecedorBadge
+                    total={s.total_cotacoes}
+                    respondidas={s.total_respondidas}
+                    tempoHoras={s.tempo_medio_horas}
+                  />
                 </div>
               </label>
             );
