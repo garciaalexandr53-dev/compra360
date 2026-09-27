@@ -2,6 +2,11 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import TabelaCotacao from "./TabelaCotacao";
 
+vi.mock("@/hooks/useLojaAtiva", () => ({ useLojaAtiva: () => ({ lojaAtiva: null, lojas: [] }) }));
+vi.mock("@/hooks/useSubscription", () => ({ useSubscription: () => ({ isPro: true }) }));
+vi.mock("@/hooks/useHistoricoPrecos", () => ({ useHistoricoPrecos: () => ({ data: undefined }) }));
+vi.mock("@/components/PlanosModal", () => ({ default: () => null }));
+
 const baseProduto = {
   id: "p1",
   nome: "Arroz 5kg",
