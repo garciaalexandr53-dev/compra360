@@ -76,6 +76,18 @@ const FornecedoresPage = () => {
     },
   });
 
+  const { data: desempenhoLoja = {} as Record<string, { total: number; resp: number }> } = useQuery({
+    queryKey: ["desempenho-fornecedores", lojaAtiva?.id],
+    enabled: !!lojaAtiva?.id,
+    queryFn: async () => {
+      const { data, error } = await (supabase.rpc as any)("get_desempenho_fornecedores_loja", { _loja_id: lojaAtiva!.id });
+      if (error) throw error;
+      const map: Record<string, { total: number; resp: number }> = {};
+      for (const r of (data || []) as any[]) map[r.fornecedor_id] = { total: Number(r.total_cotacoes), resp: Number(r.total_respondidas) };
+      return map;
+    },
+  });
+
   const { data: sugestoes = [] } = useQuery({
     queryKey: ["sugestoes-regiao", lojaAtiva?.id],
     enabled: !!lojaAtiva?.id && !!lojaAtiva?.cidade,
@@ -374,6 +386,11 @@ const FornecedoresPage = () => {
                         <div className="font-bold text-foreground text-sm">{formatNomeEmpresa(f.nome)}</div>
                         {f.representante && (
                           <div className="text-xs text-muted-foreground mt-0.5">{formatNomePessoa(f.representante)}</div>
+                        )}
+                        {desempenhoLoja[f.id] && desempenhoLoja[f.id].total > 0 && (
+                          <div className="text-[11px] text-muted-foreground mt-1">
+                            Respondeu {desempenhoLoja[f.id].resp} de {desempenhoLoja[f.id].total} cotaç{desempenhoLoja[f.id].total === 1 ? "ão" : "ões"} da loja
+                          </div>
                         )}
                       </div>
                       {f.pedido_minimo && f.pedido_minimo > 0 && (
