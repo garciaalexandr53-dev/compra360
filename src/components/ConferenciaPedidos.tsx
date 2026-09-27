@@ -488,12 +488,19 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
 
   const adicionarFaltantes = async () => {
     try {
+      const lojaDestino = lojaId || selectedPedido?.loja_id || null;
+      if (!lojaDestino) {
+        toast.error("Não foi possível identificar a loja deste pedido.");
+        return;
+      }
       const inserts = faltantes.map((f) => ({
         nome: f.nome,
         quantidade: f.qtd,
         registrado_por: `Conferência - ${nome.trim()}`,
+        loja_id: lojaDestino,
       }));
-      await supabase.from("itens_faltantes").insert(inserts);
+      const { error } = await supabase.from("itens_faltantes").insert(inserts);
+      if (error) throw error;
       toast.success(`${faltantes.length} item(ns) adicionado(s) à lista de faltantes!`);
       setShowFaltantes(false);
       setConferenciaDone(true);
