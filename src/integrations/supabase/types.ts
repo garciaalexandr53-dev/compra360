@@ -1205,6 +1205,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _fornecedor_convocacoes: {
+        Args: never
+        Returns: {
+          fornecedor_id: string
+          horas: number
+          loja_id: string
+          respondeu: boolean
+        }[]
+      }
       admin_activate_all_produtos: {
         Args: { _user_id: string }
         Returns: number
@@ -1623,6 +1632,15 @@ export type Database = {
           status: string
         }[]
       }
+      get_desempenho_fornecedores_loja: {
+        Args: { _loja_id: string }
+        Returns: {
+          fornecedor_id: string
+          tempo_medio_horas: number
+          total_cotacoes: number
+          total_respondidas: number
+        }[]
+      }
       get_historico_precos_loja: {
         Args: { _loja_id: string }
         Returns: {
@@ -1856,7 +1874,10 @@ export type Database = {
           prazo_pagamento: string
           representante: string
           telefone: string
+          tempo_medio_horas: number
           tipo_fornecedor: string
+          total_cotacoes: number
+          total_respondidas: number
         }[]
       }
       whatsapp_parceiro_existe: { Args: { _telefone: string }; Returns: Json }
