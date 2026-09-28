@@ -18,6 +18,7 @@ import {
 import FornecedorAdminSheet from "./FornecedorAdminSheet";
 import RedeUnificadaLista from "./RedeUnificadaLista";
 import ConsentimentoLista from "./ConsentimentoLista";
+import SolicitacoesAcessoLista from "./SolicitacoesAcessoLista";
 import ConvidarRedeDialog from "@/components/fornecedores/ConvidarRedeDialog";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
