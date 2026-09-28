@@ -122,7 +122,8 @@ export default function PerfilPage() {
       toast.error("CNPJ inválido");
       return;
     }
-    if (receita.bloqueia) {
+    const cnpjAlterado = loja.cnpj.replace(/\D/g, "") !== (lojaData?.cnpj ?? "").replace(/\D/g, "");
+    if (cnpjAlterado && receita.bloqueia) {
       toast.error("CNPJ inválido ou com situação irregular na Receita");
       return;
     }
