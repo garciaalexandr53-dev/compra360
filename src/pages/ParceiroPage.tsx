@@ -1,9 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import Seo from "@/components/Seo";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +23,8 @@ import { maskTelefone, formatNomeEmpresa, formatNomePessoa } from "@/lib/masks";
 import { pastasDisponiveis } from "@/lib/adminHelpers";
 import { validarWhatsApp } from "@/lib/whatsappValidacao";
 import { mensagemAcessoParceiro, linkSuporteComMensagem } from "@/lib/parceiro";
-import { Loader2, MessageCircle, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { Loader2, MessageCircle, ShieldCheck, CheckCircle2, LogOut } from "lucide-react";
+
 
 type Dados = {
   encontrado: boolean;
