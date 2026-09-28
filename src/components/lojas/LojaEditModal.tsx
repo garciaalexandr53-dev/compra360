@@ -4,6 +4,9 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { LojaForm, formatCNPJ } from "./lojaUtils";
 import EnderecoFields from "./EnderecoFields";
+import { useConsultaCNPJ } from "@/hooks/useConsultaCNPJ";
+import CnpjStatus from "@/components/CnpjStatus";
+import { formatCEP } from "./lojaUtils";
 
 interface Props {
   open: boolean;
@@ -16,6 +19,20 @@ interface Props {
 }
 
 export default function LojaEditModal({ open, onOpenChange, editing, form, setForm, onSave, saving }: Props) {
+  const receita = useConsultaCNPJ(open ? form.cnpj : "", (d) => {
+    const f = form;
+    setForm({
+      ...f,
+      razao_social: f.razao_social.trim() ? f.razao_social : d.razao_social,
+      nome_fantasia: f.nome_fantasia.trim() ? f.nome_fantasia : d.nome_fantasia,
+      cep: f.cep.trim() ? f.cep : formatCEP(d.cep),
+      endereco: f.endereco.trim() ? f.endereco : d.logradouro,
+      numero: f.numero.trim() ? f.numero : d.numero,
+      bairro: f.bairro.trim() ? f.bairro : d.bairro,
+      cidade: f.cidade.trim() ? f.cidade : d.municipio,
+      uf: f.uf.trim() ? f.uf : d.uf,
+    });
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -59,6 +76,7 @@ export default function LojaEditModal({ open, onOpenChange, editing, form, setFo
                 onChange={(e) => setForm({ ...form, cnpj: formatCNPJ(e.target.value) })}
                 placeholder="00.000.000/0000-00"
               />
+              <CnpjStatus status={receita.status} dados={receita.dados} />
             </div>
             <div>
               <Label>Inscrição Estadual</Label>
@@ -87,6 +105,7 @@ export default function LojaEditModal({ open, onOpenChange, editing, form, setFo
             onClick={onSave}
             disabled={
               saving ||
+              receita.bloqueia ||
               (!form.nome_fantasia.trim() && !form.nome.trim()) ||
               !form.cidade.trim()
             }

@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useConsultaCNPJ } from "@/hooks/useConsultaCNPJ";
+import CnpjStatus from "@/components/CnpjStatus";
 import { maskTelefone, maskCNPJ, isTelefoneValido, isCNPJValido } from "@/lib/masks";
 import { formatNomeLoja } from "@/lib/masks";
 
@@ -94,6 +96,18 @@ export default function PerfilPage() {
     }
   }, [lojaData]);
 
+  const receita = useConsultaCNPJ(loja.cnpj, (d) => {
+    setLoja((l) => ({
+      ...l,
+      razao_social: l.razao_social.trim() ? l.razao_social : d.razao_social,
+      endereco: l.endereco.trim()
+        ? l.endereco
+        : [[d.logradouro, d.numero].filter(Boolean).join(", "), d.bairro, [d.municipio, d.uf].filter(Boolean).join("/")]
+            .filter(Boolean)
+            .join(" - "),
+    }));
+  });
+
   const handleSave = async () => {
     if (!user?.id) return;
     if (!isTelefoneValido(profile.whatsapp)) {
@@ -106,6 +120,11 @@ export default function PerfilPage() {
     }
     if (!isCNPJValido(loja.cnpj)) {
       toast.error("CNPJ inválido");
+      return;
+    }
+    const cnpjAlterado = loja.cnpj.replace(/\D/g, "") !== (lojaData?.cnpj ?? "").replace(/\D/g, "");
+    if (cnpjAlterado && receita.bloqueia) {
+      toast.error("CNPJ inválido ou com situação irregular na Receita");
       return;
     }
 
@@ -256,6 +275,7 @@ export default function PerfilPage() {
                       placeholder="00.000.000/0000-00"
                       inputMode="numeric"
                     />
+                    <CnpjStatus status={receita.status} dados={receita.dados} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="ie">Inscrição estadual</Label>

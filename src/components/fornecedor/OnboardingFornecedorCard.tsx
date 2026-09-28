@@ -8,6 +8,9 @@ import { pastasDisponiveis } from "@/lib/adminHelpers";
 import CidadesAtendidasInput from "@/components/fornecedor/CidadesAtendidasInput";
 import { adicionarCidade, dedupCidades } from "@/lib/cidades";
 import type { Municipio } from "@/lib/cep";
+import { useConsultaCNPJ } from "@/hooks/useConsultaCNPJ";
+import CnpjStatus from "@/components/CnpjStatus";
+import { formatNomeEmpresa } from "@/lib/masks";
 
 interface OnboardingState {
   pedir_cnpj: boolean;
@@ -88,7 +91,8 @@ const OnboardingFornecedorCard = ({
   }, [token, cotacaoId]);
 
   const digits = cnpj.replace(/\D/g, "");
-  const cnpjCompleto = digits.length === 14;
+  const receita = useConsultaCNPJ(cnpj);
+  const cnpjCompleto = digits.length === 14 && !receita.bloqueia;
 
   // Checa duplicidade do CNPJ com debounce para revelar as linhas de produto.
   useEffect(() => {
@@ -147,6 +151,7 @@ const OnboardingFornecedorCard = ({
         _cnpj: cnpjCompleto ? digits : null,
         _pasta: mostrarPasta && pastas.length > 0 ? pastas : null,
         _consentimento: modoCidades ? null : consentimento,
+        _razao_social: cnpjCompleto && receita.dados?.razao_social ? formatNomeEmpresa(receita.dados.razao_social) : null,
         _cidades: mostrarCidades
           ? cidades.map((m) => ({ cidade: m.cidade, uf: m.uf }))
           : null,
@@ -190,6 +195,7 @@ const OnboardingFornecedorCard = ({
             onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
             className="w-full"
           />
+          <CnpjStatus status={receita.status} dados={receita.dados} />
           {!state.permite_skip && (
             <p className="text-xs text-amber-700 dark:text-amber-300">
               Para continuar recebendo cotações, complete o cadastro da sua empresa.

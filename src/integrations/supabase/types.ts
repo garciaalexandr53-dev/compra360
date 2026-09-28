@@ -563,6 +563,7 @@ export type Database = {
           pasta: string[] | null
           pedido_minimo: number | null
           prazo_pagamento: string | null
+          razao_social: string | null
           representante: string | null
           telefone: string | null
           tipo_fornecedor: string | null
@@ -586,6 +587,7 @@ export type Database = {
           pasta?: string[] | null
           pedido_minimo?: number | null
           prazo_pagamento?: string | null
+          razao_social?: string | null
           representante?: string | null
           telefone?: string | null
           tipo_fornecedor?: string | null
@@ -609,6 +611,7 @@ export type Database = {
           pasta?: string[] | null
           pedido_minimo?: number | null
           prazo_pagamento?: string | null
+          razao_social?: string | null
           representante?: string | null
           telefone?: string | null
           tipo_fornecedor?: string | null
@@ -1826,6 +1829,7 @@ export type Database = {
           _cnpj?: string
           _consentimento?: string
           _pasta?: string[]
+          _razao_social?: string
           _token: string
         }
         Returns: boolean
