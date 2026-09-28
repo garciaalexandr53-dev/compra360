@@ -63,6 +63,7 @@ const OnboardingFornecedorCard = ({
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [cnpjIrregular, setCnpjIrregular] = useState(false);
   const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
