@@ -386,6 +386,37 @@ function EditarDados({ token }: { token: string }) {
           />
         </div>
 
+        {consentAtual !== "sim" && (
+          <div className="rounded-xl border border-teal-500/30 bg-teal-500/5 p-4 space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-white">
+                Quer ser indicado para novos supermercados?
+              </p>
+              <p className="text-xs text-slate-400 mt-1">
+                Isso não muda nada com os clientes que você já atende hoje.
+              </p>
+            </div>
+            <div className="space-y-2">
+              {OPCOES_REDE.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => setConsentEscolha(o.value)}
+                  className={`w-full text-left rounded-xl px-4 py-3 border transition-colors ${
+                    consentEscolha === o.value
+                      ? "bg-teal-500/15 border-teal-400 text-white"
+                      : "bg-slate-950 border-white/10 text-slate-300 hover:border-teal-500/40"
+                  }`}
+                >
+                  <span className="block text-sm font-semibold">{o.label}</span>
+                  <span className="block text-xs text-slate-400 mt-0.5">{o.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+
         <Button
           onClick={salvar}
           disabled={salvando}
