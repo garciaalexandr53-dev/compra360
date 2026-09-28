@@ -1,4 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ordenarPorNome } from "@/lib/ordenarPorNome";
+import { PREFIXO_FALTA_CONFERENCIA, origemFaltaConferencia, normalizarNomeItem, montarOrigemFaltaConferencia } from "@/lib/itensFaltantesImport";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL, formatDateTime } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -95,9 +98,55 @@ const ConferenciasPage = () => {
 
   // Items for expanded conference
   const expandedItens = useMemo(
-    () => expandedId ? allItens.filter((i: any) => i.conferencia_id === expandedId) : [],
+    () => expandedId ? ordenarPorNome(allItens.filter((i: any) => i.conferencia_id === expandedId), (i) => i.produto_nome) : [],
     [allItens, expandedId]
   );
+
+  const queryClient = useQueryClient();
+  const [showDivId, setShowDivId] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState<string | null>(null);
+
+  // Faltas registradas pela conferência (para saber se já foram para a reposição)
+  const { data: faltasConferencia = [] } = useQuery({
+    queryKey: ["faltas-conferencia"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("itens_faltantes")
+        .select("id, nome, importado, registrado_por")
+        .like("registrado_por", `${PREFIXO_FALTA_CONFERENCIA}%`);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const statusReposicao = (numero: number | undefined, produto: string): "importado" | "pendente" | "nao_enviado" => {
+    const alvo = normalizarNomeItem(produto);
+    const achado = faltasConferencia.filter((f: any) => {
+      const o = origemFaltaConferencia(f.registrado_por);
+      return o && o.pedido === String(numero) && normalizarNomeItem(f.nome) === alvo;
+    });
+    if (achado.length === 0) return "nao_enviado";
+    return achado.some((f: any) => !f.importado) ? "pendente" : "importado";
+  };
+
+  const enviarParaReposicao = async (conf: ConferenciaRow, item: ConferenciaItem) => {
+    const lojaId = conf.pedidos?.loja_id;
+    if (!lojaId) { toast.error("Não foi possível identificar a loja deste pedido."); return; }
+    const falta = Math.max(1, Number(item.quantidade_pedida) - Number(item.quantidade_recebida));
+    setEnviando(item.id);
+    const emb = item.embalagem ? String(item.embalagem).split("|")[0].trim() : null;
+    const { error } = await supabase.from("itens_faltantes").insert({
+      nome: item.produto_nome,
+      quantidade: falta,
+      embalagem: emb,
+      loja_id: lojaId,
+      registrado_por: montarOrigemFaltaConferencia(conf.pedidos?.numero ?? "", conf.pedidos?.fornecedores?.nome ?? "", conf.conferido_por),
+    });
+    setEnviando(null);
+    if (error) { toast.error("Erro: " + error.message); return; }
+    toast.success("Enviado para a lista de reposição!");
+    queryClient.invalidateQueries({ queryKey: ["faltas-conferencia"] });
+  };
 
   // Unique suppliers for filter
   const fornecedores = useMemo(() => {
@@ -333,11 +382,53 @@ const ConferenciasPage = () => {
                     )}
 
                     {divergencias.length > 0 && (
-                      <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-destructive/10 border border-destructive/20">
-                        <AlertTriangle className="h-4 w-4 text-destructive" />
-                        <span className="text-sm font-medium text-destructive">
-                          {divergencias.length} divergência(s) encontrada(s)
-                        </span>
+                      <div className="mb-3">
+                        <button
+                          type="button"
+                          onClick={() => setShowDivId(showDivId === conf.id ? null : conf.id)}
+                          className="w-full flex items-center gap-2 p-2 rounded-md bg-destructive/10 border border-destructive/20 text-left"
+                        >
+                          <AlertTriangle className="h-4 w-4 text-destructive" />
+                          <span className="text-sm font-medium text-destructive flex-1">
+                            {divergencias.length} divergência(s) encontrada(s)
+                          </span>
+                          <span className="text-xs text-destructive underline">{showDivId === conf.id ? "Ocultar" : "Ver itens"}</span>
+                          {showDivId === conf.id ? <ChevronUp className="h-4 w-4 text-destructive" /> : <ChevronDown className="h-4 w-4 text-destructive" />}
+                        </button>
+                        {showDivId === conf.id && (
+                          <div className="mt-2 space-y-2">
+                            {divergencias.map((item) => {
+                              const falta = Number(item.quantidade_pedida) - Number(item.quantidade_recebida);
+                              const st = statusReposicao(conf.pedidos?.numero, item.produto_nome);
+                              return (
+                                <div key={item.id} className="rounded-md border p-2.5 flex flex-wrap items-center gap-2">
+                                  <div className="flex-1 min-w-[160px]">
+                                    <p className="text-sm font-medium">{item.produto_nome}{item.embalagem && <span className="text-muted-foreground ml-1 text-xs">({item.embalagem})</span>}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Pedido {item.quantidade_pedida} · Recebido {item.quantidade_recebida}
+                                      {falta > 0 && <span className="ml-1 font-semibold text-warning">· Faltou {falta}</span>}
+                                      {falta < 0 && <span className="ml-1 font-semibold text-warning">· Veio {-falta} a mais</span>}
+                                    </p>
+                                  </div>
+                                  {falta > 0 && st === "pendente" && (
+                                    <Badge variant="outline" className="text-[10px] border-warning/40 text-warning">Na lista de reposição</Badge>
+                                  )}
+                                  {falta > 0 && st === "importado" && (
+                                    <Badge variant="outline" className="text-[10px] border-primary/40 text-primary">Já importado para cotação</Badge>
+                                  )}
+                                  {falta > 0 && st === "nao_enviado" && (
+                                    <>
+                                      <Badge variant="outline" className="text-[10px] text-muted-foreground">Não enviado</Badge>
+                                      <Button size="sm" variant="outline" className="h-7 text-xs" disabled={enviando === item.id} onClick={() => enviarParaReposicao(conf, item)}>
+                                        Enviar para reposição agora
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
 
