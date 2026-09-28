@@ -13,7 +13,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal, X, Phone, CheckCircle2, Clock, AlertCircle, MapPin, Send } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL, buildWhatsAppUrl, prazoBloco } from "@/lib/format";
-import { maskTelefone, formatTelefone, normalizeTelefone, maskMoeda, parseMoeda, moedaParaInput } from "@/lib/masks";
+import { maskTelefone, formatTelefone, normalizeTelefone, maskMoeda, parseMoeda, moedaParaInput, maskCNPJ } from "@/lib/masks";
+import { useConsultaCNPJ } from "@/hooks/useConsultaCNPJ";
+import CnpjStatus from "@/components/CnpjStatus";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import BackToLojaButton from "@/components/shared/BackToLojaButton";
 import { useFeatureCheck } from "@/components/FeatureGate";
@@ -32,6 +34,7 @@ const emptyForm = {
   pedido_minimo: "",
   prazo_pagamento: "",
   observacoes: "",
+  cnpj: "",
 };
 
 const FornecedoresPage = () => {
@@ -48,6 +51,15 @@ const FornecedoresPage = () => {
   const [sugestoesOpen, setSugestoesOpen] = useState(false);
   const [conviteOpen, setConviteOpen] = useState(false);
   const { showPlanos, setShowPlanos } = useFeatureCheck();
+
+  // Consulta oficial da Receita: preenche o nome da empresa quando está vazio.
+  const receita = useConsultaCNPJ(form.cnpj, (d) => {
+    setForm((prev) =>
+      prev.nome.trim() || !d.razao_social
+        ? prev
+        : { ...prev, nome: formatNomeEmpresa(d.nome_fantasia || d.razao_social) },
+    );
+  });
 
   const { data: lojas = [] } = useQuery({
     queryKey: ["lojas"],
