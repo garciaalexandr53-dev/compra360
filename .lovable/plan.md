@@ -1,30 +1,26 @@
 # Correção: "Erro: EAN inválido" ao enviar a lista de reposição (Mercado Olímpico)
 
-## O que aconteceu
-No vídeo, a funcionária toca em "Enviar 11 item(ns)" no App de Reposição e aparece "Erro: EAN inválido". Nenhum dos 11 itens é salvo, porque o envio é feito de uma vez só.
+## O que a investigação mostrou
+- A mensagem vem de uma regra do banco. Essa regra recusa o envio inteiro se **um único item** tiver código de barras fora de 8 a 14 números. Por isso nenhum dos 11 itens foi salvo.
+- Hoje a loja enviou 4 listas sem erro (10:42, 11:16, 11:20 e 12:27). Só a lista do vídeo falhou, então o problema está em algum item dela, e não no app ou na loja.
+- Os itens que aparecem no vídeo (abacaxi, abridor, Always, esponja Scotch-Brite, Veja, Paçoquita, chocolates Nestlé e Lacta) estão todos com código certo ou sem código. Eles não causaram o erro.
+- A lista tinha 11 itens, e o vídeo mostra só parte deles. Um dos itens escondidos tem o código fora do padrão. O servidor não guardou o registro da tentativa, então não dá para saber qual foi.
 
-O banco hoje só aceita códigos de barras com 8 a 14 números. Mas existem produtos reais com código menor: códigos internos, de balança e de fornecedor. No Catálogo Base há 6 desses:
-
-- Lamina Barbear Wilkinson Sword Com 3 (343077)
-- Copo Termico Sunless Verao 24/25 Un (789363)
-- Toten Display Sunless Verao 24/25 (789165)
-- Marrom Glace Predilecta 1kg (24754)
-- Peixe Salgado Saithe 7/9kg (7733)
-- Querosene Petrus Jasmim 500ml (9639416)
-
-Quando um deles entra na lista, o envio inteiro é recusado. A folha do vídeo tem "LAMINAS" escrito, então a lâmina Wilkinson provavelmente estava na lista. Não dá para ver os 11 itens na tela para confirmar.
+## Três caminhos por onde um código ruim entra (todos serão fechados)
+1. **Produto do catálogo com código curto.** Existem produtos reais com código menor, como a Lâmina Wilkinson (343077), o Querosene Petrus (9639416) e o Peixe Saithe (7733): são 6 no total. A folha da funcionária tem "LAMINAS" escrito, então esse é o suspeito mais provável.
+2. **Número digitado na busca.** Se a funcionária digita qualquer número com 8 ou mais dígitos e toca em "Adicionar como novo", esse número vira código, mesmo com 15 dígitos ou mais.
+3. **Leitura pela câmera.** Algumas etiquetas de caixa têm códigos longos (mais de 14 números), e a câmera lê esses códigos inteiros.
 
 ## Correção
-1. **Aceitar códigos curtos.** A regra passa a aceitar códigos de 4 a 14 números. Ela continua recusando letras e textos estranhos. Os 6 códigos do catálogo ficam como estão, e novos produtos com código curto também vão passar.
-2. **Um código ruim nunca mais barra a lista.** Se chegar um código fora do padrão (com letra, por exemplo), o item vai normalmente, só sem o código, em vez de recusar os 11 itens.
-3. **Mensagem mais clara.** Se outro erro impedir o envio, a lista continua no celular e aparece "Não foi possível enviar. Sua lista foi mantida, tente de novo."
+1. **Aceitar códigos curtos.** A regra passa a aceitar de 4 a 14 números. O catálogo não é alterado.
+2. **Código fora do padrão nunca mais barra a lista.** O item é salvo normalmente, só sem o código. Isso vale nos três caminhos: catálogo, digitação e câmera.
+3. **Mensagem clara e lista preservada.** Se outro erro impedir o envio, a lista continua no celular e aparece "Não foi possível enviar. Sua lista foi mantida, tente de novo."
 
 ## Para o Renato
 Depois de publicado, a funcionária só precisa tocar em "Enviar" de novo. A lista dela continua salva no celular.
 
 ## Detalhes técnicos
-- Migração: em `validar_item_faltante_publico`, trocar o `RAISE 'EAN inválido'` por `NEW.ean := NULLIF(regexp_replace(NEW.ean,'\s','','g'),'')` e, se não bater `^[0-9]{4,14}$`, fazer `NEW.ean := NULL` sem lançar erro.
-- `AppFuncionariosPublic.tsx`: helper `normalizarEan` com a mesma regra, aplicado nos inserts de `itens_faltantes`. Toast amigável no catch, sem limpar `items`.
-- Conferir se a busca por EAN do funcionário e do Catálogo Mestre tem a mesma trava de 8 dígitos e alinhar para 4 a 14.
-- Nenhum dado do catálogo é alterado.
+- Migração: em `validar_item_faltante_publico`, trocar o `RAISE 'EAN inválido'` por normalização. Tirar os espaços; se não bater `^[0-9]{4,14}$`, fazer `NEW.ean := NULL`, sem lançar erro.
+- `AppFuncionariosPublic.tsx`: helper `normalizarEan` com a mesma regra, aplicado ao `ean` de todos os inserts de `itens_faltantes`. `termoEhEan` limitado a 4 a 14 dígitos. Toast amigável no catch, sem limpar `items`.
+- Conferir se o scanner e a busca por EAN do Catálogo Mestre usam a mesma faixa e alinhar para 4 a 14.
 - Teste unitário para `normalizarEan`. tsgo e vitest verdes antes de publicar.
