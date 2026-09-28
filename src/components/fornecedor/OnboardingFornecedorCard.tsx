@@ -92,6 +92,23 @@ const OnboardingFornecedorCard = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, cotacaoId]);
 
+  // Revalida o CNPJ já salvo na Receita. Se estiver inexistente ou irregular,
+  // o pedido de CNPJ volta a aparecer nesta cotação, sem mensagem extra.
+  useEffect(() => {
+    const salvo = state?.cnpj_atual;
+    if (!salvo || state?.pedir_cnpj) return;
+    let vivo = true;
+    (async () => {
+      try {
+        const d = await consultarCNPJ(salvo);
+        if (vivo && (!d || !d.ativa)) setCnpjIrregular(true);
+      } catch {
+        // Receita fora do ar: mantém o cadastro como está.
+      }
+    })();
+    return () => { vivo = false; };
+  }, [state?.cnpj_atual, state?.pedir_cnpj]);
+
   const digits = cnpj.replace(/\D/g, "");
   const receita = useConsultaCNPJ(cnpj);
   const cnpjCompleto = digits.length === 14 && !receita.bloqueia;
