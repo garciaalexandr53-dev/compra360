@@ -199,14 +199,19 @@ function EditarDados({ token }: { token: string }) {
       toast.error("Adicione ao menos uma cidade que você atende.");
       return;
     }
+    if (consentAtual !== "sim" && !consentEscolha) {
+      toast.error("Escolha se quer ou não participar da Rede Compra360.");
+      return;
+    }
     setSalvando(true);
-    const { error } = await supabase.rpc("salvar_parceiro_dados", {
+    const { error } = await supabase.rpc("salvar_parceiro_dados" as any, {
       _token: token,
       _nome: formatNomeEmpresa(nome),
       _representante: formatNomePessoa(representante),
       _tipo: tipo,
       _pastas: tipo === "especializado" ? pastas : [],
       _cidades: cidades.map((c) => ({ cidade: c.cidade, uf: c.uf ?? "" })),
+      _consentimento: consentEscolha,
     });
     setSalvando(false);
     if (error) {
