@@ -238,6 +238,34 @@ function EditarDados({ token }: { token: string }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  /** Encerra o vínculo do WhatsApp com esta empresa, mantendo as outras ativas. */
+  const desvincular = async () => {
+    setSaindo(true);
+    const { data, error } = await supabase.rpc("desvincular_parceiro_empresa" as any, {
+      _token: token,
+    });
+    setSaindo(false);
+    setConfirmarSaida(false);
+    const resp = (data ?? {}) as {
+      ok?: boolean;
+      nome?: string;
+      proxima?: { nome: string; token: string } | null;
+    };
+    if (error || !resp.ok) {
+      toast.error("Não foi possível encerrar agora. Tente novamente em instantes.");
+      return;
+    }
+    if (resp.proxima?.token) {
+      toast.success(`Vínculo com ${resp.nome ?? "a empresa"} encerrado.`);
+      navigate(`/parceiro/${resp.proxima.token}`);
+      return;
+    }
+    setEncerrado(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+
+
   if (carregando) {
     return (
       <div className="flex justify-center py-16">
