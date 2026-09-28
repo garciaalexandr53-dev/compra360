@@ -9,6 +9,7 @@ import CidadesAtendidasInput from "@/components/fornecedor/CidadesAtendidasInput
 import { adicionarCidade, dedupCidades } from "@/lib/cidades";
 import type { Municipio } from "@/lib/cep";
 import { useConsultaCNPJ } from "@/hooks/useConsultaCNPJ";
+import { consultarCNPJ } from "@/lib/cnpj";
 import CnpjStatus from "@/components/CnpjStatus";
 import { formatNomeEmpresa } from "@/lib/masks";
 
@@ -24,6 +25,7 @@ interface OnboardingState {
   cidades: Municipio[] | null;
   cidade_loja: string | null;
   uf_loja: string | null;
+  cnpj_atual?: string | null;
 }
 
 interface Props {
@@ -62,6 +64,7 @@ const OnboardingFornecedorCard = ({
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [cnpjIrregular, setCnpjIrregular] = useState(false);
   const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -90,6 +93,23 @@ const OnboardingFornecedorCard = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, cotacaoId]);
 
+  // Revalida o CNPJ já salvo na Receita. Se estiver inexistente ou irregular,
+  // o pedido de CNPJ volta a aparecer nesta cotação, sem mensagem extra.
+  useEffect(() => {
+    const salvo = state?.cnpj_atual;
+    if (!salvo || state?.pedir_cnpj) return;
+    let vivo = true;
+    (async () => {
+      try {
+        const d = await consultarCNPJ(salvo);
+        if (vivo && (!d || !d.ativa)) setCnpjIrregular(true);
+      } catch {
+        // Receita fora do ar: mantém o cadastro como está.
+      }
+    })();
+    return () => { vivo = false; };
+  }, [state?.cnpj_atual, state?.pedir_cnpj]);
+
   const digits = cnpj.replace(/\D/g, "");
   const receita = useConsultaCNPJ(cnpj);
   const cnpjCompleto = digits.length === 14 && !receita.bloqueia;
@@ -112,12 +132,15 @@ const OnboardingFornecedorCard = ({
 
   if (!state || hidden) return null;
 
+  // Pede o CNPJ quando ainda não foi informado ou quando o salvo não confere na Receita.
+  const pedirCnpj = state.pedir_cnpj || cnpjIrregular;
+
   // Cidades: aparecem quando ele já participa e ainda não declarou nenhuma,
   // quando ele acabou de aceitar nesta sessão, ou no modo de atualização.
   const mostrarCidades =
     modoCidades || state.pedir_cidades || consentimento === "sim";
 
-  if (!modoCidades && !state.pedir_cnpj && !state.pedir_consentimento && !state.pedir_cidades && !done) {
+  if (!modoCidades && !pedirCnpj && !state.pedir_consentimento && !state.pedir_cidades && !done) {
     return null;
   }
 
@@ -129,11 +152,11 @@ const OnboardingFornecedorCard = ({
     );
   }
 
-  const mostrarPasta = state.pedir_cnpj && state.pedir_pasta && duplicado;
+  const mostrarPasta = pedirCnpj && state.pedir_pasta && duplicado;
   // Some assim que ele começa a preencher algo, evitando toque acidental.
   const nadaPreenchido = digits.length === 0 && consentimento === null && pastas.length === 0;
   const mostrarSkip =
-    !modoCidades && state.pedir_cnpj && state.permite_skip && nadaPreenchido;
+    !modoCidades && pedirCnpj && state.permite_skip && nadaPreenchido;
   const opcoesPasta = pastasDisponiveis(state.tipo_fornecedor);
 
   const togglePasta = (p: string) =>
@@ -141,7 +164,7 @@ const OnboardingFornecedorCard = ({
 
   const podeSalvar = modoCidades
     ? cidades.length > 0 || cnpjCompleto
-    : (state.pedir_cnpj && cnpjCompleto) || consentimento !== null || cidades.length > 0;
+    : (pedirCnpj && cnpjCompleto) || consentimento !== null || cidades.length > 0;
 
   const salvar = async () => {
     setSaving(true);
@@ -176,13 +199,13 @@ const OnboardingFornecedorCard = ({
     <div className="mx-3 sm:mx-4 mt-3 rounded-xl border bg-card p-3 sm:p-4 space-y-4 max-w-3xl md:mx-auto">
       <h2 className="text-sm sm:text-base font-bold">
         {modoCidades
-          ? state.pedir_cnpj
+          ? pedirCnpj
             ? "Seus dados e as cidades que você atende"
             : "Cidades que você atende"
           : "Complete o cadastro da sua empresa"}
       </h2>
 
-      {state.pedir_cnpj && (
+      {pedirCnpj && (
         <div className="space-y-2">
           <label className="text-xs sm:text-sm font-medium" htmlFor="onb-cnpj">
             CNPJ da empresa que você representa
@@ -196,6 +219,11 @@ const OnboardingFornecedorCard = ({
             className="w-full"
           />
           <CnpjStatus status={receita.status} dados={receita.dados} />
+          {cnpjIrregular && (
+            <p className="text-xs text-amber-700 dark:text-amber-300">
+              O CNPJ informado antes não consta como ativo na Receita. Informe o CNPJ correto da empresa que você atende.
+            </p>
+          )}
           {!state.permite_skip && (
             <p className="text-xs text-amber-700 dark:text-amber-300">
               Para continuar recebendo cotações, complete o cadastro da sua empresa.

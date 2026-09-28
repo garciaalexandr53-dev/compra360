@@ -1536,6 +1536,7 @@ export type Database = {
       admin_update_fornecedor: {
         Args: {
           _cidades?: Json
+          _cnpj?: string
           _consentimento_rede?: string
           _email?: string
           _fornecedor_id: string
@@ -1544,6 +1545,7 @@ export type Database = {
           _pasta?: string[]
           _pedido_minimo?: number
           _prazo_pagamento?: string
+          _razao_social?: string
           _representante?: string
           _telefone?: string
           _tipo_fornecedor?: string
@@ -1747,6 +1749,7 @@ export type Database = {
         Returns: {
           cidade_loja: string
           cidades: Json
+          cnpj_atual: string
           participa_rede: boolean
           pasta: string[]
           pedir_cidades: boolean

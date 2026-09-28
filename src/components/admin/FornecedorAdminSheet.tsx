@@ -19,6 +19,8 @@ import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks
 import CidadesAtendidasInput from "@/components/fornecedor/CidadesAtendidasInput";
 import { dedupCidades } from "@/lib/cidades";
 import type { Municipio } from "@/lib/cep";
+import { useConsultaCNPJ } from "@/hooks/useConsultaCNPJ";
+import CnpjStatus from "@/components/CnpjStatus";
 
 type Detalhes = {
   id?: string;
@@ -32,6 +34,7 @@ type Detalhes = {
   tipo_fornecedor?: string | null;
   pasta?: string[] | null;
   cnpj?: string | null;
+  razao_social?: string | null;
   token?: string | null;
   codigo_verificacao?: string | null;
   consentimento_rede?: string | null;
@@ -60,12 +63,13 @@ type Form = {
   tipo_fornecedor: string;
   pasta: string[];
   consentimento_rede: string;
+  cnpj: string;
 };
 
 const VAZIO: Form = {
   nome: "", representante: "", telefone: "", email: "",
   pedido_minimo: "", prazo_pagamento: "", observacoes: "",
-  tipo_fornecedor: "", pasta: [], consentimento_rede: "pendente",
+  tipo_fornecedor: "", pasta: [], consentimento_rede: "pendente", cnpj: "",
 };
 
 const SEM_TIPO = "__sem_tipo__";
@@ -81,6 +85,9 @@ export default function FornecedorAdminSheet({
   const [salvando, setSalvando] = useState(false);
   const [cidades, setCidades] = useState<Municipio[]>([]);
   const [confirmando, setConfirmando] = useState(false);
+
+  /** Consulta oficial do CNPJ na Receita (preenche a razão social). */
+  const receita = useConsultaCNPJ(form.cnpj);
 
   /** Confirma a posse do WhatsApp de um fornecedor que se auto-cadastrou. */
   const confirmarParceiro = async () => {
@@ -138,6 +145,7 @@ export default function FornecedorAdminSheet({
       tipo_fornecedor: detalhes.tipo_fornecedor ?? "",
       pasta: detalhes.pasta ?? [],
       consentimento_rede: detalhes.consentimento_rede ?? "pendente",
+      cnpj: maskCNPJ(detalhes.cnpj ?? ""),
     });
     setCidades(
       dedupCidades(
@@ -159,6 +167,13 @@ export default function FornecedorAdminSheet({
       toast({ title: "Pedido mínimo inválido", variant: "destructive" });
       return;
     }
+    if (receita.bloqueia) {
+      toast({
+        title: receita.status === "invalido" ? "CNPJ inválido" : "CNPJ com situação irregular na Receita",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setSalvando(true);
     const { error } = await supabase.rpc("admin_update_fornecedor", {
@@ -174,6 +189,8 @@ export default function FornecedorAdminSheet({
       _pasta: form.tipo_fornecedor === "especializado" && form.pasta.length ? form.pasta : null,
       _consentimento_rede: form.consentimento_rede || null,
       _cidades: cidades.map((m) => ({ cidade: m.cidade, uf: m.uf })),
+      _cnpj: form.cnpj.replace(/\D/g, "") || null,
+      _razao_social: receita.dados?.razao_social ? formatNomeEmpresa(receita.dados.razao_social) : null,
     });
     setSalvando(false);
 
@@ -332,10 +349,20 @@ export default function FornecedorAdminSheet({
 
               <div className="rounded-lg border bg-muted/40 p-3 space-y-1.5 text-xs">
                 <p className="font-semibold text-sm">Rede de fornecedores</p>
-                <p>
-                  <span className="text-muted-foreground">CNPJ: </span>
-                  {detalhes?.cnpj ? maskCNPJ(detalhes.cnpj) : "não informado"}
-                </p>
+                <div className="space-y-1.5">
+                  <Label htmlFor="forn-cnpj" className="text-xs text-muted-foreground">CNPJ</Label>
+                  <Input
+                    id="forn-cnpj"
+                    inputMode="numeric"
+                    placeholder="00.000.000/0000-00"
+                    value={form.cnpj}
+                    onChange={(e) => setForm({ ...form, cnpj: maskCNPJ(e.target.value) })}
+                  />
+                  <CnpjStatus status={receita.status} dados={receita.dados} />
+                  {detalhes?.razao_social && (
+                    <p className="text-[11px] text-muted-foreground">Razão social: {detalhes.razao_social}</p>
+                  )}
+                </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="forn-consent" className="text-xs text-muted-foreground">
                     Consentimento para aparecer na rede
