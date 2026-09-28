@@ -22,12 +22,24 @@ const PAGE_SIZE = 50;
 
 export type StatusConsentimento = "todos" | "sim" | "nao" | "pendente";
 
-const STATUS_FILTROS: { key: StatusConsentimento; label: string }[] = [
-  { key: "todos", label: "Todos" },
-  { key: "sim", label: "Participam" },
-  { key: "nao", label: "Recusaram" },
-  { key: "pendente", label: "Pendentes" },
+const STATUS_FILTROS: {
+  key: StatusConsentimento;
+  label: string;
+  cardTitulo: string;
+  tom?: string;
+}[] = [
+  { key: "todos", label: "Todos", cardTitulo: "Fornecedores" },
+  { key: "sim", label: "Participam", cardTitulo: "Participam", tom: "text-emerald-600" },
+  { key: "nao", label: "Recusaram", cardTitulo: "Recusaram", tom: "text-red-600" },
+  { key: "pendente", label: "Pendentes", cardTitulo: "Pendentes", tom: "text-amber-600" },
 ];
+
+/** Texto do botão de WhatsApp conforme o status do fornecedor. */
+export function acaoWhatsappLabel(status: string | null | undefined): string {
+  if (status === "sim") return "Confirmar dados";
+  if (status === "nao") return "Manter contato";
+  return "Convidar para a Rede";
+}
 
 /** Cores e ícone do selo de consentimento. */
 export function consentimentoEstilo(status: string | null | undefined): {
