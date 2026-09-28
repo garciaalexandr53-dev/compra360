@@ -282,7 +282,11 @@ const CadastroParceiroPage = () => {
                 inputMode="numeric"
                 autoFocus
                 className={`bg-slate-950 text-white ${
-                  jaCadastrado !== null || empresas.length ? "border-amber-500/60" : "border-white/10"
+                  jaCadastrado !== null || empresas.length
+                    ? "border-amber-500/60"
+                    : encontrado
+                      ? "border-emerald-500/60"
+                      : "border-white/10"
                 }`}
               />
               {buscando ? (
