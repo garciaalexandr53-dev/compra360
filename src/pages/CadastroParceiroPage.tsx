@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +60,11 @@ const CadastroParceiroPage = () => {
     setEmpresas(resp.existe ? (resp.empresas ?? []) : []);
     setJaCadastrado(resp.existe && resp.mesma_empresa ? "" : null);
   };
+
+  useEffect(() => {
+    if (telefone) void checarTelefone(telefone);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const opcoesPasta = useMemo(() => pastasDisponiveis(tipo), [tipo]);
 
