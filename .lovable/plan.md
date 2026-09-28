@@ -35,9 +35,18 @@ Botão "Conferir" em cada item para o caso de vir completo; mexer nos botões �
 
 ### 4. Aviso ao finalizar
 - Se sobrarem itens pendentes, aparece uma confirmação: "Ainda restam X itens não conferidos. Finalizar mesmo assim?".
-- Com faltas, segue o fluxo atual que já funciona: pergunta se envia as faltas para a lista de reposição da próxima cotação.
+- Com faltas, segue o fluxo atual: pergunta se envia as faltas para a lista de reposição da próxima cotação.
 
-### 5. O que não muda
+### 5. Faltas do pedido identificadas para o comprador
+Hoje as faltas da conferência caem na mesma lista de reposição da equipe (tela Funcionários e "Importar itens faltantes" do Painel), misturadas com os itens bipados na prateleira, sem nenhuma marcação de origem. Além disso, entram sem embalagem e fator, o que pode fazer o item não casar com o produto na importação.
+
+O que muda:
+- Cada falta leva a origem: pedido, fornecedor e quem conferiu.
+- Na lista de reposição e na importação para a cotação, o item mostra o selo "Faltou no pedido #12 · Atacadão" (âmbar), separado visualmente dos itens da equipe.
+- A falta passa a levar a mesma embalagem e fator do pedido, para entrar certinho na próxima cotação.
+- Se a mesma falta for enviada duas vezes, continua valendo a regra atual de juntar itens repetidos.
+
+### 6. O que não muda
 - Gravação da conferência, histórico de conferências no painel, faltas indo para a lista de reposição e o funcionamento do app público com o link da loja continuam iguais.
 - A leitura por foto da nota (hoje desligada) continua desligada.
 
@@ -50,5 +59,6 @@ Botão "Conferir" em cada item para o caso de vir completo; mexer nos botões �
 - `updateQtdRecebida` / `updateQtdRecebidaInput` marcam `conferido: true` no item alterado.
 - `loadProgress` / `saveProgress`: normalizar `conferido` com fallback `false` para progresso salvo em versão anterior.
 - `finalizarConferencia`: confirmação (AlertDialog) quando `statusPorItem` contiver `pendente`; observações continuam registrando a contagem de divergências.
+- Faltas: `adicionarFaltantes` grava `embalagem`, `fator_embalagem` e `registrado_por` no formato `Conferência · Pedido #N · <fornecedor> · <conferente>` (sem usar `observacao`, que é lida pelos parsers de embalagem). Helper puro `origemFaltaConferencia(registrado_por)` em `src/lib/itensFaltantesImport.ts` (com teste) extrai pedido/fornecedor; `FuncionariosPage.tsx` e `ModalNovaCotacao.tsx` exibem o selo. Queries e importação existentes inalteradas.
 - Sem migração de banco e sem alteração em RPCs ou funções de borda.
 - Verificação: `tsgo` + `vitest` verdes antes de publicar.
