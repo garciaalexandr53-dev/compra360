@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { ordenarPorNome } from "@/lib/ordenarPorNome";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -315,8 +316,9 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
     if (progress) {
       const pedido = pedidos.find((p: any) => p.id === progress.pedidoId);
       if (pedido) {
-        setSelectedPedido({ ...pedido, items: progress.items });
-        setItems(progress.items);
+        const ordenados = ordenarPorNome(progress.items, (i) => i.produto_nome);
+        setSelectedPedido({ ...pedido, items: ordenados });
+        setItems(ordenados);
         setNome(progress.nome);
         toast.info("Conferência em andamento restaurada!");
       } else {
@@ -335,9 +337,10 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
   const loadPedidoDetails = async (pedido: any) => {
     const progress = loadProgress();
     if (progress && progress.pedidoId === pedido.id) {
-      setItems(progress.items);
+      const ordenados = ordenarPorNome(progress.items, (i) => i.produto_nome);
+      setItems(ordenados);
       setNome(progress.nome);
-      setSelectedPedido({ ...pedido, items: progress.items });
+      setSelectedPedido({ ...pedido, items: ordenados });
       return;
     }
 
@@ -350,7 +353,7 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
         toast.error("Não foi possível carregar os itens deste pedido");
         return;
       }
-      const publicItems: ConferenciaItem[] = ((data || []) as any[]).map((it) => ({
+      const publicItems: ConferenciaItem[] = ordenarPorNome(((data || []) as any[]).map((it) => ({
         produto_nome: it.produto_nome || "Produto",
         embalagem: it.embalagem || "UNI",
         fator: it.fator_embalagem || 1,
@@ -358,7 +361,7 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
         quantidade_recebida: Number(it.quantidade) || 1,
         preco_cotado: Number(it.preco) || 0,
         preco_nf: Number(it.preco) || 0,
-      }));
+      })), (i) => i.produto_nome);
       setItems(publicItems);
       setSelectedPedido({ ...pedido, items: publicItems });
       saveProgress(pedido.id, publicItems, nome);
@@ -385,7 +388,7 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
 
     const precosMap = new Map((precos || []).map((p: any) => [p.cotacao_produto_id, p.preco]));
 
-    const orderItems: ConferenciaItem[] = (cotacaoProdutos || [])
+    const orderItems: ConferenciaItem[] = ordenarPorNome((cotacaoProdutos || [])
       .filter((cp: any) => precosMap.has(cp.id) && precosMap.get(cp.id) != null)
       .map((cp: any) => ({
         produto_nome: getCotacaoNome(cp),
@@ -395,7 +398,7 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
         quantidade_recebida: cp.quantidade || 1,
         preco_cotado: precosMap.get(cp.id) || 0,
         preco_nf: precosMap.get(cp.id) || 0,
-      }));
+      })), (i) => i.produto_nome);
 
     setItems(orderItems);
     setSelectedPedido({ ...pedido, items: orderItems });
