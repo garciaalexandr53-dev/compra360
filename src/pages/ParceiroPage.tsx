@@ -176,7 +176,9 @@ function EditarDados({ token }: { token: string }) {
       setTipo(resp.tipo_fornecedor || "geral");
       setPastas(resp.pasta ?? []);
       setCidades((resp.cidades ?? []).map((c) => ({ cidade: c.cidade, uf: c.uf })));
-      setOutras(((resp as any).outras_empresas ?? []) as { nome: string; token: string }[]);
+      setOutras(resp.outras_empresas ?? []);
+      setConsentAtual(resp.consentimento_rede ?? "pendente");
+      setConsentEscolha(null);
       setSalvo(false);
       setCarregando(false);
     })();
