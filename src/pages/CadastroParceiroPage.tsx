@@ -41,17 +41,24 @@ const CadastroParceiroPage = () => {
     if (oficial) setNome(formatNomeEmpresa(oficial));
   });
 
-  /** Consulta discreta: avisa se o WhatsApp digitado ja existe na Rede. */
-  const checarTelefone = async (valor: string) => {
+  const [empresas, setEmpresas] = useState<string[]>([]);
+
+  /** Consulta discreta: avisa se o WhatsApp ja existe e se a mesma empresa (CNPJ) ja esta nele. */
+  const checarTelefone = async (valor: string, cnpjAtual = cnpj) => {
     const digitos = valor.replace(/\D/g, "");
     if (digitos.length < 10 || validarWhatsApp(valor)) {
       setJaCadastrado(null);
+      setEmpresas([]);
       return;
     }
-    const { data, error } = await supabase.rpc("whatsapp_parceiro_existe", { _telefone: valor });
+    const { data, error } = await supabase.rpc("whatsapp_parceiro_existe" as any, {
+      _telefone: valor,
+      _cnpj: cnpjAtual.replace(/\D/g, "") || null,
+    });
     if (error) return;
-    const resp = (data ?? {}) as { existe?: boolean; nome?: string };
-    setJaCadastrado(resp.existe ? (resp.nome ?? "") : null);
+    const resp = (data ?? {}) as { existe?: boolean; empresas?: string[]; mesma_empresa?: boolean };
+    setEmpresas(resp.existe ? (resp.empresas ?? []) : []);
+    setJaCadastrado(resp.existe && resp.mesma_empresa ? "" : null);
   };
 
   const opcoesPasta = useMemo(() => pastasDisponiveis(tipo), [tipo]);
