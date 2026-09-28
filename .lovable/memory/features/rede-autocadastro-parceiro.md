@@ -38,3 +38,10 @@ Quando uma API for conectada (Z-API ou Evolution) ao número do Compra360:
 - WhatsApp = pessoa, CNPJ = empresa. Mesmo fone + mesmo CNPJ barra (`ja_cadastrado`); mesmo fone sem CNPJ → `cnpj_obrigatorio`; mesmo fone + CNPJ novo cria nova empresa; fone novo + CNPJ existente = mais um representante (não sobrescreve).
 - `fornecedor_mesma_entidade(fone,cnpj,fone,cnpj)` define identidade; usada em sugestões, cópia e `fornecedor_grupo_ids`. Grupo de sugestão = fone|cnpj.
 - Portal /parceiro/:token lista `outras_empresas` do mesmo WhatsApp e link "+ Cadastrar outra empresa" (?fone=).
+
+## Consentimento na atualização de dados (2026-09-28)
+- `salvar_parceiro_dados` NÃO força mais `consentimento_rede = 'sim'`. Novo parâmetro `_consentimento` ('sim'|'nao'|'pendente'); grava `consentimento_ultima_pergunta` e incrementa `consentimento_recusas` no 'nao'.
+- `get_parceiro_dados` retorna `consentimento_rede`; ParceiroPage exibe o bloco de escolha (OPCOES_REDE) só quando ainda não é 'sim' e exige resposta antes de salvar.
+- Fornecedor cadastrado por lojista que pede atualização continua fora da Rede até aceitar explicitamente.
+- Admin: código de segurança + "Copiar link de acesso" + "Enviar link pelo WhatsApp" (`mensagemLinkParceiro`) liberados para qualquer fornecedor, sem a trava de `origem_cadastro = 'autocadastro'`.
+- /seja-parceiro/cadastro: CNPJ vem antes do nome da empresa, rótulo só "CNPJ" (preenche o nome pela Receita).

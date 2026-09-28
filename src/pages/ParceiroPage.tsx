@@ -23,7 +23,28 @@ type Dados = {
   tipo_fornecedor?: string | null;
   pasta?: string[] | null;
   cidades?: { cidade: string; uf: string }[];
+  consentimento_rede?: string | null;
+  outras_empresas?: { nome: string; token: string }[];
 };
+
+/** Opções que o parceiro pode escolher sobre participar da Rede. */
+const OPCOES_REDE = [
+  {
+    value: "sim",
+    label: "Sim, quero participar da Rede",
+    desc: "Novos supermercados da sua região podem te encontrar e enviar cotações.",
+  },
+  {
+    value: "nao",
+    label: "Agora não",
+    desc: "Você continua atendendo somente os clientes que já te cadastraram.",
+  },
+  {
+    value: "pendente",
+    label: "Quero decidir depois",
+    desc: "Nada muda agora e podemos perguntar em uma próxima atualização.",
+  },
+] as const;
 
 const campoEscuro = "bg-slate-950 border-white/10 text-white";
 
@@ -133,6 +154,8 @@ function EditarDados({ token }: { token: string }) {
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
   const [outras, setOutras] = useState<{ nome: string; token: string }[]>([]);
+  const [consentAtual, setConsentAtual] = useState<string>("pendente");
+  const [consentEscolha, setConsentEscolha] = useState<string | null>(null);
 
   const opcoesPasta = useMemo(() => pastasDisponiveis(tipo), [tipo]);
 
@@ -153,7 +176,9 @@ function EditarDados({ token }: { token: string }) {
       setTipo(resp.tipo_fornecedor || "geral");
       setPastas(resp.pasta ?? []);
       setCidades((resp.cidades ?? []).map((c) => ({ cidade: c.cidade, uf: c.uf })));
-      setOutras(((resp as any).outras_empresas ?? []) as { nome: string; token: string }[]);
+      setOutras(resp.outras_empresas ?? []);
+      setConsentAtual(resp.consentimento_rede ?? "pendente");
+      setConsentEscolha(null);
       setSalvo(false);
       setCarregando(false);
     })();
@@ -174,14 +199,19 @@ function EditarDados({ token }: { token: string }) {
       toast.error("Adicione ao menos uma cidade que você atende.");
       return;
     }
+    if (consentAtual !== "sim" && !consentEscolha) {
+      toast.error("Escolha se quer ou não participar da Rede Compra360.");
+      return;
+    }
     setSalvando(true);
-    const { error } = await supabase.rpc("salvar_parceiro_dados", {
+    const { error } = await supabase.rpc("salvar_parceiro_dados" as any, {
       _token: token,
       _nome: formatNomeEmpresa(nome),
       _representante: formatNomePessoa(representante),
       _tipo: tipo,
       _pastas: tipo === "especializado" ? pastas : [],
       _cidades: cidades.map((c) => ({ cidade: c.cidade, uf: c.uf ?? "" })),
+      _consentimento: consentEscolha,
     });
     setSalvando(false);
     if (error) {
@@ -239,7 +269,7 @@ function EditarDados({ token }: { token: string }) {
 
   return (
     <div className="max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold text-white text-center mb-2">Meus dados na Rede</h1>
+      <h1 className="text-2xl font-bold text-white text-center mb-2">Meus dados de fornecedor</h1>
       <p className="text-slate-400 text-center text-sm mb-6">
         Atualize as cidades que você atende e as linhas que representa quando quiser.
       </p>
@@ -355,6 +385,37 @@ function EditarDados({ token }: { token: string }) {
             inputClassName="!bg-slate-950 !text-white border-white/20 placeholder:!text-slate-500"
           />
         </div>
+
+        {consentAtual !== "sim" && (
+          <div className="rounded-xl border border-teal-500/30 bg-teal-500/5 p-4 space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-white">
+                Quer ser indicado para novos supermercados?
+              </p>
+              <p className="text-xs text-slate-400 mt-1">
+                Isso não muda nada com os clientes que você já atende hoje.
+              </p>
+            </div>
+            <div className="space-y-2">
+              {OPCOES_REDE.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => setConsentEscolha(o.value)}
+                  className={`w-full text-left rounded-xl px-4 py-3 border transition-colors ${
+                    consentEscolha === o.value
+                      ? "bg-teal-500/15 border-teal-400 text-white"
+                      : "bg-slate-950 border-white/10 text-slate-300 hover:border-teal-500/40"
+                  }`}
+                >
+                  <span className="block text-sm font-semibold">{o.label}</span>
+                  <span className="block text-xs text-slate-400 mt-0.5">{o.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
 
         <Button
           onClick={salvar}

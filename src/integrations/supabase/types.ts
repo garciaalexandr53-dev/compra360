@@ -1844,6 +1844,7 @@ export type Database = {
       salvar_parceiro_dados: {
         Args: {
           _cidades?: Json
+          _consentimento?: string
           _nome: string
           _pastas?: string[]
           _representante: string
