@@ -94,6 +94,16 @@ export default function FornecedoresTab() {
     return () => clearTimeout(t);
   }, [termoInput]);
 
+  const { data: pedidosAcesso } = useQuery({
+    queryKey: ["admin-solicitacoes-acesso-contador"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_list_solicitacoes_acesso", { _dias: 7, _limit: 100 });
+      if (error) throw error;
+      return (data || []).filter((s) => !s.confirmado_em).length;
+    },
+    refetchInterval: 60000,
+  });
+
   const filtroRpc: Filtro = visao === "rede" ? "todos" : filtro;
 
   const { data, isLoading, isFetching } = useQuery({
