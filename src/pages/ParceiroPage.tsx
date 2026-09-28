@@ -132,6 +132,7 @@ function EditarDados({ token }: { token: string }) {
   const [cidades, setCidades] = useState<Municipio[]>([]);
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
+  const [outras, setOutras] = useState<{ nome: string; token: string }[]>([]);
 
   const opcoesPasta = useMemo(() => pastasDisponiveis(tipo), [tipo]);
 
@@ -152,6 +153,8 @@ function EditarDados({ token }: { token: string }) {
       setTipo(resp.tipo_fornecedor || "geral");
       setPastas(resp.pasta ?? []);
       setCidades((resp.cidades ?? []).map((c) => ({ cidade: c.cidade, uf: c.uf })));
+      setOutras(((resp as any).outras_empresas ?? []) as { nome: string; token: string }[]);
+      setSalvo(false);
       setCarregando(false);
     })();
     return () => {
@@ -237,9 +240,33 @@ function EditarDados({ token }: { token: string }) {
   return (
     <div className="max-w-xl mx-auto">
       <h1 className="text-2xl font-bold text-white text-center mb-2">Meus dados na Rede</h1>
-      <p className="text-slate-400 text-center text-sm mb-8">
+      <p className="text-slate-400 text-center text-sm mb-6">
         Atualize as cidades que você atende e as linhas que representa quando quiser.
       </p>
+
+      <div className="mb-6 rounded-2xl border border-white/10 bg-slate-900 p-4">
+        <p className="text-xs text-slate-500 mb-2">Suas empresas neste WhatsApp</p>
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-lg bg-teal-500/15 border border-teal-400 px-3 py-1.5 text-sm text-white">
+            {nome || "Esta empresa"}
+          </span>
+          {outras.map((o) => (
+            <Link
+              key={o.token}
+              to={`/parceiro/${o.token}`}
+              className="rounded-lg bg-slate-950 border border-white/10 px-3 py-1.5 text-sm text-slate-300 hover:border-teal-500/40"
+            >
+              {o.nome}
+            </Link>
+          ))}
+        </div>
+        <Link
+          to={`/seja-parceiro/cadastro?fone=${encodeURIComponent(telefone)}`}
+          className="mt-3 inline-block text-sm text-emerald-400 hover:underline"
+        >
+          + Cadastrar outra empresa
+        </Link>
+      </div>
 
       <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 space-y-5">
         <div className="space-y-2">

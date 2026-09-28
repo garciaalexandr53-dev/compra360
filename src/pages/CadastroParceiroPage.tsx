@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,7 @@ const CadastroParceiroPage = () => {
   const [nome, setNome] = useState("");
   const [cnpj, setCnpj] = useState("");
   const [representante, setRepresentante] = useState("");
-  const [telefone, setTelefone] = useState("");
+  const [telefone, setTelefone] = useState(() => maskTelefone(params.get("fone") ?? ""));
   const [tipo, setTipo] = useState("geral");
   const [pastas, setPastas] = useState<string[]>([]);
   const [cidades, setCidades] = useState<Municipio[]>([]);
@@ -41,18 +41,30 @@ const CadastroParceiroPage = () => {
     if (oficial) setNome(formatNomeEmpresa(oficial));
   });
 
-  /** Consulta discreta: avisa se o WhatsApp digitado ja existe na Rede. */
-  const checarTelefone = async (valor: string) => {
+  const [empresas, setEmpresas] = useState<string[]>([]);
+
+  /** Consulta discreta: avisa se o WhatsApp ja existe e se a mesma empresa (CNPJ) ja esta nele. */
+  const checarTelefone = async (valor: string, cnpjAtual = cnpj) => {
     const digitos = valor.replace(/\D/g, "");
     if (digitos.length < 10 || validarWhatsApp(valor)) {
       setJaCadastrado(null);
+      setEmpresas([]);
       return;
     }
-    const { data, error } = await supabase.rpc("whatsapp_parceiro_existe", { _telefone: valor });
+    const { data, error } = await supabase.rpc("whatsapp_parceiro_existe" as any, {
+      _telefone: valor,
+      _cnpj: cnpjAtual.replace(/\D/g, "") || null,
+    });
     if (error) return;
-    const resp = (data ?? {}) as { existe?: boolean; nome?: string };
-    setJaCadastrado(resp.existe ? (resp.nome ?? "") : null);
+    const resp = (data ?? {}) as { existe?: boolean; empresas?: string[]; mesma_empresa?: boolean };
+    setEmpresas(resp.existe ? (resp.empresas ?? []) : []);
+    setJaCadastrado(resp.existe && resp.mesma_empresa ? "" : null);
   };
+
+  useEffect(() => {
+    if (telefone) void checarTelefone(telefone);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const opcoesPasta = useMemo(() => pastasDisponiveis(tipo), [tipo]);
 
@@ -85,10 +97,12 @@ const CadastroParceiroPage = () => {
       toast.error("Adicione ao menos uma cidade que você atende.");
       return;
     }
+    if (empresas.length > 0 && cnpj.replace(/\D/g, "").length !== 14) {
+      toast.error("Este WhatsApp já tem empresa na Rede. Informe o CNPJ da nova empresa.");
+      return;
+    }
     if (jaCadastrado !== null) {
-      toast.error(
-        "Você já faz parte da Rede! Por segurança, atualize seus dados na área do parceiro.",
-      );
+      toast.error("Essa empresa já está no seu cadastro. Atualize seus dados na área do parceiro.");
       return;
     }
 
@@ -110,11 +124,13 @@ const CadastroParceiroPage = () => {
       return;
     }
     const resp = (data ?? {}) as { status?: string; codigo?: string };
+    if (resp.status === "cnpj_obrigatorio") {
+      toast.error("Este WhatsApp já tem empresa na Rede. Informe o CNPJ da nova empresa.");
+      return;
+    }
     if (resp.status === "ja_cadastrado") {
       setJaCadastrado("");
-      toast.error(
-        "Este WhatsApp já está cadastrado na Rede. Atualize seus dados na área do parceiro.",
-      );
+      toast.error("Essa empresa já está no seu cadastro. Atualize seus dados na área do parceiro.");
       return;
     }
     setCodigo(resp.codigo ?? null);
@@ -229,16 +245,25 @@ const CadastroParceiroPage = () => {
                 inputMode="numeric"
                 autoFocus
                 className={`bg-slate-950 text-white ${
-                  jaCadastrado !== null ? "border-amber-500/60" : "border-white/10"
+                  jaCadastrado !== null || empresas.length ? "border-amber-500/60" : "border-white/10"
                 }`}
               />
               {jaCadastrado !== null ? (
                 <p className="text-xs text-amber-300 leading-relaxed">
-                  Este WhatsApp já está cadastrado na Rede Compra360
-                  {jaCadastrado ? ` (${jaCadastrado})` : ""}. Para alterar suas cidades ou linhas de
-                  atendimento,{" "}
+                  Essa empresa já está no seu cadastro da Rede Compra360. Para alterar suas cidades
+                  ou linhas de atendimento,{" "}
                   <Link to="/parceiro" className="underline font-semibold text-amber-200">
                     atualize seus dados aqui
+                  </Link>
+                  .
+                </p>
+              ) : empresas.length ? (
+                <p className="text-xs text-amber-300 leading-relaxed">
+                  Você já tem {empresas.length} empresa{empresas.length > 1 ? "s" : ""} na Rede:{" "}
+                  {empresas.join(", ")}. Para cadastrar outra empresa, informe o CNPJ dela abaixo.
+                  Para atualizar as que já existem,{" "}
+                  <Link to="/parceiro" className="underline font-semibold text-amber-200">
+                    clique aqui
                   </Link>
                   .
                 </p>
@@ -272,10 +297,16 @@ const CadastroParceiroPage = () => {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-300">CNPJ (opcional)</Label>
+              <Label className="text-slate-300">
+                CNPJ {empresas.length ? "da nova empresa *" : "(opcional)"}
+              </Label>
               <Input
                 value={cnpj}
-                onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
+                onChange={(e) => {
+                  const v = maskCNPJ(e.target.value);
+                  setCnpj(v);
+                  if (v.replace(/\D/g, "").length === 14 || !v) void checarTelefone(telefone, v);
+                }}
                 placeholder="00.000.000/0000-00"
                 inputMode="numeric"
                 className="bg-slate-950 border-white/10 text-white"

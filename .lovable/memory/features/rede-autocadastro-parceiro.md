@@ -33,3 +33,8 @@ Quando uma API for conectada (Z-API ou Evolution) ao número do Compra360:
 - `/rede` está no `navigateFallbackDenylist` do PWA e com `Cache-Control: no-store` em `public/_headers`.
 - Mensagem de convite na **voz institucional do Compra360** (nunca a voz do supermercadista): `src/lib/conviteRede.ts` (`montarConviteRede`, `LINK_REDE_PARCEIRO`).
 - Painel: botão **Convidar para a Rede** na toolbar da aba Fornecedores abre `ConvidarRedeDialog` (telefone opcional, prévia da mensagem, copiar mensagem, copiar link, abrir no WhatsApp).
+
+## Várias empresas por WhatsApp (2026-09-28)
+- WhatsApp = pessoa, CNPJ = empresa. Mesmo fone + mesmo CNPJ barra (`ja_cadastrado`); mesmo fone sem CNPJ → `cnpj_obrigatorio`; mesmo fone + CNPJ novo cria nova empresa; fone novo + CNPJ existente = mais um representante (não sobrescreve).
+- `fornecedor_mesma_entidade(fone,cnpj,fone,cnpj)` define identidade; usada em sugestões, cópia e `fornecedor_grupo_ids`. Grupo de sugestão = fone|cnpj.
+- Portal /parceiro/:token lista `outras_empresas` do mesmo WhatsApp e link "+ Cadastrar outra empresa" (?fone=).
