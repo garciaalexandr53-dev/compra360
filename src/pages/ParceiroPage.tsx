@@ -269,7 +269,7 @@ function EditarDados({ token }: { token: string }) {
 
   return (
     <div className="max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold text-white text-center mb-2">Meus dados na Rede</h1>
+      <h1 className="text-2xl font-bold text-white text-center mb-2">Meus dados de fornecedor</h1>
       <p className="text-slate-400 text-center text-sm mb-6">
         Atualize as cidades que você atende e as linhas que representa quando quiser.
       </p>
