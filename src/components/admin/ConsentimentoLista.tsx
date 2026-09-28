@@ -180,22 +180,31 @@ export default function ConsentimentoLista() {
         </Button>
       </div>
 
-      {/* Filtros de status */}
-      <div className="flex gap-2 flex-wrap">
-        {STATUS_FILTROS.map((f) => (
+      {/* Filtro ativo */}
+      {status !== "todos" && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>
+            Mostrando apenas:{" "}
+            <strong className="text-foreground">
+              {STATUS_FILTROS.find((f) => f.key === status)?.label}
+            </strong>
+          </span>
           <Button
-            key={f.key}
             size="sm"
-            variant={status === f.key ? "default" : "outline"}
+            variant="ghost"
+            className="h-6 px-2"
             onClick={() => {
-              setStatus(f.key);
+              setStatus("todos");
               setPage(0);
             }}
           >
-            {f.label}
+            <X className="h-3 w-3 mr-1" />
+            Limpar
           </Button>
-        ))}
-      </div>
+        </div>
+      )}
+
+
 
       {/* Lista */}
       {isLoading ? (
