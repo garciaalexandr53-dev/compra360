@@ -249,7 +249,9 @@ export default function FornecedoresTab() {
 
       </div>
 
-      {visao === "consentimento" ? (
+      {visao === "solicitacoes" ? (
+        <SolicitacoesAcessoLista />
+      ) : visao === "consentimento" ? (
         <ConsentimentoLista />
       ) : visao === "rede" ? (
         <RedeUnificadaLista termo={termo} onAbrirFicha={setDetalhe} />
