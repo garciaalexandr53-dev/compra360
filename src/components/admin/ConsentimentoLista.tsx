@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { buildWhatsAppUrl } from "@/lib/format";
 import { formatTelefone, formatNomeEmpresa, formatNomePessoa } from "@/lib/masks";
 import { tipoFornecedorLabel, pastasLabel } from "@/lib/adminHelpers";
+import { mensagemConsentimento } from "@/lib/parceiro";
 import {
   ConsentimentoFornecedor, buildConsentimentosXlsx, consentimentosFilenameXlsx,
   downloadXlsx, formatCnpjBR, consentimentoLabel, ultimaPerguntaLabel,
@@ -22,12 +23,24 @@ const PAGE_SIZE = 50;
 
 export type StatusConsentimento = "todos" | "sim" | "nao" | "pendente";
 
-const STATUS_FILTROS: { key: StatusConsentimento; label: string }[] = [
-  { key: "todos", label: "Todos" },
-  { key: "sim", label: "Participam" },
-  { key: "nao", label: "Recusaram" },
-  { key: "pendente", label: "Pendentes" },
+const STATUS_FILTROS: {
+  key: StatusConsentimento;
+  label: string;
+  cardTitulo: string;
+  tom?: string;
+}[] = [
+  { key: "todos", label: "Todos", cardTitulo: "Fornecedores" },
+  { key: "sim", label: "Participam", cardTitulo: "Participam", tom: "text-emerald-600" },
+  { key: "nao", label: "Recusaram", cardTitulo: "Recusaram", tom: "text-red-600" },
+  { key: "pendente", label: "Pendentes", cardTitulo: "Pendentes", tom: "text-amber-600" },
 ];
+
+/** Texto do botão de WhatsApp conforme o status do fornecedor. */
+export function acaoWhatsappLabel(status: string | null | undefined): string {
+  if (status === "sim") return "Confirmar dados";
+  if (status === "nao") return "Manter contato";
+  return "Convidar para a Rede";
+}
 
 /** Cores e ícone do selo de consentimento. */
 export function consentimentoEstilo(status: string | null | undefined): {
@@ -119,12 +132,26 @@ export default function ConsentimentoLista() {
 
   return (
     <div className="space-y-4">
-      {/* Resumo */}
+      {/* Resumo clicável (funciona como filtro) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        <ResumoCard titulo="Fornecedores" valor={resumo.total} />
-        <ResumoCard titulo="Participam" valor={resumo.sim} tom="text-emerald-600" />
-        <ResumoCard titulo="Recusaram" valor={resumo.nao} tom="text-red-600" />
-        <ResumoCard titulo="Pendentes" valor={resumo.pendente} tom="text-amber-600" />
+        {STATUS_FILTROS.map((f) => (
+          <ResumoCard
+            key={f.key}
+            titulo={f.cardTitulo}
+            valor={
+              f.key === "sim" ? resumo.sim
+              : f.key === "nao" ? resumo.nao
+              : f.key === "pendente" ? resumo.pendente
+              : resumo.total
+            }
+            tom={f.tom}
+            ativo={status === f.key}
+            onClick={() => {
+              setStatus(f.key);
+              setPage(0);
+            }}
+          />
+        ))}
       </div>
 
       {/* Busca e ações */}
@@ -154,22 +181,31 @@ export default function ConsentimentoLista() {
         </Button>
       </div>
 
-      {/* Filtros de status */}
-      <div className="flex gap-2 flex-wrap">
-        {STATUS_FILTROS.map((f) => (
+      {/* Filtro ativo */}
+      {status !== "todos" && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>
+            Mostrando apenas:{" "}
+            <strong className="text-foreground">
+              {STATUS_FILTROS.find((f) => f.key === status)?.label}
+            </strong>
+          </span>
           <Button
-            key={f.key}
             size="sm"
-            variant={status === f.key ? "default" : "outline"}
+            variant="ghost"
+            className="h-6 px-2"
             onClick={() => {
-              setStatus(f.key);
+              setStatus("todos");
               setPage(0);
             }}
           >
-            {f.label}
+            <X className="h-3 w-3 mr-1" />
+            Limpar
           </Button>
-        ))}
-      </div>
+        </div>
+      )}
+
+
 
       {/* Lista */}
       {isLoading ? (
@@ -230,11 +266,24 @@ export default function ConsentimentoLista() {
                       {f.telefone && (
                         <Button
                           size="sm"
-                          variant="ghost"
-                          className="h-7 px-2 shrink-0"
-                          onClick={() => window.open(buildWhatsAppUrl(f.telefone!, ""), "_blank")}
+                          variant="outline"
+                          className="h-7 px-2 shrink-0 text-[11px]"
+                          onClick={() =>
+                            window.open(
+                              buildWhatsAppUrl(
+                                f.telefone!,
+                                mensagemConsentimento(
+                                  f.consentimento_rede,
+                                  f.representante,
+                                  f.nome,
+                                ),
+                              ),
+                              "_blank",
+                            )
+                          }
                         >
-                          <MessageCircle className="h-3.5 w-3.5 text-emerald-600" />
+                          <MessageCircle className="h-3.5 w-3.5 text-emerald-600 mr-1" />
+                          {acaoWhatsappLabel(f.consentimento_rede)}
                         </Button>
                       )}
                     </div>
@@ -276,9 +325,35 @@ export default function ConsentimentoLista() {
   );
 }
 
-function ResumoCard({ titulo, valor, tom }: { titulo: string; valor: number; tom?: string }) {
+function ResumoCard({
+  titulo,
+  valor,
+  tom,
+  ativo,
+  onClick,
+}: {
+  titulo: string;
+  valor: number;
+  tom?: string;
+  ativo?: boolean;
+  onClick?: () => void;
+}) {
   return (
-    <Card>
+    <Card
+      role="button"
+      tabIndex={0}
+      aria-pressed={ativo}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+      className={`cursor-pointer transition-colors hover:bg-accent/50 ${
+        ativo ? "border-primary ring-1 ring-primary" : ""
+      }`}
+    >
       <CardContent className="p-3">
         <div className="text-[11px] text-muted-foreground">{titulo}</div>
         <div className={`text-xl font-semibold ${tom || ""}`}>{valor}</div>
