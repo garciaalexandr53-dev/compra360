@@ -286,19 +286,8 @@ const CadastroParceiroPage = () => {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-300">Nome da empresa ou representação *</Label>
-              <Input
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                placeholder="EX: DISTRIBUIDORA SOL"
-                className="uppercase bg-slate-950 border-white/10 text-white"
-                maxLength={120}
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label className="text-slate-300">
-                CNPJ {empresas.length ? "da nova empresa *" : "(opcional)"}
+                CNPJ {empresas.length ? "da nova empresa *" : ""}
               </Label>
               <Input
                 value={cnpj}
@@ -312,7 +301,23 @@ const CadastroParceiroPage = () => {
                 className="bg-slate-950 border-white/10 text-white"
               />
               <CnpjStatus status={receita.status} dados={receita.dados} />
+              <p className="text-xs text-slate-500">
+                Digite o CNPJ e o nome da empresa é preenchido automaticamente.
+              </p>
             </div>
+
+            <div className="space-y-2">
+              <Label className="text-slate-300">Nome da empresa ou representação *</Label>
+              <Input
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                placeholder="EX: DISTRIBUIDORA SOL"
+                className="uppercase bg-slate-950 border-white/10 text-white"
+                maxLength={120}
+              />
+            </div>
+
+
 
 
             <div className="space-y-2">
