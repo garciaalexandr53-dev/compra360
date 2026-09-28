@@ -1496,6 +1496,23 @@ export type Database = {
           total_count: number
         }[]
       }
+      admin_list_solicitacoes_acesso: {
+        Args: { _dias?: number; _limit?: number }
+        Returns: {
+          cnpj: string
+          codigo: string
+          confirmado_em: string
+          created_at: string
+          expira_em: string
+          finalidade: string
+          fornecedor_id: string
+          id: string
+          nome: string
+          representante: string
+          telefone: string
+          token: string
+        }[]
+      }
       admin_rede_filtros: {
         Args: never
         Returns: {

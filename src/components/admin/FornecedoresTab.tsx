@@ -18,17 +18,19 @@ import {
 import FornecedorAdminSheet from "./FornecedorAdminSheet";
 import RedeUnificadaLista from "./RedeUnificadaLista";
 import ConsentimentoLista from "./ConsentimentoLista";
+import SolicitacoesAcessoLista from "./SolicitacoesAcessoLista";
 import ConvidarRedeDialog from "@/components/fornecedores/ConvidarRedeDialog";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
 
 const PAGE_SIZE = 50;
 type Filtro = "todos" | "sem_whatsapp" | "sem_email" | "duplicados" | "autocadastro";
-type Visao = "rede" | "consentimento" | "registros";
+type Visao = "rede" | "consentimento" | "registros" | "solicitacoes";
 
 const VISOES: { key: Visao; label: string; descricao: string }[] = [
   { key: "rede", label: "Rede", descricao: "Cada fornecedor uma única vez, com cidades atendidas e em quantos clientes já está." },
   { key: "consentimento", label: "Consentimento", descricao: "Quem já aceitou, recusou ou ainda não respondeu ao convite da Rede, com CNPJ, tipo, pastas e data da última pergunta." },
   { key: "registros", label: "Por cliente", descricao: "Todos os cadastros, um por cliente, como estão no sistema." },
+  { key: "solicitacoes", label: "Solicitações", descricao: "Fornecedores que pediram acesso: confira o código e envie o link em um clique." },
 ];
 
 const FILTROS: { key: Filtro; label: string }[] = [
@@ -91,6 +93,16 @@ export default function FornecedoresTab() {
     const t = setTimeout(() => { setTermo(termoInput.trim()); setPage(0); }, 300);
     return () => clearTimeout(t);
   }, [termoInput]);
+
+  const { data: pedidosAcesso } = useQuery({
+    queryKey: ["admin-solicitacoes-acesso-contador"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_list_solicitacoes_acesso", { _dias: 7, _limit: 100 });
+      if (error) throw error;
+      return (data || []).filter((s) => !s.confirmado_em).length;
+    },
+    refetchInterval: 60000,
+  });
 
   const filtroRpc: Filtro = visao === "rede" ? "todos" : filtro;
 
@@ -176,11 +188,19 @@ export default function FornecedoresTab() {
             className="h-8 text-xs flex-1 min-w-[90px]"
           >
             {v.label}
+            {v.key === "solicitacoes" && !!pedidosAcesso && (
+              <Badge
+                variant={visao === "solicitacoes" ? "secondary" : "default"}
+                className="ml-1.5 text-[10px] py-0 px-1.5"
+              >
+                {pedidosAcesso}
+              </Badge>
+            )}
           </Button>
         ))}
       </div>
 
-      <div className={`space-y-3 ${visao === "consentimento" ? "hidden" : ""}`}>
+      <div className={`space-y-3 ${visao === "consentimento" || visao === "solicitacoes" ? "hidden" : ""}`}>
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -229,7 +249,9 @@ export default function FornecedoresTab() {
 
       </div>
 
-      {visao === "consentimento" ? (
+      {visao === "solicitacoes" ? (
+        <SolicitacoesAcessoLista />
+      ) : visao === "consentimento" ? (
         <ConsentimentoLista />
       ) : visao === "rede" ? (
         <RedeUnificadaLista termo={termo} onAbrirFicha={setDetalhe} />
