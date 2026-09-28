@@ -9,6 +9,7 @@ import CidadesAtendidasInput from "@/components/fornecedor/CidadesAtendidasInput
 import { adicionarCidade, dedupCidades } from "@/lib/cidades";
 import type { Municipio } from "@/lib/cep";
 import { useConsultaCNPJ } from "@/hooks/useConsultaCNPJ";
+import { consultarCNPJ } from "@/lib/cnpj";
 import CnpjStatus from "@/components/CnpjStatus";
 import { formatNomeEmpresa } from "@/lib/masks";
 
