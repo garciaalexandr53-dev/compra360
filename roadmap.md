@@ -27,6 +27,6 @@
 ## Fila atual
 - [x] App Funcionários no iPhone abrindo direto na loja (confirmado pela colaboradora).
 - [x] Conferência física limpa: check item a item, sem preço de nota, progresso, aviso de pendentes, faltas com selo "Faltou no pedido #N".
-- [ ] Consulta automática de CNPJ (Receita) em todas as telas que pedem CNPJ.
+- [x] Consulta automática de CNPJ (Receita) em todas as telas que pedem CNPJ.
 - [ ] Múltiplas empresas/representantes por CNPJ e WhatsApp.
 - [ ] Portal do parceiro "Não represento mais" + inatividade automática da Rede.
