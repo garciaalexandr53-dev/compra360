@@ -493,8 +493,62 @@ function EditarDados({ token }: { token: string }) {
           {salvando ? "Salvando..." : "Salvar meus dados"}
         </Button>
       </div>
+
+      <div className="mt-6 rounded-2xl border border-white/10 bg-slate-900/60 p-5 text-center">
+        <p className="text-sm text-slate-300 font-medium">
+          Não representa mais {nome || "esta empresa"}?
+        </p>
+        <p className="text-xs text-slate-500 mt-1">
+          Suas outras empresas neste WhatsApp continuam ativas.
+        </p>
+        <Button
+          variant="outline"
+          onClick={() => setConfirmarSaida(true)}
+          className="mt-4 h-11 rounded-xl border-red-500/40 text-red-300 hover:bg-red-500/10 hover:text-red-200"
+        >
+          <LogOut className="h-4 w-4 mr-2" /> Não represento mais esta empresa
+        </Button>
+      </div>
+
+      <AlertDialog open={confirmarSaida} onOpenChange={setConfirmarSaida}>
+        <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-200">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">
+              Encerrar o vínculo com {nome || "esta empresa"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400 space-y-2">
+              <span className="block">• Você deixa de receber cotações e avisos desta empresa.</span>
+              <span className="block">
+                • Suas outras empresas neste WhatsApp continuam ativas, sem nenhuma mudança.
+              </span>
+              <span className="block">
+                • Os supermercados que já te cadastraram são avisados para atualizar o contato.
+              </span>
+              <span className="block">
+                • O CNPJ fica livre para um novo representante da marca assumir.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-white/20 bg-transparent text-slate-200 hover:bg-white/5">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void desvincular();
+              }}
+              disabled={saindo}
+              className="bg-red-600 hover:bg-red-500 text-white"
+            >
+              {saindo ? "Encerrando..." : "Confirmar desvinculação"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
+
 }
 
 const ParceiroPage = () => {
