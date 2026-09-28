@@ -13,6 +13,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useAuth } from "@/hooks/useAuth";
 import { getDeviceFingerprint } from "@/lib/fingerprint";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
+import { useConsultaCNPJ } from "@/hooks/useConsultaCNPJ";
+import CnpjStatus from "@/components/CnpjStatus";
+import { formatCEP } from "@/components/lojas/lojaUtils";
 import EnderecoFields, { type EnderecoValue } from "@/components/lojas/EnderecoFields";
 
 interface OnboardingWizardProps {
@@ -61,6 +64,17 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   // Step 1 - Loja
   const [lojaNome, setLojaNome] = useState("");
   const [lojaCnpj, setLojaCnpj] = useState("");
+  const receitaCnpj = useConsultaCNPJ(lojaCnpj, (d) => {
+    setLojaNome((n) => (n.trim() ? n : d.nome_fantasia || d.razao_social));
+    setLojaEndereco((prev) => ({
+      cep: prev.cep.trim() ? prev.cep : formatCEP(d.cep),
+      endereco: prev.endereco.trim() ? prev.endereco : d.logradouro,
+      numero: prev.numero.trim() ? prev.numero : d.numero,
+      bairro: prev.bairro.trim() ? prev.bairro : d.bairro,
+      cidade: prev.cidade.trim() ? prev.cidade : d.municipio,
+      uf: prev.uf.trim() ? prev.uf : d.uf,
+    }));
+  });
   const [lojaEndereco, setLojaEndereco] = useState<EnderecoValue>({
     cep: "",
     endereco: "",
@@ -327,6 +341,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   onChange={(e) => setLojaCnpj(formatCNPJ(e.target.value))}
                   maxLength={18}
                 />
+                <CnpjStatus status={receitaCnpj.status} dados={receitaCnpj.dados} />
                 <p className="text-xs text-muted-foreground">Necessário para ativar o período de teste gratuito</p>
               </div>
             </div>
