@@ -85,6 +85,9 @@ export default function FornecedorAdminSheet({
   const [cidades, setCidades] = useState<Municipio[]>([]);
   const [confirmando, setConfirmando] = useState(false);
 
+  /** Consulta oficial do CNPJ na Receita (preenche a razão social). */
+  const receita = useConsultaCNPJ(form.cnpj);
+
   /** Confirma a posse do WhatsApp de um fornecedor que se auto-cadastrou. */
   const confirmarParceiro = async () => {
     if (!fornecedor) return;
@@ -141,6 +144,7 @@ export default function FornecedorAdminSheet({
       tipo_fornecedor: detalhes.tipo_fornecedor ?? "",
       pasta: detalhes.pasta ?? [],
       consentimento_rede: detalhes.consentimento_rede ?? "pendente",
+      cnpj: maskCNPJ(detalhes.cnpj ?? ""),
     });
     setCidades(
       dedupCidades(
