@@ -406,12 +406,12 @@ const ConferenciasPage = () => {
                                     <p className="text-sm font-medium">{item.produto_nome}{item.embalagem && <span className="text-muted-foreground ml-1 text-xs">({item.embalagem})</span>}</p>
                                     <p className="text-xs text-muted-foreground">
                                       Pedido {item.quantidade_pedida} · Recebido {item.quantidade_recebida}
-                                      {falta > 0 && <span className="ml-1 font-semibold text-warning">· Faltou {falta}</span>}
-                                      {falta < 0 && <span className="ml-1 font-semibold text-warning">· Veio {-falta} a mais</span>}
+                                      {falta > 0 && <span className="ml-1 font-semibold text-amber-600 dark:text-amber-400">· Faltou {falta}</span>}
+                                      {falta < 0 && <span className="ml-1 font-semibold text-amber-600 dark:text-amber-400">· Veio {-falta} a mais</span>}
                                     </p>
                                   </div>
                                   {falta > 0 && st === "pendente" && (
-                                    <Badge variant="outline" className="text-[10px] border-warning/40 text-warning">Na lista de reposição</Badge>
+                                    <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600 dark:text-amber-400">Na lista de reposição</Badge>
                                   )}
                                   {falta > 0 && st === "importado" && (
                                     <Badge variant="outline" className="text-[10px] border-primary/40 text-primary">Já importado para cotação</Badge>
