@@ -131,12 +131,15 @@ const OnboardingFornecedorCard = ({
 
   if (!state || hidden) return null;
 
+  // Pede o CNPJ quando ainda não foi informado ou quando o salvo não confere na Receita.
+  const pedirCnpj = state.pedir_cnpj || cnpjIrregular;
+
   // Cidades: aparecem quando ele já participa e ainda não declarou nenhuma,
   // quando ele acabou de aceitar nesta sessão, ou no modo de atualização.
   const mostrarCidades =
     modoCidades || state.pedir_cidades || consentimento === "sim";
 
-  if (!modoCidades && !state.pedir_cnpj && !state.pedir_consentimento && !state.pedir_cidades && !done) {
+  if (!modoCidades && !pedirCnpj && !state.pedir_consentimento && !state.pedir_cidades && !done) {
     return null;
   }
 
@@ -148,11 +151,11 @@ const OnboardingFornecedorCard = ({
     );
   }
 
-  const mostrarPasta = state.pedir_cnpj && state.pedir_pasta && duplicado;
+  const mostrarPasta = pedirCnpj && state.pedir_pasta && duplicado;
   // Some assim que ele começa a preencher algo, evitando toque acidental.
   const nadaPreenchido = digits.length === 0 && consentimento === null && pastas.length === 0;
   const mostrarSkip =
-    !modoCidades && state.pedir_cnpj && state.permite_skip && nadaPreenchido;
+    !modoCidades && pedirCnpj && state.permite_skip && nadaPreenchido;
   const opcoesPasta = pastasDisponiveis(state.tipo_fornecedor);
 
   const togglePasta = (p: string) =>
@@ -160,7 +163,7 @@ const OnboardingFornecedorCard = ({
 
   const podeSalvar = modoCidades
     ? cidades.length > 0 || cnpjCompleto
-    : (state.pedir_cnpj && cnpjCompleto) || consentimento !== null || cidades.length > 0;
+    : (pedirCnpj && cnpjCompleto) || consentimento !== null || cidades.length > 0;
 
   const salvar = async () => {
     setSaving(true);
