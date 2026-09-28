@@ -1,9 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import Seo from "@/components/Seo";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +23,8 @@ import { maskTelefone, formatNomeEmpresa, formatNomePessoa } from "@/lib/masks";
 import { pastasDisponiveis } from "@/lib/adminHelpers";
 import { validarWhatsApp } from "@/lib/whatsappValidacao";
 import { mensagemAcessoParceiro, linkSuporteComMensagem } from "@/lib/parceiro";
-import { Loader2, MessageCircle, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { Loader2, MessageCircle, ShieldCheck, CheckCircle2, LogOut } from "lucide-react";
+
 
 type Dados = {
   encontrado: boolean;
@@ -156,6 +167,11 @@ function EditarDados({ token }: { token: string }) {
   const [outras, setOutras] = useState<{ nome: string; token: string }[]>([]);
   const [consentAtual, setConsentAtual] = useState<string>("pendente");
   const [consentEscolha, setConsentEscolha] = useState<string | null>(null);
+  const [confirmarSaida, setConfirmarSaida] = useState(false);
+  const [saindo, setSaindo] = useState(false);
+  const [encerrado, setEncerrado] = useState(false);
+  const navigate = useNavigate();
+
 
   const opcoesPasta = useMemo(() => pastasDisponiveis(tipo), [tipo]);
 
@@ -222,6 +238,34 @@ function EditarDados({ token }: { token: string }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  /** Encerra o vínculo do WhatsApp com esta empresa, mantendo as outras ativas. */
+  const desvincular = async () => {
+    setSaindo(true);
+    const { data, error } = await supabase.rpc("desvincular_parceiro_empresa" as any, {
+      _token: token,
+    });
+    setSaindo(false);
+    setConfirmarSaida(false);
+    const resp = (data ?? {}) as {
+      ok?: boolean;
+      nome?: string;
+      proxima?: { nome: string; token: string } | null;
+    };
+    if (error || !resp.ok) {
+      toast.error("Não foi possível encerrar agora. Tente novamente em instantes.");
+      return;
+    }
+    if (resp.proxima?.token) {
+      toast.success(`Vínculo com ${resp.nome ?? "a empresa"} encerrado.`);
+      navigate(`/parceiro/${resp.proxima.token}`);
+      return;
+    }
+    setEncerrado(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+
+
   if (carregando) {
     return (
       <div className="flex justify-center py-16">
@@ -246,7 +290,31 @@ function EditarDados({ token }: { token: string }) {
     );
   }
 
+  if (encerrado) {
+    return (
+      <div className="max-w-md mx-auto text-center">
+        <div className="mx-auto mb-5 h-16 w-16 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center">
+          <LogOut className="h-8 w-8 text-slate-300" />
+        </div>
+        <h1 className="text-2xl font-bold text-white mb-3">Vínculo encerrado</h1>
+        <p className="text-slate-400 mb-6">
+          Você não recebe mais cotações de {nome || "esta empresa"}. Se passar a representar outra
+          empresa, é só fazer um novo cadastro — leva menos de um minuto.
+        </p>
+        <Link to="/seja-parceiro/cadastro">
+          <Button className="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold">
+            Cadastrar outra empresa
+          </Button>
+        </Link>
+        <Link to="/" className="block mt-6 text-sm text-slate-400 hover:text-white underline">
+          Voltar para a página inicial
+        </Link>
+      </div>
+    );
+  }
+
   if (salvo) {
+
     return (
       <div className="max-w-md mx-auto text-center">
         <div className="mx-auto mb-5 h-16 w-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
@@ -425,8 +493,62 @@ function EditarDados({ token }: { token: string }) {
           {salvando ? "Salvando..." : "Salvar meus dados"}
         </Button>
       </div>
+
+      <div className="mt-6 rounded-2xl border border-white/10 bg-slate-900/60 p-5 text-center">
+        <p className="text-sm text-slate-300 font-medium">
+          Não representa mais {nome || "esta empresa"}?
+        </p>
+        <p className="text-xs text-slate-500 mt-1">
+          Suas outras empresas neste WhatsApp continuam ativas.
+        </p>
+        <Button
+          variant="outline"
+          onClick={() => setConfirmarSaida(true)}
+          className="mt-4 h-11 rounded-xl border-red-500/40 text-red-300 hover:bg-red-500/10 hover:text-red-200"
+        >
+          <LogOut className="h-4 w-4 mr-2" /> Não represento mais esta empresa
+        </Button>
+      </div>
+
+      <AlertDialog open={confirmarSaida} onOpenChange={setConfirmarSaida}>
+        <AlertDialogContent className="bg-slate-900 border-white/10 text-slate-200">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">
+              Encerrar o vínculo com {nome || "esta empresa"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400 space-y-2">
+              <span className="block">• Você deixa de receber cotações e avisos desta empresa.</span>
+              <span className="block">
+                • Suas outras empresas neste WhatsApp continuam ativas, sem nenhuma mudança.
+              </span>
+              <span className="block">
+                • Os supermercados que já te cadastraram são avisados para atualizar o contato.
+              </span>
+              <span className="block">
+                • O CNPJ fica livre para um novo representante da marca assumir.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-white/20 bg-transparent text-slate-200 hover:bg-white/5">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void desvincular();
+              }}
+              disabled={saindo}
+              className="bg-red-600 hover:bg-red-500 text-white"
+            >
+              {saindo ? "Encerrando..." : "Confirmar desvinculação"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
+
 }
 
 const ParceiroPage = () => {
