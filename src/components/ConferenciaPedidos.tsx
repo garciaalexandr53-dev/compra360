@@ -12,6 +12,18 @@ import { getCotacaoNome, getCotacaoEmbalagem } from "@/lib/buscaProdutos";
 import { normalizarLinhaNf, descreverConversao } from "@/lib/ocrUnidade";
 import { encontrarMelhorMatch } from "@/lib/ocrMatch";
 import { isFeatureEnabled } from "@/lib/featureFlags";
+import { montarOrigemFaltaConferencia } from "@/lib/itensFaltantesImport";
+import { Progress } from "@/components/ui/progress";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -23,6 +35,8 @@ interface ConferenciaItem {
   quantidade_recebida: number;
   preco_cotado: number | null;
   preco_nf: number | null;
+  /** Marcado pelo conferente na doca (contagem física feita). */
+  conferido?: boolean;
 }
 
 interface PedidoWithDetails {
@@ -36,7 +50,7 @@ interface PedidoWithDetails {
   items: ConferenciaItem[];
 }
 
-type OcrStatus = "correto" | "divergencia" | "unidade_indefinida" | "faltando";
+type OcrStatus = "correto" | "divergencia" | "unidade_indefinida" | "faltando" | "pendente";
 
 /** Metadados do OCR por índice do item do pedido. */
 interface OcrMeta {
@@ -76,6 +90,7 @@ const loadProgress = (): { pedidoId: string; items: ConferenciaItem[]; nome: str
         quantidade_recebida: Number(i.quantidade_recebida) || 0,
         preco_cotado: Number(i.preco_cotado) || 0,
         preco_nf: typeof i.preco_nf === "number" ? i.preco_nf : null,
+        conferido: i.conferido === true,
       }));
     return { pedidoId: parsed.pedidoId, items, nome: typeof parsed.nome === "string" ? parsed.nome : "" };
   } catch {
@@ -119,7 +134,7 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
   const [items, setItems] = useState<ConferenciaItem[]>([]);
   const [nome, setNome] = useState("");
   const [showFaltantes, setShowFaltantes] = useState(false);
-  const [faltantes, setFaltantes] = useState<{ nome: string; qtd: number }[]>([]);
+  const [faltantes, setFaltantes] = useState<{ nome: string; qtd: number; embalagem?: string | null; fator?: number }[]>([]);
   const [conferenciaDone, setConferenciaDone] = useState(false);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrMeta, setOcrMeta] = useState<Record<number, OcrMeta> | null>(null);
@@ -392,20 +407,21 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
       ...item,
       quantidade_recebida: item.quantidade_pedida,
       preco_nf: item.preco_cotado,
+      conferido: true,
     }));
     setItems(updated);
-    toast.success("Todos os itens marcados como corretos!");
+    toast.success("Todos os itens marcados como conferidos!");
   };
 
   const updateQtdRecebida = (index: number, delta: number) => {
     setItems(items.map((item, i) =>
-      i === index ? { ...item, quantidade_recebida: Math.max(0, item.quantidade_recebida + delta) } : item
+      i === index ? { ...item, quantidade_recebida: Math.max(0, item.quantidade_recebida + delta), conferido: true } : item
     ));
   };
 
   const updateQtdRecebidaInput = (index: number, val: string) => {
     setItems(items.map((item, i) =>
-      i === index ? { ...item, quantidade_recebida: Math.max(0, parseInt(val) || 0) } : item
+      i === index ? { ...item, quantidade_recebida: Math.max(0, parseInt(val) || 0), conferido: true } : item
     ));
   };
 
@@ -415,9 +431,19 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
     ));
   };
 
+  const toggleConferido = (index: number) => {
+    setItems(items.map((item, i) =>
+      i === index
+        ? item.conferido
+          ? { ...item, conferido: false }
+          : { ...item, conferido: true }
+        : item
+    ));
+  };
+
+  // Conferência física: só a quantidade conta como divergência na doca.
   const hasDivergencia = (item: ConferenciaItem) =>
-    item.quantidade_recebida !== item.quantidade_pedida ||
-    (item.preco_nf != null && item.preco_cotado != null && item.preco_nf !== item.preco_cotado);
+    item.quantidade_recebida !== item.quantidade_pedida;
 
   // FONTE ÚNICA DE VERDADE: um status por item do pedido.
   // Relatório OCR, selos de contagem e aviso amarelo leem daqui.
@@ -426,6 +452,8 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
     if (m) {
       if (!m.matched) return "faltando";
       if (m.unidadeIndefinida) return "unidade_indefinida";
+    } else if (!item.conferido) {
+      return "pendente";
     }
     return hasDivergencia(item) ? "divergencia" : "correto";
   };
@@ -433,8 +461,26 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
   const statusPorItem = items.map(statusDoItem);
   const contarStatus = (s: OcrStatus) => statusPorItem.filter((x) => x === s).length;
   const totalDivergencias = contarStatus("divergencia");
+  const totalPendentes = contarStatus("pendente");
+  const totalCorretos = contarStatus("correto");
+  const totalConferidos = items.length - totalPendentes;
+  const [soPendentes, setSoPendentes] = useState(false);
+  const [confirmarPendentes, setConfirmarPendentes] = useState(false);
+
+  const pedirFinalizacao = () => {
+    if (!selectedPedido || !nome.trim()) {
+      toast.error("Informe seu nome para finalizar!");
+      return;
+    }
+    if (totalPendentes > 0) {
+      setConfirmarPendentes(true);
+      return;
+    }
+    finalizarConferencia();
+  };
 
   const finalizarConferencia = async () => {
+    setConfirmarPendentes(false);
     if (!selectedPedido || !nome.trim()) {
       toast.error("Informe seu nome para finalizar!");
       return;
@@ -447,7 +493,8 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
         quantidade_pedida: item.quantidade_pedida,
         quantidade_recebida: item.quantidade_recebida,
         preco_cotado: item.preco_cotado,
-        preco_nf: item.preco_nf,
+        // Conferente não analisa preço de nota: registra o valor cotado.
+        preco_nf: item.preco_cotado,
       }));
 
       const { data, error } = await supabase.functions.invoke("complete-conferencia", {
@@ -468,6 +515,8 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
         .map((item) => ({
           nome: item.produto_nome,
           qtd: item.quantidade_pedida - item.quantidade_recebida,
+          embalagem: item.embalagem || null,
+          fator: item.fator || 1,
         }));
 
       clearProgress();
@@ -496,7 +545,13 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
       const inserts = faltantes.map((f) => ({
         nome: f.nome,
         quantidade: f.qtd,
-        registrado_por: `Conferência - ${nome.trim()}`,
+        registrado_por: montarOrigemFaltaConferencia(
+          selectedPedido?.numero ?? "",
+          selectedPedido?.fornecedor ?? "",
+          nome.trim(),
+        ),
+        embalagem: f.embalagem ? String(f.embalagem).split("|")[0].trim() : null,
+        fator_embalagem: f.fator && f.fator > 0 ? f.fator : null,
         loja_id: lojaDestino,
       }));
       const { error } = await supabase.from("itens_faltantes").insert(inserts);
@@ -620,7 +675,7 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
           )}
           <Button size="sm" variant="outline" onClick={markAllCorrect} className="text-xs gap-1.5">
             <CheckCheck className="h-3.5 w-3.5" />
-            Tudo correto
+            Marcar todos
           </Button>
           {isFeatureEnabled("ocrNotaFiscal") && (
             <input
@@ -744,24 +799,37 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
           </div>
         )}
 
-        {/* Divergence counter */}
-        {totalDivergencias > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5 flex items-center gap-2 dark:bg-amber-950/30 dark:border-amber-800">
-            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-            <span className="text-sm text-amber-800 dark:text-amber-300 font-medium">
-              {totalDivergencias} divergência(s) encontrada(s)
+        {/* Progresso da conferência física */}
+        <div className="bg-card border rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-semibold">
+              {totalConferidos} de {items.length} conferidos
             </span>
+            <button
+              type="button"
+              onClick={() => setSoPendentes((v) => !v)}
+              className={`text-xs px-2 py-1 rounded-full border transition-colors ${soPendentes ? "bg-primary text-primary-foreground border-primary" : "text-muted-foreground"}`}
+            >
+              {soPendentes ? "Mostrar todos" : "Só pendentes"}
+            </button>
           </div>
-        )}
-
-
+          <Progress value={items.length ? (totalConferidos / items.length) * 100 : 0} className="h-2" />
+          <div className="flex flex-wrap gap-1.5 text-[11px] font-medium">
+            <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">✅ {totalCorretos} conferidos</span>
+            <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">⚠️ {totalDivergencias} com diferença</span>
+            <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground">⏳ {totalPendentes} pendentes</span>
+          </div>
+        </div>
 
         {/* Items list */}
         <ScrollArea className="h-[calc(100vh-380px)]">
           <div className="space-y-3">
             {items.map((item, i) => {
               const status = statusPorItem[i];
+              if (soPendentes && status !== "pendente") return null;
               const isDivergent = status === "divergencia";
+              const isPendente = status === "pendente";
+              const falta = item.quantidade_pedida - item.quantidade_recebida;
               const m = ocrMeta?.[i];
               const conversaoItem = m?.convertido
                 ? descreverConversao({
@@ -778,7 +846,11 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
                 <div
                   key={i}
                   className={`bg-card border rounded-xl p-4 space-y-3 transition-colors ${
-                    isDivergent ? "border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-950/20" : ""
+                    isDivergent
+                      ? "border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-950/20"
+                      : isPendente
+                        ? ""
+                        : "border-green-300 bg-green-50/40 dark:border-green-800 dark:bg-green-950/10"
                   }`}
                 >
                   <div className="flex items-start justify-between">
@@ -800,10 +872,39 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
                       )}
                     </div>
 
-                    {isDivergent ? (
-                      <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                    {isPendente ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 gap-1 text-xs shrink-0"
+                        onClick={() => toggleConferido(i)}
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        Conferir
+                      </Button>
                     ) : (
-                      <Check className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                      <button
+                        type="button"
+                        onClick={() => toggleConferido(i)}
+                        title="Toque para desmarcar"
+                        className={`shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full ${
+                          isDivergent
+                            ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                            : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        }`}
+                      >
+                        {isDivergent ? (
+                          <>
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                            {falta > 0 ? `Faltou ${falta}` : `Veio ${-falta} a mais`}
+                          </>
+                        ) : (
+                          <>
+                            <Check className="h-3.5 w-3.5" />
+                            Conferido
+                          </>
+                        )}
+                      </button>
                     )}
                   </div>
 
@@ -846,33 +947,6 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
                     </div>
                   </div>
 
-                  {/* Preço */}
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs text-muted-foreground">
-                      Preço cotado: <span className="font-bold text-foreground">
-                        R$ {(item.preco_cotado || 0).toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-muted-foreground mr-1">Preço NF:</span>
-                      <div className="relative">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={item.preco_nf ?? ""}
-                          onChange={(e) => updatePrecoNf(i, e.target.value)}
-                          onFocus={(e) => e.target.select()}
-                          className={`h-7 w-24 text-xs text-right pr-2 pl-7 ${
-                            item.preco_nf != null && item.preco_cotado != null && item.preco_nf !== item.preco_cotado
-                              ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30"
-                              : ""
-                          }`}
-                        />
-                      </div>
-                    </div>
-                  </div>
                 </div>
               );
             })}
@@ -892,13 +966,28 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
             />
           </div>
           <Button
-            onClick={finalizarConferencia}
+            onClick={pedirFinalizacao}
             disabled={!nome.trim()}
             className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-base py-6 font-bold"
           >
             ✅ Finalizar Conferência
           </Button>
         </div>
+
+        <AlertDialog open={confirmarPendentes} onOpenChange={setConfirmarPendentes}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Ainda há itens não conferidos</AlertDialogTitle>
+              <AlertDialogDescription>
+                Restam {totalPendentes} {totalPendentes === 1 ? "item" : "itens"} sem conferência. Eles serão registrados com a quantidade pedida. Deseja finalizar mesmo assim?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Voltar e conferir</AlertDialogCancel>
+              <AlertDialogAction onClick={finalizarConferencia}>Finalizar mesmo assim</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
@@ -961,7 +1050,7 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
               </h3>
               <p className="text-muted-foreground text-xs leading-relaxed max-w-sm mx-auto">
                 Depois de fechar uma cotação, o pedido entra nesta aba. Sua equipe confere o que foi
-                entregue contra o que foi pedido — e o sistema aponta divergências de quantidade e preço.
+                entregue contra o que foi pedido — e o sistema aponta o que faltou.
               </p>
             </>
           )}
