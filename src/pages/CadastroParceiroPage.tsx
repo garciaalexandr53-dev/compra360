@@ -92,10 +92,12 @@ const CadastroParceiroPage = () => {
       toast.error("Adicione ao menos uma cidade que você atende.");
       return;
     }
+    if (empresas.length > 0 && cnpj.replace(/\D/g, "").length !== 14) {
+      toast.error("Este WhatsApp já tem empresa na Rede. Informe o CNPJ da nova empresa.");
+      return;
+    }
     if (jaCadastrado !== null) {
-      toast.error(
-        "Você já faz parte da Rede! Por segurança, atualize seus dados na área do parceiro.",
-      );
+      toast.error("Essa empresa já está no seu cadastro. Atualize seus dados na área do parceiro.");
       return;
     }
 
@@ -117,11 +119,13 @@ const CadastroParceiroPage = () => {
       return;
     }
     const resp = (data ?? {}) as { status?: string; codigo?: string };
+    if (resp.status === "cnpj_obrigatorio") {
+      toast.error("Este WhatsApp já tem empresa na Rede. Informe o CNPJ da nova empresa.");
+      return;
+    }
     if (resp.status === "ja_cadastrado") {
       setJaCadastrado("");
-      toast.error(
-        "Este WhatsApp já está cadastrado na Rede. Atualize seus dados na área do parceiro.",
-      );
+      toast.error("Essa empresa já está no seu cadastro. Atualize seus dados na área do parceiro.");
       return;
     }
     setCodigo(resp.codigo ?? null);
