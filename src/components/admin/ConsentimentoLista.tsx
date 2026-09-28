@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { buildWhatsAppUrl } from "@/lib/format";
 import { formatTelefone, formatNomeEmpresa, formatNomePessoa } from "@/lib/masks";
 import { tipoFornecedorLabel, pastasLabel } from "@/lib/adminHelpers";
+import { mensagemConsentimento } from "@/lib/parceiro";
 import {
   ConsentimentoFornecedor, buildConsentimentosXlsx, consentimentosFilenameXlsx,
   downloadXlsx, formatCnpjBR, consentimentoLabel, ultimaPerguntaLabel,
