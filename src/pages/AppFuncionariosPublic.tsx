@@ -16,6 +16,7 @@ import AdicionarItemDialog from "@/components/shared/AdicionarItemDialog";
 import { useUltimaCompra } from "@/hooks/useUltimaCompra";
 import SearchInputComScanner from "@/components/shared/SearchInputComScanner";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
+import { normalizarEan } from "@/lib/ean";
 import InstallAppDialog from "@/components/InstallAppDialog";
 
 interface ItemEntry {
@@ -483,7 +484,7 @@ const AppFuncionariosPublic = () => {
   }, [filteredProducts.length, hasNextPage, isFetchingNextPage, fetchNextPage, produtosLoading]);
 
   /** Termo é um código de barras (só dígitos, 8+). */
-  const termoEhEan = /^\d{8,}$/.test(productSearch.trim());
+  const termoEhEan = /^\d{8,14}$/.test(productSearch.trim());
 
   const addItem = () => {
     const trimmed = current.trim();
@@ -632,7 +633,7 @@ const AppFuncionariosPublic = () => {
           observacao: null,
           embalagem: item.embalagem,
           fator_embalagem: fator,
-          ean: item.ean ?? null,
+          ean: normalizarEan(item.ean),
           catalogo_mestre_id: item.catalogoMestreId ?? null,
           registrado_por: "Funcionário" + lojaLabel,
           loja_id: selectedLojaId,
@@ -648,7 +649,8 @@ const AppFuncionariosPublic = () => {
       const lojaMsg = selectedLojaName ? ` para ${selectedLojaName}` : "";
       toast.success(`${items.length} itens enviados${lojaMsg}!`);
     } catch (error: any) {
-      toast.error("Erro: " + error.message);
+      console.error("envio lista", error);
+      toast.error("Não foi possível enviar. Sua lista foi mantida, tente de novo.");
     }
     setSending(false);
   };
