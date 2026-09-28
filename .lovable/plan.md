@@ -5,7 +5,7 @@
 Análise feita nas telas com lista de produtos:
 - Conferência de pedidos (app de funcionários e painel): sem ordem — **ajustar**.
 - Histórico de conferências (tabela ao expandir): sem ordem — **ajustar**.
-- Lista de reposição (tela Funcionários): hoje mais recentes primeiro — **ajustar para A-Z**, mantendo as faltas da conferência agrupadas com o selo.
+- Lista de reposição (tela Funcionários): continua com os mais recentes primeiro — sem mudança.
 - Pedidos enviados ao fornecedor e portal do fornecedor: já estão em A-Z — sem mudança.
 - Matriz da cotação: mantém a ordem atual (já tem filtros e ordenação próprios) — sem mudança.
 
@@ -28,5 +28,4 @@ Gravação da conferência, fluxo do conferente, importação de faltas e regras
 - Helper `ordenarPorNome` (localeCompare pt-BR, sensitivity base) em `src/lib/format.ts` ou lib própria, com teste.
 - `ConferenciaPedidos.tsx`: ordenar itens ao montar e ao restaurar do localStorage.
 - `ConferenciasPage.tsx`: ordenar `expandedItens`; nova query de `itens_faltantes` da loja filtrando `registrado_por` com `PREFIXO_FALTA_CONFERENCIA`; casar por número do pedido (`origemFaltaConferencia`) + nome normalizado (`normalizarNomeItem`); status = importado ? verde : âmbar; ausente = cinza. "Enviar agora" faz insert em `itens_faltantes` (usuário autenticado, dono da loja) e invalida a query.
-- `FuncionariosPage.tsx`: ordenação A-Z no cliente, sem mudar a query.
 - Sem migração, sem mudança em RPCs/funções. Verificação: tsgo + vitest verdes.
