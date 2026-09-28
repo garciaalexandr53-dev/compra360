@@ -285,7 +285,9 @@ const CadastroParceiroPage = () => {
                   jaCadastrado !== null || empresas.length ? "border-amber-500/60" : "border-white/10"
                 }`}
               />
-              {jaCadastrado !== null ? (
+              {buscando ? (
+                <p className="text-xs text-slate-400">Procurando seu cadastro...</p>
+              ) : jaCadastrado !== null ? (
                 <p className="text-xs text-amber-300 leading-relaxed">
                   Essa empresa já está no seu cadastro da Rede Compra360. Para alterar suas cidades
                   ou linhas de atendimento,{" "}
@@ -303,6 +305,12 @@ const CadastroParceiroPage = () => {
                     clique aqui
                   </Link>
                   .
+                </p>
+              ) : encontrado ? (
+                <p className="text-xs text-emerald-300 leading-relaxed">
+                  Encontramos seu contato{encontrado.nome ? ` na ${encontrado.nome}` : ""} no
+                  Compra360 e já preenchemos seus dados abaixo. Confira, complete as cidades que você
+                  atende e salve.
                 </p>
               ) : (
                 <p className="text-xs text-slate-500">
