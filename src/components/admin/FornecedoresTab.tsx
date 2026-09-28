@@ -188,11 +188,19 @@ export default function FornecedoresTab() {
             className="h-8 text-xs flex-1 min-w-[90px]"
           >
             {v.label}
+            {v.key === "solicitacoes" && !!pedidosAcesso && (
+              <Badge
+                variant={visao === "solicitacoes" ? "secondary" : "default"}
+                className="ml-1.5 text-[10px] py-0 px-1.5"
+              >
+                {pedidosAcesso}
+              </Badge>
+            )}
           </Button>
         ))}
       </div>
 
-      <div className={`space-y-3 ${visao === "consentimento" ? "hidden" : ""}`}>
+      <div className={`space-y-3 ${visao === "consentimento" || visao === "solicitacoes" ? "hidden" : ""}`}>
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
