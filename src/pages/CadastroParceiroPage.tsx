@@ -9,6 +9,8 @@ import Seo from "@/components/Seo";
 import { supabase } from "@/integrations/supabase/client";
 import CidadesAtendidasInput from "@/components/fornecedor/CidadesAtendidasInput";
 import type { Municipio } from "@/lib/cep";
+import { useConsultaCNPJ } from "@/hooks/useConsultaCNPJ";
+import CnpjStatus from "@/components/CnpjStatus";
 import { maskTelefone, maskCNPJ, isCNPJValido, formatNomeEmpresa, formatNomePessoa, normalizeTelefone } from "@/lib/masks";
 import { pastasDisponiveis } from "@/lib/adminHelpers";
 import { mensagemConfirmacaoCadastro, linkSuporteComMensagem } from "@/lib/parceiro";
@@ -34,6 +36,10 @@ const CadastroParceiroPage = () => {
   const [pronto, setPronto] = useState(false);
   const [codigo, setCodigo] = useState<string | null>(null);
   const [jaCadastrado, setJaCadastrado] = useState<string | null>(null);
+  const receita = useConsultaCNPJ(cnpj, (d) => {
+    const oficial = d.nome_fantasia || d.razao_social;
+    if (oficial) setNome(formatNomeEmpresa(oficial));
+  });
 
   /** Consulta discreta: avisa se o WhatsApp digitado ja existe na Rede. */
   const checarTelefone = async (valor: string) => {
@@ -69,6 +75,10 @@ const CadastroParceiroPage = () => {
     }
     if (!isCNPJValido(cnpj)) {
       toast.error("CNPJ incompleto.");
+      return;
+    }
+    if (receita.bloqueia) {
+      toast.error("Confira o CNPJ: inválido ou com situação irregular na Receita.");
       return;
     }
     if (cidades.length === 0) {
@@ -270,6 +280,7 @@ const CadastroParceiroPage = () => {
                 inputMode="numeric"
                 className="bg-slate-950 border-white/10 text-white"
               />
+              <CnpjStatus status={receita.status} dados={receita.dados} />
             </div>
 
 
