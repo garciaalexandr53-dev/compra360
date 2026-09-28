@@ -119,12 +119,26 @@ export default function ConsentimentoLista() {
 
   return (
     <div className="space-y-4">
-      {/* Resumo */}
+      {/* Resumo clicável (funciona como filtro) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        <ResumoCard titulo="Fornecedores" valor={resumo.total} />
-        <ResumoCard titulo="Participam" valor={resumo.sim} tom="text-emerald-600" />
-        <ResumoCard titulo="Recusaram" valor={resumo.nao} tom="text-red-600" />
-        <ResumoCard titulo="Pendentes" valor={resumo.pendente} tom="text-amber-600" />
+        {STATUS_FILTROS.map((f) => (
+          <ResumoCard
+            key={f.key}
+            titulo={f.cardTitulo}
+            valor={
+              f.key === "sim" ? resumo.sim
+              : f.key === "nao" ? resumo.nao
+              : f.key === "pendente" ? resumo.pendente
+              : resumo.total
+            }
+            tom={f.tom}
+            ativo={status === f.key}
+            onClick={() => {
+              setStatus(f.key);
+              setPage(0);
+            }}
+          />
+        ))}
       </div>
 
       {/* Busca e ações */}
