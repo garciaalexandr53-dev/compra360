@@ -23,12 +23,13 @@ import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks
 
 const PAGE_SIZE = 50;
 type Filtro = "todos" | "sem_whatsapp" | "sem_email" | "duplicados" | "autocadastro";
-type Visao = "rede" | "consentimento" | "registros";
+type Visao = "rede" | "consentimento" | "registros" | "solicitacoes";
 
 const VISOES: { key: Visao; label: string; descricao: string }[] = [
   { key: "rede", label: "Rede", descricao: "Cada fornecedor uma única vez, com cidades atendidas e em quantos clientes já está." },
   { key: "consentimento", label: "Consentimento", descricao: "Quem já aceitou, recusou ou ainda não respondeu ao convite da Rede, com CNPJ, tipo, pastas e data da última pergunta." },
   { key: "registros", label: "Por cliente", descricao: "Todos os cadastros, um por cliente, como estão no sistema." },
+  { key: "solicitacoes", label: "Solicitações", descricao: "Fornecedores que pediram acesso: confira o código e envie o link em um clique." },
 ];
 
 const FILTROS: { key: Filtro; label: string }[] = [
