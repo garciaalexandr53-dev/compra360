@@ -19,6 +19,8 @@ import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks
 import CidadesAtendidasInput from "@/components/fornecedor/CidadesAtendidasInput";
 import { dedupCidades } from "@/lib/cidades";
 import type { Municipio } from "@/lib/cep";
+import { useConsultaCNPJ } from "@/hooks/useConsultaCNPJ";
+import CnpjStatus from "@/components/CnpjStatus";
 
 type Detalhes = {
   id?: string;
@@ -60,12 +62,13 @@ type Form = {
   tipo_fornecedor: string;
   pasta: string[];
   consentimento_rede: string;
+  cnpj: string;
 };
 
 const VAZIO: Form = {
   nome: "", representante: "", telefone: "", email: "",
   pedido_minimo: "", prazo_pagamento: "", observacoes: "",
-  tipo_fornecedor: "", pasta: [], consentimento_rede: "pendente",
+  tipo_fornecedor: "", pasta: [], consentimento_rede: "pendente", cnpj: "",
 };
 
 const SEM_TIPO = "__sem_tipo__";
