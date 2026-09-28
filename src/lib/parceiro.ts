@@ -25,3 +25,15 @@ export function linkSuporteComMensagem(mensagem: string): string {
 export function linkParceiro(token: string, origem = "https://compra360app.com.br"): string {
   return `${origem.replace(/\/$/, "")}/parceiro/${token}`;
 }
+
+/** Mensagem que o Compra360 envia ao fornecedor com o link seguro de atualização. */
+export function mensagemLinkParceiro(
+  representante: string,
+  empresa: string,
+  token: string,
+  origem = "https://compra360app.com.br",
+): string {
+  const saudacao = representante.trim() ? `Olá ${representante.trim()}!` : "Olá!";
+  const quem = empresa.trim() ? ` da ${empresa.trim()}` : "";
+  return `${saudacao} Aqui está o seu link seguro para atualizar os dados${quem} no Compra360: ${linkParceiro(token, origem)}`;
+}
