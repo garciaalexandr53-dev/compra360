@@ -188,6 +188,7 @@ const FornecedoresPage = () => {
           telefone: (data as any).telefone || null, email: (data as any).email || null,
           pedido_minimo: (data as any).pedido_minimo || 0, prazo_pagamento: (data as any).prazo_pagamento || null,
           observacoes: (data as any).observacoes || null,
+          cnpj: (data as any).cnpj ?? null, razao_social: (data as any).razao_social ?? null,
         }).eq("id", editingId);
         if (error) throw error;
       } else {
@@ -196,6 +197,7 @@ const FornecedoresPage = () => {
           telefone: (data as any).telefone || null, email: (data as any).email || null,
           pedido_minimo: (data as any).pedido_minimo || 0, prazo_pagamento: (data as any).prazo_pagamento || null,
           observacoes: (data as any).observacoes || null, user_id: user?.id,
+          cnpj: (data as any).cnpj ?? null, razao_social: (data as any).razao_social ?? null,
         }).select("id").single();
         if (error) throw error;
         fId = inserted.id;
@@ -243,6 +245,7 @@ const FornecedoresPage = () => {
       nome: f.nome, representante: f.representante || "", telefone: formatTelefone(f.telefone || ""),
       email: f.email || "", pedido_minimo: moedaParaInput(f.pedido_minimo),
       prazo_pagamento: ((f as any).prazo_pagamento || "").toUpperCase(), observacoes: f.observacoes || "",
+      cnpj: maskCNPJ(f.cnpj || ""),
     });
     setSelectedLojas(fornecedorLojas.filter((fl: any) => fl.fornecedor_id === f.id).map((fl: any) => fl.loja_id));
     setModalOpen(true);
@@ -255,6 +258,8 @@ const FornecedoresPage = () => {
       telefone: normalizeTelefone(form.telefone) || null, email: form.email.trim() || null,
       pedido_minimo: parseMoeda(form.pedido_minimo), prazo_pagamento: form.prazo_pagamento.trim().toUpperCase() || null,
       observacoes: form.observacoes.trim() || null,
+      cnpj: form.cnpj.replace(/\D/g, "") || null,
+      razao_social: receita.dados?.razao_social ? formatNomeEmpresa(receita.dados.razao_social) : null,
     } as any);
   };
 
@@ -558,6 +563,11 @@ const FornecedoresPage = () => {
               <Input inputMode="numeric" placeholder="0,00" value={form.pedido_minimo} onChange={(e) => setForm({ ...form, pedido_minimo: maskMoeda(e.target.value) })} />
             </div>
             <div><Label>Prazo de Pagamento</Label><Input placeholder="EX: 30 DIAS, À VISTA, 7/14/21" className="uppercase" value={form.prazo_pagamento} onChange={(e) => setForm({ ...form, prazo_pagamento: e.target.value.toUpperCase() })} /></div>
+            <div>
+              <Label>CNPJ</Label>
+              <Input inputMode="numeric" placeholder="00.000.000/0000-00" value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: maskCNPJ(e.target.value) })} />
+              <CnpjStatus status={receita.status} dados={receita.dados} />
+            </div>
             <div><Label>Observações</Label><Input placeholder="Ex: entrega 3x por semana" value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} /></div>
             {lojas.length > 0 && (
               <div>
