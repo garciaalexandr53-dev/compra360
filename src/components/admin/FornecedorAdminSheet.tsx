@@ -434,7 +434,15 @@ export default function FornecedorAdminSheet({
                     {detalhes?.token && form.telefone.trim() && (
                       <Button size="sm" variant="outline" asChild>
                         <a
-                          href={buildWhatsAppUrl(form.telefone, mensagemLinkParceiro())}
+                          href={buildWhatsAppUrl(
+                            form.telefone,
+                            mensagemLinkParceiro(
+                              form.representante,
+                              form.nome,
+                              detalhes.token,
+                              window.location.origin,
+                            ),
+                          )}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
