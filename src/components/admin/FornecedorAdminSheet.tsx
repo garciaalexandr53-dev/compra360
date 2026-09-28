@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Loader2, MessageCircle, Save, ShieldCheck } from "lucide-react";
-import { linkParceiro } from "@/lib/parceiro";
+import { linkParceiro, mensagemLinkParceiro } from "@/lib/parceiro";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate, formatDateTime, buildWhatsAppUrl } from "@/lib/format";
