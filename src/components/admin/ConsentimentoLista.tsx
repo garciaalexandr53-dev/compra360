@@ -265,11 +265,24 @@ export default function ConsentimentoLista() {
                       {f.telefone && (
                         <Button
                           size="sm"
-                          variant="ghost"
-                          className="h-7 px-2 shrink-0"
-                          onClick={() => window.open(buildWhatsAppUrl(f.telefone!, ""), "_blank")}
+                          variant="outline"
+                          className="h-7 px-2 shrink-0 text-[11px]"
+                          onClick={() =>
+                            window.open(
+                              buildWhatsAppUrl(
+                                f.telefone!,
+                                mensagemConsentimento(
+                                  f.consentimento_rede,
+                                  f.representante,
+                                  f.nome,
+                                ),
+                              ),
+                              "_blank",
+                            )
+                          }
                         >
-                          <MessageCircle className="h-3.5 w-3.5 text-emerald-600" />
+                          <MessageCircle className="h-3.5 w-3.5 text-emerald-600 mr-1" />
+                          {acaoWhatsappLabel(f.consentimento_rede)}
                         </Button>
                       )}
                     </div>
