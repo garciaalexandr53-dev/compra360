@@ -1623,6 +1623,10 @@ export type Database = {
           id: string
         }[]
       }
+      fornecedor_mesma_entidade: {
+        Args: { _ca: string; _cb: string; _fa: string; _fb: string }
+        Returns: boolean
+      }
       gerar_codigo_acesso_parceiro: {
         Args: { _finalidade: string; _fone: string; _fornecedor_id: string }
         Returns: string
@@ -1887,7 +1891,10 @@ export type Database = {
           total_respondidas: number
         }[]
       }
-      whatsapp_parceiro_existe: { Args: { _telefone: string }; Returns: Json }
+      whatsapp_parceiro_existe: {
+        Args: { _cnpj?: string; _telefone: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "user"
