@@ -34,6 +34,7 @@ type Detalhes = {
   tipo_fornecedor?: string | null;
   pasta?: string[] | null;
   cnpj?: string | null;
+  razao_social?: string | null;
   token?: string | null;
   codigo_verificacao?: string | null;
   consentimento_rede?: string | null;
