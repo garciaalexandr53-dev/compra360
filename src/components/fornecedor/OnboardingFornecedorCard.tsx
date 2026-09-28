@@ -24,6 +24,7 @@ interface OnboardingState {
   cidades: Municipio[] | null;
   cidade_loja: string | null;
   uf_loja: string | null;
+  cnpj_atual?: string | null;
 }
 
 interface Props {
