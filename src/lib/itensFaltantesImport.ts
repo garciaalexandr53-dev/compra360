@@ -240,3 +240,31 @@ export const contarRepeticoes = (
   }
   return contagem;
 };
+
+/* -------------------------------------------------------------------------
+ * Origem: faltas registradas na conferência de pedidos
+ * ---------------------------------------------------------------------- */
+
+export const PREFIXO_FALTA_CONFERENCIA = "Conferência · Pedido #";
+
+export const montarOrigemFaltaConferencia = (
+  numero: number | string,
+  fornecedor: string,
+  conferente: string,
+): string => `${PREFIXO_FALTA_CONFERENCIA}${numero} · ${fornecedor} · ${conferente}`.trim();
+
+export interface OrigemFaltaConferencia {
+  pedido: string;
+  fornecedor: string;
+}
+
+/** Extrai pedido/fornecedor de `registrado_por` quando a falta veio da conferência. */
+export const origemFaltaConferencia = (
+  registradoPor: string | null | undefined,
+): OrigemFaltaConferencia | null => {
+  if (!registradoPor || !registradoPor.startsWith(PREFIXO_FALTA_CONFERENCIA)) return null;
+  const partes = registradoPor.slice(PREFIXO_FALTA_CONFERENCIA.length).split(" · ");
+  const pedido = partes[0]?.trim();
+  if (!pedido) return null;
+  return { pedido, fornecedor: partes[1]?.trim() || "" };
+};
