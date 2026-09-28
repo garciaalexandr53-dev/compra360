@@ -28,7 +28,7 @@ const CadastroParceiroPage = () => {
   const [nome, setNome] = useState("");
   const [cnpj, setCnpj] = useState("");
   const [representante, setRepresentante] = useState("");
-  const [telefone, setTelefone] = useState("");
+  const [telefone, setTelefone] = useState(() => maskTelefone(params.get("fone") ?? ""));
   const [tipo, setTipo] = useState("geral");
   const [pastas, setPastas] = useState<string[]>([]);
   const [cidades, setCidades] = useState<Municipio[]>([]);
