@@ -324,9 +324,35 @@ export default function ConsentimentoLista() {
   );
 }
 
-function ResumoCard({ titulo, valor, tom }: { titulo: string; valor: number; tom?: string }) {
+function ResumoCard({
+  titulo,
+  valor,
+  tom,
+  ativo,
+  onClick,
+}: {
+  titulo: string;
+  valor: number;
+  tom?: string;
+  ativo?: boolean;
+  onClick?: () => void;
+}) {
   return (
-    <Card>
+    <Card
+      role="button"
+      tabIndex={0}
+      aria-pressed={ativo}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+      className={`cursor-pointer transition-colors hover:bg-accent/50 ${
+        ativo ? "border-primary ring-1 ring-primary" : ""
+      }`}
+    >
       <CardContent className="p-3">
         <div className="text-[11px] text-muted-foreground">{titulo}</div>
         <div className={`text-xl font-semibold ${tom || ""}`}>{valor}</div>
