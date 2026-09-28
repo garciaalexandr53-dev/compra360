@@ -198,13 +198,13 @@ const OnboardingFornecedorCard = ({
     <div className="mx-3 sm:mx-4 mt-3 rounded-xl border bg-card p-3 sm:p-4 space-y-4 max-w-3xl md:mx-auto">
       <h2 className="text-sm sm:text-base font-bold">
         {modoCidades
-          ? state.pedir_cnpj
+          ? pedirCnpj
             ? "Seus dados e as cidades que você atende"
             : "Cidades que você atende"
           : "Complete o cadastro da sua empresa"}
       </h2>
 
-      {state.pedir_cnpj && (
+      {pedirCnpj && (
         <div className="space-y-2">
           <label className="text-xs sm:text-sm font-medium" htmlFor="onb-cnpj">
             CNPJ da empresa que você representa
@@ -218,6 +218,11 @@ const OnboardingFornecedorCard = ({
             className="w-full"
           />
           <CnpjStatus status={receita.status} dados={receita.dados} />
+          {cnpjIrregular && (
+            <p className="text-xs text-amber-700 dark:text-amber-300">
+              O CNPJ informado antes não consta como ativo na Receita. Informe o CNPJ correto da empresa que você atende.
+            </p>
+          )}
           {!state.permite_skip && (
             <p className="text-xs text-amber-700 dark:text-amber-300">
               Para continuar recebendo cotações, complete o cadastro da sua empresa.
