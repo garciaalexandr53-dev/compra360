@@ -17,6 +17,7 @@ import ConferenciaPedidos from "@/components/ConferenciaPedidos";
 import {
   buildCotacaoProdutoInsertFromItem,
   detectarSugestaoEquipe,
+  origemFaltaConferencia,
   normalizarNomeItem,
   agruparItensParaImportacao,
   chaveItemFaltante,
@@ -960,6 +961,17 @@ const FuncionariosPage = () => {
                           ⏳ já na cotação (sem preço)
                         </span>
                       )}
+                      {(() => {
+                        const origem = origemFaltaConferencia(item.registrado_por);
+                        return origem ? (
+                          <span
+                            className="text-[9px] bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 font-semibold"
+                            title="Item que faltou na entrega, registrado na conferência do pedido."
+                          >
+                            📦 Faltou no pedido #{origem.pedido}{origem.fornecedor ? ` · ${origem.fornecedor}` : ""}
+                          </span>
+                        ) : null;
+                      })()}
                       {divergente && (
                         <span className="text-[9px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
                           💡 Sugestão da equipe
