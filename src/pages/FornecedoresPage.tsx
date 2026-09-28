@@ -253,6 +253,10 @@ const FornecedoresPage = () => {
 
   const handleSave = async () => {
     if (!form.nome.trim()) { toast.error("Digite o nome do fornecedor"); return; }
+    if (receita.bloqueia) {
+      toast.error(receita.status === "invalido" ? "CNPJ inválido — confira os números." : "CNPJ com situação irregular na Receita.");
+      return;
+    }
     await saveMutation.mutateAsync({
       nome: formatNomeEmpresa(form.nome), representante: formatNomePessoa(form.representante) || null,
       telefone: normalizeTelefone(form.telefone) || null, email: form.email.trim() || null,
