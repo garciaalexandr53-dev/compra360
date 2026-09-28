@@ -23,7 +23,28 @@ type Dados = {
   tipo_fornecedor?: string | null;
   pasta?: string[] | null;
   cidades?: { cidade: string; uf: string }[];
+  consentimento_rede?: string | null;
+  outras_empresas?: { nome: string; token: string }[];
 };
+
+/** Opções que o parceiro pode escolher sobre participar da Rede. */
+const OPCOES_REDE = [
+  {
+    value: "sim",
+    label: "Sim, quero participar da Rede",
+    desc: "Novos supermercados da sua região podem te encontrar e enviar cotações.",
+  },
+  {
+    value: "nao",
+    label: "Agora não",
+    desc: "Você continua atendendo somente os clientes que já te cadastraram.",
+  },
+  {
+    value: "pendente",
+    label: "Quero decidir depois",
+    desc: "Nada muda agora e podemos perguntar em uma próxima atualização.",
+  },
+] as const;
 
 const campoEscuro = "bg-slate-950 border-white/10 text-white";
 
