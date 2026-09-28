@@ -45,3 +45,10 @@ Quando uma API for conectada (Z-API ou Evolution) ao número do Compra360:
 - Fornecedor cadastrado por lojista que pede atualização continua fora da Rede até aceitar explicitamente.
 - Admin: código de segurança + "Copiar link de acesso" + "Enviar link pelo WhatsApp" (`mensagemLinkParceiro`) liberados para qualquer fornecedor, sem a trava de `origem_cadastro = 'autocadastro'`.
 - /seja-parceiro/cadastro: CNPJ vem antes do nome da empresa, rótulo só "CNPJ" (preenche o nome pela Receita).
+
+## "Não represento mais esta empresa" (2026-09-28)
+- RPC `desvincular_parceiro_empresa(_token)` (SECURITY DEFINER, anon): na ficha da Rede (`user_id IS NULL`) marca `consentimento_rede='nao'`, limpa telefone/representante, regenera o token (invalida o link) e anota a data nas observações; libera o CNPJ para um novo representante. Apaga códigos pendentes em `fornecedor_acessos`.
+- Fichas de loja (`user_id IS NOT NULL`) com mesmo fone+cnpj NUNCA são apagadas: recebem só o aviso "[DD/MM/AAAA - o representante informou que nao atende mais esta empresa...]" (idempotente por LIKE).
+- Retorna `proxima` (outra empresa ativa do mesmo fone) → ParceiroPage navega para `/parceiro/:token`; se era a única, mostra tela "Vínculo encerrado" com CTA de novo cadastro.
+- UI: bloco discreto abaixo de "Salvar meus dados" + AlertDialog listando as 4 consequências.
+
