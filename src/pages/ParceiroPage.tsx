@@ -154,6 +154,8 @@ function EditarDados({ token }: { token: string }) {
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
   const [outras, setOutras] = useState<{ nome: string; token: string }[]>([]);
+  const [consentAtual, setConsentAtual] = useState<string>("pendente");
+  const [consentEscolha, setConsentEscolha] = useState<string | null>(null);
 
   const opcoesPasta = useMemo(() => pastasDisponiveis(tipo), [tipo]);
 
