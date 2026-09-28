@@ -166,6 +166,13 @@ export default function FornecedorAdminSheet({
       toast({ title: "Pedido mínimo inválido", variant: "destructive" });
       return;
     }
+    if (receita.bloqueia) {
+      toast({
+        title: receita.status === "invalido" ? "CNPJ inválido" : "CNPJ com situação irregular na Receita",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setSalvando(true);
     const { error } = await supabase.rpc("admin_update_fornecedor", {
@@ -181,6 +188,8 @@ export default function FornecedorAdminSheet({
       _pasta: form.tipo_fornecedor === "especializado" && form.pasta.length ? form.pasta : null,
       _consentimento_rede: form.consentimento_rede || null,
       _cidades: cidades.map((m) => ({ cidade: m.cidade, uf: m.uf })),
+      _cnpj: form.cnpj.replace(/\D/g, "") || null,
+      _razao_social: receita.dados?.razao_social ? formatNomeEmpresa(receita.dados.razao_social) : null,
     });
     setSalvando(false);
 
