@@ -290,7 +290,31 @@ function EditarDados({ token }: { token: string }) {
     );
   }
 
+  if (encerrado) {
+    return (
+      <div className="max-w-md mx-auto text-center">
+        <div className="mx-auto mb-5 h-16 w-16 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center">
+          <LogOut className="h-8 w-8 text-slate-300" />
+        </div>
+        <h1 className="text-2xl font-bold text-white mb-3">Vínculo encerrado</h1>
+        <p className="text-slate-400 mb-6">
+          Você não recebe mais cotações de {nome || "esta empresa"}. Se passar a representar outra
+          empresa, é só fazer um novo cadastro — leva menos de um minuto.
+        </p>
+        <Link to="/seja-parceiro/cadastro">
+          <Button className="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold">
+            Cadastrar outra empresa
+          </Button>
+        </Link>
+        <Link to="/" className="block mt-6 text-sm text-slate-400 hover:text-white underline">
+          Voltar para a página inicial
+        </Link>
+      </div>
+    );
+  }
+
   if (salvo) {
+
     return (
       <div className="max-w-md mx-auto text-center">
         <div className="mx-auto mb-5 h-16 w-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
