@@ -402,38 +402,52 @@ export default function FornecedorAdminSheet({
                   <span className="text-muted-foreground">Pulou o CNPJ: </span>
                   {detalhes?.consentimento_tentativas_skip ?? 0}x
                 </p>
-                {(fornecedor?.origem_cadastro === "autocadastro" ||
-                  fornecedor?.origem_cadastro === "autocadastro_confirmado") && (
-                  <div className="space-y-2 pt-2 border-t">
+                <div className="space-y-2 pt-2 border-t">
+                  <p>
+                    <span className="text-muted-foreground">Origem: </span>
+                    {fornecedor?.origem_cadastro === "autocadastro_confirmado"
+                      ? "Auto-cadastro com WhatsApp confirmado"
+                      : fornecedor?.origem_cadastro === "autocadastro"
+                        ? "Auto-cadastro aguardando confirmação do WhatsApp"
+                        : "Cadastrado pelo supermercado"}
+                  </p>
+                  {detalhes?.codigo_verificacao && (
                     <p>
-                      <span className="text-muted-foreground">Origem: </span>
-                      {fornecedor.origem_cadastro === "autocadastro_confirmado"
-                        ? "Auto-cadastro com WhatsApp confirmado"
-                        : "Auto-cadastro aguardando confirmação do WhatsApp"}
+                      <span className="text-muted-foreground">Código de segurança gerado: </span>
+                      <span className="font-semibold tracking-widest">{detalhes.codigo_verificacao}</span>
                     </p>
-                    {detalhes?.codigo_verificacao && (
-                      <p>
-                        <span className="text-muted-foreground">Código enviado por ele: </span>
-                        <span className="font-semibold tracking-widest">{detalhes.codigo_verificacao}</span>
-                      </p>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                      {fornecedor.origem_cadastro === "autocadastro" && (
-                        <Button size="sm" onClick={confirmarParceiro} disabled={confirmando}>
-                          {confirmando ? (
-                            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                          ) : (
-                            <ShieldCheck className="h-4 w-4 mr-1.5" />
-                          )}
-                          Confirmar WhatsApp
-                        </Button>
-                      )}
-                      <Button size="sm" variant="outline" onClick={copiarLinkParceiro}>
-                        <Copy className="h-4 w-4 mr-1.5" /> Copiar link de acesso
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {fornecedor?.origem_cadastro === "autocadastro" && (
+                      <Button size="sm" onClick={confirmarParceiro} disabled={confirmando}>
+                        {confirmando ? (
+                          <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                        ) : (
+                          <ShieldCheck className="h-4 w-4 mr-1.5" />
+                        )}
+                        Confirmar WhatsApp
                       </Button>
-                    </div>
+                    )}
+                    <Button size="sm" variant="outline" onClick={copiarLinkParceiro}>
+                      <Copy className="h-4 w-4 mr-1.5" /> Copiar link de acesso
+                    </Button>
+                    {detalhes?.token && form.telefone.trim() && (
+                      <Button size="sm" variant="outline" asChild>
+                        <a
+                          href={buildWhatsAppUrl(form.telefone, mensagemLinkParceiro())}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <MessageCircle className="h-4 w-4 mr-1.5" /> Enviar link pelo WhatsApp
+                        </a>
+                      </Button>
+                    )}
                   </div>
-                )}
+                  <p className="text-muted-foreground">
+                    O link permite que o fornecedor atualize os próprios dados. Ele não entra na Rede
+                    por isso: a participação só muda se ele aceitar.
+                  </p>
+                </div>
               </div>
             </div>
 
