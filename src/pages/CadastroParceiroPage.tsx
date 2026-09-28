@@ -42,23 +42,60 @@ const CadastroParceiroPage = () => {
   });
 
   const [empresas, setEmpresas] = useState<string[]>([]);
+  const [encontrado, setEncontrado] = useState<{ nome: string; naRede: boolean } | null>(null);
+  const [buscando, setBuscando] = useState(false);
 
-  /** Consulta discreta: avisa se o WhatsApp ja existe e se a mesma empresa (CNPJ) ja esta nele. */
+  type Ficha = {
+    nome?: string | null;
+    representante?: string | null;
+    cnpj?: string | null;
+    tipo_fornecedor?: string | null;
+    pasta?: string[] | null;
+    cidades?: { cidade: string; uf: string }[] | null;
+    na_rede?: boolean;
+  };
+
+  /** Consulta discreta: acha o fornecedor pelo WhatsApp e ja preenche o que existe no sistema. */
   const checarTelefone = async (valor: string, cnpjAtual = cnpj) => {
     const digitos = valor.replace(/\D/g, "");
     if (digitos.length < 10 || validarWhatsApp(valor)) {
       setJaCadastrado(null);
       setEmpresas([]);
+      setEncontrado(null);
       return;
     }
+    setBuscando(true);
     const { data, error } = await supabase.rpc("whatsapp_parceiro_existe" as any, {
       _telefone: valor,
       _cnpj: cnpjAtual.replace(/\D/g, "") || null,
     });
+    setBuscando(false);
     if (error) return;
-    const resp = (data ?? {}) as { existe?: boolean; empresas?: string[]; mesma_empresa?: boolean };
+    const resp = (data ?? {}) as {
+      existe?: boolean;
+      empresas?: string[];
+      mesma_empresa?: boolean;
+      ficha?: Ficha | null;
+    };
     setEmpresas(resp.existe ? (resp.empresas ?? []) : []);
     setJaCadastrado(resp.existe && resp.mesma_empresa ? "" : null);
+
+    const f = resp.existe ? resp.ficha : null;
+    if (!f) {
+      setEncontrado(null);
+      return;
+    }
+    setEncontrado({ nome: f.nome ?? "", naRede: !!f.na_rede });
+    // Preenche apenas o que o fornecedor ainda nao digitou
+    if (f.representante) setRepresentante((atual) => atual || f.representante!);
+    if (f.nome) setNome((atual) => atual || formatNomeEmpresa(f.nome!));
+    if (f.cnpj) setCnpj((atual) => atual || maskCNPJ(f.cnpj!));
+    if (f.tipo_fornecedor) setTipo((atual) => (atual === "geral" ? f.tipo_fornecedor! : atual));
+    if (f.pasta?.length) setPastas((atual) => (atual.length ? atual : f.pasta!));
+    if (f.cidades?.length)
+      setCidades((atual) =>
+        atual.length ? atual : f.cidades!.map((c) => ({ cidade: c.cidade, uf: c.uf || undefined })),
+      );
   };
 
   useEffect(() => {
@@ -245,10 +282,16 @@ const CadastroParceiroPage = () => {
                 inputMode="numeric"
                 autoFocus
                 className={`bg-slate-950 text-white ${
-                  jaCadastrado !== null || empresas.length ? "border-amber-500/60" : "border-white/10"
+                  jaCadastrado !== null || empresas.length
+                    ? "border-amber-500/60"
+                    : encontrado
+                      ? "border-emerald-500/60"
+                      : "border-white/10"
                 }`}
               />
-              {jaCadastrado !== null ? (
+              {buscando ? (
+                <p className="text-xs text-slate-400">Procurando seu cadastro...</p>
+              ) : jaCadastrado !== null ? (
                 <p className="text-xs text-amber-300 leading-relaxed">
                   Essa empresa já está no seu cadastro da Rede Compra360. Para alterar suas cidades
                   ou linhas de atendimento,{" "}
@@ -266,6 +309,12 @@ const CadastroParceiroPage = () => {
                     clique aqui
                   </Link>
                   .
+                </p>
+              ) : encontrado ? (
+                <p className="text-xs text-emerald-300 leading-relaxed">
+                  Encontramos seu contato{encontrado.nome ? ` na ${encontrado.nome}` : ""} no
+                  Compra360 e já preenchemos seus dados abaixo. Confira, complete as cidades que você
+                  atende e salve.
                 </p>
               ) : (
                 <p className="text-xs text-slate-500">
