@@ -348,10 +348,20 @@ export default function FornecedorAdminSheet({
 
               <div className="rounded-lg border bg-muted/40 p-3 space-y-1.5 text-xs">
                 <p className="font-semibold text-sm">Rede de fornecedores</p>
-                <p>
-                  <span className="text-muted-foreground">CNPJ: </span>
-                  {detalhes?.cnpj ? maskCNPJ(detalhes.cnpj) : "não informado"}
-                </p>
+                <div className="space-y-1.5">
+                  <Label htmlFor="forn-cnpj" className="text-xs text-muted-foreground">CNPJ</Label>
+                  <Input
+                    id="forn-cnpj"
+                    inputMode="numeric"
+                    placeholder="00.000.000/0000-00"
+                    value={form.cnpj}
+                    onChange={(e) => setForm({ ...form, cnpj: maskCNPJ(e.target.value) })}
+                  />
+                  <CnpjStatus status={receita.status} dados={receita.dados} />
+                  {detalhes?.razao_social && (
+                    <p className="text-[11px] text-muted-foreground">Razão social: {detalhes.razao_social}</p>
+                  )}
+                </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="forn-consent" className="text-xs text-muted-foreground">
                     Consentimento para aparecer na rede
