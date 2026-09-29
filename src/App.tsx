@@ -45,6 +45,7 @@ const UnsubscribePage = lazy(() => retryImport(() => import("./pages/Unsubscribe
 const OAuthConsent = lazy(() => retryImport(() => import("./pages/OAuthConsent")));
 const ApresentacaoPage = lazy(() => retryImport(() => import("./pages/ApresentacaoPage")));
 const SejaParceiroPage = lazy(() => retryImport(() => import("./pages/SejaParceiroPage")));
+const WhitePaperPage = lazy(() => retryImport(() => import("./pages/WhitePaperPage")));
 const CadastroParceiroPage = lazy(() => retryImport(() => import("./pages/CadastroParceiroPage")));
 const ParceiroPage = lazy(() => retryImport(() => import("./pages/ParceiroPage")));
 
@@ -73,6 +74,7 @@ const App = () => (
                 <Route path="/rede" element={<Navigate to={`/seja-parceiro${window.location.search}`} replace />} />
                 <Route path="/rede/*" element={<Navigate to={`/seja-parceiro${window.location.search}`} replace />} />
                 <Route path="/seja-parceiro" element={<Suspense fallback={null}><SejaParceiroPage /></Suspense>} />
+                <Route path="/whitepaper" element={<Suspense fallback={null}><WhitePaperPage /></Suspense>} />
 
                 <Route path="/seja-parceiro/cadastro" element={<Suspense fallback={null}><CadastroParceiroPage /></Suspense>} />
                 <Route path="/parceiro" element={<Suspense fallback={null}><ParceiroPage /></Suspense>} />

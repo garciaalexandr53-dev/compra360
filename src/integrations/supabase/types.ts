@@ -733,6 +733,36 @@ export type Database = {
           },
         ]
       }
+      leads_whitepaper: {
+        Row: {
+          created_at: string
+          email: string
+          empresa: string | null
+          id: string
+          nome: string
+          perfil: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          empresa?: string | null
+          id?: string
+          nome: string
+          perfil?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          empresa?: string | null
+          id?: string
+          nome?: string
+          perfil?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       lojas: {
         Row: {
           ativo: boolean
