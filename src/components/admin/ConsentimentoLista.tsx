@@ -204,7 +204,8 @@ export default function ConsentimentoLista() {
             Mostrando apenas:{" "}
             <strong className="text-foreground">
               {STATUS_FILTROS.find((f) => f.key === status)?.label}
-            </strong>
+            </strong>{" "}
+            ({total})
           </span>
           <Button
             size="sm"
