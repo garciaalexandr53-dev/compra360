@@ -289,6 +289,7 @@ export interface ConsentimentoFornecedor {
   cidades: string[] | null;
   created_at: string;
   total_count?: number;
+  total_geral?: number;
   total_sim?: number;
   total_nao?: number;
   total_pendente?: number;
