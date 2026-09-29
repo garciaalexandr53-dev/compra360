@@ -115,8 +115,37 @@ export const slides: Slide[] = [
     title: "Fornecedores do seu jeito",
     bullets: [
       { title: "Cadastro simples", text: "Nome, WhatsApp e, se quiser, e-mail." },
+      { title: "CNPJ oficial em 1 clique", text: "Razão social, nome fantasia e situação vêm da Receita Federal." },
       { title: "Regras comerciais", text: "Pedido mínimo, prazo de pagamento e observações." },
       { title: "Por loja", text: "Cada unidade com sua própria lista de fornecedores." },
+    ],
+  },
+  {
+    id: "secao-rede",
+    variant: "section",
+    kicker: "Seção",
+    title: "Rede de Fornecedores",
+    subtitle: "Fornecedores que já entregam na sua cidade, prontos para cotar com você.",
+  },
+  {
+    id: "rede-como",
+    kicker: "Rede de Fornecedores",
+    title: "Você não começa do zero",
+    cards: [
+      { icon: "Network", title: "Sugestões da região", text: "A plataforma mostra parceiros que atendem a cidade da sua loja." },
+      { icon: "Store", title: "Adicionar em 1 clique", text: "O cadastro vira uma cópia sua, com pedido mínimo e prazo preenchidos." },
+      { icon: "ShieldCheck", title: "Sigilo total", text: "Nenhum fornecedor vê quais supermercados cotam com você." },
+    ],
+  },
+  {
+    id: "rede-desempenho",
+    kicker: "Rede de Fornecedores",
+    title: "Saiba com quem vale cotar",
+    bullets: [
+      { title: "Taxa de resposta", text: "Quantas das últimas cotações o fornecedor respondeu.", tone: "ok" },
+      { title: "Fornecedor ágil", text: "Selo para quem costuma responder rápido.", tone: "ok" },
+      { title: "Novo na rede", text: "Parceiro recém-cadastrado, ainda sem histórico.", tone: "muted" },
+      { title: "Cidades atendidas", text: "Só aparece quem realmente entrega na sua região." },
     ],
   },
   {
@@ -206,33 +235,34 @@ export const slides: Slide[] = [
   {
     id: "funcionarios-conferencia",
     kicker: "Demonstração",
-    title: "Conferência do recebimento",
+    title: "Conferência cega do recebimento",
     phones: [
       {
-        header: "Pedido recebido",
+        header: "Conferir",
         rows: [
           { label: "Pedido enviado", value: "10 fardos" },
           { label: "Recebido", value: "8 fardos", tone: "warn" },
           { label: "Divergência", value: "-2", tone: "bad" },
         ],
-        caption: "A equipe confere o recebido contra o pedido enviado.",
+        caption: "A equipe confere quantidade sem ver nenhum preço negociado.",
       },
       {
-        header: "Conferência",
+        header: "Embalagem",
         rows: [
-          { label: "Itens conferidos", value: "37/40", tone: "ok" },
-          { label: "Com divergência", value: "3", tone: "warn" },
-          { label: "Concluir conferência", tone: "ok" },
+          { label: "Caixa com 12un", value: "3 caixas" },
+          { label: "Total em unidades", value: "36", tone: "ok" },
+          { label: "Ajustar fator", tone: "muted" },
         ],
-        caption: "Divergências de quantidade ficam registradas.",
+        caption: "Caixas, fardos e unidades convertidos sem conta na mão.",
       },
       {
-        header: "Histórico",
+        header: "Faltou",
         rows: [
-          { label: "Conferências anteriores", tone: "muted" },
-          { label: "Fornecedor · divergências", tone: "muted" },
+          { label: "Itens com divergência", value: "3", tone: "warn" },
+          { label: "Enviar para reposição", tone: "ok" },
+          { label: "Histórico por fornecedor", tone: "muted" },
         ],
-        caption: "O comprador acompanha o histórico por fornecedor.",
+        caption: "O que faltou vai para a próxima lista em um toque.",
       },
     ],
   },
@@ -261,7 +291,8 @@ export const slides: Slide[] = [
     bullets: [
       { title: "Link individual", text: "Cada fornecedor recebe o seu link por WhatsApp." },
       { title: "Status em tempo real", text: "Você vê quem abriu, quem respondeu e quem falta." },
-      { title: "Prazo de resposta", text: "Contagem regressiva visível para você e para o fornecedor." },
+      { title: "Horário de fechamento", text: "A mensagem já avisa a data e a hora limite para enviar preços." },
+      { title: "Contagem regressiva", text: "O prazo aparece para você e para o fornecedor, sem cobrança manual." },
     ],
   },
   {
@@ -351,6 +382,17 @@ export const slides: Slide[] = [
       text: "Antes eu levava a tarde inteira ligando para fornecedor. Agora comparo tudo na tela e fecho o pedido no WhatsApp.",
       author: "Cliente Compra360",
     },
+  },
+  {
+    id: "multiloja",
+    kicker: "Para redes",
+    title: "Uma loja ou várias filiais",
+    bullets: [
+      { title: "Painel único", text: "Troque de loja sem sair do sistema." },
+      { title: "Dados separados", text: "Cada filial com seus fornecedores, produtos e histórico." },
+      { title: "Link certo para cada equipe", text: "O app da equipe abre travado na loja do funcionário." },
+      { title: "Cotação por filial", text: "Compare e feche pedidos unidade por unidade." },
+    ],
   },
   {
     id: "planos",

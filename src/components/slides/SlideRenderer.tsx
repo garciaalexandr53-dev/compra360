@@ -1,11 +1,12 @@
 import {
-  Scale, PiggyBank, Clock, BarChart3, PieChart, Trophy, Check, type LucideIcon,
+  Scale, PiggyBank, Clock, BarChart3, PieChart, Trophy, Check,
+  Network, Store, ShieldCheck, type LucideIcon,
 } from "lucide-react";
 import type { Slide, SlideTone, PhoneMock } from "./slidesData";
 import { withAssetVersion } from "@/lib/assetVersion";
 
 const icons: Record<string, LucideIcon> = {
-  Scale, PiggyBank, Clock, BarChart3, PieChart, Trophy,
+  Scale, PiggyBank, Clock, BarChart3, PieChart, Trophy, Network, Store, ShieldCheck,
 };
 
 const toneText: Record<SlideTone, string> = {
