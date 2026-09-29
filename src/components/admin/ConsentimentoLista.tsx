@@ -92,18 +92,34 @@ export default function ConsentimentoLista() {
     },
   });
 
+  // Resumo independente do status escolhido: só a busca por texto o afeta,
+  // para que clicar num card nunca zere os números dos outros.
+  const { data: resumoData } = useQuery({
+    queryKey: ["admin-consentimentos-resumo", termo],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_list_consentimentos", {
+        _search: termo || null,
+        _status: "todos",
+        _limit: 1,
+        _offset: 0,
+      });
+      if (error) throw error;
+      return ((data || []) as unknown as ConsentimentoFornecedor[])[0] ?? null;
+    },
+  });
+
   const itens = data || [];
   const total = Number(itens[0]?.total_count ?? 0);
   const totalPaginas = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const resumo = useMemo(
     () => ({
-      total,
-      sim: Number(itens[0]?.total_sim ?? 0),
-      nao: Number(itens[0]?.total_nao ?? 0),
-      pendente: Number(itens[0]?.total_pendente ?? 0),
+      total: Number(resumoData?.total_geral ?? 0),
+      sim: Number(resumoData?.total_sim ?? 0),
+      nao: Number(resumoData?.total_nao ?? 0),
+      pendente: Number(resumoData?.total_pendente ?? 0),
     }),
-    [itens, total],
+    [resumoData],
   );
 
   async function exportar() {
@@ -188,7 +204,8 @@ export default function ConsentimentoLista() {
             Mostrando apenas:{" "}
             <strong className="text-foreground">
               {STATUS_FILTROS.find((f) => f.key === status)?.label}
-            </strong>
+            </strong>{" "}
+            ({total})
           </span>
           <Button
             size="sm"

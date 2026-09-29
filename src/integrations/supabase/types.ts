@@ -1335,6 +1335,7 @@ export type Database = {
           telefone: string
           tipo_fornecedor: string
           total_count: number
+          total_geral: number
           total_nao: number
           total_pendente: number
           total_sim: number
