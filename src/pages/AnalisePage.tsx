@@ -269,9 +269,15 @@ const AnalisePage = () => {
     try {
       for (const sf of scenario.fornecedores) {
         const fId = sf.fornecedorId;
-        const { data: existing } = await supabase.from("pedidos").select("id").eq("cotacao_id", cotacaoAtiva.id).eq("fornecedor_id", fId).limit(1).maybeSingle();
+        const { data: existing } = await supabase.from("pedidos").select("id, status").eq("cotacao_id", cotacaoAtiva.id).eq("fornecedor_id", fId).limit(1).maybeSingle();
         if (existing) {
-          await supabase.from("pedidos").update({ total: sf.total, status: "rascunho" as any }).eq("id", existing.id);
+          // Nunca rebaixar um pedido que já foi enviado/confirmado/recebido:
+          // isso o removeria da tela de conferência da loja.
+          const jaDespachado = existing.status && existing.status !== "rascunho";
+          const patch: Record<string, any> = jaDespachado
+            ? { total: sf.total }
+            : { total: sf.total, status: "rascunho" };
+          await supabase.from("pedidos").update(patch).eq("id", existing.id);
         } else {
           await supabase.from("pedidos").insert({ cotacao_id: cotacaoAtiva.id, fornecedor_id: fId, total: sf.total, created_by: user.id, loja_id: lojaAtiva?.id || null, status: "rascunho" as any });
         }
@@ -1171,7 +1177,24 @@ const AnalisePage = () => {
         if (cotacaoAtiva?.id) {
           const _now = new Date();
           await supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: _now.toISOString(), nome: `Cotação ${_now.toLocaleDateString("pt-BR")}` }).eq("id", cotacaoAtiva.id);
+          // Garantia: todo fornecedor que já recebeu o envio tem o pedido marcado
+          // como enviado, para aparecer na conferência da loja.
+          const { data: enviados } = await supabase
+            .from("cotacao_fornecedores")
+            .select("fornecedor_id")
+            .eq("cotacao_id", cotacaoAtiva.id)
+            .eq("status_envio", "enviado");
+          const idsEnviados = (enviados ?? []).map(e => e.fornecedor_id);
+          if (idsEnviados.length > 0) {
+            await supabase
+              .from("pedidos")
+              .update({ status: "enviado" as any, enviado_at: _now.toISOString() })
+              .eq("cotacao_id", cotacaoAtiva.id)
+              .eq("status", "rascunho" as any)
+              .in("fornecedor_id", idsEnviados);
+          }
           queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
+          queryClient.invalidateQueries({ queryKey: ["pedidos"] });
         }
         navigate("/dashboard");
       }} />
