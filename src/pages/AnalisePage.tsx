@@ -269,9 +269,15 @@ const AnalisePage = () => {
     try {
       for (const sf of scenario.fornecedores) {
         const fId = sf.fornecedorId;
-        const { data: existing } = await supabase.from("pedidos").select("id").eq("cotacao_id", cotacaoAtiva.id).eq("fornecedor_id", fId).limit(1).maybeSingle();
+        const { data: existing } = await supabase.from("pedidos").select("id, status").eq("cotacao_id", cotacaoAtiva.id).eq("fornecedor_id", fId).limit(1).maybeSingle();
         if (existing) {
-          await supabase.from("pedidos").update({ total: sf.total, status: "rascunho" as any }).eq("id", existing.id);
+          // Nunca rebaixar um pedido que já foi enviado/confirmado/recebido:
+          // isso o removeria da tela de conferência da loja.
+          const jaDespachado = existing.status && existing.status !== "rascunho";
+          const patch: Record<string, any> = jaDespachado
+            ? { total: sf.total }
+            : { total: sf.total, status: "rascunho" };
+          await supabase.from("pedidos").update(patch).eq("id", existing.id);
         } else {
           await supabase.from("pedidos").insert({ cotacao_id: cotacaoAtiva.id, fornecedor_id: fId, total: sf.total, created_by: user.id, loja_id: lojaAtiva?.id || null, status: "rascunho" as any });
         }
