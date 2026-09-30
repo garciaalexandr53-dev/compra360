@@ -1177,7 +1177,24 @@ const AnalisePage = () => {
         if (cotacaoAtiva?.id) {
           const _now = new Date();
           await supabase.from("cotacoes").update({ status: "finalizada", finalizada_at: _now.toISOString(), nome: `Cotação ${_now.toLocaleDateString("pt-BR")}` }).eq("id", cotacaoAtiva.id);
+          // Garantia: todo fornecedor que já recebeu o envio tem o pedido marcado
+          // como enviado, para aparecer na conferência da loja.
+          const { data: enviados } = await supabase
+            .from("cotacao_fornecedores")
+            .select("fornecedor_id")
+            .eq("cotacao_id", cotacaoAtiva.id)
+            .eq("status_envio", "enviado");
+          const idsEnviados = (enviados ?? []).map(e => e.fornecedor_id);
+          if (idsEnviados.length > 0) {
+            await supabase
+              .from("pedidos")
+              .update({ status: "enviado" as any, enviado_at: _now.toISOString() })
+              .eq("cotacao_id", cotacaoAtiva.id)
+              .eq("status", "rascunho" as any)
+              .in("fornecedor_id", idsEnviados);
+          }
           queryClient.invalidateQueries({ queryKey: ["cotacao-ativa"] });
+          queryClient.invalidateQueries({ queryKey: ["pedidos"] });
         }
         navigate("/dashboard");
       }} />
