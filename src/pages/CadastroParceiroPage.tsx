@@ -88,6 +88,8 @@ const CadastroParceiroPage = () => {
     setEncontrado({ nome: f.nome ?? "", naRede: !!f.na_rede });
     // Preenche apenas o que o fornecedor ainda nao digitou
     if (f.representante) setRepresentante((atual) => atual || f.representante!);
+    // Ja tem empresa na Rede: esta cadastrando OUTRA empresa -> nao preencher dados da antiga
+    if ((resp.empresas ?? []).length > 0) return;
     if (f.nome) setNome((atual) => atual || formatNomeEmpresa(f.nome!));
     if (f.cnpj) setCnpj((atual) => atual || maskCNPJ(f.cnpj!));
     if (f.tipo_fornecedor) setTipo((atual) => (atual === "geral" ? f.tipo_fornecedor! : atual));
