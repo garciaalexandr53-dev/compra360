@@ -112,6 +112,9 @@ const saveProgress = (pedidoId: string, items: ConferenciaItem[], nome: string) 
   }
 };
 
+/** Muda quando o pedido é reenviado corrigido — descarta conferência antiga. */
+const chaveProgresso = (p: { id: string; total?: number | null }) => `${p.id}|${Number(p.total || 0).toFixed(2)}`;
+
 const clearProgress = () => {
   try {
     localStorage.removeItem(STORAGE_KEY);
@@ -314,7 +317,7 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
     if (pedidos.length === 0) return;
     const progress = loadProgress();
     if (progress) {
-      const pedido = pedidos.find((p: any) => p.id === progress.pedidoId);
+      const pedido = pedidos.find((p: any) => chaveProgresso(p) === progress.pedidoId);
       if (pedido) {
         const ordenados = ordenarPorNome(progress.items, (i) => i.produto_nome);
         setSelectedPedido({ ...pedido, items: ordenados });
@@ -330,13 +333,13 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
   // Auto-save progress whenever items or nome change
   useEffect(() => {
     if (selectedPedido && items.length > 0) {
-      saveProgress(selectedPedido.id, items, nome);
+      saveProgress(chaveProgresso(selectedPedido), items, nome);
     }
   }, [items, nome, selectedPedido]);
 
   const loadPedidoDetails = async (pedido: any) => {
     const progress = loadProgress();
-    if (progress && progress.pedidoId === pedido.id) {
+    if (progress && progress.pedidoId === chaveProgresso(pedido)) {
       const ordenados = ordenarPorNome(progress.items, (i) => i.produto_nome);
       setItems(ordenados);
       setNome(progress.nome);
@@ -364,17 +367,35 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
       })), (i) => i.produto_nome);
       setItems(publicItems);
       setSelectedPedido({ ...pedido, items: publicItems });
-      saveProgress(pedido.id, publicItems, nome);
+      saveProgress(chaveProgresso(pedido), publicItems, nome);
       return;
     }
 
     const { data: pedidoFull } = await supabase
       .from("pedidos")
-      .select("cotacao_id")
+      .select("cotacao_id, itens")
       .eq("id", pedido.id)
       .single();
 
     if (!pedidoFull) return;
+
+    // Lista exata enviada ao fornecedor (gravada no envio do WhatsApp).
+    const gravados = (pedidoFull as any).itens as any[] | null;
+    if (Array.isArray(gravados) && gravados.length > 0) {
+      const exatos: ConferenciaItem[] = ordenarPorNome(gravados.map((it) => ({
+        produto_nome: it.produto || "Produto",
+        embalagem: it.embalagem || "UNI",
+        fator: Number(it.fator) || 1,
+        quantidade_pedida: Number(it.quantidade) || 1,
+        quantidade_recebida: Number(it.quantidade) || 1,
+        preco_cotado: Number(it.preco) || 0,
+        preco_nf: Number(it.preco) || 0,
+      })), (i) => i.produto_nome);
+      setItems(exatos);
+      setSelectedPedido({ ...pedido, items: exatos });
+      saveProgress(chaveProgresso(pedido), exatos, nome);
+      return;
+    }
 
     const { data: cotacaoProdutos } = await supabase
       .from("cotacao_produtos")
@@ -402,7 +423,7 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
 
     setItems(orderItems);
     setSelectedPedido({ ...pedido, items: orderItems });
-    saveProgress(pedido.id, orderItems, nome);
+    saveProgress(chaveProgresso(pedido), orderItems, nome);
   };
 
   const markAllCorrect = () => {
