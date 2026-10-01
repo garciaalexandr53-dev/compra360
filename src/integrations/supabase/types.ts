@@ -1660,16 +1660,7 @@ export type Database = {
         Args: { _fornecedor_ids: string[]; _loja_id: string }
         Returns: number
       }
-      delete_email: {
-        Args: { message_id: number; queue_name: string }
-        Returns: boolean
-      }
       desvincular_parceiro_empresa: { Args: { _token: string }; Returns: Json }
-      email_queue_dispatch: { Args: never; Returns: undefined }
-      enqueue_email: {
-        Args: { payload: Json; queue_name: string }
-        Returns: number
-      }
       fornecedor_cnpj_key: { Args: { _cnpj: string }; Returns: string }
       fornecedor_fone_key: { Args: { _telefone: string }; Returns: string }
       fornecedor_grupo_ids: {
@@ -1849,29 +1840,12 @@ export type Database = {
         Args: { _cotacao_id: string; _token: string }
         Returns: boolean
       }
-      move_to_dlq: {
-        Args: {
-          dlq_name: string
-          message_id: number
-          payload: Json
-          source_queue: string
-        }
-        Returns: number
-      }
       norm_cidade: { Args: { _v: string }; Returns: string }
       pedido_is_enviado: { Args: { _pedido_id: string }; Returns: boolean }
       pedido_owner: { Args: { _pedido_id: string }; Returns: string }
       produto_belongs_to_loja_owner: {
         Args: { _user_id: string }
         Returns: boolean
-      }
-      read_email_batch: {
-        Args: { batch_size: number; queue_name: string; vt: number }
-        Returns: {
-          message: Json
-          msg_id: number
-          read_ct: number
-        }[]
       }
       registrar_envio_fornecedor: {
         Args: {
