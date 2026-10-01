@@ -12,7 +12,6 @@ import { sugerirComMemoria, lembrarFormato } from "@/lib/planilhaImport";
 import {
   lerArquivo,
   detectarLinhaCabecalho,
-  sugerirMapeamentoCompleto,
   aplicarMapeamento,
   detectarEspelhoPedido,
   type AbaPlanilha,
