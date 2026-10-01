@@ -524,7 +524,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) resetar(); onOpenChange(v); }}>
-      <DialogContent className="max-w-lg sm:max-w-3xl max-h-[88vh] flex flex-col overflow-hidden">
+      <DialogContent className="max-w-lg sm:max-w-3xl max-h-[88dvh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-primary" />
@@ -553,7 +553,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
           })}
         </div>
 
-        <ScrollArea className="flex-1 -mx-1 px-1">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain -mx-1 px-1" style={{ WebkitOverflowScrolling: "touch" }}>
           {etapa === "arquivo" && (
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground">
@@ -656,9 +656,9 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
               )}
             </div>
           )}
-        </ScrollArea>
+        </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 shrink-0 border-t bg-background pt-3 pb-[env(safe-area-inset-bottom)]">
           {etapa === "arquivo" && (
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           )}
