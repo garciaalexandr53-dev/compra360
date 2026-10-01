@@ -315,6 +315,7 @@ export type Database = {
           loja_id: string | null
           nome: string
           prazo_resposta: string | null
+          reaberta_em: string | null
           status: Database["public"]["Enums"]["cotacao_status"]
         }
         Insert: {
@@ -325,6 +326,7 @@ export type Database = {
           loja_id?: string | null
           nome: string
           prazo_resposta?: string | null
+          reaberta_em?: string | null
           status?: Database["public"]["Enums"]["cotacao_status"]
         }
         Update: {
@@ -335,6 +337,7 @@ export type Database = {
           loja_id?: string | null
           nome?: string
           prazo_resposta?: string | null
+          reaberta_em?: string | null
           status?: Database["public"]["Enums"]["cotacao_status"]
         }
         Relationships: [
