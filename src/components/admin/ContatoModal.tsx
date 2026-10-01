@@ -177,15 +177,12 @@ export default function ContatoModal({ cliente, initialCanal = "whatsapp", forca
 
     setEnviando(true);
     try {
-      const { error } = await supabase.functions.invoke("send-transactional-email", {
+      const { error } = await supabase.functions.invoke("send-admin-contato-email", {
         body: {
-          templateName: "notification",
           recipientEmail: emailDestinatario,
           idempotencyKey: `admin-contato-${cliente.user_id}-${situacao}-${Date.now()}`,
-          templateData: {
-            titulo: assuntoEditado,
-            mensagem: mensagemEditada,
-          },
+          titulo: assuntoEditado,
+          mensagem: mensagemEditada,
         },
       });
       if (error) throw error;
