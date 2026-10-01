@@ -673,7 +673,8 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
                 disabled={mapeamento.nome === undefined}
                 className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
               >
-                Avançar <ArrowRight className="h-4 w-4 ml-1" />
+                {mapeamento.nome === undefined ? "Escolha a coluna do produto" : "Avançar"}
+                <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
             </>
           )}

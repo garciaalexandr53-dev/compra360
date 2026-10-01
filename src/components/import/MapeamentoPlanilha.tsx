@@ -116,8 +116,8 @@ const MapeamentoPlanilha = ({
         <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-2.5">
           <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
           <p className="text-xs text-amber-800 dark:text-amber-200">
-            Escolha qual coluna tem o <strong>nome do produto</strong> para continuar. Os outros
-            campos são opcionais.
+            Para avançar, escolha em qual coluna está o <strong>nome do produto</strong> (opção
+            "Produto / Descrição *"). Os outros campos são opcionais.
           </p>
         </div>
       )}
