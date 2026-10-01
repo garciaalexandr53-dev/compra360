@@ -407,7 +407,8 @@ const DashboardPage = () => {
       let reabertaEm: string | null = null;
       try { reabertaEm = localStorage.getItem(`reaberta-${cotacaoAtiva.id}`); } catch {}
       if (reabertaEm) {
-        const houveReenvio = pedidosEnviados.some((p: any) => p.enviado_at && p.enviado_at > reabertaEm!);
+        const desde = new Date(reabertaEm).getTime();
+        const houveReenvio = pedidosEnviados.some((p: any) => p.enviado_at && new Date(p.enviado_at).getTime() > desde);
         if (!houveReenvio) return;
         try { localStorage.removeItem(`reaberta-${cotacaoAtiva.id}`); } catch {}
       }
