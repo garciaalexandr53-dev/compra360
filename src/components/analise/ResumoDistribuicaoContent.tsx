@@ -287,7 +287,9 @@ const ResumoDistribuicaoContent = () => {
     setScenarioLoading(true);
     try {
       for (const sf of scenario.fornecedores) {
-        const { data: existing } = await supabase.from("pedidos").select("id").eq("cotacao_id", cotacaoAtiva.id).eq("fornecedor_id", sf.fornecedorId).limit(1).maybeSingle();
+        const { data: existing } = await supabase.from("pedidos").select("id, status").eq("cotacao_id", cotacaoAtiva.id).eq("fornecedor_id", sf.fornecedorId).limit(1).maybeSingle();
+        // Pedido já enviado só muda ao ser reenviado (conferência = WhatsApp).
+        if (existing && existing.status !== "rascunho") continue;
         if (existing) { await supabase.from("pedidos").update({ total: sf.total, status: "rascunho" as any }).eq("id", existing.id); }
         else { await supabase.from("pedidos").insert({ cotacao_id: cotacaoAtiva.id, fornecedor_id: sf.fornecedorId, total: sf.total, created_by: user.id, loja_id: lojaAtiva?.id || null, status: "rascunho" as any }); }
       }

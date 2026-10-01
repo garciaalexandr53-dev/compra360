@@ -22,6 +22,7 @@ import PlanosModal from "@/components/PlanosModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import PainelMovimentacoes from "@/components/analise/PainelMovimentacoes";
 import { formatNomeLoja } from "@/lib/masks";
+import { salvarPedidoEnviado, cabecalhoAtualizado } from "@/lib/pedidoItens";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -273,10 +274,11 @@ const AnalisePage = () => {
         if (existing) {
           // Nunca rebaixar um pedido que já foi enviado/confirmado/recebido:
           // isso o removeria da tela de conferência da loja.
+          // O total/itens de um pedido despachado só mudam quando ele é reenviado,
+          // para a conferência continuar igual ao WhatsApp que o fornecedor recebeu.
           const jaDespachado = existing.status && existing.status !== "rascunho";
-          const patch: Record<string, any> = jaDespachado
-            ? { total: sf.total }
-            : { total: sf.total, status: "rascunho" };
+          if (jaDespachado) continue;
+          const patch: Record<string, any> = { total: sf.total, status: "rascunho" };
           await supabase.from("pedidos").update(patch).eq("id", existing.id);
         } else {
           await supabase.from("pedidos").insert({ cotacao_id: cotacaoAtiva.id, fornecedor_id: fId, total: sf.total, created_by: user.id, loja_id: lojaAtiva?.id || null, status: "rascunho" as any });
@@ -314,37 +316,27 @@ const AnalisePage = () => {
   };
 
   // ---- WhatsApp send ----
-  const createPedidoMutation = useMutation({
-    mutationFn: async ({ fornecedorId, total }: { fornecedorId: string; total: number }) => {
-      if (!cotacaoAtiva) throw new Error("Sem cotação ativa");
-      const { data: existing } = await supabase.from("pedidos").select("id")
-        .eq("cotacao_id", cotacaoAtiva.id).eq("fornecedor_id", fornecedorId)
-        .limit(1).maybeSingle();
-      if (existing) {
-        const { data, error } = await supabase.from("pedidos").update({
-          total, status: "enviado" as any, enviado_at: new Date().toISOString(),
-        }).eq("id", existing.id).select().single();
-        if (error) throw error;
-        return data;
-      }
-      const { data, error } = await supabase.from("pedidos").insert({
-        cotacao_id: cotacaoAtiva.id, fornecedor_id: fornecedorId, status: "enviado",
-        total, enviado_at: new Date().toISOString(), created_by: user?.id,
-      }).select().single();
-      if (error) throw error;
-      return data;
-    },
-  });
+  const salvarPedido = async (f: Fornecedor, items: OrderItem[]) => {
+    if (!cotacaoAtiva) throw new Error("Sem cotação ativa");
+    const r = await salvarPedidoEnviado({
+      cotacaoId: cotacaoAtiva.id, fornecedorId: f.id, fornecedorNome: f.nome,
+      items, userId: user?.id, lojaId: lojaAtiva?.id || null,
+    });
+    queryClient.invalidateQueries({ queryKey: ["pedidos"] });
+    return r;
+  };
 
   const sendWhatsApp = async (f: Fornecedor) => {
     const items = getSupplierItems(f.id);
     if (!items.length) { toast.error("Nenhum item para " + f.nome); return; }
     const total = items.reduce((s, it) => s + it.total, 0);
     let pedidoNumero: number | null = null;
+    let atualizado = false;
     try {
-      const pedido = await createPedidoMutation.mutateAsync({ fornecedorId: f.id, total });
-      pedidoNumero = (pedido as any).numero || null;
-      queryClient.invalidateQueries({ queryKey: ["pedidos"] });
+      const pedido = await salvarPedido(f, items);
+      if (!pedido) return;
+      pedidoNumero = pedido.numero;
+      atualizado = pedido.atualizado;
     } catch (e) { console.error(e); }
     const date = new Date().toLocaleDateString("pt-BR");
     const billingParts: string[] = [];
@@ -359,7 +351,7 @@ const AnalisePage = () => {
       if ((lojaAtiva as any).cep) billingParts.push(`\u{1F3F7}\u{FE0F} *CEP:* ${(lojaAtiva as any).cep}`);
     }
     const billingBlock = billingParts.length > 0 ? `\n-----\n*DADOS PARA FATURAMENTO:*\n${billingParts.join("\n")}\n` : "";
-    let msg = `📋 *PEDIDO DE COMPRA - COMPRA360*${pedidoNumero ? ` #${pedidoNumero}` : ""}\n-----\n📦 *Fornecedor:* ${f.nome}\n📅 *Data:* ${date}\n📝 *Itens:* ${items.length}${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}${billingBlock}\n-----\n`;
+    let msg = `${atualizado ? cabecalhoAtualizado(pedidoNumero) : ""}📋 *PEDIDO DE COMPRA - COMPRA360*${pedidoNumero ? ` #${pedidoNumero}` : ""}\n-----\n📦 *Fornecedor:* ${f.nome}\n📅 *Data:* ${date}\n📝 *Itens:* ${items.length}${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}${billingBlock}\n-----\n`;
     const sortedItems = [...items].sort((a, b) => a.produto.localeCompare(b.produto));
     sortedItems.forEach((it, i) => {
       const fatorLabel = it.fator > 1 ? ` c/${it.fator} un` : "";
@@ -372,18 +364,21 @@ const AnalisePage = () => {
   const sendWhatsAppAi = async (f: Fornecedor) => {
     const items = getSupplierItems(f.id);
     if (!items.length) { toast.error("Nenhum item para " + f.nome); return; }
-    const total = items.reduce((s, it) => s + it.total, 0);
+    let atualizado = false;
+    let pedidoNumero: number | null = null;
     setWhatsappAiLoading(f.id);
     try {
-      await createPedidoMutation.mutateAsync({ fornecedorId: f.id, total });
-      queryClient.invalidateQueries({ queryKey: ["pedidos"] });
+      const pedido = await salvarPedido(f, items);
+      if (!pedido) { setWhatsappAiLoading(null); return; }
+      atualizado = pedido.atualizado;
+      pedidoNumero = pedido.numero;
     } catch (e) { console.error(e); }
     try {
       const resp = await supabase.functions.invoke("ai-automacao", {
         body: { type: "whatsapp-message", fornecedor_id: f.id, cotacao_id: cotacaoAtiva?.id, loja_id: lojaAtiva?.id, items: items.map((it) => ({ ...it, preco: formatNumber(it.preco), total: it.total.toFixed(2) })) },
       });
       if (resp.error) throw new Error(resp.error.message);
-      const msg = resp.data?.message || "";
+      const msg = (atualizado ? cabecalhoAtualizado(pedidoNumero) + "\n" : "") + (resp.data?.message || "");
       window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
     } catch (e: any) { toast.error(e.message || "Erro ao gerar mensagem IA"); }
     setWhatsappAiLoading(null);

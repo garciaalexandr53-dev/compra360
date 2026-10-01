@@ -326,13 +326,10 @@ const DashboardPage = () => {
     try {
       // Reopen: set status back to ativa and clear finalizada_at
       await supabase.from("cotacoes").update({ status: "ativa", finalizada_at: null }).eq("id", lastCotacao.id);
-      // Revert any sent orders back to draft so the auto-finalize effect
-      // does not immediately re-close the quote and re-show the conclusion screen.
-      await supabase
-        .from("pedidos")
-        .update({ status: "rascunho", enviado_at: null })
-        .eq("cotacao_id", lastCotacao.id)
-        .in("status", ["enviado", "confirmado", "recebido"]);
+      // Pedidos já enviados/recebidos são preservados (a loja continua vendo
+      // na conferência). Marcamos o momento da reabertura para que a
+      // finalização automática só aconteça após um novo envio.
+      try { localStorage.setItem(`reaberta-${lastCotacao.id}`, new Date().toISOString()); } catch {}
       // Clear the "conclusion already seen" flag so the user doesn't see the
       // celebration overlay again on this reopened quote.
       try { localStorage.removeItem(`conclusao-vista-${lastCotacao.id}`); } catch {}
@@ -391,7 +388,7 @@ const DashboardPage = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("pedidos")
-        .select("fornecedor_id, total, status, fornecedores(nome)")
+        .select("fornecedor_id, total, status, enviado_at, fornecedores(nome)")
         .eq("cotacao_id", cotacaoAtiva!.id);
       return (data || []) as any[];
     },
@@ -406,6 +403,15 @@ const DashboardPage = () => {
   const conclusionDismissKey = `conclusao-vista-${cotacaoAtiva?.id}`;
   useEffect(() => {
     if (allPedidosSent && cotacaoAtiva?.id) {
+      // Após reabrir, só finaliza de novo quando algum pedido for reenviado.
+      let reabertaEm: string | null = null;
+      try { reabertaEm = localStorage.getItem(`reaberta-${cotacaoAtiva.id}`); } catch {}
+      if (reabertaEm) {
+        const desde = new Date(reabertaEm).getTime();
+        const houveReenvio = pedidosEnviados.some((p: any) => p.enviado_at && new Date(p.enviado_at).getTime() > desde);
+        if (!houveReenvio) return;
+        try { localStorage.removeItem(`reaberta-${cotacaoAtiva.id}`); } catch {}
+      }
       // Auto-finalize the cotação when all orders are sent
       if (cotacaoAtiva.status === "ativa") {
         const _now = new Date();
@@ -419,7 +425,7 @@ const DashboardPage = () => {
         if (!dismissed) setShowConclusao(true);
       } catch {}
     }
-  }, [allPedidosSent, cotacaoAtiva?.id, conclusionDismissKey]);
+  }, [allPedidosSent, cotacaoAtiva?.id, conclusionDismissKey, pedidosEnviados]);
 
   const dismissConclusao = () => {
     setShowConclusao(false);
