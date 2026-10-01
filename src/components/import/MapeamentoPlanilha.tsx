@@ -5,7 +5,6 @@ import { CheckCircle2, AlertTriangle } from "lucide-react";
 import {
   CAMPOS_IMPORT,
   exemplosDaColuna,
-  normalizarCabecalho,
   type AbaPlanilha,
   type CampoImport,
   type Mapeamento,
@@ -237,7 +236,6 @@ const MapeamentoPlanilha = ({
           Limpar mapeamento
         </Button>
       )}
-      <span className="sr-only">{normalizarCabecalho(headers[0] ?? "")}</span>
     </div>
   );
 };
