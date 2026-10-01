@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { sincronizarFormatos, salvarFormatoNuvem } from "@/lib/formatosNuvem";
+import { useState, useRef , useEffect } from "react";
 import { fetchAllProductNames } from "@/lib/supabaseHelpers";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,6 +54,10 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
   const [mapeamento, setMapeamento] = useState<Mapeamento>({});
   const [lembrado, setLembrado] = useState(false);
   const mapeando = abas.length > 0;
+
+  useEffect(() => {
+    if (open) void sincronizarFormatos("produtos").catch(() => {});
+  }, [open]);
 
   const sugerir = (rows: unknown[][], header: number) => {
     const r = sugerirComMemoria("produtos", rows, header);
@@ -164,6 +169,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
       return;
     }
     lembrarFormato("produtos", aba.rows, linhaCabecalho, mapeamento);
+    void salvarFormatoNuvem("produtos", aba.rows, linhaCabecalho, mapeamento).catch(() => {});
     const vistos = new Set<string>();
     const items: ParsedProduct[] = [];
     for (const i of itens) {

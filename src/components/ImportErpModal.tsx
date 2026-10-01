@@ -1,5 +1,6 @@
+import { sincronizarFormatos, salvarFormatoNuvem } from "@/lib/formatosNuvem";
 // build: erp-import-v2
-import { useState, useRef } from "react";
+import { useState, useRef , useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -206,6 +207,10 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
   const [somados, setSomados] = useState(0);
   const [verIgnoradas, setVerIgnoradas] = useState(false);
   const [lembrado, setLembrado] = useState(false);
+  useEffect(() => {
+    if (open) void sincronizarFormatos("erp").catch(() => {});
+  }, [open]);
+
   const sugerir = (rows: unknown[][], header: number) => {
     const r = sugerirComMemoria("erp", rows, header);
     setLembrado(r.lembrado);
@@ -317,6 +322,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
       return;
     }
     lembrarFormato("erp", aba.rows, linhaCabecalho, mapeamento);
+    void salvarFormatoNuvem("erp", aba.rows, linhaCabecalho, mapeamento).catch(() => {});
     setIgnoradas(ign);
     setEtapa("revisar");
     applyParsed(

@@ -434,6 +434,44 @@ export type Database = {
         }
         Relationships: []
       }
+      formatos_planilha: {
+        Row: {
+          assinatura: string
+          created_at: string
+          escopo: string
+          id: string
+          loja_id: string
+          mapeamento: Json
+          updated_at: string
+        }
+        Insert: {
+          assinatura: string
+          created_at?: string
+          escopo: string
+          id?: string
+          loja_id: string
+          mapeamento?: Json
+          updated_at?: string
+        }
+        Update: {
+          assinatura?: string
+          created_at?: string
+          escopo?: string
+          id?: string
+          loja_id?: string
+          mapeamento?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formatos_planilha_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fornecedor_acessos: {
         Row: {
           codigo: string
