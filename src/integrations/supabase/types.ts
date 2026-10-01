@@ -888,10 +888,12 @@ export type Database = {
           enviado_at: string | null
           fornecedor_id: string
           id: string
+          itens: Json | null
           loja_id: string | null
           numero: number
           status: Database["public"]["Enums"]["pedido_status"]
           total: number | null
+          versao: number
         }
         Insert: {
           cotacao_id: string
@@ -900,10 +902,12 @@ export type Database = {
           enviado_at?: string | null
           fornecedor_id: string
           id?: string
+          itens?: Json | null
           loja_id?: string | null
           numero?: number
           status?: Database["public"]["Enums"]["pedido_status"]
           total?: number | null
+          versao?: number
         }
         Update: {
           cotacao_id?: string
@@ -912,10 +916,12 @@ export type Database = {
           enviado_at?: string | null
           fornecedor_id?: string
           id?: string
+          itens?: Json | null
           loja_id?: string | null
           numero?: number
           status?: Database["public"]["Enums"]["pedido_status"]
           total?: number | null
+          versao?: number
         }
         Relationships: [
           {
