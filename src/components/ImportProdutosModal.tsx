@@ -10,7 +10,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import * as XLSX from "xlsx";
+import MapeamentoPlanilha from "@/components/import/MapeamentoPlanilha";
+import {
+  lerArquivo,
+  detectarLinhaCabecalho,
+  aplicarMapeamento,
+  sugerirComMemoria,
+  lembrarFormato,
+  type AbaPlanilha,
+  type Mapeamento,
+} from "@/lib/planilhaImport";
 import { classifyProductsInBatches } from "@/lib/aiClassify";
 
 interface Props {
@@ -38,6 +47,18 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
   const [newCatName, setNewCatName] = useState("");
   const [creatingCat, setCreatingCat] = useState(false);
   const [classifying, setClassifying] = useState(false);
+  const [abas, setAbas] = useState<AbaPlanilha[]>([]);
+  const [abaIndex, setAbaIndex] = useState(0);
+  const [linhaCabecalho, setLinhaCabecalho] = useState(0);
+  const [mapeamento, setMapeamento] = useState<Mapeamento>({});
+  const [lembrado, setLembrado] = useState(false);
+  const mapeando = abas.length > 0;
+
+  const sugerir = (rows: unknown[][], header: number) => {
+    const r = sugerirComMemoria("produtos", rows, header);
+    setLembrado(r.lembrado);
+    setMapeamento(r.mapeamento);
+  };
 
   const createCategory = async () => {
     if (!newCatName.trim()) return;
@@ -101,133 +122,72 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
     toast.success(`${items.length} produtos detectados!`);
   };
 
-  const processFile = (file: File) => {
-    const isExcel = file.name.endsWith(".xlsx") || file.name.endsWith(".xls");
-
-    if (isExcel) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const data = new Uint8Array(e.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: "array" });
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const rows: any[][] = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-          if (rows.length < 2) {
-            toast.error("Arquivo deve ter cabeçalho e pelo menos 1 produto");
-            return;
-          }
-
-          const headers = rows[0].map((h: any) => String(h || "").trim().toLowerCase());
-          const colProd = headers.findIndex((h) =>
-            ["produto", "descricao", "item", "nome", "mercadoria", "descrição"].some((k) => h.includes(k))
-          );
-          const colCat = headers.findIndex((h) =>
-            ["categoria", "grupo", "secao", "seção"].some((k) => h.includes(k))
-          );
-          const colEmbal = headers.findIndex((h) => h.includes("embal") || h.includes("emb") || h.includes("unidade"));
-          const colQtd = headers.findIndex((h) =>
-            ["quantidade", "qtd", "qtde", "qt"].some((k) => h.includes(k))
-          );
-          const colFator = headers.findIndex((h) =>
-            ["fator unid", "fator", "unid/embalagem"].some((k) => h.includes(k))
-          );
-
-          const items: ParsedProduct[] = [];
-          rows.slice(1).forEach((row) => {
-            const nome = String(row[colProd >= 0 ? colProd : 0] || "").trim();
-            if (!nome) return;
-            items.push({
-              nome,
-              categoria: colCat >= 0 ? String(row[colCat] || "Geral").trim() : "Geral",
-              embalagem: colEmbal >= 0 ? String(row[colEmbal] || "un").trim() : "un",
-              quantidade: colQtd >= 0 ? (parseInt(String(row[colQtd])) || 1) : 1,
-              fator: colFator >= 0 ? (parseInt(String(row[colFator])) || 1) : 1,
-            });
-          });
-
-          setParsedItems(items);
-          setDupCount(0);
-          toast.success(`${items.length} produtos detectados do arquivo Excel!`);
-        } catch (err: any) {
-          toast.error("Erro ao ler o arquivo Excel: " + err.message);
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    } else {
-      // CSV/TXT
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        if (!text) return;
-
-        const lines = text.split(/\r?\n/).filter((l) => l.trim());
-        if (lines.length < 2) {
-          toast.error("Arquivo deve ter cabeçalho e pelo menos 1 produto");
-          return;
-        }
-
-        const separator = lines[0].includes(";") ? ";" : lines[0].includes("\t") ? "\t" : ",";
-        const headers = lines[0].split(separator).map((h) => h.replace(/"/g, "").trim().toLowerCase());
-
-        const colProd = headers.findIndex((h) =>
-          ["produto", "descricao", "item", "nome", "mercadoria", "descrição"].some((k) => h.includes(k))
-        );
-        const colCat = headers.findIndex((h) =>
-          ["categoria", "grupo", "secao", "seção"].some((k) => h.includes(k))
-        );
-        const colEmbal = headers.findIndex((h) => h.includes("embal") || h.includes("emb") || h.includes("unidade"));
-        const colQtd = headers.findIndex((h) =>
-          ["quantidade", "qtd", "qtde", "qt"].some((k) => h.includes(k))
-        );
-        const colFator = headers.findIndex((h) =>
-          ["fator unid", "fator", "unid/embalagem"].some((k) => h.includes(k))
-        );
-
-        const items: ParsedProduct[] = [];
-        lines.slice(1).forEach((line) => {
-          const cols = parseCSVLine(line, separator);
-          const nome = (cols[colProd >= 0 ? colProd : 0] || "").trim();
-          if (!nome) return;
-          items.push({
-            nome,
-            categoria: colCat >= 0 ? (cols[colCat] || "Geral").trim() : "Geral",
-            embalagem: colEmbal >= 0 ? (cols[colEmbal] || "un").trim() : "un",
-            quantidade: colQtd >= 0 ? (parseInt(cols[colQtd]) || 1) : 1,
-            fator: colFator >= 0 ? (parseInt(cols[colFator]) || 1) : 1,
-          });
-        });
-
-        setParsedItems(items);
-        setDupCount(0);
-        toast.success(`${items.length} produtos detectados do arquivo!`);
-      };
-      reader.readAsText(file, "utf-8");
+  const processFile = async (file: File) => {
+    try {
+      const lidas = (await lerArquivo(file)).filter((x) => x.rows.length > 0);
+      if (!lidas.length) {
+        toast.error("Não encontramos dados nesse arquivo");
+        return;
+      }
+      const maior = lidas.reduce((x, y) => (y.rows.length > x.rows.length ? y : x));
+      const header = detectarLinhaCabecalho(maior.rows);
+      setAbas(lidas);
+      setAbaIndex(lidas.indexOf(maior));
+      setLinhaCabecalho(header);
+      sugerir(maior.rows, header);
+      setParsedItems([]);
+    } catch {
+      toast.error("Não conseguimos abrir o arquivo. Salve como .xlsx ou .csv e tente de novo.");
     }
   };
 
-  const parseCSVLine = (line: string, sep: string): string[] => {
-    const cols: string[] = [];
-    let cur = "";
-    let inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      const c = line[i];
-      if (c === '"') {
-        inQ = !inQ;
-      } else if (c === sep && !inQ) {
-        cols.push(cur.trim());
-        cur = "";
-      } else {
-        cur += c;
-      }
+  const trocarAba = (i: number) => {
+    const aba = abas[i];
+    if (!aba) return;
+    const header = detectarLinhaCabecalho(aba.rows);
+    setAbaIndex(i);
+    setLinhaCabecalho(header);
+    sugerir(aba.rows, header);
+  };
+
+  const trocarCabecalho = (i: number) => {
+    setLinhaCabecalho(i);
+    sugerir(abas[abaIndex]?.rows ?? [], i);
+  };
+
+  const confirmarColunas = () => {
+    const aba = abas[abaIndex];
+    if (!aba || mapeamento.nome === undefined) return;
+    const { itens } = aplicarMapeamento(aba.rows, linhaCabecalho, mapeamento);
+    if (!itens.length) {
+      toast.error("Nenhuma linha com produto foi encontrada nessa coluna");
+      return;
     }
-    cols.push(cur.trim());
-    return cols;
+    lembrarFormato("produtos", aba.rows, linhaCabecalho, mapeamento);
+    const vistos = new Set<string>();
+    const items: ParsedProduct[] = [];
+    for (const i of itens) {
+      const k = i.nome.toLowerCase().trim();
+      if (vistos.has(k)) continue;
+      vistos.add(k);
+      items.push({
+        nome: i.nome,
+        categoria: i.categoria?.trim() || "Geral",
+        embalagem: i.embalagem || "un",
+        quantidade: i.quantidade || 1,
+        fator: i.fator && i.fator > 0 ? i.fator : 1,
+      });
+    }
+    setParsedItems(items);
+    setDupCount(0);
+    setAbas([]);
+    toast.success(`${items.length} produtos detectados!`);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) processFile(file);
+    e.target.value = "";
   };
 
   const doImport = async () => {
@@ -330,7 +290,7 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className={mapeando ? "max-w-3xl max-h-[88dvh] overflow-y-auto" : "max-w-lg"}>
         <DialogHeader>
           <DialogTitle>📥 Importar Produtos</DialogTitle>
         </DialogHeader>
@@ -357,8 +317,33 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
           </TabsContent>
 
           <TabsContent value="arquivo" className="space-y-3 mt-3">
+            {mapeando ? (
+              <div className="space-y-3">
+                {lembrado && (
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground">
+                    ✨ Usamos o mesmo formato da sua última importação. Confira e avance.
+                  </div>
+                )}
+                <MapeamentoPlanilha
+                  abas={abas}
+                  abaIndex={abaIndex}
+                  onAbaChange={trocarAba}
+                  linhaCabecalho={linhaCabecalho}
+                  onLinhaCabecalhoChange={trocarCabecalho}
+                  mapeamento={mapeamento}
+                  onMapeamentoChange={setMapeamento}
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setAbas([])}>Trocar arquivo</Button>
+                  <Button size="sm" className="flex-1" onClick={confirmarColunas} disabled={mapeamento.nome === undefined}>
+                    {mapeamento.nome === undefined ? "Escolha a coluna do produto" : "Usar estas colunas"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
             <p className="text-xs text-muted-foreground">
-              Arraste um arquivo CSV ou Excel (.xlsx, .xls) com colunas: Produto, Categoria, Embalagem, Quantidade
+              Arraste um arquivo CSV ou Excel (.xlsx, .xls) de qualquer sistema. Depois você diz o que é cada coluna.
             </p>
             <div
               className="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer hover:border-primary transition-colors"
@@ -380,6 +365,8 @@ const ImportProdutosModal = ({ open, onOpenChange, categorias }: Props) => {
             <Button size="sm" variant="ghost" onClick={downloadTemplate} className="text-xs">
               ↓ Baixar modelo CSV
             </Button>
+              </>
+            )}
           </TabsContent>
         </Tabs>
 

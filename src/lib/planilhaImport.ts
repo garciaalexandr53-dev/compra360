@@ -468,3 +468,58 @@ export const detectarEspelhoPedido = (
 
   return itens.length >= 2 ? { itens, ignoradas: [], fornecedor } : null;
 };
+
+/* ---------------- Memória do formato da planilha (Parte 3) ---------------- */
+
+const MEMORIA_KEY = "c360-formatos-planilha";
+
+/** Identifica o formato pelos títulos das colunas (ex: "cod|produto|qtd"). */
+export const assinaturaCabecalho = (rows: unknown[][], linhaCabecalho: number): string =>
+  (rows[linhaCabecalho] ?? []).map((h) => normalizarCabecalho(h)).join("|");
+
+type MemoriaFormatos = Record<string, { mapeamento: Mapeamento; usadoEm: number }>;
+
+const lerMemoria = (escopo: string): MemoriaFormatos => {
+  try {
+    const all = JSON.parse(localStorage.getItem(MEMORIA_KEY) || "{}");
+    return all[escopo] ?? {};
+  } catch {
+    return {};
+  }
+};
+
+/** Grava o mapeamento usado para esse formato (escopo = usuário + destino). */
+export const lembrarFormato = (
+  escopo: string,
+  rows: unknown[][],
+  linhaCabecalho: number,
+  mapeamento: Mapeamento,
+) => {
+  const assinatura = assinaturaCabecalho(rows, linhaCabecalho);
+  if (!assinatura.replace(/\|/g, "")) return;
+  try {
+    const all = JSON.parse(localStorage.getItem(MEMORIA_KEY) || "{}");
+    const atual: MemoriaFormatos = all[escopo] ?? {};
+    atual[assinatura] = { mapeamento, usadoEm: Date.now() };
+    // mantém só os 20 formatos mais recentes
+    const ordenado = Object.entries(atual).sort((a, b) => b[1].usadoEm - a[1].usadoEm).slice(0, 20);
+    all[escopo] = Object.fromEntries(ordenado);
+    localStorage.setItem(MEMORIA_KEY, JSON.stringify(all));
+  } catch {
+    /* sem armazenamento: segue sem memória */
+  }
+};
+
+/** Usa o formato lembrado quando o cabeçalho é o mesmo; senão, a sugestão automática. */
+export const sugerirComMemoria = (
+  escopo: string,
+  rows: unknown[][],
+  linhaCabecalho: number,
+): { mapeamento: Mapeamento; lembrado: boolean } => {
+  const salvo = lerMemoria(escopo)[assinaturaCabecalho(rows, linhaCabecalho)];
+  const total = Math.max(0, ...rows.map((r) => r?.length ?? 0));
+  if (salvo && Object.values(salvo.mapeamento).every((c) => c === undefined || c < total)) {
+    return { mapeamento: salvo.mapeamento, lembrado: true };
+  }
+  return { mapeamento: sugerirMapeamentoCompleto(rows, linhaCabecalho), lembrado: false };
+};

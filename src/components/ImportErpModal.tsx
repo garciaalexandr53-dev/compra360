@@ -8,10 +8,10 @@ import { toast } from "sonner";
 import { Upload, FileSpreadsheet, Trash2, Loader2, ArrowLeft, ArrowRight } from "lucide-react";
 import { normalizeNomeCotacao } from "@/lib/cotacaoDedup";
 import MapeamentoPlanilha from "@/components/import/MapeamentoPlanilha";
+import { sugerirComMemoria, lembrarFormato } from "@/lib/planilhaImport";
 import {
   lerArquivo,
   detectarLinhaCabecalho,
-  sugerirMapeamentoCompleto,
   aplicarMapeamento,
   detectarEspelhoPedido,
   type AbaPlanilha,
@@ -205,6 +205,12 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
   const [ignoradas, setIgnoradas] = useState<{ linha: number; motivo: string }[]>([]);
   const [somados, setSomados] = useState(0);
   const [verIgnoradas, setVerIgnoradas] = useState(false);
+  const [lembrado, setLembrado] = useState(false);
+  const sugerir = (rows: unknown[][], header: number) => {
+    const r = sugerirComMemoria("erp", rows, header);
+    setLembrado(r.lembrado);
+    setMapeamento(r.mapeamento);
+  };
 
   const resetar = () => {
     setItems([]);
@@ -275,7 +281,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
       setAbas(comDados);
       setAbaIndex(idx);
       setLinhaCabecalho(header);
-      setMapeamento(sugerirMapeamentoCompleto(maior.rows, header));
+      sugerir(maior.rows, header);
       setItems([]);
       setIgnoradas([]);
       setEtapa("mapear");
@@ -290,12 +296,12 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
     const header = detectarLinhaCabecalho(aba.rows);
     setAbaIndex(i);
     setLinhaCabecalho(header);
-    setMapeamento(sugerirMapeamentoCompleto(aba.rows, header));
+    sugerir(aba.rows, header);
   };
 
   const trocarCabecalho = (i: number) => {
     setLinhaCabecalho(i);
-    setMapeamento(sugerirMapeamentoCompleto(abas[abaIndex]?.rows ?? [], i));
+    sugerir(abas[abaIndex]?.rows ?? [], i);
   };
 
   const confirmarMapeamento = () => {
@@ -310,6 +316,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
       toast.error("Nenhuma linha com produto foi encontrada nessa coluna");
       return;
     }
+    lembrarFormato("erp", aba.rows, linhaCabecalho, mapeamento);
     setIgnoradas(ign);
     setEtapa("revisar");
     applyParsed(
@@ -597,6 +604,11 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
             </div>
           )}
 
+          {etapa === "mapear" && abas.length > 0 && lembrado && (
+            <div className="shrink-0 mb-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground">
+              ✨ Usamos o mesmo formato da sua última importação. Confira e avance.
+            </div>
+          )}
           {etapa === "mapear" && abas.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">
