@@ -135,7 +135,8 @@ const MapeamentoPlanilha = ({
 
       {/* Mobile: um cartão por coluna */}
       <div className="sm:hidden space-y-2">
-        {headers.map((h, col) => {
+        {colunasVisiveis.map((col) => {
+          const h = headers[col];
           const campo = campoDaColuna(col);
           const exemplos = exemplosDaColuna(rows, linhaCabecalho, col, 5);
           const destacar = !temProduto;
@@ -185,12 +186,12 @@ const MapeamentoPlanilha = ({
 
       {/* Desktop: prévia em tabela com seletor no topo de cada coluna */}
       <div className="hidden sm:block border rounded-lg">
-        <ScrollArea className="w-full">
+        <div className="w-full overflow-x-auto overscroll-x-contain pb-1" style={{ WebkitOverflowScrolling: "touch" }}>
           <div className="min-w-max">
             <table className="text-xs">
               <thead>
                 <tr className="bg-muted/50">
-                  {headers.map((h, col) => (
+                  {colunasVisiveis.map((col) => { const h = headers[col]; return (
                     <th key={col} className="p-2 align-top text-left border-r last:border-r-0">
                       <div className="w-44">
                         <p className="text-[10px] font-bold uppercase text-primary">
@@ -222,13 +223,13 @@ const MapeamentoPlanilha = ({
                         </Select>
                       </div>
                     </th>
-                  ))}
+                  ); })}
                 </tr>
               </thead>
               <tbody>
                 {linhasPreview.map((r, i) => (
                   <tr key={i} className="border-t">
-                    {headers.map((_, col) => (
+                    {colunasVisiveis.map((col) => (
                       <td
                         key={col}
                         className="p-2 border-r last:border-r-0 text-muted-foreground max-w-44 truncate"
@@ -241,9 +242,19 @@ const MapeamentoPlanilha = ({
               </tbody>
             </table>
           </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+        </div>
       </div>
+
+      {vazias.length > 0 && (
+        <p className="text-[11px] text-muted-foreground">
+          {mostrarVazias
+            ? `Mostrando ${vazias.length} coluna(s) vazia(s) da planilha.`
+            : `Ocultamos ${vazias.length} coluna(s) vazia(s) da planilha.`}{" "}
+          <button type="button" className="text-primary underline" onClick={() => setMostrarVazias((v) => !v)}>
+            {mostrarVazias ? "Ocultar" : "Mostrar todas"}
+          </button>
+        </p>
+      )}
 
       {/* Campos reconhecidos */}
       <div className="flex flex-wrap gap-1.5">
