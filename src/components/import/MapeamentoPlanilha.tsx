@@ -1,6 +1,6 @@
+import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 import {
   CAMPOS_IMPORT,
@@ -34,10 +34,21 @@ const MapeamentoPlanilha = ({
 }: Props) => {
   const aba = abas[abaIndex];
   const rows = aba?.rows ?? [];
-  const headers = (rows[linhaCabecalho] ?? []).map((h, i) => {
-    const t = String(h ?? "").trim();
+  const [mostrarVazias, setMostrarVazias] = useState(false);
+  const totalCols = Math.max(0, ...rows.slice(linhaCabecalho).map((r) => r?.length ?? 0));
+  const headers = Array.from({ length: totalCols }, (_, i) => {
+    const t = String(rows[linhaCabecalho]?.[i] ?? "").trim();
     return t || `Coluna ${i + 1}`;
   });
+  const colunaVazia = (col: number) =>
+    !rows.slice(linhaCabecalho).some((r) => String(r?.[col] ?? "").trim() !== "");
+  const vazias = headers.map((_, i) => i).filter((i) => colunaVazia(i) && !campoDaColunaRaw(i));
+  function campoDaColunaRaw(coluna: number) {
+    return Object.values(mapeamento).includes(coluna);
+  }
+  const colunasVisiveis = headers
+    .map((_, i) => i)
+    .filter((i) => mostrarVazias || !vazias.includes(i));
 
   const campoDaColuna = (coluna: number): CampoImport | null => {
     const entrada = (Object.entries(mapeamento) as [CampoImport, number][]).find(
