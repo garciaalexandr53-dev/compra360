@@ -373,3 +373,57 @@ export const exemplosDaColuna = (
   }
   return out;
 };
+
+const celulasPreenchidas = (row: unknown[] | undefined) =>
+  (row ?? [])
+    .map((v, i) => ({ i, v: String(v ?? "").trim() }))
+    .filter((c) => c.v !== "");
+
+const RODAPE_ESPELHO = /subtotal|frete|seguro|desp|i\.?p\.?i|icms|custo diversos|desconto|total|responsavel/i;
+
+/**
+ * Espelho de pedido do ERP em 2 linhas por item:
+ *   linha A: código | descrição
+ *   linha B: quantidade | "x" | preço unitário | total
+ * Retorna null quando o arquivo não segue esse formato.
+ */
+export const detectarEspelhoPedido = (
+  rows: unknown[][],
+): (ResultadoMapeamento & { fornecedor: string | null }) | null => {
+  const itens: LinhaImportada[] = [];
+  let fornecedor: string | null = null;
+
+  for (let i = 0; i < rows.length; i++) {
+    const a = celulasPreenchidas(rows[i]);
+    const primeira = a[0]?.v ?? "";
+    if (/^fornec/i.test(primeira) && a[1]) {
+      fornecedor = a[1].v.replace(/^\d+\s+/, "").trim() || null;
+      continue;
+    }
+    if (a.length !== 2 || !/^\d{3,}$/.test(a[0].v) || !/[a-zA-Z]/.test(a[1].v)) continue;
+    if (RODAPE_ESPELHO.test(a[1].v) && a[1].v.length < 25) continue;
+
+    const b = celulasPreenchidas(rows[i + 1]);
+    const xIdx = b.findIndex((c) => c.v.toLowerCase() === "x");
+    if (xIdx < 1) continue;
+    const quantidade = parseNumero(b[0].v);
+    if (!quantidade || quantidade <= 0) continue;
+    const preco = parseNumero(b[xIdx + 1]?.v);
+    const emb = separarEmbalagemFator(b.slice(1, xIdx).map((c) => c.v).join(" "));
+
+    itens.push({
+      nome: a[1].v,
+      quantidade,
+      embalagem: emb.sigla || "un",
+      fator: emb.fator,
+      ean: null,
+      codigo_interno: a[0].v,
+      preco,
+      categoria: null,
+      linha: i + 1,
+    });
+    i++;
+  }
+
+  return itens.length >= 2 ? { itens, ignoradas: [], fornecedor } : null;
+};
