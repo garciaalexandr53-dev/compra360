@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { salvarPedidoEnviado, cabecalhoAtualizado } from "@/lib/pedidoItens";
 import { formatBRL, formatNumber, buildWhatsAppUrl } from "@/lib/format";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -132,31 +133,15 @@ const PedidosContent = () => {
 
   const toggleCard = (id: string) => setOpenCards((prev) => ({ ...prev, [id]: !prev[id] }));
 
-  const createPedidoMutation = useMutation({
-    mutationFn: async ({ fornecedorId, total }: { fornecedorId: string; total: number }) => {
-      if (!cotacaoAtiva) throw new Error("Sem cotação ativa");
-      const { data: existing } = await supabase.from("pedidos").select("id")
-        .eq("cotacao_id", cotacaoAtiva.id).eq("fornecedor_id", fornecedorId)
-        .limit(1).maybeSingle();
-      if (existing) {
-        const { data, error } = await supabase.from("pedidos").update({
-          total, status: "enviado" as any, enviado_at: new Date().toISOString(),
-        }).eq("id", existing.id).select().single();
-        if (error) throw error;
-        return data;
-      }
-      const { data, error } = await supabase.from("pedidos").insert({
-        cotacao_id: cotacaoAtiva.id,
-        fornecedor_id: fornecedorId,
-        status: "enviado",
-        total,
-        enviado_at: new Date().toISOString(),
-        created_by: user?.id,
-      }).select().single();
-      if (error) throw error;
-      return data;
-    },
-  });
+  const salvarPedido = async (f: Fornecedor, items: any[]) => {
+    if (!cotacaoAtiva) throw new Error("Sem cotação ativa");
+    const r = await salvarPedidoEnviado({
+      cotacaoId: cotacaoAtiva.id, fornecedorId: f.id, fornecedorNome: f.nome,
+      items, userId: user?.id, lojaId: lojaAtiva?.id || null,
+    });
+    queryClient.invalidateQueries({ queryKey: ["pedidos"] });
+    return r;
+  };
 
   const sendWhatsApp = async (f: Fornecedor) => {
     const items = orders[f.id] || [];
@@ -164,10 +149,12 @@ const PedidosContent = () => {
     const total = items.reduce((s, it) => s + it.total, 0);
 
     let pedidoNumero: number | null = null;
+    let atualizado = false;
     try {
-      const pedido = await createPedidoMutation.mutateAsync({ fornecedorId: f.id, total });
-      pedidoNumero = (pedido as any).numero || null;
-      queryClient.invalidateQueries({ queryKey: ["pedidos"] });
+      const pedido = await salvarPedido(f, items);
+      if (!pedido) { setWhatsappAiLoading(null); return; }
+      pedidoNumero = pedido.numero;
+      atualizado = pedido.atualizado;
     } catch (e) {
       console.error("Failed to create pedido record", e);
     }
@@ -185,7 +172,7 @@ const PedidosContent = () => {
       if ((lojaAtiva as any).cep) billingParts.push(`\u{1F3F7}\u{FE0F} *CEP:* ${(lojaAtiva as any).cep}`);
     }
     const billingBlock = billingParts.length > 0 ? `\n-----\n*DADOS PARA FATURAMENTO:*\n${billingParts.join("\n")}\n` : "";
-    let msg = `📋 *PEDIDO DE COMPRA - COMPRA360*${pedidoNumero ? ` #${pedidoNumero}` : ""}\n-----\n📦 *Fornecedor:* ${f.nome}\n📅 *Data:* ${date}\n📝 *Itens:* ${items.length}${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}${billingBlock}\n-----\n`;
+    let msg = `${atualizado ? cabecalhoAtualizado(pedidoNumero) : ""}📋 *PEDIDO DE COMPRA - COMPRA360*${pedidoNumero ? ` #${pedidoNumero}` : ""}\n-----\n📦 *Fornecedor:* ${f.nome}\n📅 *Data:* ${date}\n📝 *Itens:* ${items.length}${f.prazo_pagamento ? `\n💳 *Prazo pagamento:* ${f.prazo_pagamento}` : ""}${billingBlock}\n-----\n`;
     const sortedItems = [...items].sort((a, b) => a.produto.localeCompare(b.produto));
     sortedItems.forEach((it, i) => {
       const fatorLabel = it.fator > 1 ? ` c/${it.fator} un` : "";
@@ -203,10 +190,12 @@ const PedidosContent = () => {
     setWhatsappAiLoading(f.id);
 
     let pedidoNumero: number | null = null;
+    let atualizado = false;
     try {
-      const pedido = await createPedidoMutation.mutateAsync({ fornecedorId: f.id, total });
-      pedidoNumero = (pedido as any).numero || null;
-      queryClient.invalidateQueries({ queryKey: ["pedidos"] });
+      const pedido = await salvarPedido(f, items);
+      if (!pedido) { setWhatsappAiLoading(null); return; }
+      pedidoNumero = pedido.numero;
+      atualizado = pedido.atualizado;
     } catch (e) {
       console.error("Failed to create pedido record", e);
     }
@@ -222,7 +211,7 @@ const PedidosContent = () => {
         },
       });
       if (resp.error) throw new Error(resp.error.message);
-      const msg = resp.data?.message || "";
+      const msg = (atualizado ? cabecalhoAtualizado(pedidoNumero) + "\n" : "") + (resp.data?.message || "");
       window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
     } catch (e: any) {
       toast.error(e.message || "Erro ao gerar mensagem IA");
