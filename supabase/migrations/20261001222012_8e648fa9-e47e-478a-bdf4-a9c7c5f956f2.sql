@@ -1,0 +1,1 @@
+ALTER TABLE public.cotacoes ADD COLUMN IF NOT EXISTS reaberta_em timestamptz;
