@@ -14,6 +14,7 @@ import {
   detectarLinhaCabecalho,
   sugerirMapeamento,
   aplicarMapeamento,
+  detectarEspelhoPedido,
   type AbaPlanilha,
   type Mapeamento,
 } from "@/lib/planilhaImport";
@@ -230,6 +231,29 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
       }
       const maior = comDados.reduce((a, b) => (b.rows.length > a.rows.length ? b : a));
       const idx = comDados.indexOf(maior);
+      const espelho = detectarEspelhoPedido(maior.rows);
+      if (espelho) {
+        setAbas(comDados);
+        setAbaIndex(idx);
+        setIgnoradas([]);
+        setEtapa("revisar");
+        toast.info(
+          `Espelho de pedido reconhecido${espelho.fornecedor ? ` (${espelho.fornecedor})` : ""}`,
+        );
+        applyParsed(
+          espelho.itens.map((i) => ({
+            nome: i.nome,
+            quantidade: i.quantidade,
+            embalagem: i.embalagem,
+            ean: i.ean,
+            fator: i.fator,
+            codigo_interno: i.codigo_interno,
+            preco: i.preco,
+            categoria: i.categoria,
+          })),
+        );
+        return;
+      }
       const header = detectarLinhaCabecalho(maior.rows);
       setAbas(comDados);
       setAbaIndex(idx);
