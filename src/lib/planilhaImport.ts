@@ -523,3 +523,19 @@ export const sugerirComMemoria = (
   }
   return { mapeamento: sugerirMapeamentoCompleto(rows, linhaCabecalho), lembrado: false };
 };
+
+/** Mescla formatos vindos da nuvem na cópia local (a nuvem prevalece). */
+export const mesclarFormatos = (
+  escopo: string,
+  formatos: { assinatura: string; mapeamento: Mapeamento; usadoEm: number }[],
+) => {
+  try {
+    const all = JSON.parse(localStorage.getItem(MEMORIA_KEY) || "{}");
+    const atual: MemoriaFormatos = all[escopo] ?? {};
+    for (const f of formatos) atual[f.assinatura] = { mapeamento: f.mapeamento, usadoEm: f.usadoEm };
+    all[escopo] = atual;
+    localStorage.setItem(MEMORIA_KEY, JSON.stringify(all));
+  } catch {
+    /* sem armazenamento */
+  }
+};
