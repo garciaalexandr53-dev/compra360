@@ -359,7 +359,7 @@ export const aplicarMapeamento = (
   return { itens, ignoradas };
 };
 
-/** Primeiros exemplos reais de uma coluna, para o usuário reconhecer o conteúdo. */
+/** Primeiros exemplos reais (preenchidos e distintos) de uma coluna, varrendo o arquivo todo. */
 export const exemplosDaColuna = (
   rows: unknown[][],
   linhaCabecalho: number,
@@ -369,9 +369,50 @@ export const exemplosDaColuna = (
   const out: string[] = [];
   for (let i = linhaCabecalho + 1; i < rows.length && out.length < limite; i++) {
     const v = String(rows[i]?.[coluna] ?? "").trim();
-    if (v) out.push(v);
+    if (v && !out.includes(v)) out.push(v);
   }
   return out;
+};
+
+/** Letra da coluna no Excel: 0 → A, 25 → Z, 26 → AA. */
+export const letraColuna = (i: number): string => {
+  let s = "";
+  let n = i + 1;
+  while (n > 0) {
+    const r = (n - 1) % 26;
+    s = String.fromCharCode(65 + r) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+};
+
+/**
+ * Sugestão completa: usa o cabeçalho e, se não achar o produto, escolhe a coluna
+ * com mais textos descritivos (letras, vários caracteres) como Produto.
+ */
+export const sugerirMapeamentoCompleto = (rows: unknown[][], linhaCabecalho: number): Mapeamento => {
+  const headers = rows[linhaCabecalho] ?? [];
+  const map = sugerirMapeamento(headers);
+  if (map.nome !== undefined) return map;
+  const usados = new Set(Object.values(map));
+  const nCols = Math.max(headers.length, ...rows.slice(linhaCabecalho, linhaCabecalho + 30).map((r) => r?.length ?? 0));
+  let melhor = -1;
+  let melhorPontos = 0;
+  const amostra = rows.slice(linhaCabecalho, linhaCabecalho + 50);
+  for (let c = 0; c < nCols; c++) {
+    if (usados.has(c)) continue;
+    let pontos = 0;
+    for (const r of amostra) {
+      const v = String(r?.[c] ?? "").trim();
+      if (v.length >= 6 && /[a-zA-Z]{3,}/.test(v) && !/^\d/.test(v)) pontos++;
+    }
+    if (pontos > melhorPontos) {
+      melhorPontos = pontos;
+      melhor = c;
+    }
+  }
+  if (melhor >= 0 && melhorPontos >= 2) map.nome = melhor;
+  return map;
 };
 
 const celulasPreenchidas = (row: unknown[] | undefined) =>

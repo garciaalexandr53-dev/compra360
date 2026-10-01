@@ -5,6 +5,7 @@ import { CheckCircle2, AlertTriangle } from "lucide-react";
 import {
   CAMPOS_IMPORT,
   exemplosDaColuna,
+  letraColuna,
   type AbaPlanilha,
   type CampoImport,
   type Mapeamento,
@@ -56,7 +57,11 @@ const MapeamentoPlanilha = ({
   };
 
   const temProduto = mapeamento.nome !== undefined;
-  const linhasPreview = rows.slice(linhaCabecalho + 1, linhaCabecalho + 4);
+  const linhasPreview = rows.slice(linhaCabecalho + 1, linhaCabecalho + 6);
+  const rotulo = (k: CampoImport) => {
+    const c = CAMPOS_IMPORT.find((x) => x.key === k);
+    return c ? `${c.label}${c.obrigatorio ? " *" : ""}` : k;
+  };
 
   return (
     <div className="space-y-3">
@@ -111,8 +116,8 @@ const MapeamentoPlanilha = ({
         <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-2.5">
           <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
           <p className="text-xs text-amber-800 dark:text-amber-200">
-            Escolha qual coluna tem o <strong>nome do produto</strong> para continuar. Os outros
-            campos são opcionais.
+            Para avançar, escolha em qual coluna está o <strong>nome do produto</strong> (opção
+            "Produto / Descrição *"). Os outros campos são opcionais.
           </p>
         </div>
       )}
@@ -121,27 +126,45 @@ const MapeamentoPlanilha = ({
       <div className="sm:hidden space-y-2">
         {headers.map((h, col) => {
           const campo = campoDaColuna(col);
+          const exemplos = exemplosDaColuna(rows, linhaCabecalho, col, 5);
+          const destacar = !temProduto;
           return (
-            <div key={col} className="rounded-lg border p-2.5">
+            <div
+              key={col}
+              className={`rounded-lg border p-2.5 ${campo ? "border-primary/50 bg-primary/5" : ""}`}
+            >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-semibold truncate">{h}</span>
+                <span className="text-[11px] font-bold uppercase tracking-wide text-primary">
+                  Coluna {letraColuna(col)}
+                </span>
                 {campo && <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />}
               </div>
-              <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                {exemplosDaColuna(rows, linhaCabecalho, col).join(" · ") || "sem exemplos"}
-              </p>
+              <p className="text-sm font-semibold break-words mt-0.5">{h}</p>
+              {exemplos.length > 0 ? (
+                <ul className="mt-1 space-y-0.5">
+                  {exemplos.map((e, k) => (
+                    <li key={k} className="text-[11px] text-muted-foreground break-words">
+                      • {e}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-[11px] text-muted-foreground italic mt-1">Coluna vazia na planilha</p>
+              )}
               <Select value={campo ?? IGNORAR} onValueChange={(v) => definirCampo(col, v)}>
-                <SelectTrigger className="h-9 mt-2">
-                  <SelectValue />
+                <SelectTrigger className={`h-9 mt-2 ${!campo && destacar ? "border-amber-400" : ""}`}>
+                  <SelectValue placeholder="— Selecione o campo —">
+                    {campo ? rotulo(campo) : "— O que é esta coluna? —"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={IGNORAR}>Ignorar esta coluna</SelectItem>
                   {CAMPOS_IMPORT.map((c) => (
                     <SelectItem key={c.key} value={c.key}>
                       {c.label}
                       {c.obrigatorio ? " *" : ""}
                     </SelectItem>
                   ))}
+                  <SelectItem value={IGNORAR}>(Não importar esta coluna)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -159,6 +182,9 @@ const MapeamentoPlanilha = ({
                   {headers.map((h, col) => (
                     <th key={col} className="p-2 align-top text-left border-r last:border-r-0">
                       <div className="w-44">
+                        <p className="text-[10px] font-bold uppercase text-primary">
+                          Coluna {letraColuna(col)}
+                        </p>
                         <p className="font-semibold truncate" title={h}>
                           {h}
                         </p>
@@ -167,16 +193,20 @@ const MapeamentoPlanilha = ({
                           onValueChange={(v) => definirCampo(col, v)}
                         >
                           <SelectTrigger className="h-8 mt-1 text-xs">
-                            <SelectValue />
+                            <SelectValue>
+                              {campoDaColuna(col)
+                                ? rotulo(campoDaColuna(col)!)
+                                : "— O que é esta coluna? —"}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value={IGNORAR}>Ignorar esta coluna</SelectItem>
                             {CAMPOS_IMPORT.map((c) => (
                               <SelectItem key={c.key} value={c.key}>
                                 {c.label}
                                 {c.obrigatorio ? " *" : ""}
                               </SelectItem>
                             ))}
+                            <SelectItem value={IGNORAR}>(Não importar esta coluna)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
