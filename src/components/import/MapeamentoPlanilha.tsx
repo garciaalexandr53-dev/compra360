@@ -40,8 +40,13 @@ const MapeamentoPlanilha = ({
     const t = String(rows[linhaCabecalho]?.[i] ?? "").trim();
     return t || `Coluna ${i + 1}`;
   });
+  const valorNulo = (v: unknown) => {
+    const t = String(v ?? "").trim();
+    if (t === "" || /^[-–—.]+$/.test(t)) return true;
+    return /^(r\$\s*)?[0.,\s]+$/i.test(t) && /0/.test(t);
+  };
   const colunaVazia = (col: number) =>
-    !rows.slice(linhaCabecalho).some((r) => String(r?.[col] ?? "").trim() !== "");
+    rows.slice(linhaCabecalho + 1).every((r) => valorNulo(r?.[col]));
   const vazias = headers.map((_, i) => i).filter((i) => colunaVazia(i) && !campoDaColunaRaw(i));
   function campoDaColunaRaw(coluna: number) {
     return Object.values(mapeamento).includes(coluna);
