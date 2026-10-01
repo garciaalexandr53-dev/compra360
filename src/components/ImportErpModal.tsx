@@ -379,6 +379,8 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
           .insert(aCriar.map((l) => ({
             nome: l.item.nome,
             embalagem: l.embalagem,
+            ...(l.item.fator && l.item.fator > 1 ? { fator_embalagem: Math.round(l.item.fator) } : {}),
+            ...(l.item.ean ? { ean: l.item.ean } : {}),
             ativo: true,
             user_id: uid,
           })) as any)
@@ -615,12 +617,44 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
 
           {etapa === "revisar" && (
             <div className="space-y-2">
-              {ignoradas.length > 0 && (
-                <p className="text-xs text-amber-700 dark:text-amber-300">
-                  {ignoradas.length} linha(s) sem nome de produto foram ignoradas (linhas{" "}
-                  {ignoradas.slice(0, 5).map((i) => i.linha).join(", ")}
-                  {ignoradas.length > 5 ? "…" : ""}).
+              {items.length > 0 && (() => {
+                const noCat = items.filter((i) => classificarDestino(i, catalogByEan) === "catalogo").length;
+                return (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-lg border p-2 text-center">
+                      <div className="text-lg font-bold text-primary">{items.length}</div>
+                      <div className="text-[10px] text-muted-foreground">Prontos</div>
+                    </div>
+                    <div className="rounded-lg border p-2 text-center">
+                      <div className="text-lg font-bold">{noCat}</div>
+                      <div className="text-[10px] text-muted-foreground">Reconhecidos pelo EAN</div>
+                    </div>
+                    <div className="rounded-lg border p-2 text-center">
+                      <div className="text-lg font-bold">{items.length - noCat}</div>
+                      <div className="text-[10px] text-muted-foreground">Pelo nome / novos</div>
+                    </div>
+                  </div>
+                );
+              })()}
+              {somados > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {somados} linha(s) repetida(s) na planilha tiveram as quantidades somadas.
                 </p>
+              )}
+              {ignoradas.length > 0 && (
+                <div className="text-xs text-amber-700 dark:text-amber-300">
+                  {ignoradas.length} linha(s) ficaram de fora (em branco, título ou total do ERP).{" "}
+                  <button type="button" className="underline" onClick={() => setVerIgnoradas((v) => !v)}>
+                    {verIgnoradas ? "Esconder" : "Ver quais"}
+                  </button>
+                  {verIgnoradas && (
+                    <ul className="mt-1 max-h-28 overflow-y-auto space-y-0.5">
+                      {ignoradas.map((i) => (
+                        <li key={i.linha}>Linha {i.linha}: {i.motivo}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               )}
               {items.length > 0 && (
                 <div className="border rounded-lg overflow-hidden">
