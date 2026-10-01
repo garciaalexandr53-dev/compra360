@@ -42,11 +42,20 @@ const MapeamentoPlanilha = ({
   });
   const valorNulo = (v: unknown) => {
     const t = String(v ?? "").trim();
-    if (t === "" || /^[-–—.]+$/.test(t)) return true;
+    if (t === "" || /^[-–—.xX*=|/]+$/.test(t)) return true;
+    if (/^(n\/?a|null|nd|-)$/i.test(t)) return true;
     return /^(r\$\s*)?[0.,\s]+$/i.test(t) && /0/.test(t);
   };
-  const colunaVazia = (col: number) =>
-    rows.slice(linhaCabecalho + 1).every((r) => valorNulo(r?.[col]));
+  // Rodapé do ERP (subtotal, frete, IPI, responsável...) não conta como dado de produto
+  const RODAPE = /^\s*(\(?[+-]\)?\s*)?(sub\s*total|total|frete|segur|desp|i\.?\s*p\.?\s*i|icms|cms|custo|desconto|responsavel|responsável|observa)/i;
+  const linhasDados = (() => {
+    const corpo = rows.slice(linhaCabecalho + 1);
+    const fim = corpo.findIndex((r) =>
+      (r ?? []).some((c) => RODAPE.test(String(c ?? ""))),
+    );
+    return fim === -1 ? corpo : corpo.slice(0, fim);
+  })();
+  const colunaVazia = (col: number) => linhasDados.every((r) => valorNulo(r?.[col]));
   const vazias = headers.map((_, i) => i).filter((i) => colunaVazia(i) && !campoDaColunaRaw(i));
   function campoDaColunaRaw(coluna: number) {
     return Object.values(mapeamento).includes(coluna);
