@@ -4,17 +4,15 @@ import * as React from 'npm:react@18.3.1'
 
 import {
   Body,
+  Button,
   Container,
   Head,
   Heading,
   Html,
-  Img,
   Link,
   Preview,
-  Section,
   Text,
 } from 'npm:@react-email/components@0.0.22'
-import { BulletproofButton } from '../BulletproofButton.tsx'
 
 interface SignupEmailProps {
   siteName: string
@@ -23,43 +21,39 @@ interface SignupEmailProps {
   confirmationUrl: string
 }
 
-const LOGO_URL =
-  'https://gkokwhkpjfozhtgfcrhz.supabase.co/storage/v1/object/public/logoatualizada/logo-completa.png'
-
 export const SignupEmail = ({
   siteName,
   siteUrl,
   recipient,
   confirmationUrl,
 }: SignupEmailProps) => (
-  <Html lang="pt-BR" dir="ltr">
-    <Head />
-    <Preview>Confirme seu email para começar a usar o {siteName}</Preview>
+  <Html lang="en" dir="ltr">
+    <Head>
+      <style>{darkModeCss}</style>
+    </Head>
+    <Preview>Confirm your email for {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Section style={logoSection}>
-          <Img src={LOGO_URL} alt={siteName} width="180" style={logo} />
-        </Section>
-        <Heading style={h1}>Bem-vindo ao {siteName}!</Heading>
+        <Heading style={h1}>Confirm your email</Heading>
         <Text style={text}>
-          Obrigado por criar sua conta no{' '}
+          Thanks for signing up for{' '}
           <Link href={siteUrl} style={link}>
             <strong>{siteName}</strong>
           </Link>
-          . Para começar a economizar nas cotações do seu supermercado, confirme
-          seu email{' '}
-          <Link href={`mailto:${recipient}`} style={link}>
-            ({recipient})
-          </Link>{' '}
-          clicando no botão abaixo:
+          !
         </Text>
-        <Section style={{ textAlign: 'center' as const }}>
-          <BulletproofButton href={confirmationUrl} label="Confirmar email">
-            Confirmar email
-          </BulletproofButton>
-        </Section>
+        <Text style={text}>
+          Please confirm your email address (
+          <Link href={`mailto:${recipient}`} style={link}>
+            {recipient}
+          </Link>
+          ) by clicking the button below:
+        </Text>
+        <Button className="dm-btn" style={button} href={confirmationUrl}>
+          Verify Email
+        </Button>
         <Text style={footer}>
-          Se você não criou esta conta, pode ignorar este email com segurança.
+          If you didn't create an account, you can safely ignore this email.
         </Text>
       </Container>
     </Body>
@@ -68,31 +62,36 @@ export const SignupEmail = ({
 
 export default SignupEmail
 
-const main = {
-  backgroundColor: '#ffffff',
-  fontFamily:
-    '"Sora", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
-}
-const container = { padding: '32px 28px', maxWidth: '560px' }
-const logoSection = { textAlign: 'center' as const, margin: '0 0 24px' }
-const logo = { display: 'inline-block' }
+const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
+const container = { padding: '20px 25px' }
 const h1 = {
-  fontSize: '24px',
+  fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: 'hsl(174, 78%, 26%)',
+  color: '#000000',
   margin: '0 0 20px',
-  textAlign: 'center' as const,
 }
 const text = {
-  fontSize: '15px',
-  color: 'hsl(221, 16%, 47%)',
-  lineHeight: '1.6',
-  margin: '0 0 24px',
+  fontSize: '14px',
+  color: '#55575d',
+  lineHeight: '1.5',
+  margin: '0 0 25px',
 }
-const link = { color: 'hsl(174, 78%, 26%)', textDecoration: 'underline' }
-const footer = {
-  fontSize: '12px',
-  color: 'hsl(221, 16%, 60%)',
-  margin: '32px 0 0',
-  textAlign: 'center' as const,
+const link = { color: 'inherit', textDecoration: 'underline' }
+const button = {
+  backgroundColor: '#000000',
+  color: '#ffffff',
+  fontSize: '14px',
+  border: '1px solid #000000',
+  borderRadius: '8px',
+  padding: '12px 20px',
+  textDecoration: 'none',
 }
+const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+// Rendered as a text child, which React may HTML-escape: keep this CSS free of >, &, and quotes.
+const darkModeCss = `
+  @media (prefers-color-scheme: dark) {
+    .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
+  }
+  [data-ogsc] .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
+  [data-ogsb] .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
+`
