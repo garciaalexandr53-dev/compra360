@@ -325,11 +325,13 @@ const DashboardPage = () => {
     if (!lastCotacao?.id) return;
     try {
       // Reopen: set status back to ativa and clear finalizada_at
-      await supabase.from("cotacoes").update({ status: "ativa", finalizada_at: null }).eq("id", lastCotacao.id);
       // Pedidos já enviados/recebidos são preservados (a loja continua vendo
-      // na conferência). Marcamos o momento da reabertura para que a
-      // finalização automática só aconteça após um novo envio.
-      try { localStorage.setItem(`reaberta-${lastCotacao.id}`, new Date().toISOString()); } catch {}
+      // na conferência). Marcamos o momento da reabertura NA COTAÇÃO para que
+      // a finalização automática só aconteça após um novo envio, em qualquer aparelho.
+      const reabertaEm = new Date().toISOString();
+      const { error } = await supabase.from("cotacoes").update({ status: "ativa", finalizada_at: null, reaberta_em: reabertaEm } as any).eq("id", lastCotacao.id);
+      if (error) throw error;
+      try { localStorage.setItem(`reaberta-${lastCotacao.id}`, reabertaEm); } catch {}
       // Clear the "conclusion already seen" flag so the user doesn't see the
       // celebration overlay again on this reopened quote.
       try { localStorage.removeItem(`conclusao-vista-${lastCotacao.id}`); } catch {}
@@ -404,8 +406,11 @@ const DashboardPage = () => {
   useEffect(() => {
     if (allPedidosSent && cotacaoAtiva?.id) {
       // Após reabrir, só finaliza de novo quando algum pedido for reenviado.
-      let reabertaEm: string | null = null;
-      try { reabertaEm = localStorage.getItem(`reaberta-${cotacaoAtiva.id}`); } catch {}
+      // A marca fica salva na cotação (nuvem), valendo em qualquer aparelho.
+      let reabertaEm: string | null = (cotacaoAtiva as any).reaberta_em ?? null;
+      if (!reabertaEm) {
+        try { reabertaEm = localStorage.getItem(`reaberta-${cotacaoAtiva.id}`); } catch {}
+      }
       if (reabertaEm) {
         const desde = new Date(reabertaEm).getTime();
         const houveReenvio = pedidosEnviados.some((p: any) => p.enviado_at && new Date(p.enviado_at).getTime() > desde);
