@@ -165,6 +165,20 @@ export const planejarLinhas = (
   return Array.from(byKey.values());
 };
 
+/** Soma linhas repetidas da planilha (mesmo EAN ou mesmo nome). */
+export const somarDuplicados = (raw: ParsedItem[]): { itens: ParsedItem[]; somados: number } => {
+  const map = new Map<string, ParsedItem>();
+  let somados = 0;
+  for (const it of raw) {
+    const k = it.ean ? `ean:${it.ean}` : `nome:${nomeKey(it.nome)}`;
+    const ex = map.get(k);
+    if (ex) {
+      ex.quantidade = (Number(ex.quantidade) || 0) + (Number(it.quantidade) || 0);
+      somados++;
+    } else map.set(k, { ...it });
+  }
+  return { itens: Array.from(map.values()), somados };
+};
 
 
 
@@ -189,6 +203,8 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
   const [linhaCabecalho, setLinhaCabecalho] = useState(0);
   const [mapeamento, setMapeamento] = useState<Mapeamento>({});
   const [ignoradas, setIgnoradas] = useState<{ linha: number; motivo: string }[]>([]);
+  const [somados, setSomados] = useState(0);
+  const [verIgnoradas, setVerIgnoradas] = useState(false);
 
   const resetar = () => {
     setItems([]);
@@ -207,7 +223,9 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
     setCatalogByEan(map);
   };
 
-  const applyParsed = (parsed: ParsedItem[]) => {
+  const applyParsed = (raw: ParsedItem[]) => {
+    const { itens: parsed, somados } = somarDuplicados(raw);
+    setSomados(somados);
     setItems(parsed);
     setCatalogByEan(new Map());
     if (parsed.length) {
