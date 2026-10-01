@@ -30,3 +30,9 @@
 - [x] Consulta automática de CNPJ (Receita) em todas as telas que pedem CNPJ.
 - [ ] Múltiplas empresas/representantes por CNPJ e WhatsApp.
 - [ ] Portal do parceiro "Não represento mais" + inatividade automática da Rede.
+
+## Importação de planilha (estilo Mercafácil)
+- [x] Parte 1 — leitura flexível (Excel/CSV, separador e codificação automáticos), escolha de aba e linha de cabeçalho, mapeamento visual de colunas com prévia (Produto, Quantidade, Embalagem, Fator, EAN, Código interno, Preço, Categoria) na Nova Cotação
+- [ ] Parte 2 — revisão inteligente (novos, duplicados, pendentes) e importação parcial
+- [ ] Parte 3 — memória do formato do ERP por loja
+- [ ] Aplicar o mesmo fluxo em Produtos da Loja (ImportProdutosModal)
