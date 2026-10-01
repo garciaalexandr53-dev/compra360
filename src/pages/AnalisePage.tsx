@@ -22,6 +22,7 @@ import PlanosModal from "@/components/PlanosModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import PainelMovimentacoes from "@/components/analise/PainelMovimentacoes";
 import { formatNomeLoja } from "@/lib/masks";
+import { salvarPedidoEnviado, cabecalhoAtualizado } from "@/lib/pedidoItens";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -273,10 +274,11 @@ const AnalisePage = () => {
         if (existing) {
           // Nunca rebaixar um pedido que já foi enviado/confirmado/recebido:
           // isso o removeria da tela de conferência da loja.
+          // O total/itens de um pedido despachado só mudam quando ele é reenviado,
+          // para a conferência continuar igual ao WhatsApp que o fornecedor recebeu.
           const jaDespachado = existing.status && existing.status !== "rascunho";
-          const patch: Record<string, any> = jaDespachado
-            ? { total: sf.total }
-            : { total: sf.total, status: "rascunho" };
+          if (jaDespachado) continue;
+          const patch: Record<string, any> = { total: sf.total, status: "rascunho" };
           await supabase.from("pedidos").update(patch).eq("id", existing.id);
         } else {
           await supabase.from("pedidos").insert({ cotacao_id: cotacaoAtiva.id, fornecedor_id: fId, total: sf.total, created_by: user.id, loja_id: lojaAtiva?.id || null, status: "rascunho" as any });
@@ -376,7 +378,7 @@ const AnalisePage = () => {
         body: { type: "whatsapp-message", fornecedor_id: f.id, cotacao_id: cotacaoAtiva?.id, loja_id: lojaAtiva?.id, items: items.map((it) => ({ ...it, preco: formatNumber(it.preco), total: it.total.toFixed(2) })) },
       });
       if (resp.error) throw new Error(resp.error.message);
-      const msg = resp.data?.message || "";
+      const msg = (atualizado ? cabecalhoAtualizado(pedidoNumero) + "\n" : "") + (resp.data?.message || "");
       window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
     } catch (e: any) { toast.error(e.message || "Erro ao gerar mensagem IA"); }
     setWhatsappAiLoading(null);
