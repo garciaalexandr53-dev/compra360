@@ -26,14 +26,7 @@ function maybeSendWelcome(user: User | null) {
     /* ignore */
   }
   supabase.functions
-    .invoke('send-transactional-email', {
-      body: {
-        templateName: 'welcome',
-        recipientEmail: user.email,
-        idempotencyKey: `welcome-${user.id}`,
-        templateData: {},
-      },
-    })
+    .invoke('send-welcome-email', { body: {} })
     .catch((e) => console.warn('welcome email failed', e));
 }
 
