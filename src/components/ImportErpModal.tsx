@@ -12,7 +12,7 @@ import MapeamentoPlanilha from "@/components/import/MapeamentoPlanilha";
 import {
   lerArquivo,
   detectarLinhaCabecalho,
-  sugerirMapeamento,
+  sugerirMapeamentoCompleto,
   aplicarMapeamento,
   detectarEspelhoPedido,
   type AbaPlanilha,
@@ -258,7 +258,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
       setAbas(comDados);
       setAbaIndex(idx);
       setLinhaCabecalho(header);
-      setMapeamento(sugerirMapeamento(maior.rows[header] ?? []));
+      setMapeamento(sugerirMapeamentoCompleto(maior.rows, header));
       setItems([]);
       setIgnoradas([]);
       setEtapa("mapear");
@@ -273,12 +273,12 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
     const header = detectarLinhaCabecalho(aba.rows);
     setAbaIndex(i);
     setLinhaCabecalho(header);
-    setMapeamento(sugerirMapeamento(aba.rows[header] ?? []));
+    setMapeamento(sugerirMapeamentoCompleto(aba.rows, header));
   };
 
   const trocarCabecalho = (i: number) => {
     setLinhaCabecalho(i);
-    setMapeamento(sugerirMapeamento(abas[abaIndex]?.rows[i] ?? []));
+    setMapeamento(sugerirMapeamentoCompleto(abas[abaIndex]?.rows ?? [], i));
   };
 
   const confirmarMapeamento = () => {
