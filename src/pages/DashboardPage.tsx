@@ -388,7 +388,7 @@ const DashboardPage = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("pedidos")
-        .select("fornecedor_id, total, status, fornecedores(nome)")
+        .select("fornecedor_id, total, status, enviado_at, fornecedores(nome)")
         .eq("cotacao_id", cotacaoAtiva!.id);
       return (data || []) as any[];
     },
@@ -424,7 +424,7 @@ const DashboardPage = () => {
         if (!dismissed) setShowConclusao(true);
       } catch {}
     }
-  }, [allPedidosSent, cotacaoAtiva?.id, conclusionDismissKey]);
+  }, [allPedidosSent, cotacaoAtiva?.id, conclusionDismissKey, pedidosEnviados]);
 
   const dismissConclusao = () => {
     setShowConclusao(false);
