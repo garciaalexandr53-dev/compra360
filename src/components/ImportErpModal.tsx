@@ -6,15 +6,27 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Upload, FileSpreadsheet, Trash2, Loader2 } from "lucide-react";
-import * as XLSX from "xlsx";
+import { Upload, FileSpreadsheet, Trash2, Loader2, ArrowLeft, ArrowRight } from "lucide-react";
 import { normalizeNomeCotacao } from "@/lib/cotacaoDedup";
+import MapeamentoPlanilha from "@/components/import/MapeamentoPlanilha";
+import {
+  lerArquivo,
+  detectarLinhaCabecalho,
+  sugerirMapeamento,
+  aplicarMapeamento,
+  type AbaPlanilha,
+  type Mapeamento,
+} from "@/lib/planilhaImport";
 
 export interface ParsedItem {
   nome: string;
   quantidade: number;
   embalagem: string;
   ean: string | null;
+  fator?: number | null;
+  codigo_interno?: string | null;
+  preco?: number | null;
+  categoria?: string | null;
 }
 
 export const extractEan = (raw: unknown): string | null => {
@@ -171,6 +183,23 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
   const [importing, setImporting] = useState(false);
   const [fileName, setFileName] = useState("");
   const [catalogByEan, setCatalogByEan] = useState<Map<string, CatRow>>(new Map());
+  const [etapa, setEtapa] = useState<"arquivo" | "mapear" | "revisar">("arquivo");
+  const [abas, setAbas] = useState<AbaPlanilha[]>([]);
+  const [abaIndex, setAbaIndex] = useState(0);
+  const [linhaCabecalho, setLinhaCabecalho] = useState(0);
+  const [mapeamento, setMapeamento] = useState<Mapeamento>({});
+  const [ignoradas, setIgnoradas] = useState<{ linha: number; motivo: string }[]>([]);
+
+  const resetar = () => {
+    setItems([]);
+    setFileName("");
+    setEtapa("arquivo");
+    setAbas([]);
+    setAbaIndex(0);
+    setLinhaCabecalho(0);
+    setMapeamento({});
+    setIgnoradas([]);
+  };
 
   /** Uma única query: todos os EANs da planilha, comparados como TEXT. */
   const loadCatalogHits = async (parsed: ParsedItem[]) => {
@@ -190,89 +219,70 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
   };
 
 
-  const detectColumns = (headers: string[]) => {
-    const lower = headers.map((h) => (h || "").toString().toLowerCase().trim());
-    const nomeIdx = lower.findIndex((h) =>
-      ["produto", "nome", "descrição", "descricao", "item", "material", "name", "product"].includes(h)
-    );
-    const qtdIdx = lower.findIndex((h) =>
-      ["quantidade", "qtd", "qtde", "qty", "quant", "quantity"].includes(h)
-    );
-    const embAliases = [
-      "embalagem", "embalagens", "emb", "emb.", "tipo de embalagem", "tipo embalagem",
-      "unidade", "unidade de medida", "un", "un.", "un med", "unid", "unid.",
-      "und", "und.", "uni", "unit", "uom", "medida", "tipo",
-    ];
-    let embIdx = lower.findIndex((h) => embAliases.includes(h));
-    if (embIdx < 0) {
-      embIdx = lower.findIndex((h) => /(embal|unid|^un$|^und$|^emb)/.test(h));
+  const processFile = async (file: File) => {
+    setFileName(file.name);
+    try {
+      const lidas = await lerArquivo(file);
+      const comDados = lidas.filter((a) => a.rows.length > 0);
+      if (!comDados.length) {
+        toast.error("Não encontramos dados nesse arquivo");
+        return;
+      }
+      const maior = comDados.reduce((a, b) => (b.rows.length > a.rows.length ? b : a));
+      const idx = comDados.indexOf(maior);
+      const header = detectarLinhaCabecalho(maior.rows);
+      setAbas(comDados);
+      setAbaIndex(idx);
+      setLinhaCabecalho(header);
+      setMapeamento(sugerirMapeamento(maior.rows[header] ?? []));
+      setItems([]);
+      setIgnoradas([]);
+      setEtapa("mapear");
+    } catch {
+      toast.error("Não conseguimos abrir o arquivo. Salve como .xlsx ou .csv e tente de novo.");
     }
-
-    const eanIdx = lower.findIndex((h) =>
-      ["ean", "ean13", "gtin", "codigo de barras", "código de barras", "cod barras", "codbarras", "barcode", "codigo", "código"].includes(h)
-    );
-    return { nomeIdx: nomeIdx >= 0 ? nomeIdx : 0, qtdIdx, embIdx, eanIdx };
   };
 
-  const processFile = (file: File) => {
-    setFileName(file.name);
-    const reader = new FileReader();
+  const trocarAba = (i: number) => {
+    const aba = abas[i];
+    if (!aba) return;
+    const header = detectarLinhaCabecalho(aba.rows);
+    setAbaIndex(i);
+    setLinhaCabecalho(header);
+    setMapeamento(sugerirMapeamento(aba.rows[header] ?? []));
+  };
 
-    if (file.name.endsWith(".csv") || file.name.endsWith(".txt")) {
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        if (!text) return;
-        const lines = text.split(/\r?\n/).filter((l) => l.trim());
-        if (lines.length < 2) { toast.error("Arquivo vazio ou sem dados"); return; }
+  const trocarCabecalho = (i: number) => {
+    setLinhaCabecalho(i);
+    setMapeamento(sugerirMapeamento(abas[abaIndex]?.rows[i] ?? []));
+  };
 
-        const sep = lines[0].includes(";") ? ";" : ",";
-        const headers = lines[0].split(sep).map((h) => h.replace(/"/g, "").trim());
-        const { nomeIdx, qtdIdx, embIdx, eanIdx } = detectColumns(headers);
-
-        const parsed: ParsedItem[] = [];
-        for (let i = 1; i < lines.length; i++) {
-          const cols = lines[i].split(sep).map((c) => c.replace(/"/g, "").trim());
-          const nome = cols[nomeIdx]?.trim();
-          if (!nome) continue;
-          parsed.push({
-            nome,
-            quantidade: qtdIdx >= 0 ? parseFloat(cols[qtdIdx]?.replace(",", ".")) || 1 : 1,
-            embalagem: embIdx >= 0 ? cols[embIdx] || "un" : "un",
-            ean: eanIdx >= 0 ? extractEan(cols[eanIdx]) : null,
-          });
-        }
-        applyParsed(parsed);
-
-      };
-      reader.readAsText(file);
-    } else {
-      reader.onload = (e) => {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const wb = XLSX.read(data, { type: "array" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
-        if (rows.length < 2) { toast.error("Planilha vazia"); return; }
-
-        const headers = rows[0].map((h: any) => String(h || ""));
-        const { nomeIdx, qtdIdx, embIdx, eanIdx } = detectColumns(headers);
-
-        const parsed: ParsedItem[] = [];
-        for (let i = 1; i < rows.length; i++) {
-          const row = rows[i];
-          const nome = String(row[nomeIdx] || "").trim();
-          if (!nome) continue;
-          parsed.push({
-            nome,
-            quantidade: qtdIdx >= 0 ? parseFloat(String(row[qtdIdx] || "1").replace(",", ".")) || 1 : 1,
-            embalagem: embIdx >= 0 ? String(row[embIdx] || "un").trim() : "un",
-            ean: eanIdx >= 0 ? extractEan(row[eanIdx]) : null,
-          });
-        }
-        applyParsed(parsed);
-
-      };
-      reader.readAsArrayBuffer(file);
+  const confirmarMapeamento = () => {
+    const aba = abas[abaIndex];
+    if (!aba) return;
+    if (mapeamento.nome === undefined) {
+      toast.error("Escolha qual coluna tem o nome do produto");
+      return;
     }
+    const { itens, ignoradas: ign } = aplicarMapeamento(aba.rows, linhaCabecalho, mapeamento);
+    if (!itens.length) {
+      toast.error("Nenhuma linha com produto foi encontrada nessa coluna");
+      return;
+    }
+    setIgnoradas(ign);
+    setEtapa("revisar");
+    applyParsed(
+      itens.map((i) => ({
+        nome: i.nome,
+        quantidade: i.quantidade,
+        embalagem: i.embalagem,
+        ean: i.ean,
+        fator: i.fator,
+        codigo_interno: i.codigo_interno,
+        preco: i.preco,
+        categoria: i.categoria,
+      })),
+    );
   };
 
   const removeItem = (idx: number) => setItems((prev) => prev.filter((_, i) => i !== idx));
@@ -433,7 +443,12 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
               fator_embalagem: null,
             },
             embalagem: l.embalagem,
-            fator: fatorProd && fatorProd > 1 ? fatorProd : getFatorPadrao(l.embalagem),
+            fator:
+              l.item.fator && l.item.fator > 1
+                ? l.item.fator
+                : fatorProd && fatorProd > 1
+                  ? fatorProd
+                  : getFatorPadrao(l.embalagem),
           }));
         }
       }
@@ -456,8 +471,7 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
       queryClient.invalidateQueries({ queryKey: ["produtos"] });
       queryClient.invalidateQueries({ queryKey: ["cotacao-item-count"] });
       toast.success(`${toInsert.length} novos itens adicionados${toUpdate.length ? `, ${toUpdate.length} quantidades atualizadas` : ""}!`);
-      setItems([]);
-      setFileName("");
+      resetar();
       onOpenChange(false);
 
       // Auto-suggest fator_embalagem in background for new products
@@ -485,8 +499,8 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) { setItems([]); setFileName(""); } onOpenChange(v); }}>
-      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+    <Dialog open={open} onOpenChange={(v) => { if (!v) resetar(); onOpenChange(v); }}>
+      <DialogContent className="max-w-lg sm:max-w-3xl max-h-[88vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-primary" />
@@ -494,85 +508,167 @@ const ImportErpModal = ({ open, onOpenChange, cotacaoId }: Props) => {
           </DialogTitle>
         </DialogHeader>
 
-        <p className="text-xs text-muted-foreground">
-          Importe uma planilha Excel ou CSV do seu ERP. O sistema detecta automaticamente as colunas
-          <strong> Produto</strong>, <strong>Quantidade</strong> e <strong>Embalagem</strong>.
-        </p>
-
-        {/* Upload area */}
-        <div
-          onClick={() => fileRef.current?.click()}
-          className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-accent/30 transition-colors"
-        >
-          <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-          <p className="text-sm font-medium">{fileName || "Clique ou arraste o arquivo aqui"}</p>
-          <p className="text-xs text-muted-foreground mt-1">Excel (.xlsx, .xls) ou CSV (.csv)</p>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".xlsx,.xls,.csv,.txt"
-            className="hidden"
-            onChange={(e) => { if (e.target.files?.[0]) processFile(e.target.files[0]); e.target.value = ""; }}
-          />
+        {/* Passos */}
+        <div className="flex items-center gap-1.5 text-[11px] font-medium">
+          {["1. Arquivo", "2. Colunas", "3. Revisar"].map((rotulo, i) => {
+            const atual = ["arquivo", "mapear", "revisar"].indexOf(etapa);
+            return (
+              <span
+                key={rotulo}
+                className={`px-2 py-0.5 rounded-full ${
+                  i === atual
+                    ? "bg-primary text-primary-foreground"
+                    : i < atual
+                      ? "bg-primary/10 text-primary"
+                      : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {rotulo}
+              </span>
+            );
+          })}
         </div>
 
-        {/* Preview */}
-        {items.length > 0 && (
-          <div className="border rounded-lg overflow-hidden flex-1">
-            <div className="px-3 py-2 bg-muted border-b flex items-center justify-between">
-              <span className="text-xs font-bold">{items.length} itens</span>
-              <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => setItems([])}>
-                Limpar
-              </Button>
+        <ScrollArea className="flex-1 -mx-1 px-1">
+          {etapa === "arquivo" && (
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Envie a planilha como ela sai do seu ERP. Na próxima tela você diz o que é cada
+                coluna — não precisa arrumar nada no Excel.
+              </p>
+              <div
+                onClick={() => fileRef.current?.click()}
+                className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-accent/30 transition-colors"
+              >
+                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm font-medium">{fileName || "Clique ou arraste o arquivo aqui"}</p>
+                <p className="text-xs text-muted-foreground mt-1">Excel (.xlsx, .xls) ou CSV (.csv)</p>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".xlsx,.xls,.csv,.txt"
+                  className="hidden"
+                  onChange={(e) => { if (e.target.files?.[0]) processFile(e.target.files[0]); e.target.value = ""; }}
+                />
+              </div>
             </div>
-            <ScrollArea className="max-h-[250px]">
-              {items.map((item, i) => {
-                const destino = classificarDestino(item, catalogByEan);
-                return (
-                <div key={i} className="flex items-center gap-2 px-3 py-2 border-b text-sm hover:bg-muted/30">
-                  <span className="text-xs text-muted-foreground w-6 shrink-0">{i + 1}.</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="truncate font-medium">{item.nome}</div>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span
-                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
-                          destino === "catalogo"
-                            ? "bg-primary/10 text-primary"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {destino === "catalogo" ? "Catálogo" : "Local"}
-                      </span>
-                      {item.ean && (
-                        <span className="text-[10px] font-mono text-muted-foreground truncate">EAN: {item.ean}</span>
-                      )}
-                    </div>
+          )}
+
+          {etapa === "mapear" && abas.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Confira o que é cada coluna. Já preenchemos o que reconhecemos —{" "}
+                <strong>Produto</strong> é o único obrigatório.
+              </p>
+              <MapeamentoPlanilha
+                abas={abas}
+                abaIndex={abaIndex}
+                onAbaChange={trocarAba}
+                linhaCabecalho={linhaCabecalho}
+                onLinhaCabecalhoChange={trocarCabecalho}
+                mapeamento={mapeamento}
+                onMapeamentoChange={setMapeamento}
+              />
+            </div>
+          )}
+
+          {etapa === "revisar" && (
+            <div className="space-y-2">
+              {ignoradas.length > 0 && (
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  {ignoradas.length} linha(s) sem nome de produto foram ignoradas (linhas{" "}
+                  {ignoradas.slice(0, 5).map((i) => i.linha).join(", ")}
+                  {ignoradas.length > 5 ? "…" : ""}).
+                </p>
+              )}
+              {items.length > 0 && (
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="px-3 py-2 bg-muted border-b flex items-center justify-between">
+                    <span className="text-xs font-bold">{items.length} itens prontos</span>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => setItems([])}>
+                      Limpar
+                    </Button>
                   </div>
-                  <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">
-                    {destino === "catalogo" ? "—" : normalizeEmbalagem(item.embalagem)}
-                  </span>
-                  <span className="text-xs font-mono font-bold w-10 text-right shrink-0">{item.quantidade}</span>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive shrink-0" onClick={() => removeItem(i)}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+                  <div className="max-h-[300px] overflow-y-auto">
+                    {items.map((item, i) => {
+                      const destino = classificarDestino(item, catalogByEan);
+                      return (
+                        <div key={i} className="flex items-center gap-2 px-3 py-2 border-b text-sm hover:bg-muted/30">
+                          <span className="text-xs text-muted-foreground w-6 shrink-0">{i + 1}.</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="truncate font-medium">{item.nome}</div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span
+                                className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+                                  destino === "catalogo"
+                                    ? "bg-primary/10 text-primary"
+                                    : "bg-muted text-muted-foreground"
+                                }`}
+                              >
+                                {destino === "catalogo" ? "Catálogo" : "Local"}
+                              </span>
+                              {item.fator && item.fator > 1 && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  {item.fator} un/emb.
+                                </span>
+                              )}
+                              {item.ean && (
+                                <span className="text-[10px] font-mono text-muted-foreground truncate">EAN: {item.ean}</span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">
+                            {destino === "catalogo" ? "—" : normalizeEmbalagem(item.embalagem)}
+                          </span>
+                          <span className="text-xs font-mono font-bold w-10 text-right shrink-0">{item.quantidade}</span>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive shrink-0" onClick={() => removeItem(i)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-                );
-              })}
+              )}
+            </div>
+          )}
+        </ScrollArea>
 
-            </ScrollArea>
-          </div>
-        )}
+        <DialogFooter className="gap-2">
+          {etapa === "arquivo" && (
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          )}
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button
-            onClick={doImport}
-            disabled={!items.length || importing}
-            className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
-          >
-            {importing ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 mr-1" />}
-            {importing ? "Importando..." : `Importar ${items.length} itens`}
-          </Button>
+          {etapa === "mapear" && (
+            <>
+              <Button variant="outline" onClick={() => setEtapa("arquivo")}>
+                <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
+              </Button>
+              <Button
+                onClick={confirmarMapeamento}
+                disabled={mapeamento.nome === undefined}
+                className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
+              >
+                Avançar <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            </>
+          )}
+
+          {etapa === "revisar" && (
+            <>
+              <Button variant="outline" onClick={() => setEtapa("mapear")}>
+                <ArrowLeft className="h-4 w-4 mr-1" /> Ajustar colunas
+              </Button>
+              <Button
+                onClick={doImport}
+                disabled={!items.length || importing}
+                className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"
+              >
+                {importing ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 mr-1" />}
+                {importing ? "Importando..." : `Importar ${items.length} itens`}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
