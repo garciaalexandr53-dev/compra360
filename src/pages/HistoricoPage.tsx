@@ -529,7 +529,7 @@ const HistoricoPage = () => {
 
       const { data: pedidos } = await supabase
         .from("pedidos")
-        .select("id, fornecedor_id, total, status, fornecedores(nome)")
+        .select("id, fornecedor_id, total, status, numero, itens, fornecedores(nome)")
         .eq("cotacao_id", expandedCotacao!);
 
       return { produtos: cps || [], precos, pedidos: pedidos || [] };
@@ -706,12 +706,33 @@ const HistoricoPage = () => {
   // Pedidos by fornecedor (from cotacaoDetails)
   const buildPedidosByFornecedor = () => {
     if (!cotacaoDetails) return [] as any[];
+    // Fonte única: a lista exata enviada ao fornecedor (pedidos.itens).
+    const reais = (cotacaoDetails.pedidos || []).filter(
+      (p: any) => Array.isArray(p.itens) && p.itens.length > 0 && p.status !== "rascunho",
+    );
+    const fornComReal = new Set(reais.map((p: any) => p.fornecedor_id));
+    const byForn = new Map<string, { fornecedor: string; itens: any[]; total: number; numero?: number }>();
+    for (const p of reais) {
+      const nomeF = (p as any).fornecedores?.nome || "Fornecedor";
+      const itens = (p.itens as any[]).map((it: any) => ({
+        nome: it.produto, embalagem: it.embalagem, fator: Number(it.fator) || 1,
+        qtd: Number(it.quantidade) || 0, fornecedor: nomeF,
+        precoUnit: Number(it.preco) || 0, total: Number(it.total) || 0,
+      }));
+      byForn.set(p.fornecedor_id, {
+        fornecedor: nomeF, itens, numero: p.numero,
+        total: itens.reduce((s, it) => s + it.total, 0),
+      });
+    }
+    // Pedidos antigos sem lista gravada: cálculo pelo menor preço.
     const rows = buildTableRows();
-    const byForn = new Map<string, { fornecedor: string; itens: any[]; total: number }>();
     for (const r of rows) {
       if (!r.fornecedor || r.fornecedor === "—") continue;
-      if (!byForn.has(r.fornecedor)) byForn.set(r.fornecedor, { fornecedor: r.fornecedor, itens: [], total: 0 });
-      const g = byForn.get(r.fornecedor)!;
+      const fid = r.allPrecos?.[0]?.fornecedor_id;
+      if (fid && fornComReal.has(fid)) continue;
+      const key = fid || r.fornecedor;
+      if (!byForn.has(key)) byForn.set(key, { fornecedor: r.fornecedor, itens: [], total: 0 });
+      const g = byForn.get(key)!;
       g.itens.push(r);
       g.total += r.total || 0;
     }
