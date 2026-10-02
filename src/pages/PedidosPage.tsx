@@ -11,6 +11,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
+import { salvarPedidoEnviado } from "@/lib/pedidoItens";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -144,28 +145,13 @@ const PedidosPage = () => {
   };
 
   const createPedidoMutation = useMutation({
-    mutationFn: async ({ fornecedorId, total }: { fornecedorId: string; total: number }) => {
+    mutationFn: async ({ fornecedor, items }: { fornecedor: Fornecedor; items: OrderItem[] }) => {
       if (!cotacaoAtiva) throw new Error("Sem cotação ativa");
-      const { data: existing } = await supabase.from("pedidos").select("id")
-        .eq("cotacao_id", cotacaoAtiva.id).eq("fornecedor_id", fornecedorId)
-        .limit(1).maybeSingle();
-      if (existing) {
-        const { data, error } = await supabase.from("pedidos").update({
-          total, status: "enviado" as any, enviado_at: new Date().toISOString(),
-        }).eq("id", existing.id).select().single();
-        if (error) throw error;
-        return data;
-      }
-      const { data, error } = await supabase.from("pedidos").insert({
-        cotacao_id: cotacaoAtiva.id,
-        fornecedor_id: fornecedorId,
-        status: "enviado",
-        total,
-        enviado_at: new Date().toISOString(),
-        created_by: user?.id,
-      }).select().single();
-      if (error) throw error;
-      return data;
+      const r = await salvarPedidoEnviado({
+        cotacaoId: cotacaoAtiva.id, fornecedorId: fornecedor.id, fornecedorNome: fornecedor.nome,
+        items, userId: user?.id, lojaId: lojaAtiva?.id || null,
+      });
+      return r;
     },
   });
 
@@ -177,8 +163,9 @@ const PedidosPage = () => {
     // Create pedido record
     let pedidoNumero: number | null = null;
     try {
-      const pedido = await createPedidoMutation.mutateAsync({ fornecedorId: f.id, total });
-      pedidoNumero = (pedido as any).numero || null;
+      const pedido = await createPedidoMutation.mutateAsync({ fornecedor: f, items });
+      if (!pedido) return;
+      pedidoNumero = pedido.numero || null;
       queryClient.invalidateQueries({ queryKey: ["pedidos"] });
     } catch (e) {
       console.error("Failed to create pedido record", e);

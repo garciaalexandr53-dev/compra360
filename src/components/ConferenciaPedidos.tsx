@@ -402,15 +402,29 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
       .select("id, quantidade, fator_embalagem, tipo_embalagem, nome, produto_id, produtos(nome, embalagem)")
       .eq("cotacao_id", pedidoFull.cotacao_id);
 
-    const { data: precos } = await supabase
-      .from("precos")
-      .select("cotacao_produto_id, preco")
-      .eq("fornecedor_id", pedido.fornecedor_id);
-
-    const precosMap = new Map((precos || []).map((p: any) => [p.cotacao_produto_id, p.preco]));
+    // Pedido antigo sem lista gravada: só os itens que este fornecedor GANHOU
+    // (menor preço), nunca todos os que ele apenas cotou.
+    const cpIds = (cotacaoProdutos || []).map((cp: any) => cp.id);
+    const todosPrecos: any[] = [];
+    for (let i = 0; i < cpIds.length; i += 200) {
+      const { data } = await supabase
+        .from("precos")
+        .select("cotacao_produto_id, fornecedor_id, preco")
+        .in("cotacao_produto_id", cpIds.slice(i, i + 200));
+      todosPrecos.push(...(data || []));
+    }
+    const melhor = new Map<string, { f: string; p: number }>();
+    for (const p of todosPrecos) {
+      const v = Number(p.preco);
+      if (!(v > 0)) continue;
+      const cur = melhor.get(p.cotacao_produto_id);
+      if (!cur || v < cur.p) melhor.set(p.cotacao_produto_id, { f: p.fornecedor_id, p: v });
+    }
+    const precosMap = new Map<string, number>();
+    for (const [cpId, m] of melhor) if (m.f === pedido.fornecedor_id) precosMap.set(cpId, m.p);
 
     const orderItems: ConferenciaItem[] = ordenarPorNome((cotacaoProdutos || [])
-      .filter((cp: any) => precosMap.has(cp.id) && precosMap.get(cp.id) != null)
+      .filter((cp: any) => precosMap.has(cp.id))
       .map((cp: any) => ({
         produto_nome: getCotacaoNome(cp),
         embalagem: getCotacaoEmbalagem(cp),
