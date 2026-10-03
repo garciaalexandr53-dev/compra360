@@ -405,14 +405,11 @@ const ConferenciaPedidos = ({ lojaId, modoPublico = false }: ConferenciaPedidosP
     // Pedido antigo sem lista gravada: só os itens que este fornecedor GANHOU
     // (menor preço), nunca todos os que ele apenas cotou.
     const cpIds = (cotacaoProdutos || []).map((cp: any) => cp.id);
-    const todosPrecos: any[] = [];
-    for (let i = 0; i < cpIds.length; i += 200) {
-      const { data } = await supabase
-        .from("precos")
-        .select("cotacao_produto_id, fornecedor_id, preco")
-        .in("cotacao_produto_id", cpIds.slice(i, i + 200));
-      todosPrecos.push(...(data || []));
-    }
+    // Paginado + em blocos: cotações grandes passam do limite de 1000 linhas.
+    const todosPrecos: any[] = await fetchPrecosByCpIds<any>(
+      cpIds,
+      "cotacao_produto_id, fornecedor_id, preco",
+    );
     const melhor = new Map<string, { f: string; p: number }>();
     for (const p of todosPrecos) {
       const v = Number(p.preco);
