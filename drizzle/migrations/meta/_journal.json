@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791070784200,
+      "tag": "0000_rede_agrupar_por_fone_e_cnpj",
+      "breakpoints": true
+    }
+  ]
+}
