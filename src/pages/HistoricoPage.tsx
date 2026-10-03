@@ -724,14 +724,25 @@ const HistoricoPage = () => {
         total: itens.reduce((s, it) => s + it.total, 0),
       });
     }
-    // Pedidos antigos sem lista gravada: cálculo pelo menor preço.
+    // Pedidos antigos sem lista gravada: cálculo pelo menor preço, mas só para
+    // fornecedores que realmente receberam pedido e só para itens que não
+    // constam em nenhuma lista gravada. Nada some: o que não cabe vai para
+    // "Sem pedido identificado".
+    const norm = (s: string) => (s || "").trim().toLowerCase();
+    const nomesEnviados = new Set<string>();
+    for (const p of reais) for (const it of p.itens as any[]) nomesEnviados.add(norm(it.produto));
+    const fornEnviados = new Set(
+      (cotacaoDetails.pedidos || []).filter((p: any) => p.status !== "rascunho").map((p: any) => p.fornecedor_id),
+    );
+    const temEnvios = fornEnviados.size > 0;
     const rows = buildTableRows();
     for (const r of rows) {
       if (!r.fornecedor || r.fornecedor === "—") continue;
+      if (nomesEnviados.has(norm(r.nome))) continue;
       const fid = r.allPrecos?.[0]?.fornecedor_id;
-      if (fid && fornComReal.has(fid)) continue;
-      const key = fid || r.fornecedor;
-      if (!byForn.has(key)) byForn.set(key, { fornecedor: r.fornecedor, itens: [], total: 0 });
+      const semDono = (fid && fornComReal.has(fid)) || (temEnvios && (!fid || !fornEnviados.has(fid)));
+      const key = semDono ? "__sem_pedido__" : fid || r.fornecedor;
+      if (!byForn.has(key)) byForn.set(key, { fornecedor: semDono ? "Sem pedido identificado" : r.fornecedor, itens: [], total: 0 });
       const g = byForn.get(key)!;
       g.itens.push(r);
       g.total += r.total || 0;
