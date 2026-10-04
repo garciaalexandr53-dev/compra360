@@ -39,6 +39,7 @@ import CatalogoTab from "@/components/admin/CatalogoTab";
 import HistoricoCatalogoTab from "@/components/admin/HistoricoCatalogoTab";
 import CandidatosTab from "@/components/admin/CandidatosTab";
 import FornecedoresTab from "@/components/admin/FornecedoresTab";
+import PropostaComercialTab from "@/components/admin/PropostaComercialTab";
 import { MrrBreakdownCard, GrowthChart, ChurnRiskCard } from "@/components/admin/MetricasExtras";
 
 
@@ -56,6 +57,7 @@ const NAV_GROUPS: { label: string; items: AdminNavItem[] }[] = [
   ]},
   { label: "Financeiro", items: [
     { value: "pagamentos", label: "Pagamentos", icon: CreditCard },
+    { value: "propostas", label: "Propostas", icon: FileText },
   ]},
   { label: "Comunicação", items: [
     { value: "emails", label: "E-mails", icon: Mail },
@@ -781,6 +783,10 @@ export default function AdminPage() {
 
           {activeTab === "historico" && (
             <HistoricoCatalogoTab />
+          )}
+
+          {activeTab === "propostas" && (
+            <PropostaComercialTab />
           )}
             </section>
           </div>
