@@ -43,7 +43,11 @@ type Dados = {
 export function parseValorBR(v: string): number | null {
   const s = v.trim();
   if (!s) return null;
-  const n = Number(s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : s);
+  let norm: string;
+  if (s.includes(",")) norm = s.replace(/\./g, "").replace(",", ".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) norm = s.replace(/\./g, ""); // "1.500" = mil e quinhentos
+  else norm = s;
+  const n = Number(norm);
   return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
 }
 
