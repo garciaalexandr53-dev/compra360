@@ -1683,6 +1683,8 @@ export type Database = {
               _convite_loja?: string
               _nome: string
               _pastas?: string[]
+              _pedido_minimo?: number
+              _prazo_pagamento?: string
               _representante: string
               _telefone: string
               _tipo?: string
@@ -1917,6 +1919,8 @@ export type Database = {
           _consentimento?: string
           _nome: string
           _pastas?: string[]
+          _pedido_minimo?: number
+          _prazo_pagamento?: string
           _representante: string
           _tipo?: string
           _token: string

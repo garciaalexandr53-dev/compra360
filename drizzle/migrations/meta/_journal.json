@@ -8,6 +8,13 @@
       "when": 1791070784200,
       "tag": "0000_rede_agrupar_por_fone_e_cnpj",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791075226486,
+      "tag": "0001_parceiro_pedido_minimo_prazo",
+      "breakpoints": true
     }
   ]
 }

@@ -36,7 +36,16 @@ type Dados = {
   cidades?: { cidade: string; uf: string }[];
   consentimento_rede?: string | null;
   outras_empresas?: { nome: string; token: string }[];
+  pedido_minimo?: number | null;
+  prazo_pagamento?: string | null;
 };
+
+export function parseValorBR(v: string): number | null {
+  const s = v.trim();
+  if (!s) return null;
+  const n = Number(s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : s);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
+}
 
 /** Opções que o parceiro pode escolher sobre participar da Rede. */
 const OPCOES_REDE = [
@@ -158,6 +167,8 @@ function EditarDados({ token }: { token: string }) {
   const [valido, setValido] = useState(true);
   const [nome, setNome] = useState("");
   const [representante, setRepresentante] = useState("");
+  const [pedidoMinimo, setPedidoMinimo] = useState("");
+  const [prazoPagamento, setPrazoPagamento] = useState("");
   const [telefone, setTelefone] = useState("");
   const [tipo, setTipo] = useState("geral");
   const [pastas, setPastas] = useState<string[]>([]);
@@ -188,6 +199,8 @@ function EditarDados({ token }: { token: string }) {
       }
       setNome(resp.nome ?? "");
       setRepresentante(resp.representante ?? "");
+      setPedidoMinimo(resp.pedido_minimo != null ? String(resp.pedido_minimo).replace(".", ",") : "");
+      setPrazoPagamento(resp.prazo_pagamento ?? "");
       setTelefone(maskTelefone(resp.telefone ?? ""));
       setTipo(resp.tipo_fornecedor || "geral");
       setPastas(resp.pasta ?? []);
@@ -228,6 +241,8 @@ function EditarDados({ token }: { token: string }) {
       _pastas: tipo === "especializado" ? pastas : [],
       _cidades: cidades.map((c) => ({ cidade: c.cidade, uf: c.uf ?? "" })),
       _consentimento: consentEscolha,
+      _pedido_minimo: parseValorBR(pedidoMinimo),
+      _prazo_pagamento: prazoPagamento.trim() || null,
     });
     setSalvando(false);
     if (error) {
@@ -395,6 +410,31 @@ function EditarDados({ token }: { token: string }) {
             </p>
           </div>
         </div>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label className="text-slate-300">Pedido mínimo (R$)</Label>
+            <Input
+              value={pedidoMinimo}
+              onChange={(e) => setPedidoMinimo(e.target.value.replace(/[^\d,.]/g, ""))}
+              inputMode="decimal"
+              placeholder="Ex: 300,00"
+              className={campoEscuro}
+              maxLength={12}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-slate-300">Prazo de pagamento</Label>
+            <Input
+              value={prazoPagamento}
+              onChange={(e) => setPrazoPagamento(e.target.value)}
+              placeholder="Ex: 28 dias, boleto 7/14/21"
+              className={campoEscuro}
+              maxLength={120}
+            />
+          </div>
+        </div>
+
 
         <div className="space-y-2">
           <Label className="text-slate-300">Tipo de fornecedor</Label>

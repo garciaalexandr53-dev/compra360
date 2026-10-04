@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { parseValorBR } from "@/pages/ParceiroPage";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,8 @@ const CadastroParceiroPage = () => {
   const [nome, setNome] = useState("");
   const [cnpj, setCnpj] = useState("");
   const [representante, setRepresentante] = useState("");
+  const [pedidoMinimo, setPedidoMinimo] = useState("");
+  const [prazoPagamento, setPrazoPagamento] = useState("");
   const [telefone, setTelefone] = useState(() => maskTelefone(params.get("fone") ?? ""));
   const [tipo, setTipo] = useState("geral");
   const [pastas, setPastas] = useState<string[]>([]);
@@ -155,6 +158,8 @@ const CadastroParceiroPage = () => {
       _pastas: pastas.length ? pastas : null,
       _cidades: cidades.map((c) => ({ cidade: c.cidade, uf: c.uf ?? "" })),
       _convite_loja: conviteLoja,
+      _pedido_minimo: parseValorBR(pedidoMinimo),
+      _prazo_pagamento: prazoPagamento.trim() || null,
     });
     setSalvando(false);
 
@@ -335,6 +340,31 @@ const CadastroParceiroPage = () => {
                 maxLength={80}
               />
             </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-slate-300">Pedido mínimo (R$)</Label>
+                <Input
+                  value={pedidoMinimo}
+                  onChange={(e) => setPedidoMinimo(e.target.value.replace(/[^\d,.]/g, ""))}
+                  inputMode="decimal"
+                  placeholder="Ex: 300,00"
+                  className="bg-slate-950 border-white/10 text-white"
+                  maxLength={12}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Prazo de pagamento</Label>
+                <Input
+                  value={prazoPagamento}
+                  onChange={(e) => setPrazoPagamento(e.target.value)}
+                  placeholder="Ex: 28 dias"
+                  className="bg-slate-950 border-white/10 text-white"
+                  maxLength={120}
+                />
+              </div>
+            </div>
+
 
             <div className="space-y-2">
               <Label className="text-slate-300">
