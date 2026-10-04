@@ -14,6 +14,10 @@ import { baixarPropostaPdf } from "@/lib/propostaComercialPdf";
 
 const KEY = "admin-proposta-comercial";
 
+function F({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div className="space-y-1.5"><Label className="text-xs">{label}</Label>{children}</div>;
+}
+
 export default function PropostaComercialTab() {
   const [d, setD] = useState<PropostaDados>(() => {
     try { return { ...PROPOSTA_PADRAO, ...JSON.parse(localStorage.getItem(KEY) || "{}") }; }
@@ -52,10 +56,6 @@ export default function PropostaComercialTab() {
     const n = fone.startsWith("55") ? fone : `55${fone}`;
     window.open(`https://wa.me/${n}?text=${encodeURIComponent(msg)}`, "_blank");
   };
-
-  const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div className="space-y-1.5"><Label className="text-xs">{label}</Label>{children}</div>
-  );
 
   return (
     <div className="grid lg:grid-cols-[1fr_380px] gap-4">
