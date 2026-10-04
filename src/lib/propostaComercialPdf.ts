@@ -88,7 +88,7 @@ export function buildPropostaPdf(d: PropostaDados, logo: string | null, hoje = n
   const bw = (W - 2 * M - 20) / 3;
   const kpis: [string, string][] = [
     [`~${horas} h`, "economizadas por mês"],
-    [`${Math.round(antes / 60 * 10) / 10} h -> ${depois} min`, "para fechar cada cotação"],
+    [`${depois} min`, `por cotação (antes ${(Math.round(antes / 6) / 10).toLocaleString("pt-BR")} h)`],
     [`${d.itensPorCotacao} itens`, `${d.cotacoesPorSemana}x por semana`],
   ];
   kpis.forEach(([v, l], i) => {
@@ -135,6 +135,24 @@ export function buildPropostaPdf(d: PropostaDados, logo: string | null, hoje = n
   doc.text("por mês", x2 + 12, y + 88);
   doc.text(d.implantacao > 0 ? `+ ${brl(d.implantacao)} de implantação` : "Sem taxa de implantação", x2 + 12, y + 104);
   doc.text(`Total 12 meses: ${brl(d.mensal * 12 + d.implantacao)}`, x2 + 12, y + 120);
+
+  // Próximos passos
+  y += ch + 26;
+  section("4. Próximos passos", y);
+  y += 22;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(40);
+  [
+    "Aceite da proposta e pagamento (Pix ou link de pagamento)",
+    "Importação dos produtos e cadastro dos fornecedores em até 48 horas",
+    "Treinamento da equipe e primeira cotação acompanhada",
+  ].forEach((t, i) => {
+    doc.setFillColor(...NAVY); doc.circle(M + 7, y - 3.5, 7, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(255);
+    doc.text(String(i + 1), M + 7, y - 0.8, { align: "center" });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(40);
+    doc.text(t, M + 22, y);
+    y += 20;
+  });
 
   // Rodapé
   const fy = H - 92;
