@@ -13,31 +13,43 @@ const isPreviewHost =
   window.location.hostname.includes("id-preview--") ||
   window.location.hostname.includes("lovableproject.com");
 
-const isFuncionariosApp =
-  window.location.pathname.startsWith("/app-funcionarios") ||
-  window.location.pathname.startsWith("/reposicao");
-const FUNCIONARIOS_CACHE_RESET_VERSION = "funcionarios-cache-reset-v1";
+// Páginas abertas por pessoas de fora (fornecedor, parceiro, funcionário) via link.
+// Nunca devem ficar presas em versão antiga do cache do navegador.
+const PUBLIC_LINK_PREFIXES = ["/fornecedor", "/parceiro", "/seja-parceiro", "/reposicao", "/app-funcionarios", "/unsubscribe"];
+const isPublicLinkPage = PUBLIC_LINK_PREFIXES.some((p) => window.location.pathname.startsWith(p));
+// Aumente esta versão para forçar nova limpeza em todos os aparelhos.
+const PUBLIC_CACHE_RESET_VERSION = "public-cache-reset-v2";
+const PUBLIC_CACHE_RESET_KEY = "public-cache-reset-version";
 
-/* ── Funcionários: one-time cache clear ──────────────── */
-if (
-  isFuncionariosApp &&
-  localStorage.getItem("funcionarios-cache-reset-version") !== FUNCIONARIOS_CACHE_RESET_VERSION
-) {
-  localStorage.setItem("funcionarios-cache-reset-version", FUNCIONARIOS_CACHE_RESET_VERSION);
-
-  const clearPwaState = async () => {
-    if ("serviceWorker" in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(registrations.map((r) => r.unregister()));
-    }
-    if ("caches" in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map((key) => caches.delete(key)));
-    }
-    window.location.reload();
-  };
-
-  void clearPwaState();
+/* ── Páginas públicas: limpeza única de cache antigo ─── */
+if (isPublicLinkPage && !isInIframe && !isPreviewHost) {
+  let storedVersion: string | null = null;
+  try { storedVersion = localStorage.getItem(PUBLIC_CACHE_RESET_KEY); } catch { /* ignore */ }
+  const hadController = "serviceWorker" in navigator && !!navigator.serviceWorker.controller;
+  if (storedVersion !== PUBLIC_CACHE_RESET_VERSION) {
+    try { localStorage.setItem(PUBLIC_CACHE_RESET_KEY, PUBLIC_CACHE_RESET_VERSION); } catch { /* ignore */ }
+    const clearPwaState = async () => {
+      try {
+        if ("serviceWorker" in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map((r) => r.unregister()));
+        }
+        if ("caches" in window) {
+          const keys = await caches.keys();
+          await Promise.all(
+            keys.filter((k) => /workbox|precache|runtime/i.test(k)).map((k) => caches.delete(k)),
+          );
+        }
+      } finally {
+        // Só recarrega se a página atual veio do cache antigo
+        if (hadController && !sessionStorage.getItem("public-cache-reloaded")) {
+          sessionStorage.setItem("public-cache-reloaded", "1");
+          window.location.reload();
+        }
+      }
+    };
+    void clearPwaState();
+  }
 }
 
 /* ── Service Worker update logic (production only) ───── */
