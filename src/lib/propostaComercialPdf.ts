@@ -52,7 +52,8 @@ export function buildPropostaPdf(d: PropostaDados, logo: string | null, hoje = n
 
   // Cabeçalho
   let y = 38;
-  if (logo) { try { doc.addImage(logo, "PNG", M, y, 110, 34, undefined, "FAST"); } catch { /* ignore */ } }
+  // Logo original 1536x1024 (3:2) — manter a proporção para não espremer.
+  if (logo) { try { doc.addImage(logo, "PNG", M, y - 4, 66, 44, undefined, "FAST"); } catch { /* ignore */ } }
   doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.setTextColor(...NAVY);
   doc.text("PROPOSTA COMERCIAL", W - M, y + 12, { align: "right" });
   doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...GRAY);

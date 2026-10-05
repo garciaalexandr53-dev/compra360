@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { Download, Copy, MessageCircle, Loader2, RotateCcw } from "lucide-react";
 import {
   PRESETS_PROPOSTA, PROPOSTA_PADRAO, PropostaDados, economiaAnual, horasEconomizadasMes,
-  mensagemWhatsApp, brl, dataBR, dataValidade,
+  mensagemWhatsApp, brl, dataBR, dataValidade, parseNumeroCampo,
 } from "@/lib/propostaComercial";
 import { baixarPropostaPdf } from "@/lib/propostaComercialPdf";
 
@@ -16,6 +16,53 @@ const KEY = "admin-proposta-comercial";
 
 function F({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="space-y-1.5"><Label className="text-xs">{label}</Label>{children}</div>;
+}
+
+const fmtCampo = (n: number) => (Number.isFinite(n) ? String(n).replace(".", ",") : "");
+
+/**
+ * Campo numérico que deixa apagar tudo e digitar livremente.
+ * O texto fica local enquanto digita; o valor só é limitado (mín/máx) ao sair do campo.
+ */
+function NumInput({
+  value, onChange, min = 0, max, inteiro = false, decimal = false,
+}: {
+  value: number; onChange: (n: number) => void; min?: number; max?: number; inteiro?: boolean; decimal?: boolean;
+}) {
+  const [txt, setTxt] = useState(fmtCampo(value));
+  const [focado, setFocado] = useState(false);
+
+  // Sincroniza quando o valor muda por fora (preset, limpar), sem atrapalhar a digitação.
+  useEffect(() => { if (!focado) setTxt(fmtCampo(value)); }, [value, focado]);
+
+  const limitar = (n: number) => {
+    let r = inteiro ? Math.round(n) : n;
+    if (r < min) r = min;
+    if (max != null && r > max) r = max;
+    return r;
+  };
+
+  return (
+    <Input
+      type="text"
+      inputMode={decimal ? "decimal" : "numeric"}
+      value={txt}
+      onFocus={(e) => { setFocado(true); e.currentTarget.select(); }}
+      onChange={(e) => {
+        const limpo = e.target.value.replace(decimal ? /[^\d.,]/g : /\D/g, "");
+        setTxt(limpo);
+        const n = parseNumeroCampo(limpo);
+        if (n != null && n >= min && (max == null || n <= max)) onChange(inteiro ? Math.round(n) : n);
+      }}
+      onBlur={() => {
+        setFocado(false);
+        const n = parseNumeroCampo(txt);
+        const final = limitar(n ?? value);
+        onChange(final);
+        setTxt(fmtCampo(final));
+      }}
+    />
+  );
 }
 
 export default function PropostaComercialTab() {
@@ -28,7 +75,8 @@ export default function PropostaComercialTab() {
   useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch { /* ignore */ } }, [d]);
 
   const set = <K extends keyof PropostaDados>(k: K, v: PropostaDados[K]) => setD((p) => ({ ...p, [k]: v }));
-  const num = (v: string) => Math.max(0, Number(v.replace(",", ".")) || 0);
+  const setPreco = (k: "anual" | "mensal" | "implantacao", v: number) =>
+    setD((s) => (s[k] === v ? s : { ...s, [k]: v, presetId: "custom" }));
 
   const eco = economiaAnual(d);
   const horas = horasEconomizadasMes(d);
@@ -73,9 +121,9 @@ export default function PropostaComercialTab() {
         <Card>
           <CardHeader className="pb-3"><CardTitle className="text-base">Operação</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-3 gap-3">
-            <F label="Lojas"><Input type="number" min={1} max={10} value={d.lojas} onChange={(e) => set("lojas", Math.min(10, Math.max(1, num(e.target.value))))} /></F>
-            <F label="Itens/cotação"><Input type="number" min={1} value={d.itensPorCotacao} onChange={(e) => set("itensPorCotacao", num(e.target.value))} /></F>
-            <F label="Cotações/semana"><Input type="number" min={0} value={d.cotacoesPorSemana} onChange={(e) => set("cotacoesPorSemana", num(e.target.value))} /></F>
+            <F label="Lojas"><NumInput inteiro min={1} max={100} value={d.lojas} onChange={(n) => set("lojas", n)} /></F>
+            <F label="Itens/cotação"><NumInput inteiro min={1} max={10000} value={d.itensPorCotacao} onChange={(n) => set("itensPorCotacao", n)} /></F>
+            <F label="Cotações/semana"><NumInput decimal min={0} max={50} value={d.cotacoesPorSemana} onChange={(n) => set("cotacoesPorSemana", n)} /></F>
           </CardContent>
         </Card>
 
@@ -90,9 +138,9 @@ export default function PropostaComercialTab() {
               ))}
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <F label="Anual à vista (R$)"><Input type="number" value={d.anual} onChange={(e) => setD((s) => ({ ...s, anual: num(e.target.value), presetId: "custom" }))} /></F>
-              <F label="Mensal (R$)"><Input type="number" value={d.mensal} onChange={(e) => setD((s) => ({ ...s, mensal: num(e.target.value), presetId: "custom" }))} /></F>
-              <F label="Implantação (R$)"><Input type="number" value={d.implantacao} onChange={(e) => setD((s) => ({ ...s, implantacao: num(e.target.value), presetId: "custom" }))} /></F>
+              <F label="Anual à vista (R$)"><NumInput decimal min={0} value={d.anual} onChange={(n) => setPreco("anual", n)} /></F>
+              <F label="Mensal (R$)"><NumInput decimal min={0} value={d.mensal} onChange={(n) => setPreco("mensal", n)} /></F>
+              <F label="Implantação (R$)"><NumInput decimal min={0} value={d.implantacao} onChange={(n) => setPreco("implantacao", n)} /></F>
             </div>
           </CardContent>
         </Card>
@@ -100,7 +148,7 @@ export default function PropostaComercialTab() {
         <Card>
           <CardHeader className="pb-3"><CardTitle className="text-base">Fechamento</CardTitle></CardHeader>
           <CardContent className="grid sm:grid-cols-3 gap-3">
-            <F label="Validade (dias)"><Input type="number" min={1} value={d.validadeDias} onChange={(e) => set("validadeDias", Math.max(1, num(e.target.value)))} /></F>
+            <F label="Validade (dias)"><NumInput inteiro min={1} max={365} value={d.validadeDias} onChange={(n) => set("validadeDias", n)} /></F>
             <F label="Chave Pix"><Input value={d.pix} onChange={(e) => set("pix", e.target.value)} placeholder="CNPJ, e-mail ou celular" /></F>
             <F label="WhatsApp de contato"><Input value={d.contato} onChange={(e) => set("contato", e.target.value)} /></F>
           </CardContent>
