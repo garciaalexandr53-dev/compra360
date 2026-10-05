@@ -201,44 +201,53 @@ const AppFuncionariosPublic = () => {
     const params = new URLSearchParams(window.location.search);
     return params.get("loja") || "";
   }, []);
+  const selectedLojaIdInicialPresente = () =>
+    typeof window !== "undefined" &&
+    (isLojaIdValido(new URLSearchParams(window.location.search).get("loja")) || !!lerLojaSync());
   const lojaFromUrl = !!urlLojaId;
 
   const [selectedLojaId, setSelectedLojaId] = useState<string>(() => {
     if (typeof window === "undefined") return "";
     const lojaFromLink = new URLSearchParams(window.location.search).get("loja") || "";
-    let lojaPersistida = "";
-    try {
-      // Navegador com armazenamento bloqueado (modo privado/webview) lança aqui.
-      lojaPersistida = window.localStorage.getItem("funcionarios_loja_id") || "";
-    } catch {
-      lojaPersistida = "";
-    }
-    return lojaFromLink || lojaPersistida;
+    return isLojaIdValido(lojaFromLink) ? lojaFromLink : lerLojaSync();
   });
+  const [buscandoLojaSalva, setBuscandoLojaSalva] = useState(() => !selectedLojaIdInicialPresente());
+  const [codigoLoja, setCodigoLoja] = useState("");
+  const [validandoCodigo, setValidandoCodigo] = useState(false);
+  const [erroCodigo, setErroCodigo] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
 
-
-
-
-  
   const productsListRef = useRef<HTMLDivElement | null>(null);
   const itemsListRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (urlLojaId && urlLojaId !== selectedLojaId) {
+    if (isLojaIdValido(urlLojaId) && urlLojaId !== selectedLojaId) {
       setSelectedLojaId(urlLojaId);
     }
   }, [urlLojaId, selectedLojaId]);
 
+  // Último recurso: recupera a loja do IndexedDB se os outros foram apagados.
+  useEffect(() => {
+    if (selectedLojaId) {
+      setBuscandoLojaSalva(false);
+      return;
+    }
+    let ativo = true;
+    lerLojaIndexedDb().then((id) => {
+      if (!ativo) return;
+      if (id) setSelectedLojaId(id);
+      setBuscandoLojaSalva(false);
+    });
+    return () => {
+      ativo = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!selectedLojaId) return;
-
-    try {
-      window.localStorage.setItem("funcionarios_loja_id", selectedLojaId);
-    } catch {
-      /* armazenamento bloqueado — segue sem persistir a loja */
-    }
+    gravarLoja(selectedLojaId);
 
     const params = new URLSearchParams(window.location.search);
     if (!params.get("loja")) {
@@ -247,6 +256,27 @@ const AppFuncionariosPublic = () => {
       window.history.replaceState({}, "", `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}`);
     }
   }, [selectedLojaId]);
+
+  const entrarComCodigo = async () => {
+    setErroCodigo("");
+    const limpo = codigoLoja.replace(/[^0-9a-zA-Z]/g, "");
+    if (limpo.length !== 8 && limpo.length !== 14) {
+      setErroCodigo("Digite o código de 8 caracteres ou o CNPJ (14 números).");
+      return;
+    }
+    setValidandoCodigo(true);
+    try {
+      const { data, error } = await supabase.rpc("resolver_loja_por_codigo" as never, { _codigo: limpo } as never);
+      const id = (data as unknown as string | null) || "";
+      if (error || !isLojaIdValido(id)) {
+        setErroCodigo("Loja não encontrada. Confira o código com seu gerente.");
+        return;
+      }
+      setSelectedLojaId(id);
+    } finally {
+      setValidandoCodigo(false);
+    }
+  };
 
   const { ultimaCompra: ultimaCompraFunc } = useUltimaCompra({
     lojaId: selectedLojaId || null,
