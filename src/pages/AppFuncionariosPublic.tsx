@@ -18,6 +18,7 @@ import SearchInputComScanner from "@/components/shared/SearchInputComScanner";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
 import { normalizarEan } from "@/lib/ean";
 import InstallAppDialog from "@/components/InstallAppDialog";
+import { gravarLoja, isLojaIdValido, lerLojaIndexedDb, lerLojaSync } from "@/lib/lojaPersistida";
 
 interface ItemEntry {
   nome: string;
@@ -201,44 +202,53 @@ const AppFuncionariosPublic = () => {
     const params = new URLSearchParams(window.location.search);
     return params.get("loja") || "";
   }, []);
+  const selectedLojaIdInicialPresente = () =>
+    typeof window !== "undefined" &&
+    (isLojaIdValido(new URLSearchParams(window.location.search).get("loja")) || !!lerLojaSync());
   const lojaFromUrl = !!urlLojaId;
 
   const [selectedLojaId, setSelectedLojaId] = useState<string>(() => {
     if (typeof window === "undefined") return "";
     const lojaFromLink = new URLSearchParams(window.location.search).get("loja") || "";
-    let lojaPersistida = "";
-    try {
-      // Navegador com armazenamento bloqueado (modo privado/webview) lança aqui.
-      lojaPersistida = window.localStorage.getItem("funcionarios_loja_id") || "";
-    } catch {
-      lojaPersistida = "";
-    }
-    return lojaFromLink || lojaPersistida;
+    return isLojaIdValido(lojaFromLink) ? lojaFromLink : lerLojaSync();
   });
+  const [buscandoLojaSalva, setBuscandoLojaSalva] = useState(() => !selectedLojaIdInicialPresente());
+  const [codigoLoja, setCodigoLoja] = useState("");
+  const [validandoCodigo, setValidandoCodigo] = useState(false);
+  const [erroCodigo, setErroCodigo] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
 
-
-
-
-  
   const productsListRef = useRef<HTMLDivElement | null>(null);
   const itemsListRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (urlLojaId && urlLojaId !== selectedLojaId) {
+    if (isLojaIdValido(urlLojaId) && urlLojaId !== selectedLojaId) {
       setSelectedLojaId(urlLojaId);
     }
   }, [urlLojaId, selectedLojaId]);
 
+  // Último recurso: recupera a loja do IndexedDB se os outros foram apagados.
+  useEffect(() => {
+    if (selectedLojaId) {
+      setBuscandoLojaSalva(false);
+      return;
+    }
+    let ativo = true;
+    lerLojaIndexedDb().then((id) => {
+      if (!ativo) return;
+      if (id) setSelectedLojaId(id);
+      setBuscandoLojaSalva(false);
+    });
+    return () => {
+      ativo = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!selectedLojaId) return;
-
-    try {
-      window.localStorage.setItem("funcionarios_loja_id", selectedLojaId);
-    } catch {
-      /* armazenamento bloqueado — segue sem persistir a loja */
-    }
+    gravarLoja(selectedLojaId);
 
     const params = new URLSearchParams(window.location.search);
     if (!params.get("loja")) {
@@ -247,6 +257,27 @@ const AppFuncionariosPublic = () => {
       window.history.replaceState({}, "", `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}`);
     }
   }, [selectedLojaId]);
+
+  const entrarComCodigo = async () => {
+    setErroCodigo("");
+    const limpo = codigoLoja.replace(/[^0-9a-zA-Z]/g, "");
+    if (limpo.length !== 8 && limpo.length !== 14) {
+      setErroCodigo("Digite o código de 8 caracteres ou o CNPJ (14 números).");
+      return;
+    }
+    setValidandoCodigo(true);
+    try {
+      const { data, error } = await supabase.rpc("resolver_loja_por_codigo" as never, { _codigo: limpo } as never);
+      const id = (data as unknown as string | null) || "";
+      if (error || !isLojaIdValido(id)) {
+        setErroCodigo("Loja não encontrada. Confira o código com seu gerente.");
+        return;
+      }
+      setSelectedLojaId(id);
+    } finally {
+      setValidandoCodigo(false);
+    }
+  };
 
   const { ultimaCompra: ultimaCompraFunc } = useUltimaCompra({
     lojaId: selectedLojaId || null,
@@ -686,22 +717,48 @@ const AppFuncionariosPublic = () => {
   }
 
   // Sem loja no link nem vinculada a este aparelho: nunca listar lojas — orientar.
+  if (!selectedLojaId && buscandoLojaSalva) {
+    return <div className="min-h-[100dvh] bg-background" />;
+  }
+
   if (!selectedLojaId) {
     return (
       <div className="min-h-[100dvh] bg-background flex items-center justify-center p-6">
         <Sonner />
-        <div className="max-w-sm text-center space-y-3">
+        <div className="max-w-sm w-full text-center space-y-4">
           <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
             <MapPin className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-lg font-bold">Abra pelo link da sua loja</h1>
+          <h1 className="text-lg font-bold">Qual é a sua loja?</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Este app precisa saber para qual loja você está registrando os itens. Abra o link de
-            reposição enviado pelo seu gerente no WhatsApp.
+            Digite o código da loja ou o CNPJ. Seu gerente encontra o código no sistema, na aba Funcionários.
           </p>
+          <form
+            className="space-y-2 text-left"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void entrarComCodigo();
+            }}
+          >
+            <Input
+              value={codigoLoja}
+              onChange={(e) => {
+                setCodigoLoja(e.target.value);
+                setErroCodigo("");
+              }}
+              placeholder="Ex.: 7a010bb6 ou 00.000.000/0001-00"
+              autoCapitalize="none"
+              autoCorrect="off"
+              className="h-12 text-base"
+              aria-label="Código da loja ou CNPJ"
+            />
+            {erroCodigo && <p className="text-xs text-destructive">{erroCodigo}</p>}
+            <Button type="submit" className="w-full h-12" disabled={validandoCodigo || !codigoLoja.trim()}>
+              {validandoCodigo ? "Verificando..." : "Entrar na loja"}
+            </Button>
+          </form>
           <p className="text-xs text-muted-foreground">
-            Se você instalou o ícone antes, apague-o e instale de novo a partir do link recebido
-            (no iPhone, pelo Safari: Compartilhar → Adicionar à Tela de Início).
+            Ou abra o link de reposição enviado pelo seu gerente no WhatsApp.
           </p>
           <a
             href="https://wa.me/5544984483553?text=Preciso%20de%20ajuda%20com%20o%20app%20de%20Reposi%C3%A7%C3%A3o"

@@ -1902,6 +1902,7 @@ export type Database = {
         Returns: string
       }
       registrar_skip_cnpj: { Args: { _token: string }; Returns: boolean }
+      resolver_loja_por_codigo: { Args: { _codigo: string }; Returns: string }
       salvar_dados_fornecedor: {
         Args: {
           _cidades?: Json

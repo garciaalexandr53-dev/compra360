@@ -725,7 +725,8 @@ const FuncionariosPage = () => {
       `*Para instalar o ícone na tela:*\n` +
       `📱 iPhone: toque no link → se abrir dentro do WhatsApp, escolha *Abrir no Safari* → Compartilhar (quadrado com seta) → *Adicionar à Tela de Início*.\n` +
       `🤖 Android: toque no link → menu (3 pontinhos) → *Instalar aplicativo* ou *Adicionar à tela inicial*.\n\n` +
-      `⚠️ Se já tinha o ícone antigo, apague e instale de novo por este link.`;
+      `⚠️ Se já tinha o ícone antigo, apague e instale de novo por este link.\n\n` +
+      `🔑 Se o app pedir a loja, digite o código: *${effectiveLinkLojaId.replace(/-/g, "").slice(0, 8)}*`;
     window.open(buildWhatsAppUrl(null, msg), "_blank");
   };
 
