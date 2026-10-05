@@ -154,7 +154,8 @@ export async function exportCotacaoToPdf(
   let y = 36;
   if (logo) {
     try {
-      doc.addImage(logo, "PNG", 36, y, 90, 28, undefined, "FAST");
+      // Logo 3:2 — manter proporção
+      doc.addImage(logo, "PNG", 36, y - 4, 54, 36, undefined, "FAST");
     } catch {
       // ignore
     }
