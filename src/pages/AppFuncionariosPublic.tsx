@@ -18,6 +18,7 @@ import SearchInputComScanner from "@/components/shared/SearchInputComScanner";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
 import { normalizarEan } from "@/lib/ean";
 import InstallAppDialog from "@/components/InstallAppDialog";
+import { gravarLoja, isLojaIdValido, lerLojaIndexedDb, lerLojaSync } from "@/lib/lojaPersistida";
 
 interface ItemEntry {
   nome: string;
@@ -716,22 +717,48 @@ const AppFuncionariosPublic = () => {
   }
 
   // Sem loja no link nem vinculada a este aparelho: nunca listar lojas — orientar.
+  if (!selectedLojaId && buscandoLojaSalva) {
+    return <div className="min-h-[100dvh] bg-background" />;
+  }
+
   if (!selectedLojaId) {
     return (
       <div className="min-h-[100dvh] bg-background flex items-center justify-center p-6">
         <Sonner />
-        <div className="max-w-sm text-center space-y-3">
+        <div className="max-w-sm w-full text-center space-y-4">
           <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
             <MapPin className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-lg font-bold">Abra pelo link da sua loja</h1>
+          <h1 className="text-lg font-bold">Qual é a sua loja?</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Este app precisa saber para qual loja você está registrando os itens. Abra o link de
-            reposição enviado pelo seu gerente no WhatsApp.
+            Digite o código da loja ou o CNPJ. Seu gerente encontra o código no sistema, na aba Funcionários.
           </p>
+          <form
+            className="space-y-2 text-left"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void entrarComCodigo();
+            }}
+          >
+            <Input
+              value={codigoLoja}
+              onChange={(e) => {
+                setCodigoLoja(e.target.value);
+                setErroCodigo("");
+              }}
+              placeholder="Ex.: 7a010bb6 ou 00.000.000/0001-00"
+              autoCapitalize="none"
+              autoCorrect="off"
+              className="h-12 text-base"
+              aria-label="Código da loja ou CNPJ"
+            />
+            {erroCodigo && <p className="text-xs text-destructive">{erroCodigo}</p>}
+            <Button type="submit" className="w-full h-12" disabled={validandoCodigo || !codigoLoja.trim()}>
+              {validandoCodigo ? "Verificando..." : "Entrar na loja"}
+            </Button>
+          </form>
           <p className="text-xs text-muted-foreground">
-            Se você instalou o ícone antes, apague-o e instale de novo a partir do link recebido
-            (no iPhone, pelo Safari: Compartilhar → Adicionar à Tela de Início).
+            Ou abra o link de reposição enviado pelo seu gerente no WhatsApp.
           </p>
           <a
             href="https://wa.me/5544984483553?text=Preciso%20de%20ajuda%20com%20o%20app%20de%20Reposi%C3%A7%C3%A3o"
