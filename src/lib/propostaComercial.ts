@@ -96,3 +96,16 @@ export function mensagemWhatsApp(d: PropostaDados, hoje = new Date()): string {
     `Proposta válida até ${dataBR(dataValidade(hoje, d.validadeDias))}. O PDF completo vai em anexo.`,
   ].join("\n");
 }
+
+/** Converte "1.500", "1.500,50", "300,5" ou "300.5" em número. Vazio → null. */
+export function parseNumeroCampo(raw: string): number | null {
+  const s = raw.trim();
+  if (!s) return null;
+  let norm: string;
+  if (s.includes(",")) norm = s.replace(/\./g, "").replace(",", ".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) norm = s.replace(/\./g, "");
+  else norm = s;
+  const n = Number(norm);
+  return Number.isFinite(n) ? n : null;
+}
+

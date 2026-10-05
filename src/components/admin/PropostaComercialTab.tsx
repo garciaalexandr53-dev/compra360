@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { Download, Copy, MessageCircle, Loader2, RotateCcw } from "lucide-react";
 import {
   PRESETS_PROPOSTA, PROPOSTA_PADRAO, PropostaDados, economiaAnual, horasEconomizadasMes,
-  mensagemWhatsApp, brl, dataBR, dataValidade,
+  mensagemWhatsApp, brl, dataBR, dataValidade, parseNumeroCampo,
 } from "@/lib/propostaComercial";
 import { baixarPropostaPdf } from "@/lib/propostaComercialPdf";
 
@@ -16,18 +16,6 @@ const KEY = "admin-proposta-comercial";
 
 function F({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="space-y-1.5"><Label className="text-xs">{label}</Label>{children}</div>;
-}
-
-/** Converte "1.500", "1.500,50", "300,5" ou "300.5" em número. Vazio → null. */
-export function parseNumeroCampo(raw: string): number | null {
-  const s = raw.trim();
-  if (!s) return null;
-  let norm: string;
-  if (s.includes(",")) norm = s.replace(/\./g, "").replace(",", ".");
-  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) norm = s.replace(/\./g, "");
-  else norm = s;
-  const n = Number(norm);
-  return Number.isFinite(n) ? n : null;
 }
 
 const fmtCampo = (n: number) => (Number.isFinite(n) ? String(n).replace(".", ",") : "");
