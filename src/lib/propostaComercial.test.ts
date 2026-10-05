@@ -17,3 +17,11 @@ describe("proposta comercial", () => {
     expect(horasEconomizadasMes({ itensPorCotacao: 180, lojas: 3, cotacoesPorSemana: 2 })).toBe(135);
   });
 });
+
+import { parseNumeroCampo } from "./propostaComercial";
+describe("parseNumeroCampo", () => {
+  it("campo vazio vira null (permite apagar tudo)", () => expect(parseNumeroCampo("")).toBeNull());
+  it("1.500 = mil e quinhentos", () => expect(parseNumeroCampo("1.500")).toBe(1500));
+  it("2.490,50 com vírgula decimal", () => expect(parseNumeroCampo("2.490,50")).toBe(2490.5));
+  it("180 itens", () => expect(parseNumeroCampo("180")).toBe(180));
+});
