@@ -18,6 +18,65 @@ function F({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="space-y-1.5"><Label className="text-xs">{label}</Label>{children}</div>;
 }
 
+/** Converte "1.500", "1.500,50", "300,5" ou "300.5" em número. Vazio → null. */
+export function parseNumeroCampo(raw: string): number | null {
+  const s = raw.trim();
+  if (!s) return null;
+  let norm: string;
+  if (s.includes(",")) norm = s.replace(/\./g, "").replace(",", ".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) norm = s.replace(/\./g, "");
+  else norm = s;
+  const n = Number(norm);
+  return Number.isFinite(n) ? n : null;
+}
+
+const fmtCampo = (n: number) => (Number.isFinite(n) ? String(n).replace(".", ",") : "");
+
+/**
+ * Campo numérico que deixa apagar tudo e digitar livremente.
+ * O texto fica local enquanto digita; o valor só é limitado (mín/máx) ao sair do campo.
+ */
+function NumInput({
+  value, onChange, min = 0, max, inteiro = false, decimal = false,
+}: {
+  value: number; onChange: (n: number) => void; min?: number; max?: number; inteiro?: boolean; decimal?: boolean;
+}) {
+  const [txt, setTxt] = useState(fmtCampo(value));
+  const [focado, setFocado] = useState(false);
+
+  // Sincroniza quando o valor muda por fora (preset, limpar), sem atrapalhar a digitação.
+  useEffect(() => { if (!focado) setTxt(fmtCampo(value)); }, [value, focado]);
+
+  const limitar = (n: number) => {
+    let r = inteiro ? Math.round(n) : n;
+    if (r < min) r = min;
+    if (max != null && r > max) r = max;
+    return r;
+  };
+
+  return (
+    <Input
+      type="text"
+      inputMode={decimal ? "decimal" : "numeric"}
+      value={txt}
+      onFocus={(e) => { setFocado(true); e.currentTarget.select(); }}
+      onChange={(e) => {
+        const limpo = e.target.value.replace(decimal ? /[^\d.,]/g : /\D/g, "");
+        setTxt(limpo);
+        const n = parseNumeroCampo(limpo);
+        if (n != null && n >= min && (max == null || n <= max)) onChange(inteiro ? Math.round(n) : n);
+      }}
+      onBlur={() => {
+        setFocado(false);
+        const n = parseNumeroCampo(txt);
+        const final = limitar(n ?? value);
+        onChange(final);
+        setTxt(fmtCampo(final));
+      }}
+    />
+  );
+}
+
 export default function PropostaComercialTab() {
   const [d, setD] = useState<PropostaDados>(() => {
     try { return { ...PROPOSTA_PADRAO, ...JSON.parse(localStorage.getItem(KEY) || "{}") }; }
@@ -28,7 +87,8 @@ export default function PropostaComercialTab() {
   useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch { /* ignore */ } }, [d]);
 
   const set = <K extends keyof PropostaDados>(k: K, v: PropostaDados[K]) => setD((p) => ({ ...p, [k]: v }));
-  const num = (v: string) => Math.max(0, Number(v.replace(",", ".")) || 0);
+  const setPreco = (k: "anual" | "mensal" | "implantacao", v: number) =>
+    setD((s) => (s[k] === v ? s : { ...s, [k]: v, presetId: "custom" }));
 
   const eco = economiaAnual(d);
   const horas = horasEconomizadasMes(d);
