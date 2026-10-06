@@ -701,6 +701,7 @@ const FuncionariosPage = () => {
   const appUrl = effectiveLinkLojaId
     ? `${baseUrl}?loja=${effectiveLinkLojaId}`
     : baseUrl;
+  const codigoLoja = (effectiveLinkLojaId || "").replace(/-/g, "").slice(0, 8);
 
   const copyLink = () => {
     if (!effectiveLinkLojaId) {
@@ -726,7 +727,7 @@ const FuncionariosPage = () => {
       `📱 iPhone: toque no link → se abrir dentro do WhatsApp, escolha *Abrir no Safari* → Compartilhar (quadrado com seta) → *Adicionar à Tela de Início*.\n` +
       `🤖 Android: toque no link → menu (3 pontinhos) → *Instalar aplicativo* ou *Adicionar à tela inicial*.\n\n` +
       `⚠️ Se já tinha o ícone antigo, apague e instale de novo por este link.\n\n` +
-      `🔑 Se o app pedir a loja, digite o código: *${effectiveLinkLojaId.replace(/-/g, "").slice(0, 8)}*`;
+      `🔑 Se o app pedir a loja, digite o código: *${codigoLoja}*`;
     window.open(buildWhatsAppUrl(null, msg), "_blank");
   };
 
@@ -794,6 +795,26 @@ const FuncionariosPage = () => {
                 <span className="text-sm">WhatsApp</span>
               </Button>
             </div>
+            {effectiveLinkLojaId && (
+              <div className="flex items-center justify-between gap-2 rounded-lg border border-dashed bg-muted/40 px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground leading-tight">Código da loja (se o app pedir)</p>
+                  <p className="font-mono text-base font-bold tracking-widest text-foreground">{codigoLoja}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1 shrink-0"
+                  onClick={() => {
+                    navigator.clipboard.writeText(codigoLoja);
+                    toast.success("Código copiado!");
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  <span className="text-xs">Copiar código</span>
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
