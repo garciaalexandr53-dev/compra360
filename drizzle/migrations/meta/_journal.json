@@ -22,6 +22,13 @@
       "when": 1791225312865,
       "tag": "0002_resolver_loja_por_codigo",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791302354485,
+      "tag": "0003_rede_limpa_fichas_desvinculadas",
+      "breakpoints": true
     }
   ]
 }
