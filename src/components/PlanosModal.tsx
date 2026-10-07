@@ -8,6 +8,7 @@ import { STRIPE_PRICES, getStripePriceId, type Periodo } from "@/lib/stripePrice
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import { mensagemErroFuncao } from "@/lib/functionError";
+import { abrirLinkExterno } from "@/lib/abrirLinkExterno";
 import { PLAN_PRICES } from "@/lib/planPrices";
 import { cn } from "@/lib/utils";
 
@@ -76,7 +77,7 @@ export default function PlanosModal({ open, onClose }: PlanosModalProps) {
       });
       if (error) throw error;
       if (data?.url) {
-        window.open(data.url, "_blank");
+        abrirLinkExterno(data.url);
       } else {
         throw new Error("URL de checkout não retornada");
       }
@@ -93,7 +94,7 @@ export default function PlanosModal({ open, onClose }: PlanosModalProps) {
       const { data, error } = await supabase.functions.invoke("customer-portal");
       if (error) throw error;
       if (data?.url) {
-        window.open(data.url, "_blank");
+        abrirLinkExterno(data.url);
       } else {
         throw new Error("URL do portal não retornada");
       }
