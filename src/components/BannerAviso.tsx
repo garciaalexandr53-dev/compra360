@@ -8,6 +8,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import PlanosModal from "@/components/PlanosModal";
 import { toast } from "sonner";
 import { mensagemErroFuncao } from "@/lib/functionError";
+import { abrirLinkExterno } from "@/lib/abrirLinkExterno";
 
 const DISMISS_KEY = "banner_trial_dismissed_session";
 
@@ -61,7 +62,7 @@ export default function BannerAviso() {
       const { data, error } = await supabase.functions.invoke("customer-portal");
       if (error) throw error;
       if (data?.url) {
-        window.open(data.url, "_blank");
+        abrirLinkExterno(data.url);
       } else {
         throw new Error("URL do portal não retornada");
       }
