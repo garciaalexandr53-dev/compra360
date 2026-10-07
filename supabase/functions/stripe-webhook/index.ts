@@ -9,6 +9,7 @@ import {
   periodEnd,
   mapStatus,
 } from "../_shared/stripeTiers.ts";
+import { calcularPeriodoPix } from "../_shared/pixAnual.ts";
 
 
 
@@ -126,11 +127,54 @@ serve(async (req) => {
 
   };
 
+  // Pix à vista (anual): libera 365 dias como assinatura "manual"
+  const ativarPix = async (session: Stripe.Checkout.Session) => {
+    const userId = session.metadata?.user_id;
+    const tier = session.metadata?.plano;
+    if (!userId || !tier) {
+      logStep("Pix sem metadata", { id: session.id });
+      return;
+    }
+    const { data: plan } = await supabase.from("plans").select("id").eq("name", tier).single();
+    if (!plan?.id) return;
+    const { data: existing } = await supabase
+      .from("subscriptions")
+      .select("id, current_period_end, status, stripe_subscription_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    // Idempotência: mesma sessão já processada
+    if (existing?.stripe_subscription_id === session.id) return;
+    const ativo = existing && (existing.status === "active" || existing.status === "trialing");
+    const { inicio, fim } = calcularPeriodoPix(new Date(), ativo ? existing.current_period_end : null);
+    const payload: Record<string, unknown> = {
+      plan_id: plan.id,
+      status: "active",
+      origem: "manual",
+      ciclo: "anual",
+      metodo_pagamento: "pix",
+      valor_pago: (session.amount_total ?? 0) / 100,
+      stripe_customer_id: (session.customer as string) ?? null,
+      stripe_subscription_id: session.id,
+      current_period_start: inicio,
+      current_period_end: fim,
+      canceled_at: null,
+      observacao: "Pix à vista via Stripe",
+      updated_at: new Date().toISOString(),
+    };
+    if (existing) await supabase.from("subscriptions").update(payload).eq("id", existing.id);
+    else await supabase.from("subscriptions").insert({ ...payload, user_id: userId });
+    logStep("Pix ativado", { userId, tier, fim });
+  };
+
   try {
     switch (event.type) {
-      case "checkout.session.completed": {
+      case "checkout.session.completed":
+      case "checkout.session.async_payment_succeeded": {
         const session = event.data.object as Stripe.Checkout.Session;
-        if (session.subscription) {
+        if (session.mode === "payment" && session.metadata?.origem === "pix") {
+          if (session.payment_status === "paid") await ativarPix(session);
+          else logStep("Pix aguardando pagamento", { id: session.id });
+        } else if (session.subscription) {
           const sub = await stripe.subscriptions.retrieve(session.subscription as string);
           await upsertSubscription(sub);
         }

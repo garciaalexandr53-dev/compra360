@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { getAuthUser } from "../_shared/getAuthUser.ts";
+import { pixPriceFor, PIX_PRICES } from "../_shared/pixAnual.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,9 +17,8 @@ serve(async (req) => {
     const user = await getAuthUser(req);
     console.log("[CREATE-CHECKOUT] user", user.id);
 
-    const { priceId } = await req.json();
-    if (!priceId) throw new Error("priceId is required");
-
+    const { priceId, metodo } = await req.json();
+    if (!priceId || typeof priceId !== "string") throw new Error("priceId is required");
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
@@ -33,15 +33,36 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://compra360.lovable.app";
 
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      customer_email: customerId ? undefined : user.email,
-      line_items: [{ price: priceId, quantity: 1 }],
-      mode: "subscription",
-      success_url: `${origin}/dashboard?checkout=success`,
-      cancel_url: `${origin}/dashboard?checkout=cancel`,
-      metadata: { user_id: user.id },
-    });
+    let session;
+    if (metodo === "pix") {
+      const pixPrice = pixPriceFor(priceId);
+      if (!pixPrice) {
+        return new Response(JSON.stringify({ error: "Pix disponível apenas no plano anual" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+      session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        customer_email: customerId ? undefined : user.email,
+        line_items: [{ price: pixPrice, quantity: 1 }],
+        mode: "payment",
+        payment_method_types: ["pix"],
+        success_url: `${origin}/dashboard?checkout=success`,
+        cancel_url: `${origin}/dashboard?checkout=cancel`,
+        metadata: { user_id: user.id, plano: PIX_PRICES[pixPrice], origem: "pix" },
+      });
+    } else {
+      session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        customer_email: customerId ? undefined : user.email,
+        line_items: [{ price: priceId, quantity: 1 }],
+        mode: "subscription",
+        success_url: `${origin}/dashboard?checkout=success`,
+        cancel_url: `${origin}/dashboard?checkout=cancel`,
+        metadata: { user_id: user.id },
+      });
+    }
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
