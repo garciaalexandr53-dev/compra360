@@ -68,12 +68,12 @@ export default function PlanosModal({ open, onClose }: PlanosModalProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [periodo, setPeriodo] = useState<Periodo>("mensal");
 
-  const handleCheckout = async (planKey: "pro" | "business") => {
-    setLoading(planKey);
+  const handleCheckout = async (planKey: "pro" | "business", metodo: "cartao" | "pix" = "cartao") => {
+    setLoading(metodo === "pix" ? `${planKey}-pix` : planKey);
     try {
       const priceId = getStripePriceId(planKey, periodo);
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { priceId },
+        body: { priceId, metodo },
       });
       if (error) throw error;
       if (data?.url) {
@@ -190,6 +190,11 @@ export default function PlanosModal({ open, onClose }: PlanosModalProps) {
             </button>
           </div>
         </div>
+        {periodo === "anual" && (
+          <p className="text-center text-xs text-muted-foreground mt-2">
+            Aceitamos Cartão e Pix à vista no plano anual
+          </p>
+        )}
 
         <div className="grid gap-4 md:grid-cols-3 mt-4">
           {plans.map((p) => {
@@ -255,17 +260,33 @@ export default function PlanosModal({ open, onClose }: PlanosModalProps) {
                     {p.key !== "free" && <ExternalLink className="h-3 w-3 ml-1" />}
                   </Button>
                 ) : isUpgrade ? (
-                  <Button
-                    size="sm"
-                    className="w-full text-xs"
-                    disabled={loading === p.key}
-                    onClick={() => handleCheckout(p.key as "pro" | "business")}
-                  >
-                    {loading === p.key ? (
-                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                    ) : null}
-                    Assinar {p.name}
-                  </Button>
+                  <div className="space-y-2">
+                    <Button
+                      size="sm"
+                      className="w-full text-xs"
+                      disabled={loading === p.key}
+                      onClick={() => handleCheckout(p.key as "pro" | "business")}
+                    >
+                      {loading === p.key ? (
+                        <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                      ) : null}
+                      {periodo === "anual" ? "Assinar com Cartão" : `Assinar ${p.name}`}
+                    </Button>
+                    {periodo === "anual" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full text-xs"
+                        disabled={loading === `${p.key}-pix`}
+                        onClick={() => handleCheckout(p.key as "pro" | "business", "pix")}
+                      >
+                        {loading === `${p.key}-pix` ? (
+                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                        ) : null}
+                        Pagar com Pix à vista
+                      </Button>
+                    )}
+                  </div>
                 ) : (
                   <Button size="sm" variant="ghost" className="w-full text-xs" disabled>
                     —
