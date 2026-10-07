@@ -29,6 +29,13 @@
       "when": 1791302354485,
       "tag": "0003_rede_limpa_fichas_desvinculadas",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791387167270,
+      "tag": "0004_desvincular_parceiro_fichas_de_loja",
+      "breakpoints": true
     }
   ]
 }
