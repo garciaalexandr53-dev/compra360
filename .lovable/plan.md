@@ -14,7 +14,7 @@ O Pix do Stripe liberado para você não é recorrente. Por isso, ele não serve
    - Para `pix`, permite somente `pro_anual` e `business_anual`. Qualquer outro preço retorna erro 400.
    - Cria a sessão com `mode: "payment"`, `payment_method_types: ["pix"]`, o mesmo `price` anual e `metadata { user_id, plano, origem: "pix" }`.
    - Para cartão, mantém o fluxo atual em `mode: "subscription"`, sem mudanças.
-   - Preço único: confirmar se os preços anuais (recorrentes) podem ser usados em `mode: payment`. Se o Stripe recusar, criar 2 preços únicos (Pro R$ 479 e Business R$ 869) nos mesmos produtos e mapeá-los em `stripeTiers.ts` e `stripePrices.ts`.
+   - Preço à vista: o Stripe não aceita preço recorrente em `mode: payment`. Não será criado nenhum produto novo. Serão adicionados 2 preços avulsos aos produtos anuais que já existem: Pro R$ 479 e Business R$ 869. Esses preços serão mapeados em `stripeTiers.ts` e `stripePrices.ts`.
 2. **stripe-webhook**:
    - Em `checkout.session.completed` com `mode === "payment"` e `payment_status === "paid"`, e também em `checkout.session.async_payment_succeeded`, fazer upsert em `subscriptions`: plano pela metadata, `status: active`, `origem: "manual"`, `current_period_start = agora` e `current_period_end = +365 dias`.
    - Se já houver um período ativo, somar os 365 dias a partir do fim atual.
