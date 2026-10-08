@@ -6,6 +6,7 @@ import { CheckCircle2, Clock, SkipForward, Smartphone } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { buildWhatsAppUrl, prazoBloco, buildCotacaoMensagem } from "@/lib/format";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Fornecedor = Tables<"fornecedores">;
 
@@ -22,6 +23,9 @@ const STORAGE_KEY = "send-queue-state";
 
 const SendQueueModal = ({ open, onOpenChange, fornecedores, onConclude, prazoIso }: Props & { onConclude?: () => void }) => {
   const { lojaAtiva } = useLojaAtiva();
+  const qc = useQueryClient();
+  // Garante prazo atualizado ao abrir a fila (evita cache antigo sem horário)
+  useEffect(() => { if (open) qc.invalidateQueries({ queryKey: ["cotacao-ativa"] }); }, [open, qc]);
 
   const [statuses, setStatuses] = useState<Record<string, Status>>(() => {
     try {
