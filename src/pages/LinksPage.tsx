@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Copy, ExternalLink, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { buildWhatsAppUrl, prazoBloco } from "@/lib/format";
+import { buildWhatsAppUrl, prazoBloco, buildCotacaoMensagem } from "@/lib/format";
 import type { Tables } from "@/integrations/supabase/types";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 
@@ -103,7 +103,7 @@ const LinksPage = () => {
 
   const openWhatsApp = (f: Fornecedor) => {
     const link = getLink(f);
-    const msg = `Olá ${f.nome}! Segue o link para cotação de preços:\n\n${link}${prazoBloco((cotacaoAtiva as any)?.prazo_resposta)}\n\nPreencha os preços e envie. Obrigado!`;
+    const msg = buildCotacaoMensagem({ fornecedorNome: f.nome, lojaNome: lojaAtiva?.nome, link, prazoIso: (cotacaoAtiva as any)?.prazo_resposta });
     window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
   };
 

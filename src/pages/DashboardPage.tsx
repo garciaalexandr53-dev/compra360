@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { formatBRL, buildWhatsAppUrl, prazoBloco } from "@/lib/format";
+import { formatBRL, buildWhatsAppUrl, prazoBloco, buildCotacaoMensagem } from "@/lib/format";
 import type { Tables } from "@/integrations/supabase/types";
 
 
@@ -545,7 +545,7 @@ const DashboardPage = () => {
 
   const resendWhatsApp = (f: Fornecedor) => {
     const link = getLink(f);
-    const msg = `Olá ${f.nome}! Segue o link para cotação de preços:\n\n${link}${prazoBloco((cotacaoAtiva as any)?.prazo_resposta)}\n\nPreencha os preços e envie. Obrigado!`;
+    const msg = buildCotacaoMensagem({ fornecedorNome: f.nome, lojaNome: lojaAtiva?.nome, link, prazoIso: (cotacaoAtiva as any)?.prazo_resposta });
     window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
   };
 
@@ -1054,7 +1054,7 @@ const DashboardPage = () => {
                         key={`hint-${f.id}`}
                         onClick={() => {
                           const link = getLink(f);
-                          const msg = `Olá ${f.nome}! Vi que ainda não preencheu a cotação de preços. Segue o link novamente:\n\n${link}${prazoBloco((cotacaoAtiva as any)?.prazo_resposta)}\n\nPrecisa de ajuda? Estou à disposição!`;
+                          const msg = buildCotacaoMensagem({ fornecedorNome: f.nome, lojaNome: lojaAtiva?.nome, link, prazoIso: (cotacaoAtiva as any)?.prazo_resposta, lembrete: true });
                           window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
                         }}
                         className="w-full flex items-start gap-2 rounded-lg border border-amber-300/40 dark:border-amber-700/40 bg-amber-50/40 dark:bg-amber-950/10 py-2 px-3 text-left hover:bg-amber-100/60 dark:hover:bg-amber-900/20 transition-colors cursor-pointer"
