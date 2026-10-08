@@ -109,7 +109,7 @@ export function buildCotacaoMensagem(opts: {
   lembrete?: boolean;
 }): string {
   const loja = opts.lojaNome?.trim();
-  const ident = loja ? ` Aqui é do *${loja}*.` : "";
+  const ident = loja ? `\nAqui é do *${loja}*.` : "";
   const prazo = prazoBloco(opts.prazoIso);
   if (opts.lembrete) {
     return `Olá ${opts.fornecedorNome}!${ident} Vi que ainda não preencheu a cotação de preços. Segue o link novamente:\n\n${opts.link}${prazo}\n\nPrecisa de ajuda? Estou à disposição!`;
