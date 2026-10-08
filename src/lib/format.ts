@@ -99,3 +99,20 @@ export function prazoBloco(iso: string | null | undefined): string {
   const l = formatPrazoMensagem(iso);
   return l ? `\n\n${l}` : "";
 }
+
+/** Standard WhatsApp quote message: identifies the store and always includes the deadline when set. */
+export function buildCotacaoMensagem(opts: {
+  fornecedorNome: string;
+  lojaNome?: string | null;
+  link: string;
+  prazoIso?: string | null;
+  lembrete?: boolean;
+}): string {
+  const loja = opts.lojaNome?.trim();
+  const ident = loja ? ` Aqui é do *${loja}*.` : "";
+  const prazo = prazoBloco(opts.prazoIso);
+  if (opts.lembrete) {
+    return `Olá ${opts.fornecedorNome}!${ident} Vi que ainda não preencheu a cotação de preços. Segue o link novamente:\n\n${opts.link}${prazo}\n\nPrecisa de ajuda? Estou à disposição!`;
+  }
+  return `Olá ${opts.fornecedorNome}!${ident} Segue o link para ${loja ? "nossa " : ""}cotação de preços:\n\n${opts.link}${prazo}\n\nPreencha os preços e envie. Obrigado!`;
+}

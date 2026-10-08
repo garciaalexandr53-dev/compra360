@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Copy, ExternalLink, RefreshCw, Link2, Users, Search, MoreHorizontal, X, Phone, CheckCircle2, Clock, AlertCircle, MapPin, Send } from "lucide-react";
 import { toast } from "sonner";
-import { formatBRL, buildWhatsAppUrl, prazoBloco } from "@/lib/format";
+import { formatBRL, buildWhatsAppUrl, prazoBloco, buildCotacaoMensagem } from "@/lib/format";
 import { maskTelefone, formatTelefone, normalizeTelefone, maskMoeda, parseMoeda, moedaParaInput, maskCNPJ } from "@/lib/masks";
 import { useConsultaCNPJ } from "@/hooks/useConsultaCNPJ";
 import CnpjStatus from "@/components/CnpjStatus";
@@ -277,7 +277,7 @@ const FornecedoresPage = () => {
 
   const openWhatsApp = (f: Fornecedor) => {
     const link = getLink(f);
-    const msg = `Olá ${f.nome}! Segue o link para preencher os preços da cotação:\n${link}${prazoBloco((cotacaoAtiva as any)?.prazo_resposta)}\n\nPreencha os preços e envie. Obrigado!`;
+    const msg = buildCotacaoMensagem({ fornecedorNome: f.nome, lojaNome: lojaAtiva?.nome, link, prazoIso: (cotacaoAtiva as any)?.prazo_resposta });
     window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
   };
 
