@@ -42,6 +42,17 @@ serve(async (req) => {
           status: 400,
         });
       }
+      // Bloqueia Pix se já existe assinatura no cartão ativa (evita cobrança dupla e
+      // o plano voltar ao anterior na renovação do cartão).
+      if (customerId) {
+        const subs = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 10 });
+        const ativa = subs.data.some((s) => ["active", "trialing", "past_due"].includes(s.status));
+        if (ativa) {
+          return new Response(JSON.stringify({
+            error: "Você já tem uma assinatura no cartão. Para mudar de plano, use 'Gerenciar assinatura' ou fale com o suporte no WhatsApp (44) 98448-3553.",
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
+        }
+      }
       session = await stripe.checkout.sessions.create({
         customer: customerId,
         customer_email: customerId ? undefined : user.email,

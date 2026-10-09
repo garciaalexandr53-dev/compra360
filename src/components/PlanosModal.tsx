@@ -272,7 +272,7 @@ export default function PlanosModal({ open, onClose }: PlanosModalProps) {
                       ) : null}
                       {periodo === "anual" ? "Assinar com Cartão" : `Assinar ${p.name}`}
                     </Button>
-                    {periodo === "anual" && (
+                    {periodo === "anual" && currentPlan.plan_name === "free" && (
                       <Button
                         size="sm"
                         variant="outline"
