@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
+import { obterPrazoCotacao, lojaPronta } from "@/lib/prazoCotacao";
+import { abrirLinkExterno } from "@/lib/abrirLinkExterno";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchPrecosByCpIds } from "@/lib/supabaseHelpers";
@@ -49,7 +51,7 @@ import CockpitCard, { type CockpitAcao } from "@/components/dashboard/CockpitCar
 type Fornecedor = Tables<"fornecedores">;
 
 const DashboardPage = () => {
-  const { lojaAtiva, lojas, setLojaAtivaId } = useLojaAtiva();
+  const { lojaAtiva, lojas, setLojaAtivaId, loading: lojasLoading } = useLojaAtiva();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { checkPlan, showPlanos, setShowPlanos } = useFeatureCheck();
@@ -186,6 +188,7 @@ const DashboardPage = () => {
   // ── Core queries ──
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
+    enabled: lojaPronta(lojasLoading, lojas, lojaAtiva),
     queryFn: async () => {
       let query = supabase.from("cotacoes").select("*").eq("status", "ativa");
       if (lojaAtiva?.id) query = query.eq("loja_id", lojaAtiva.id);
@@ -543,10 +546,11 @@ const DashboardPage = () => {
     return lojaAtiva?.id ? `${base}?loja=${lojaAtiva.id}` : base;
   };
 
-  const resendWhatsApp = (f: Fornecedor) => {
+  const resendWhatsApp = async (f: Fornecedor) => {
     const link = getLink(f);
-    const msg = buildCotacaoMensagem({ fornecedorNome: f.nome, lojaNome: lojaAtiva?.nome, link, prazoIso: (cotacaoAtiva as any)?.prazo_resposta });
-    window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
+    const prazo = await obterPrazoCotacao((cotacaoAtiva as any)?.prazo_resposta, lojaAtiva?.id);
+    const msg = buildCotacaoMensagem({ fornecedorNome: f.nome, lojaNome: lojaAtiva?.nome, link, prazoIso: prazo });
+    abrirLinkExterno(buildWhatsAppUrl(f.telefone, msg));
   };
 
   const runFornSuggestion = async () => {
@@ -1052,10 +1056,11 @@ const DashboardPage = () => {
                     return (
                       <button
                         key={`hint-${f.id}`}
-                        onClick={() => {
+                        onClick={async () => {
                           const link = getLink(f);
-                          const msg = buildCotacaoMensagem({ fornecedorNome: f.nome, lojaNome: lojaAtiva?.nome, link, prazoIso: (cotacaoAtiva as any)?.prazo_resposta, lembrete: true });
-                          window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
+                          const prazo = await obterPrazoCotacao((cotacaoAtiva as any)?.prazo_resposta, lojaAtiva?.id);
+                          const msg = buildCotacaoMensagem({ fornecedorNome: f.nome, lojaNome: lojaAtiva?.nome, link, prazoIso: prazo, lembrete: true });
+                          abrirLinkExterno(buildWhatsAppUrl(f.telefone, msg));
                         }}
                         className="w-full flex items-start gap-2 rounded-lg border border-amber-300/40 dark:border-amber-700/40 bg-amber-50/40 dark:bg-amber-950/10 py-2 px-3 text-left hover:bg-amber-100/60 dark:hover:bg-amber-900/20 transition-colors cursor-pointer"
                       >

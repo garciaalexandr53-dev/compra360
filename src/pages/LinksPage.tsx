@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { obterPrazoCotacao, lojaPronta } from "@/lib/prazoCotacao";
+import { abrirLinkExterno } from "@/lib/abrirLinkExterno";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchPrecosByCpIds } from "@/lib/supabaseHelpers";
@@ -15,7 +17,7 @@ type Fornecedor = Tables<"fornecedores">;
 const LinksPage = () => {
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [selectedFornecedor, setSelectedFornecedor] = useState<Fornecedor | null>(null);
-  const { lojaAtiva } = useLojaAtiva();
+  const { lojaAtiva, loading: lojasLoading, lojas: lojasCtx } = useLojaAtiva();
 
   const { data: fornecedores = [] } = useQuery({
     queryKey: ["fornecedores"],
@@ -28,6 +30,7 @@ const LinksPage = () => {
 
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
+    enabled: lojaPronta(lojasLoading, lojasCtx, lojaAtiva),
     queryFn: async () => {
       let query = supabase.from("cotacoes").select("id, prazo_resposta").eq("status", "ativa");
       if (lojaAtiva?.id) query = query.eq("loja_id", lojaAtiva.id);
@@ -101,10 +104,11 @@ const LinksPage = () => {
     toast.success("Link copiado!");
   };
 
-  const openWhatsApp = (f: Fornecedor) => {
+  const openWhatsApp = async (f: Fornecedor) => {
     const link = getLink(f);
-    const msg = buildCotacaoMensagem({ fornecedorNome: f.nome, lojaNome: lojaAtiva?.nome, link, prazoIso: (cotacaoAtiva as any)?.prazo_resposta });
-    window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
+    const prazo = await obterPrazoCotacao((cotacaoAtiva as any)?.prazo_resposta, lojaAtiva?.id);
+    const msg = buildCotacaoMensagem({ fornecedorNome: f.nome, lojaNome: lojaAtiva?.nome, link, prazoIso: prazo });
+    abrirLinkExterno(buildWhatsAppUrl(f.telefone, msg));
   };
 
   const showLink = (f: Fornecedor) => {
