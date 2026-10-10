@@ -1,3 +1,4 @@
+import WhatsAppContato from "@/components/shared/WhatsAppContato";
 import { useEffect, useMemo, useState } from "react";
 import { parseValorBR } from "@/pages/ParceiroPage";
 import { Link, useSearchParams } from "react-router-dom";
@@ -491,18 +492,7 @@ const CadastroParceiroPage = () => {
             </Link>
           </p>
 
-          <p className="text-center text-sm text-slate-500 mt-8">
-            Dúvidas? Fale com a gente no WhatsApp
-            <br />
-            <a
-              href="https://wa.me/5544984483553"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-emerald-400 hover:underline whitespace-nowrap font-semibold"
-            >
-              (44)&nbsp;98448-3553
-            </a>
-          </p>
+          <WhatsAppContato />
         </div>
       </section>
     </div>
