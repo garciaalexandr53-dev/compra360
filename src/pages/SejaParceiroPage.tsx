@@ -1,3 +1,4 @@
+import WhatsAppContato from "@/components/shared/WhatsAppContato";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Seo from "@/components/Seo";

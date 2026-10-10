@@ -1,3 +1,4 @@
+import WhatsAppContato from "@/components/shared/WhatsAppContato";
 import { useEffect, useMemo, useState } from "react";
 import { parseValorBR } from "@/pages/ParceiroPage";
 import { Link, useSearchParams } from "react-router-dom";
