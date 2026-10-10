@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { obterPrazoCotacao, lojaPronta } from "@/lib/prazoCotacao";
+import { abrirLinkExterno } from "@/lib/abrirLinkExterno";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -39,7 +41,7 @@ const emptyForm = {
 
 const FornecedoresPage = () => {
   const queryClient = useQueryClient();
-  const { lojaAtiva } = useLojaAtiva();
+  const { lojaAtiva, loading: lojasLoading, lojas: lojasCtx } = useLojaAtiva();
   const { user } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -120,6 +122,7 @@ const FornecedoresPage = () => {
 
   const { data: cotacaoAtiva } = useQuery({
     queryKey: ["cotacao-ativa", lojaAtiva?.id],
+    enabled: lojaPronta(lojasLoading, lojasCtx, lojaAtiva),
     queryFn: async () => {
       let query = supabase.from("cotacoes").select("id, prazo_resposta").eq("status", "ativa");
       if (lojaAtiva?.id) query = query.eq("loja_id", lojaAtiva.id);
@@ -275,10 +278,11 @@ const FornecedoresPage = () => {
 
   const copyLink = (f: Fornecedor) => { navigator.clipboard.writeText(getLink(f)); toast.success("Link copiado!"); };
 
-  const openWhatsApp = (f: Fornecedor) => {
+  const openWhatsApp = async (f: Fornecedor) => {
     const link = getLink(f);
-    const msg = buildCotacaoMensagem({ fornecedorNome: f.nome, lojaNome: lojaAtiva?.nome, link, prazoIso: (cotacaoAtiva as any)?.prazo_resposta });
-    window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
+    const prazo = await obterPrazoCotacao((cotacaoAtiva as any)?.prazo_resposta, lojaAtiva?.id);
+    const msg = buildCotacaoMensagem({ fornecedorNome: f.nome, lojaNome: lojaAtiva?.nome, link, prazoIso: prazo });
+    abrirLinkExterno(buildWhatsAppUrl(f.telefone, msg));
   };
 
   const showLink = (f: Fornecedor) => { setSelectedFornecedor(f); setLinkModalOpen(true); };

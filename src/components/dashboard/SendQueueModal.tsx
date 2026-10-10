@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { obterPrazoCotacao, lojaPronta } from "@/lib/prazoCotacao";
+import { abrirLinkExterno } from "@/lib/abrirLinkExterno";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -59,10 +61,11 @@ const SendQueueModal = ({ open, onOpenChange, fornecedores, onConclude, prazoIso
     return lojaAtiva?.id ? `${base}?loja=${lojaAtiva.id}` : base;
   };
 
-  const openWhatsApp = (f: Fornecedor) => {
+  const openWhatsApp = async (f: Fornecedor) => {
     const link = getLink(f);
-    const msg = buildCotacaoMensagem({ fornecedorNome: f.nome, lojaNome: lojaAtiva?.nome, link, prazoIso });
-    window.open(buildWhatsAppUrl(f.telefone, msg), "_blank");
+    const prazo = await obterPrazoCotacao(prazoIso, lojaAtiva?.id);
+    const msg = buildCotacaoMensagem({ fornecedorNome: f.nome, lojaNome: lojaAtiva?.nome, link, prazoIso: prazo });
+    abrirLinkExterno(buildWhatsAppUrl(f.telefone, msg));
     setStatuses(prev => ({ ...prev, [f.id]: "sent" }));
   };
 
