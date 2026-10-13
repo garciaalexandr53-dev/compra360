@@ -112,6 +112,7 @@ const DashboardPage = () => {
 
   const [erpImportOpen, setErpImportOpen] = useState(false);
   const [sendQueueOpen, setSendQueueOpen] = useState(false);
+  const [resendMode, setResendMode] = useState(false);
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
   const [selectedSuppliers, setSelectedSuppliers] = useState<Record<string, boolean>>({});
   const [fornSuggestOpen, setFornSuggestOpen] = useState(false);
@@ -1238,7 +1239,8 @@ const DashboardPage = () => {
       )}
       <SendQueueModal
         open={sendQueueOpen}
-        onOpenChange={setSendQueueOpen}
+        onOpenChange={(o) => { setSendQueueOpen(o); if (!o) setResendMode(false); }}
+        resetOnOpen={resendMode}
         fornecedores={selectedFornecedores}
         prazoIso={(cotacaoAtiva as any)?.prazo_resposta ?? null}
         onConclude={() => {
