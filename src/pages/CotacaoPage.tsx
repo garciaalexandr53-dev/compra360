@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Wand2, MoreHorizontal, FileSpreadsheet, RotateCcw, Copy, HelpCircle, ClipboardCopy, Trash2, Target, ArrowLeft, ArrowRight, AlertTriangle } from "lucide-react";
+import { Plus, Search, Save, RefreshCw, FileWarning, Filter, Users, Sparkles, Wand2, MoreHorizontal, FileSpreadsheet, RotateCcw, Copy, HelpCircle, ClipboardCopy, Trash2, Target, ArrowLeft, ArrowRight, AlertTriangle } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { formatBRL, formatNumber } from "@/lib/format";
@@ -839,6 +839,7 @@ const CotacaoPage = () => {
             <ArrowLeft className="h-4 w-4" /> Voltar ao Dashboard
           </Button>
           <div className="flex-1" />
+          <Button size="sm" variant="outline" onClick={() => navigate("/add-produtos")} className="gap-1"><Plus className="h-4 w-4" /> Produtos</Button>
           {isReviewMode && (
             <Button size="sm" variant="outline" onClick={runAiAnalysis} disabled={aiAnalysisLoading} className="gap-1 text-green-700 dark:text-green-400 border-green-500/30 hover:bg-green-500/5">
               <Sparkles className="h-4 w-4" /> Análise IA
@@ -871,6 +872,7 @@ const CotacaoPage = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
+        <Button size="sm" variant="outline" onClick={() => navigate("/add-produtos")} className="gap-1"><Plus className="h-4 w-4" /> Produtos</Button>
         <Button size="sm" onClick={saveAll} className="bg-gradient-to-r from-[hsl(var(--brand-light))] to-[hsl(var(--brand))]"><Save className="h-4 w-4 mr-1" /> Salvar</Button>
         {!isFromDashboard && isReviewMode && (
           <Button size="sm" variant="outline" onClick={runAiAnalysis} disabled={aiAnalysisLoading} className="gap-1 text-green-700 dark:text-green-400 border-green-500/30 hover:bg-green-500/5">

@@ -23,11 +23,20 @@ type Status = "pending" | "sent" | "skipped";
 
 const STORAGE_KEY = "send-queue-state";
 
-const SendQueueModal = ({ open, onOpenChange, fornecedores, onConclude, prazoIso }: Props & { onConclude?: () => void }) => {
+const SendQueueModal = ({ open, onOpenChange, fornecedores, onConclude, prazoIso, resetOnOpen }: Props & { onConclude?: () => void; resetOnOpen?: boolean }) => {
   const { lojaAtiva } = useLojaAtiva();
   const qc = useQueryClient();
   // Garante prazo atualizado ao abrir a fila (evita cache antigo sem horário)
   useEffect(() => { if (open) qc.invalidateQueries({ queryKey: ["cotacao-ativa"] }); }, [open, qc]);
+  // Reenvio: ao abrir em modo reenvio, todos voltam para "pendente"
+  useEffect(() => {
+    if (open && resetOnOpen) {
+      const next: Record<string, Status> = {};
+      fornecedores.forEach(f => { next[f.id] = "pending"; });
+      setStatuses(next);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, resetOnOpen]);
 
   const [statuses, setStatuses] = useState<Record<string, Status>>(() => {
     try {

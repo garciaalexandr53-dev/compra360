@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ClipboardList, FileSpreadsheet, Pencil, Send, Users, Eye, Trophy, RefreshCw, Smartphone, CheckCircle2, Clock, Target, Lightbulb, MessageCircle, X, UserPlus, Store, ArrowRight, Rocket } from "lucide-react";
+import { ClipboardList, FileSpreadsheet, Pencil, Send, Users, Eye, Trophy, RefreshCw, Smartphone, CheckCircle2, Clock, Target, Lightbulb, MessageCircle, X, UserPlus, Store, ArrowRight, Rocket, PlusCircle, Table2 } from "lucide-react";
+import { estadoCotacaoReaberta } from "@/lib/cotacaoReaberta";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
@@ -111,6 +112,7 @@ const DashboardPage = () => {
 
   const [erpImportOpen, setErpImportOpen] = useState(false);
   const [sendQueueOpen, setSendQueueOpen] = useState(false);
+  const [resendMode, setResendMode] = useState(false);
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
   const [selectedSuppliers, setSelectedSuppliers] = useState<Record<string, boolean>>({});
   const [fornSuggestOpen, setFornSuggestOpen] = useState(false);
@@ -1113,12 +1115,18 @@ const DashboardPage = () => {
         {/* ── STATE 5: All responded — sub-states ── */}
         {state === 5 && (
           <div className="space-y-5">
-            <div>
-              <Badge variant="secondary" className="mb-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800">
-                🟢 Pronto para decidir!
-              </Badge>
-              <h1 className="text-fluid-title font-bold text-foreground">Todos os fornecedores responderam</h1>
-            </div>
+            {(() => {
+              const est = estadoCotacaoReaberta(cotacaoAtiva as any);
+              return (
+                <div>
+                  <Badge variant="secondary" className={`mb-2 ${est.reaberta ? "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800" : "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800"}`}>
+                    {est.reaberta ? "🟡 Cotação reaberta" : "🟢 Pronto para decidir!"}
+                  </Badge>
+                  <h1 className="text-fluid-title font-bold text-foreground">{est.titulo}</h1>
+                  {est.subtitulo && <p className="text-sm text-muted-foreground mt-1">{est.subtitulo}</p>}
+                </div>
+              );
+            })()}
             {economyEstimate && economyEstimate > 0 && (
               <Card className="border-green-500/30 bg-green-950/10 dark:bg-green-950/20 shadow-[0_0_15px_rgba(16,185,129,0.08)]">
                 <CardContent className="p-4 text-center">
@@ -1137,6 +1145,28 @@ const DashboardPage = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* Ajustar cotação: itens, fornecedores, reenvio */}
+            <Card className={estadoCotacaoReaberta(cotacaoAtiva as any).reaberta ? "border-amber-500/40" : ""}>
+              <CardContent className="p-3">
+                <p className="text-xs font-semibold text-muted-foreground mb-2">Ajustar cotação</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <Button variant="outline" className="h-auto py-2.5 flex-col gap-1 text-xs" onClick={() => navigate("/add-produtos")}>
+                    <PlusCircle className="h-4 w-4" /> Adicionar produtos
+                  </Button>
+                  <Button variant="outline" className="h-auto py-2.5 flex-col gap-1 text-xs" onClick={() => setSupplierModalOpen(true)}>
+                    <Users className="h-4 w-4" /> Fornecedores
+                  </Button>
+                  <Button variant="outline" className="h-auto py-2.5 flex-col gap-1 text-xs" disabled={!selectedFornecedores.length} onClick={() => { setResendMode(true); setSendQueueOpen(true); }}>
+                    <Smartphone className="h-4 w-4" /> Reenviar link
+                  </Button>
+                  <Button variant="outline" className="h-auto py-2.5 flex-col gap-1 text-xs" onClick={() => navigate("/cotacao?from=dashboard")}>
+                    <Table2 className="h-4 w-4" /> Matriz de preços
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
 
             {/* Sub-state A: Revisar cotação (primary) */}
             <Button
@@ -1209,7 +1239,8 @@ const DashboardPage = () => {
       )}
       <SendQueueModal
         open={sendQueueOpen}
-        onOpenChange={setSendQueueOpen}
+        onOpenChange={(o) => { setSendQueueOpen(o); if (!o) setResendMode(false); }}
+        resetOnOpen={resendMode}
         fornecedores={selectedFornecedores}
         prazoIso={(cotacaoAtiva as any)?.prazo_resposta ?? null}
         onConclude={() => {
