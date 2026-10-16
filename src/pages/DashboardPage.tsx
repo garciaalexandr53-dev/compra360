@@ -713,6 +713,18 @@ const DashboardPage = () => {
     }
     if (state === 4) {
       const faltam = Math.max(selectedSupplierCount - respostaCount, 0);
+      const pend = selectedFornecedores.filter((f) => !respondidosSet.has(f.id));
+      if (podeFecharComQuemRespondeu((cotacaoAtiva as any)?.prazo_resposta ?? null, respostaCount, pend.length)) {
+        return {
+          tom: "atencao",
+          selo: "Prazo encerrado",
+          titulo: `Prazo encerrado! ${respostaCount} de ${selectedSupplierCount} responderam`,
+          descricao: "Você já pode fechar a compra com quem respondeu e ir direto para os melhores preços.",
+          botao: "Fechar compra com quem respondeu",
+          onClick: () => { setClosePendingList(pend); setCloseWithRespondedOpen(true); },
+          secundario: { label: "Ver cotação parcial", onClick: () => navigate("/cotacao?from=dashboard") },
+        };
+      }
       return {
         tom: "neutro",
         selo: "Ao vivo",
@@ -749,7 +761,7 @@ const DashboardPage = () => {
       };
     }
     return null;
-  }, [state, itensFaltantes, itemCount, selectedSupplierCount, respostaCount, cotacaoRevisada, navigate]);
+  }, [state, itensFaltantes, itemCount, selectedSupplierCount, respostaCount, cotacaoRevisada, navigate, selectedFornecedores, respondidosSet, cotacaoAtiva]);
 
   // ── Action buttons shared across states 1 & 2 ──
 
