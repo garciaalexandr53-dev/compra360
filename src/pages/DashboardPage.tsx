@@ -17,7 +17,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { formatBRL, buildWhatsAppUrl, prazoBloco, buildCotacaoMensagem } from "@/lib/format";
+import { formatBRL, buildWhatsAppUrl, prazoBloco, buildCotacaoMensagem, formatTimeRemaining } from "@/lib/format";
+import { podeFecharComQuemRespondeu } from "@/lib/fecharComQuemRespondeu";
 import type { Tables } from "@/integrations/supabase/types";
 
 
@@ -128,6 +129,33 @@ const DashboardPage = () => {
   const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "manter_precos" | "zerar" | null>(null);
   const [novaCotacaoLoading, setNovaCotacaoLoading] = useState(false);
   const [removeSupplier, setRemoveSupplier] = useState<Fornecedor | null>(null);
+  const [closeWithRespondedOpen, setCloseWithRespondedOpen] = useState(false);
+  const [closeWithRespondedLoading, setCloseWithRespondedLoading] = useState(false);
+  const [closePendingList, setClosePendingList] = useState<Fornecedor[]>([]);
+
+  // Fecha a cotação removendo os fornecedores pendentes e segue para a análise
+  const handleCloseWithResponded = async (pending: Fornecedor[]) => {
+    if (!cotacaoAtiva?.id || pending.length === 0) return;
+    setCloseWithRespondedLoading(true);
+    try {
+      const pendingIds = pending.map((f) => f.id);
+      const { data: cps } = await supabase.from("cotacao_produtos").select("id").eq("cotacao_id", cotacaoAtiva.id);
+      const cpIds = (cps || []).map((cp: any) => cp.id);
+      if (cpIds.length) {
+        await supabase.from("precos").delete().in("cotacao_produto_id", cpIds).in("fornecedor_id", pendingIds);
+      }
+      await supabase.from("cotacao_fornecedores").delete().eq("cotacao_id", cotacaoAtiva.id).in("fornecedor_id", pendingIds);
+      await queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
+      await queryClient.invalidateQueries({ queryKey: ["precos"] });
+      toast.success(`${pendingIds.length} fornecedor(es) removido(s). Seguindo para a análise da cotação.`);
+      setCloseWithRespondedOpen(false);
+      navigate("/analise");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao remover fornecedores pendentes");
+    } finally {
+      setCloseWithRespondedLoading(false);
+    }
+  };
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
   const [lojaStepOpen, setLojaStepOpen] = useState(false);
   const [lojaConfirmed, setLojaConfirmed] = useState(false);
@@ -971,6 +999,9 @@ const DashboardPage = () => {
             if (!sentAt) return false;
             return Date.now() - new Date(sentAt).getTime() > 2 * 60 * 60 * 1000;
           });
+          const pendingSuppliers = selectedFornecedores.filter(f => !respondidosSet.has(f.id));
+          const prazoIsoState4 = (cotacaoAtiva as any)?.prazo_resposta ?? null;
+          const showCloseWithResponded = podeFecharComQuemRespondeu(prazoIsoState4, respostaCount, pendingSuppliers.length);
 
           return (
             <div className="space-y-2">
@@ -1048,6 +1079,26 @@ const DashboardPage = () => {
                   );
                 })}
               </div>
+
+              {/* Prazo expirado com pendências — fechar com quem respondeu */}
+              {showCloseWithResponded && (
+                <div className="rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-3 space-y-2.5">
+                  <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                    ⏰ O prazo terminou. {pendingSuppliers.length === 1
+                      ? <><strong>{pendingSuppliers[0].nome}</strong> não respondeu.</>
+                      : <><strong>{pendingSuppliers.length}</strong> fornecedores não responderam.</>}
+                  </p>
+                  <p className="text-xs text-amber-800/90 dark:text-amber-300/90">
+                    Você já pode fechar a compra com os {respostaCount} fornecedor(es) que responderam.
+                  </p>
+                  <Button
+                    className="w-full gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+                    onClick={() => { setClosePendingList(pendingSuppliers); setCloseWithRespondedOpen(true); }}
+                  >
+                    <Trophy className="h-4 w-4" /> Fechar compra com quem respondeu
+                  </Button>
+                </div>
+              )}
 
               {/* Hint cards for suppliers pending > 2h */}
               {pendingOver2h.length > 0 && (
@@ -1276,6 +1327,39 @@ const DashboardPage = () => {
       <ModalFornecedorSugestao open={fornSuggestOpen} onOpenChange={setFornSuggestOpen} text={fornSuggestText} loading={fornSuggestLoading} hasHistory={fornSuggestHasHistory} recommendedIds={fornSuggestRecommendedIds} onApply={applyFornSuggestions} />
       <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} loading={novaCotacaoLoading} lojaId={lojaAtiva?.id} semPrecoCount={itensSemPreco.length} />
 
+      <AlertDialog open={closeWithRespondedOpen} onOpenChange={(open) => { if (!open && !closeWithRespondedLoading) setCloseWithRespondedOpen(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Fechar compra com quem respondeu?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Os fornecedores abaixo serão <strong>removidos desta cotação</strong> e
+                  você irá direto para os melhores preços. Eles continuarão disponíveis para
+                  cotações futuras.
+                </p>
+                <ul className="max-h-48 overflow-y-auto space-y-1 rounded-lg border border-border bg-muted/30 p-2">
+                  {closePendingList.map((f) => (
+                    <li key={f.id} className="text-sm text-foreground flex items-center gap-2">
+                      <span className="text-amber-600">•</span> {f.nome}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={closeWithRespondedLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleCloseWithResponded(closePendingList); }}
+              disabled={closeWithRespondedLoading}
+              className="bg-amber-600 text-white hover:bg-amber-700"
+            >
+              {closeWithRespondedLoading ? "Removendo..." : "Remover e fechar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={!!removeSupplier} onOpenChange={(open) => { if (!open) setRemoveSupplier(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
