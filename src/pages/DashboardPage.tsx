@@ -1092,25 +1092,7 @@ const DashboardPage = () => {
                 })}
               </div>
 
-              {/* Prazo expirado com pendências — fechar com quem respondeu */}
-              {showCloseWithResponded && (
-                <div className="rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-3 space-y-2.5">
-                  <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
-                    ⏰ O prazo terminou. {pendingSuppliers.length === 1
-                      ? <><strong>{pendingSuppliers[0].nome}</strong> não respondeu.</>
-                      : <><strong>{pendingSuppliers.length}</strong> fornecedores não responderam.</>}
-                  </p>
-                  <p className="text-xs text-amber-800/90 dark:text-amber-300/90">
-                    Você já pode fechar a compra com os {respostaCount} fornecedor(es) que responderam.
-                  </p>
-                  <Button
-                    className="w-full gap-2 bg-amber-600 hover:bg-amber-700 text-white"
-                    onClick={() => { setClosePendingList(pendingSuppliers); setCloseWithRespondedOpen(true); }}
-                  >
-                    <Trophy className="h-4 w-4" /> Fechar compra com quem respondeu
-                  </Button>
-                </div>
-              )}
+              {/* Prazo expirado: a ação "Fechar compra com quem respondeu" fica no card Próximo passo (topo) */}
 
               {/* Hint cards for suppliers pending > 2h */}
               {pendingOver2h.length > 0 && (
