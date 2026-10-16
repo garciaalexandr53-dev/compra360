@@ -669,7 +669,7 @@ const DashboardPage = () => {
     if (!(diff > 0)) return;
     const t = setTimeout(() => setNowMs(Date.now()), Math.min(diff + 500, 2_147_000_000));
     return () => clearTimeout(t);
-  }, [prazoRespostaIso, nowMs > (prazoRespostaIso ? new Date(prazoRespostaIso).getTime() : Infinity)]);
+  }, [prazoRespostaIso]);
 
   // ── Cockpit: qual é a única coisa a fazer agora ──
   const cockpitAcao = useMemo<CockpitAcao | null>(() => {
@@ -726,7 +726,7 @@ const DashboardPage = () => {
     if (state === 4) {
       const faltam = Math.max(selectedSupplierCount - respostaCount, 0);
       const pend = selectedFornecedores.filter((f) => !respondidosSet.has(f.id));
-      if (podeFecharComQuemRespondeu((cotacaoAtiva as any)?.prazo_resposta ?? null, respostaCount, pend.length)) {
+      if (podeFecharComQuemRespondeu(prazoRespostaIso, respostaCount, pend.length, nowMs)) {
         return {
           tom: "atencao",
           selo: "Prazo encerrado",
@@ -773,7 +773,7 @@ const DashboardPage = () => {
       };
     }
     return null;
-  }, [state, itensFaltantes, itemCount, selectedSupplierCount, respostaCount, cotacaoRevisada, navigate, selectedFornecedores, respondidosSet, cotacaoAtiva]);
+  }, [state, itensFaltantes, itemCount, selectedSupplierCount, respostaCount, cotacaoRevisada, navigate, selectedFornecedores, respondidosSet, cotacaoAtiva, prazoRespostaIso, nowMs]);
 
   // ── Action buttons shared across states 1 & 2 ──
 
@@ -1025,7 +1025,7 @@ const DashboardPage = () => {
           });
           const pendingSuppliers = selectedFornecedores.filter(f => !respondidosSet.has(f.id));
           const prazoIsoState4 = (cotacaoAtiva as any)?.prazo_resposta ?? null;
-          const showCloseWithResponded = podeFecharComQuemRespondeu(prazoIsoState4, respostaCount, pendingSuppliers.length);
+          const showCloseWithResponded = podeFecharComQuemRespondeu(prazoIsoState4, respostaCount, pendingSuppliers.length, nowMs);
 
           return (
             <div className="space-y-2">
