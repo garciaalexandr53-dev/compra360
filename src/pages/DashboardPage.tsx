@@ -659,6 +659,18 @@ const DashboardPage = () => {
     navigate("/cotacao?review=1");
   };
 
+  // Re-renderiza no instante em que o prazo vence (tela aberta sem novas respostas)
+  const prazoRespostaIso: string | null = (cotacaoAtiva as any)?.prazo_resposta ?? null;
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    setNowMs(Date.now());
+    if (!prazoRespostaIso) return;
+    const diff = new Date(prazoRespostaIso).getTime() - Date.now();
+    if (!(diff > 0)) return;
+    const t = setTimeout(() => setNowMs(Date.now()), Math.min(diff + 500, 2_147_000_000));
+    return () => clearTimeout(t);
+  }, [prazoRespostaIso, nowMs > (prazoRespostaIso ? new Date(prazoRespostaIso).getTime() : Infinity)]);
+
   // ── Cockpit: qual é a única coisa a fazer agora ──
   const cockpitAcao = useMemo<CockpitAcao | null>(() => {
     if (state === 1) {
