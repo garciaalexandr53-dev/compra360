@@ -1327,6 +1327,39 @@ const DashboardPage = () => {
       <ModalFornecedorSugestao open={fornSuggestOpen} onOpenChange={setFornSuggestOpen} text={fornSuggestText} loading={fornSuggestLoading} hasHistory={fornSuggestHasHistory} recommendedIds={fornSuggestRecommendedIds} onApply={applyFornSuggestions} />
       <ModalNovaCotacao open={novaCotacaoOpen} onOpenChange={setNovaCotacaoOpen} novaCotacaoOpt={novaCotacaoOpt} setNovaCotacaoOpt={setNovaCotacaoOpt} onConfirm={handleNovaCotacao} loading={novaCotacaoLoading} lojaId={lojaAtiva?.id} semPrecoCount={itensSemPreco.length} />
 
+      <AlertDialog open={closeWithRespondedOpen} onOpenChange={(open) => { if (!open && !closeWithRespondedLoading) setCloseWithRespondedOpen(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Fechar compra com quem respondeu?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Os fornecedores abaixo serão <strong>removidos desta cotação</strong> e
+                  você irá direto para os melhores preços. Eles continuarão disponíveis para
+                  cotações futuras.
+                </p>
+                <ul className="max-h-48 overflow-y-auto space-y-1 rounded-lg border border-border bg-muted/30 p-2">
+                  {closePendingList.map((f) => (
+                    <li key={f.id} className="text-sm text-foreground flex items-center gap-2">
+                      <span className="text-amber-600">•</span> {f.nome}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={closeWithRespondedLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleCloseWithResponded(closePendingList); }}
+              disabled={closeWithRespondedLoading}
+              className="bg-amber-600 text-white hover:bg-amber-700"
+            >
+              {closeWithRespondedLoading ? "Removendo..." : "Remover e fechar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={!!removeSupplier} onOpenChange={(open) => { if (!open) setRemoveSupplier(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
