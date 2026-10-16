@@ -131,6 +131,7 @@ const DashboardPage = () => {
   const [removeSupplier, setRemoveSupplier] = useState<Fornecedor | null>(null);
   const [closeWithRespondedOpen, setCloseWithRespondedOpen] = useState(false);
   const [closeWithRespondedLoading, setCloseWithRespondedLoading] = useState(false);
+  const [closePendingList, setClosePendingList] = useState<Fornecedor[]>([]);
 
   // Fecha a cotação removendo os fornecedores pendentes e segue para a análise
   const handleCloseWithResponded = async (pending: Fornecedor[]) => {
@@ -1092,7 +1093,7 @@ const DashboardPage = () => {
                   </p>
                   <Button
                     className="w-full gap-2 bg-amber-600 hover:bg-amber-700 text-white"
-                    onClick={() => setCloseWithRespondedOpen(true)}
+                    onClick={() => { setClosePendingList(pendingSuppliers); setCloseWithRespondedOpen(true); }}
                   >
                     <Trophy className="h-4 w-4" /> Fechar compra com quem respondeu
                   </Button>
