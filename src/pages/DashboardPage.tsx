@@ -998,6 +998,9 @@ const DashboardPage = () => {
             if (!sentAt) return false;
             return Date.now() - new Date(sentAt).getTime() > 2 * 60 * 60 * 1000;
           });
+          const pendingSuppliers = selectedFornecedores.filter(f => !respondidosSet.has(f.id));
+          const prazoIsoState4 = (cotacaoAtiva as any)?.prazo_resposta ?? null;
+          const showCloseWithResponded = podeFecharComQuemRespondeu(prazoIsoState4, respostaCount, pendingSuppliers.length);
 
           return (
             <div className="space-y-2">
