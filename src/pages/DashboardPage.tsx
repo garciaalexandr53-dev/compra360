@@ -17,7 +17,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { formatBRL, buildWhatsAppUrl, prazoBloco, buildCotacaoMensagem } from "@/lib/format";
+import { formatBRL, buildWhatsAppUrl, prazoBloco, buildCotacaoMensagem, formatTimeRemaining } from "@/lib/format";
+import { podeFecharComQuemRespondeu } from "@/lib/fecharComQuemRespondeu";
 import type { Tables } from "@/integrations/supabase/types";
 
 
@@ -128,6 +129,8 @@ const DashboardPage = () => {
   const [novaCotacaoOpt, setNovaCotacaoOpt] = useState<"manter" | "manter_precos" | "zerar" | null>(null);
   const [novaCotacaoLoading, setNovaCotacaoLoading] = useState(false);
   const [removeSupplier, setRemoveSupplier] = useState<Fornecedor | null>(null);
+  const [closeWithRespondedOpen, setCloseWithRespondedOpen] = useState(false);
+  const [closeWithRespondedLoading, setCloseWithRespondedLoading] = useState(false);
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
   const [lojaStepOpen, setLojaStepOpen] = useState(false);
   const [lojaConfirmed, setLojaConfirmed] = useState(false);
