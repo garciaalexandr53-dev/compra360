@@ -131,6 +131,30 @@ const DashboardPage = () => {
   const [removeSupplier, setRemoveSupplier] = useState<Fornecedor | null>(null);
   const [closeWithRespondedOpen, setCloseWithRespondedOpen] = useState(false);
   const [closeWithRespondedLoading, setCloseWithRespondedLoading] = useState(false);
+
+  // Fecha a cotação removendo os fornecedores pendentes e segue para a análise
+  const handleCloseWithResponded = async (pending: Fornecedor[]) => {
+    if (!cotacaoAtiva?.id || pending.length === 0) return;
+    setCloseWithRespondedLoading(true);
+    try {
+      const pendingIds = pending.map((f) => f.id);
+      const { data: cps } = await supabase.from("cotacao_produtos").select("id").eq("cotacao_id", cotacaoAtiva.id);
+      const cpIds = (cps || []).map((cp: any) => cp.id);
+      if (cpIds.length) {
+        await supabase.from("precos").delete().in("cotacao_produto_id", cpIds).in("fornecedor_id", pendingIds);
+      }
+      await supabase.from("cotacao_fornecedores").delete().eq("cotacao_id", cotacaoAtiva.id).in("fornecedor_id", pendingIds);
+      await queryClient.invalidateQueries({ queryKey: ["cotacao-fornecedores"] });
+      await queryClient.invalidateQueries({ queryKey: ["precos"] });
+      toast.success(`${pendingIds.length} fornecedor(es) removido(s). Seguindo para a análise da cotação.`);
+      setCloseWithRespondedOpen(false);
+      navigate("/analise");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao remover fornecedores pendentes");
+    } finally {
+      setCloseWithRespondedLoading(false);
+    }
+  };
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
   const [lojaStepOpen, setLojaStepOpen] = useState(false);
   const [lojaConfirmed, setLojaConfirmed] = useState(false);
