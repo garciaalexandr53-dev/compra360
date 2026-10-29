@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2, Download, Package, Store, AlertTriangle, Pencil, Undo2, ArrowRight, Copy, MessageCircle, Check, ClipboardCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { marcarLinkEquipeEnviado } from "@/lib/primeiroPasso";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { toast } from "sonner";
 import { buildWhatsAppUrl } from "@/lib/format";
@@ -97,6 +98,7 @@ const FuncionariosPage = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editQty, setEditQty] = useState<string>("");
   const [linkCopiado, setLinkCopiado] = useState(false);
+  const [linkEnviado, setLinkEnviado] = useState(false);
 
   const effectiveLinkLojaId = lojas.length === 1 ? lojas[0].id : linkLojaId;
   const effectiveLinkLoja = lojas.find((l) => l.id === effectiveLinkLojaId);
@@ -711,6 +713,8 @@ const FuncionariosPage = () => {
     navigator.clipboard.writeText(appUrl);
     toast.success(`Link copiado! (${effectiveLinkLoja?.nome || ""})`);
     setLinkCopiado(true);
+    marcarLinkEquipeEnviado();
+    setLinkEnviado(true);
     setTimeout(() => setLinkCopiado(false), 2000);
   };
 
@@ -729,6 +733,8 @@ const FuncionariosPage = () => {
       `⚠️ Se já tinha o ícone antigo, apague e instale de novo por este link.\n\n` +
       `🔑 Se o app pedir a loja, digite o código: *${codigoLoja}*`;
     window.open(buildWhatsAppUrl(null, msg), "_blank");
+    marcarLinkEquipeEnviado();
+    setLinkEnviado(true);
   };
 
   const getEmbalagem = (item: any) => {
@@ -795,6 +801,16 @@ const FuncionariosPage = () => {
                 <span className="text-sm">WhatsApp</span>
               </Button>
             </div>
+            {linkEnviado && (
+              <div className="rounded-lg border bg-primary/5 px-3 py-2 text-left">
+                <p className="text-xs text-foreground">
+                  <strong>Link enviado!</strong> Quando sua equipe registrar, os itens aparecem aqui. Enquanto isso, adicione produtos para sua primeira cotação.
+                </p>
+                <Button size="sm" className="mt-2 h-8 gap-1.5" onClick={() => navigate("/add-produtos")}>
+                  Adicionar produtos <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
             {effectiveLinkLojaId && (
               <div className="flex items-center justify-between gap-2 rounded-lg border border-dashed bg-muted/40 px-3 py-2">
                 <div className="min-w-0">
