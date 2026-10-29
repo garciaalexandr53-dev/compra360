@@ -60,16 +60,16 @@ export default function TrialUpsellCard({ totalProdutos, economiaTotal }: Props)
     }
   }, [isTrial, trialDaysLeft, isAdmin]);
 
-  // Só aparece na reta final do teste (últimos 7 dias); antes disso o TrialBanner já informa.
-  if (!isTrial || isAdmin || trialDaysLeft <= 0) return <PlanosModalHolder />;
-  if (trialDaysLeft > 7) return showModal && moderateFlag(trialDaysLeft) ? null : null;
+  if (!isTrial || isAdmin || trialDaysLeft <= 0) return null;
 
   const moderate = trialDaysLeft > 5 && trialDaysLeft <= 10;
   const high = trialDaysLeft > 0 && trialDaysLeft <= 5;
+  // Cartão só na reta final (últimos 7 dias); antes disso o TrialBanner já informa o teste.
+  const mostrarCartao = trialDaysLeft <= 7;
 
   return (
     <>
-      {high ? (
+      {!mostrarCartao ? null : high ? (
         <Card className="mb-4 border-destructive/40 bg-destructive/5 animate-pulse">
           <CardContent className="p-4 space-y-2">
             <div className="flex items-center gap-2">
