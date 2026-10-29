@@ -30,12 +30,14 @@ export default function TrialBanner() {
             </div>
             <div className="flex-1 min-w-0">
               <p className={`text-sm font-medium ${urgency ? "text-amber-800 dark:text-amber-300" : "text-foreground"}`}>
-                Plano Business — Teste grátis
+                {urgency ? "Plano Business — Teste grátis" : "Plano Business liberado · Teste grátis"}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {trialDaysLeft === 1
                   ? "Último dia do seu período de teste!"
-                  : `${trialDaysLeft} dias restantes no período de teste`}
+                  : urgency
+                    ? `${trialDaysLeft} dias restantes no período de teste`
+                    : `Acesso completo por mais ${trialDaysLeft} dias, sem cobrança`}
               </p>
               <Button
                 size="sm"

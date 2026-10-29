@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, ClipboardList, MessageCircle, PencilLine, BarChart3, Send } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ClipboardList, MessageCircle, PencilLine, BarChart3, Send } from "lucide-react";
 
 /**
  * Demonstração ilustrativa do caminho de uma cotação.
@@ -39,7 +39,7 @@ const CENAS = [
   },
 ];
 
-export default function CotacaoDemo() {
+export default function CotacaoDemo({ onConcluir }: { onConcluir?: () => void } = {}) {
   const [i, setI] = useState(0);
   const cena = CENAS[i];
   const Icon = cena.icon;
@@ -72,9 +72,15 @@ export default function CotacaoDemo() {
             <span key={k} className={`h-1.5 w-4 rounded-full ${k === i ? "bg-primary" : "bg-muted"}`} />
           ))}
         </div>
-        <Button type="button" variant="ghost" size="sm" disabled={i === CENAS.length - 1} onClick={() => setI(i + 1)} aria-label="Próxima cena">
-          <ArrowRight className="h-4 w-4" />
-        </Button>
+        {i === CENAS.length - 1 && onConcluir ? (
+          <Button type="button" size="sm" onClick={onConcluir} className="h-8">
+            <Check className="h-4 w-4 mr-1" /> Começar a usar
+          </Button>
+        ) : (
+          <Button type="button" variant="ghost" size="sm" disabled={i === CENAS.length - 1} onClick={() => setI(i + 1)} aria-label="Próxima cena">
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );

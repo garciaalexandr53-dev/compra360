@@ -374,7 +374,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                 </div>
               </div>
 
-              <CotacaoDemo />
+              <CotacaoDemo onConcluir={saving ? undefined : handleNext} />
 
               <p className="text-xs text-muted-foreground">
                 Você pode gerenciar lojas, fornecedores e produtos a qualquer momento pelo menu <strong>Mais</strong>.
