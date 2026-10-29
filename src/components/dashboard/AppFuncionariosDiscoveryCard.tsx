@@ -6,6 +6,7 @@ import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Smartphone, X } from "lucide-react";
+import { linkEquipeEnviado } from "@/lib/primeiroPasso";
 
 const DISMISS_KEY = "discovery_app_funcionarios_dismissed";
 
@@ -13,7 +14,7 @@ const AppFuncionariosDiscoveryCard = () => {
   const navigate = useNavigate();
   const { lojas } = useLojaAtiva();
   const [dismissed, setDismissed] = useState(
-    () => localStorage.getItem(DISMISS_KEY) === "1"
+    () => localStorage.getItem(DISMISS_KEY) === "1" || linkEquipeEnviado()
   );
 
   const lojaIds = lojas.map((l) => l.id);
@@ -47,7 +48,7 @@ const AppFuncionariosDiscoveryCard = () => {
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-sm font-semibold text-foreground pr-6">
-              Sua equipe pode registrar o que está faltando
+              Opcional: sua equipe pode registrar o que está faltando
             </h2>
             <p className="text-xs text-muted-foreground mt-1">
               Envie um link pelo WhatsApp para os funcionários da loja. Eles marcam os

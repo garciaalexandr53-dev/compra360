@@ -36,6 +36,7 @@ import ModalNovaCotacao from "@/components/cotacao/ModalNovaCotacao";
 import TrialBanner from "@/components/dashboard/TrialBanner";
 import TrialUpsellCard from "@/components/dashboard/TrialUpsellCard";
 import AppFuncionariosDiscoveryCard from "@/components/dashboard/AppFuncionariosDiscoveryCard";
+import { ehPrimeiraCotacaoComFornecedores } from "@/lib/primeiroPasso";
 import CidadeLojaBanner from "@/components/dashboard/CidadeLojaBanner";
 import FornecedoresLojaBanner from "@/components/dashboard/FornecedoresLojaBanner";
 import { useFeatureCheck } from "@/components/FeatureGate";
@@ -685,6 +686,16 @@ const DashboardPage = () => {
           secundario: { label: "Montar manualmente", onClick: () => navigate("/add-produtos") },
         };
       }
+      if (ehPrimeiraCotacaoComFornecedores({ totalFornecedores: allFornecedores.length, temCotacaoAnterior: !!lastCotacao, itensFaltantes })) {
+        return {
+          tom: "neutro",
+          selo: "Primeira cotação",
+          titulo: "Fornecedores prontos! Agora adicione seus primeiros produtos",
+          descricao: "Adicione 2 ou 3 itens manualmente ou suba sua lista do ERP para disparar sua primeira cotação.",
+          botao: "Adicionar produtos",
+          onClick: () => navigate("/add-produtos"),
+        };
+      }
       return {
         tom: "neutro",
         titulo: "Comece uma nova cotação",
@@ -773,7 +784,7 @@ const DashboardPage = () => {
       };
     }
     return null;
-  }, [state, itensFaltantes, itemCount, selectedSupplierCount, respostaCount, cotacaoRevisada, navigate, selectedFornecedores, respondidosSet, cotacaoAtiva, prazoRespostaIso, nowMs]);
+  }, [state, itensFaltantes, itemCount, selectedSupplierCount, respostaCount, cotacaoRevisada, navigate, selectedFornecedores, respondidosSet, cotacaoAtiva, prazoRespostaIso, nowMs, allFornecedores.length, lastCotacao]);
 
   // ── Action buttons shared across states 1 & 2 ──
 
