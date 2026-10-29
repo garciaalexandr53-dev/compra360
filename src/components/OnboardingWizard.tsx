@@ -8,8 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Store, Truck, Package, Sparkles, ArrowLeft, ArrowRight, Check, X, Plus, Trash2, PartyPopper, ChevronDown } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Store, Users, Package, Sparkles, ArrowLeft, ArrowRight, Check, X, PartyPopper } from "lucide-react";
+import CotacaoDemo from "@/components/onboarding/CotacaoDemo";
 import { useAuth } from "@/hooks/useAuth";
 import { getDeviceFingerprint } from "@/lib/fingerprint";
 import { formatNomeEmpresa, formatNomePessoa, formatNomeLoja } from "@/lib/masks";
@@ -170,36 +170,6 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
         setLojaSaved(true);
         qc.invalidateQueries({ queryKey: ["lojas"] });
         qc.invalidateQueries({ queryKey: ["user-plan"] });
-      } else if (step === 2) {
-        const validForn = fornecedores.filter((f) => f.nome.trim());
-        if (validForn.length === 0) return;
-
-        const inserts = validForn.map((f) => ({
-          nome: f.nome.trim(),
-          representante: formatNomePessoa(f.representante) || null,
-          telefone: f.telefone.trim() || null,
-          email: f.email.trim() || null,
-          pedido_minimo: f.pedido_minimo ? parseFloat(f.pedido_minimo.replace(",", ".")) : null,
-          prazo_pagamento: f.prazo_pagamento.trim() || null,
-          observacoes: f.observacoes.trim() || null,
-          user_id: user?.id,
-        }));
-
-        const { data: insertedForn, error } = await supabase.from("fornecedores").insert(inserts).select("id");
-        if (error) throw error;
-
-        // Link fornecedores to the loja created in step 1
-        if (createdLojaId && insertedForn?.length) {
-          const links = insertedForn.map((f) => ({
-            fornecedor_id: f.id,
-            loja_id: createdLojaId,
-          }));
-          await supabase.from("fornecedor_lojas").insert(links);
-        }
-
-        setFornSavedCount(validForn.length);
-        qc.invalidateQueries({ queryKey: ["fornecedores"] });
-        qc.invalidateQueries({ queryKey: ["fornecedor-lojas"] });
       }
     } catch (e: any) {
       toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" });
@@ -210,7 +180,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   };
 
   const handleNext = async () => {
-    if (step === 1 || step === 2) {
+    if (step === 1) {
       await saveStep();
     }
     if (step < totalSteps - 1) {
@@ -236,11 +206,10 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
   const canAdvance = () => {
     if (step === 0) return true;
     if (step === 1) return lojaNome.trim().length > 0 && lojaCidade.trim().length > 0;
-    if (step === 2) return fornecedores.some((f) => f.nome.trim().length > 0);
     return true; // conclusão
   };
 
-  const stepIcons = [Sparkles, Store, Truck, Package, PartyPopper];
+  const stepIcons = [Sparkles, Store, Users, Package, PartyPopper];
   const stepLabels = ["Início", "Loja", "Fornecedores", "Produtos", "Pronto!"];
 
   return (<>
@@ -294,8 +263,8 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   <span><strong>Loja</strong> — cadastre sua unidade com CNPJ</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Truck className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <span><strong>Fornecedores</strong> — adicione seus parceiros com dados de contato, pedido mínimo e prazo</span>
+                  <Users className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <span><strong>Fornecedores</strong> — veja como as cotações chegam até eles</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Package className="h-4 w-4 text-primary mt-0.5 shrink-0" />
@@ -316,21 +285,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                 <Store className="h-6 w-6 text-primary" />
               </div>
               <p className="text-sm text-muted-foreground text-center">
-                Cadastre a unidade principal da sua empresa.
-              </p>
-              <div className="space-y-2">
-                <Label htmlFor="loja-nome">Nome da Loja *</Label>
-                <Input
-                  id="loja-nome"
-                  placeholder="Ex: Mercado Central"
-                  value={lojaNome}
-                  onChange={(e) => setLojaNome(e.target.value)}
-                  autoFocus
-                />
-              </div>
-              <EnderecoFields compact value={lojaEndereco} onChange={setLojaEndereco} />
-              <p className="text-xs text-muted-foreground -mt-1">
-                Usamos a cidade para sugerir fornecedores que já atendem na sua região.
+                Comece pelo CNPJ: o restante é preenchido automaticamente.
               </p>
               <div className="space-y-2">
                 <Label htmlFor="loja-cnpj">CNPJ *</Label>
@@ -340,118 +295,43 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   value={lojaCnpj}
                   onChange={(e) => setLojaCnpj(formatCNPJ(e.target.value))}
                   maxLength={18}
+                  autoFocus
+                  inputMode="numeric"
                 />
                 <CnpjStatus status={receitaCnpj.status} dados={receitaCnpj.dados} />
-                <p className="text-xs text-muted-foreground">Necessário para ativar o período de teste gratuito</p>
+                <p className="text-xs text-muted-foreground">Necessário para ativar o teste grátis. Buscamos na Receita e preenchemos nome e endereço — você pode editar tudo.</p>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="loja-nome">Nome da Loja *</Label>
+                <Input
+                  id="loja-nome"
+                  placeholder="Ex: Mercado Central"
+                  value={lojaNome}
+                  onChange={(e) => setLojaNome(e.target.value)}
+                />
+              </div>
+              <EnderecoFields compact value={lojaEndereco} onChange={setLojaEndereco} />
+              <p className="text-xs text-muted-foreground -mt-1">
+                Usamos a cidade para sugerir fornecedores que já atendem na sua região.
+              </p>
             </div>
           )}
 
-          {/* === STEP 2: Fornecedores (múltiplos) === */}
+          {/* === STEP 2: Fornecedores (informativo) === */}
           {step === 2 && (
             <div className="space-y-4">
               <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Truck className="h-6 w-6 text-primary" />
+                <Users className="h-6 w-6 text-primary" />
               </div>
-              <p className="text-sm text-muted-foreground text-center">
-                Cadastre seus fornecedores com as informações de contato. Você pode adicionar quantos quiser.
+              <h3 className="text-base font-semibold text-center">
+                Fornecedores — cadastre quando quiser
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                As cotações chegam direto no WhatsApp dos seus fornecedores. Eles abrem o link e preenchem os preços pelo celular, sem precisar instalar nada.
               </p>
-
-              {fornecedores.map((f, idx) => (
-                <div key={f.id} className="border rounded-lg p-3 space-y-3 relative">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">Fornecedor {idx + 1}</span>
-                    {fornecedores.length > 1 && (
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeFornecedor(f.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Nome *</Label>
-                    <Input
-                      placeholder="Ex: Distribuidora ABC"
-                      value={f.nome}
-                      onChange={(e) => updateFornecedor(f.id, "nome", e.target.value)}
-                      autoFocus={idx === 0}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Representante</Label>
-                      <Input
-                        placeholder="Nome"
-                        value={f.representante}
-                        onChange={(e) => updateFornecedor(f.id, "representante", e.target.value)}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">WhatsApp / Telefone</Label>
-                      <Input
-                        placeholder="(00) 00000-0000"
-                        value={f.telefone}
-                        onChange={(e) => updateFornecedor(f.id, "telefone", e.target.value)}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                  </div>
-                  <Collapsible>
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" size="sm" className="w-full justify-between h-8 px-2 text-xs text-muted-foreground">
-                        Mais detalhes (opcional)
-                        <ChevronDown className="h-3.5 w-3.5" />
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-3 pt-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-xs">E-mail</Label>
-                          <Input
-                            type="email"
-                            placeholder="email@exemplo.com"
-                            value={f.email}
-                            onChange={(e) => updateFornecedor(f.id, "email", e.target.value)}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Pedido Mínimo (R$)</Label>
-                          <Input
-                            placeholder="0,00"
-                            value={f.pedido_minimo}
-                            onChange={(e) => updateFornecedor(f.id, "pedido_minimo", e.target.value)}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Prazo de pagamento / Dia de entrega</Label>
-                        <Input
-                          placeholder="Ex: 28 dias, entrega às terças"
-                          value={f.prazo_pagamento}
-                          onChange={(e) => updateFornecedor(f.id, "prazo_pagamento", e.target.value)}
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Observações</Label>
-                        <Input
-                          placeholder="Ex: Só entrega acima de R$500"
-                          value={f.observacoes}
-                          onChange={(e) => updateFornecedor(f.id, "observacoes", e.target.value)}
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </div>
-              ))}
-
-              <Button variant="outline" size="sm" className="w-full" onClick={addFornecedor}>
-                <Plus className="h-4 w-4 mr-1" />
-                Adicionar outro fornecedor
-              </Button>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Depois de concluir, na aba <strong>Fornecedores</strong> você confere parceiros já cadastrados na sua região ou adiciona os seus.
+              </p>
             </div>
           )}
 
@@ -484,7 +364,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
               </div>
               <h3 className="text-xl font-semibold">Tudo pronto! 🎉</h3>
               <p className="text-muted-foreground text-sm">
-                Seu ambiente foi configurado com sucesso. Veja o resumo:
+                Sua loja está pronta. Veja em 5 passos como funciona uma cotação:
               </p>
 
               <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-left text-sm">
@@ -492,21 +372,9 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
                   <Store className="h-4 w-4 text-primary" />
                   <span><strong>1</strong> loja cadastrada{lojaSaved && `: ${lojaNome}`}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Truck className="h-4 w-4 text-primary" />
-                  <span><strong>{fornSavedCount || fornecedores.filter((f) => f.nome.trim()).length}</strong> fornecedor(es) cadastrado(s)</span>
-                </div>
               </div>
 
-              <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm text-left space-y-2">
-                <p className="font-medium text-primary">📋 Próximos passos:</p>
-                <ol className="list-decimal list-inside text-muted-foreground space-y-1 text-xs">
-                  <li>No <strong>Painel</strong>, escolha <strong>Importar do ERP</strong> ou <strong>Montar manualmente</strong></li>
-                  <li>Busque os produtos pelo nome ou código de barras</li>
-                  <li>Selecione os fornecedores e envie os links</li>
-                  <li>Compare os preços e feche o pedido</li>
-                </ol>
-              </div>
+              <CotacaoDemo />
 
               <p className="text-xs text-muted-foreground">
                 Você pode gerenciar lojas, fornecedores e produtos a qualquer momento pelo menu <strong>Mais</strong>.
