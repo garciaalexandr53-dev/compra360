@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLojaAtiva } from "@/hooks/useLojaAtiva";
 import { Button } from "@/components/ui/button";
-import { MapPin, UserPlus } from "lucide-react";
+import { MapPin, UserPlus, ArrowRight } from "lucide-react";
 import { formatNomeLoja } from "@/lib/masks";
 import SugestoesRegiaoDialog, { type SugestaoFornecedor } from "@/components/fornecedores/SugestoesRegiaoDialog";
 
@@ -76,11 +76,25 @@ export default function FornecedoresLojaBanner() {
           <p className="text-sm font-semibold text-foreground">
             {temSugestoes ? "Sua loja ainda não tem fornecedores" : "Cadastre seus primeiros fornecedores"}
           </p>
+          {!temSugestoes ? (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Você ainda não cadastrou nenhum fornecedor. Acesse a aba{" "}
+              <button
+                type="button"
+                onClick={() => navigate("/fornecedores")}
+                className="inline-flex items-center gap-0.5 font-semibold text-primary underline underline-offset-2"
+              >
+                Fornecedores <ArrowRight className="h-3 w-3" />
+              </button>{" "}
+              para conferir parceiros pré-cadastrados na sua região ou cadastrar os seus.
+            </p>
+          ) : (
           <p className="text-xs text-muted-foreground mt-0.5">
             {temSugestoes
               ? `Encontramos ${sugestoes.length} fornecedor${sugestoes.length === 1 ? "" : "es"} disponíve${sugestoes.length === 1 ? "l" : "is"} para sua loja em ${cidadeLabel}. Adicione com 1 clique e agilize suas cotações.`
-              : "Adicione seus contatos para começar a enviar cotações e comparar preços."}
+              : ""}
           </p>
+          )}
           <Button
             size="sm"
             className="mt-2"
