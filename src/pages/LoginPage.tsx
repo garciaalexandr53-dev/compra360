@@ -19,6 +19,7 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
+  const [nome, setNome] = useState("");
   const [isSignUp, setIsSignUp] = useState(searchParams.get("cadastro") === "1");
   const [isRecuperar, setIsRecuperar] = useState(searchParams.get("recuperar") === "1");
   const [loading, setLoading] = useState(false);
@@ -138,6 +139,10 @@ const LoginPage = () => {
     }
 
     if (isSignUp) {
+      if (!nome.trim()) {
+        toast.error("Informe seu nome.");
+        return;
+      }
       const wppError = validateWhatsapp(whatsapp);
       if (wppError) {
         toast.error(wppError);
@@ -149,7 +154,7 @@ const LoginPage = () => {
 
     if (isSignUp) {
       const digits = whatsapp.replace(/\D/g, "");
-      const { error } = await signUp(email, password, digits, `${window.location.origin}/email-confirmado`);
+      const { error } = await signUp(email, password, digits, `${window.location.origin}/email-confirmado`, nome.trim());
       if (error) {
         toast.error(translateAuthError(error.message));
       } else {
@@ -194,6 +199,15 @@ const LoginPage = () => {
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label htmlFor="nome">Seu nome *</Label>
+                <Input
+                  id="nome" placeholder="Como podemos te chamar?" autoComplete="name"
+                  value={nome} onChange={(e) => setNome(e.target.value)} required maxLength={60}
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input

@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { deveAbrirModalNome, nomeDoCadastro } from "@/lib/boasVindas";
 
 const SESSION_DISMISS_KEY = "boas-vindas-dispensado-sessao";
 
@@ -32,8 +33,24 @@ export default function ModalBoasVindas() {
     },
   });
 
+  const nomeCadastro = nomeDoCadastro(user?.user_metadata as Record<string, unknown> | undefined);
+
+  // Nome informado no cadastro: grava no perfil em silêncio, sem abrir o modal.
   useEffect(() => {
-    if (!user || isAdmin || profileLoading || !precisaNome) {
+    if (!user || profileLoading || !precisaNome || !nomeCadastro) return;
+    supabase
+      .from("profiles")
+      .upsert({ user_id: user.id, nome: nomeCadastro }, { onConflict: "user_id" })
+      .then(({ error }) => {
+        if (!error) {
+          queryClient.invalidateQueries({ queryKey: ["profile-nome"] });
+          queryClient.invalidateQueries({ queryKey: ["perfil-profile"] });
+        }
+      });
+  }, [user, profileLoading, precisaNome, nomeCadastro, queryClient]);
+
+  useEffect(() => {
+    if (!user || profileLoading || !deveAbrirModalNome({ precisaNome, isAdmin, nomeCadastro })) {
       setOpen(false);
       return;
     }
@@ -41,7 +58,7 @@ export default function ModalBoasVindas() {
       if (sessionStorage.getItem(SESSION_DISMISS_KEY)) return;
     } catch { /* ignore */ }
     setOpen(true);
-  }, [user, isAdmin, profileLoading, precisaNome]);
+  }, [user, isAdmin, profileLoading, precisaNome, nomeCadastro]);
 
   const handleDismiss = () => {
     try { sessionStorage.setItem(SESSION_DISMISS_KEY, "1"); } catch { /* ignore */ }
