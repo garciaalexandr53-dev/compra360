@@ -60,7 +60,9 @@ export default function TrialUpsellCard({ totalProdutos, economiaTotal }: Props)
     }
   }, [isTrial, trialDaysLeft, isAdmin]);
 
-  if (!isTrial || isAdmin || trialDaysLeft <= 0) return null;
+  // Só aparece na reta final do teste (últimos 7 dias); antes disso o TrialBanner já informa.
+  if (!isTrial || isAdmin || trialDaysLeft <= 0) return <PlanosModalHolder />;
+  if (trialDaysLeft > 7) return showModal && moderateFlag(trialDaysLeft) ? null : null;
 
   const moderate = trialDaysLeft > 5 && trialDaysLeft <= 10;
   const high = trialDaysLeft > 0 && trialDaysLeft <= 5;
