@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Wifi, RefreshCw, MessageCircle } from "lucide-react";
 
 interface Props {
   children: ReactNode;
@@ -11,6 +11,8 @@ interface State {
   code: string | null;
 }
 
+const WHATSAPP_SUPORTE = "5544984483553";
+
 /** Código curto e estável a partir da mensagem, para o usuário informar ao suporte. */
 const gerarCodigo = (error: Error) => {
   const base = `${error.name}:${error.message}`;
@@ -20,8 +22,8 @@ const gerarCodigo = (error: Error) => {
 };
 
 /**
- * Evita tela branca: qualquer erro de render mostra uma tela com explicação
- * e opções de recuperação, além de registrar o erro no console.
+ * Evita tela branca: qualquer erro de render mostra uma tela com orientação
+ * clara do que fazer (internet, recarregar, suporte), além de registrar o erro.
  */
 class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null, code: null };
@@ -35,8 +37,6 @@ class ErrorBoundary extends Component<Props, State> {
     console.error("[Compra360][ErrorBoundary]", error, info.componentStack);
   }
 
-  reset = () => this.setState({ error: null, code: null });
-
   hardReload = () => {
     if (typeof caches !== "undefined") {
       caches
@@ -46,6 +46,13 @@ class ErrorBoundary extends Component<Props, State> {
       return;
     }
     window.location.reload();
+  };
+
+  abrirSuporte = () => {
+    const texto = encodeURIComponent(
+      `Olá! Estou com um erro no Compra360. Código: ${this.state.code ?? "—"}.`
+    );
+    window.open(`https://wa.me/${WHATSAPP_SUPORTE}?text=${texto}`, "_blank", "noopener,noreferrer");
   };
 
   render() {
@@ -58,22 +65,45 @@ class ErrorBoundary extends Component<Props, State> {
             <AlertTriangle className="h-6 w-6 text-destructive" />
           </div>
           <h1 className="text-lg font-bold text-foreground mb-2">
-            Algo deu errado ao abrir esta tela
+            Não conseguimos abrir esta tela
           </h1>
-          <p className="text-sm text-muted-foreground mb-1">
-            Sua lista de itens foi salva no aparelho — nada do que você marcou foi perdido.
+          <p className="text-sm text-muted-foreground mb-4">
+            Isso costuma acontecer quando a internet oscila ou o sinal caiu no meio do carregamento.
           </p>
-          <p className="text-xs text-muted-foreground mb-5">
-            Tente de novo. Se continuar, recarregue o app.
-          </p>
+
+          <div className="rounded-lg bg-muted/60 px-4 py-3 text-left mb-5 space-y-2">
+            <p className="text-xs font-semibold text-foreground">O que fazer agora:</p>
+            <div className="flex items-start gap-2">
+              <Wifi className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground leading-snug">
+                <span className="font-medium text-foreground">1.</span> Verifique se o Wi-Fi ou os dados móveis estão funcionando.
+              </p>
+            </div>
+            <div className="flex items-start gap-2">
+              <RefreshCw className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground leading-snug">
+                <span className="font-medium text-foreground">2.</span> Toque em <span className="font-medium text-foreground">Recarregar o app</span> abaixo.
+              </p>
+            </div>
+            <div className="flex items-start gap-2">
+              <MessageCircle className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground leading-snug">
+                <span className="font-medium text-foreground">3.</span> Se continuar, fale com a gente no WhatsApp informando o código do erro.
+              </p>
+            </div>
+          </div>
+
           <div className="flex flex-col gap-2">
-            <Button onClick={this.reset} className="h-11 w-full">
-              Tentar de novo
-            </Button>
-            <Button variant="outline" onClick={this.hardReload} className="h-11 w-full">
+            <Button onClick={this.hardReload} className="h-11 w-full">
+              <RefreshCw className="h-4 w-4 mr-2" />
               Recarregar o app
             </Button>
+            <Button variant="outline" onClick={this.abrirSuporte} className="h-11 w-full">
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Falar com o suporte
+            </Button>
           </div>
+
           <div className="mt-5 rounded-lg bg-muted/60 px-3 py-2 text-left">
             <p className="text-[11px] font-medium text-muted-foreground">
               Código do erro: {this.state.code}
