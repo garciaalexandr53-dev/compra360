@@ -11,14 +11,29 @@ import LandingSkeleton from "./components/LandingSkeleton";
 import ErrorBoundary from "./components/ErrorBoundary";
 import RouteFallback from "./components/RouteFallback";
 
+const RELOAD_KEY = "retry_import_reloaded_at";
+const RELOAD_WINDOW_MS = 30_000;
+
 function retryImport(factory: () => Promise<any>, retries = 1): Promise<any> {
-  return factory().catch((err) => {
-    if (retries > 0) {
-      return retryImport(factory, retries - 1);
-    }
-    window.location.reload();
-    throw err;
-  });
+  return factory()
+    .then((mod) => {
+      try { sessionStorage.removeItem(RELOAD_KEY); } catch { /* ignore */ }
+      return mod;
+    })
+    .catch((err) => {
+      if (retries > 0) {
+        return retryImport(factory, retries - 1);
+      }
+      // Recarrega no máximo 1 vez por janela de 30s; depois para na tela de erro.
+      let jaRecarregou = false;
+      try {
+        const last = Number(sessionStorage.getItem(RELOAD_KEY) || 0);
+        jaRecarregou = Date.now() - last < RELOAD_WINDOW_MS;
+        if (!jaRecarregou) sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+      } catch { jaRecarregou = true; }
+      if (!jaRecarregou) window.location.reload();
+      throw err;
+    });
 }
 
 const LandingPage = lazy(() => retryImport(() => import("./pages/LandingPage")));
